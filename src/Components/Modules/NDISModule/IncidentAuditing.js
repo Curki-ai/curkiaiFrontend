@@ -26,6 +26,7 @@ const TASK_QUEUE = [
 
 
 const IncidentAuditing = (props) => {
+    console.log("IncidentAuditing props:", props);
     const [incidentAuditingFiles, setIncidentAuditingFiles] = useState([]);
     const [isIncidentAuditingProcessing, setIsIncidentAuditingProcessing] = useState(false);
     const [incidentAuditingProgress, setIncidentAuditingProgress] = useState(0);
@@ -38,13 +39,24 @@ const IncidentAuditing = (props) => {
     const [endMonth, setEndMonth] = useState("");
     const [currentTask, setCurrentTask] = useState(TASK_QUEUE[0]);
     const [expandedSources, setExpandedSources] = useState([]);
-    const isButtonDisabled = incidentAuditingFiles.length === 0;
+    const isButtonDisabled = !syncEnabled && incidentAuditingFiles.length === 0;
     const [searchTerm, setSearchTerm] = useState("");
     const [filterReportable, setFilterReportable] = useState("ALL");
     const [filterType, setFilterType] = useState("ALL");
 
     const handleAnalyse = async () => {
-        if (incidentAuditingFiles.length === 0) return;
+        console.log("Analyse clicked");
+        if (syncEnabled) {
+            if (!startDay || !startMonth || !endDay || !endMonth) {
+                alert("Please select a start and end date.");
+                return;
+            }
+        }
+
+        if (!syncEnabled && incidentAuditingFiles.length === 0) {
+            alert("Please upload files or enable Sync.");
+            return;
+        }
 
         setIsIncidentAuditingProcessing(true);
         setIncidentAuditingProgress(5);
@@ -71,8 +83,16 @@ const IncidentAuditing = (props) => {
             // Prepare FormData
             const formData = new FormData();
             incidentAuditingFiles.forEach(file => formData.append("files", file));
+            if (syncEnabled) {
+                formData.append("sync", true);
 
-            // 🔥 --- SSE STREAM FETCH() ---
+                const year = new Date().getFullYear();
+
+                formData.append("fromDate", `${year}-${startMonth}-${startDay}`);
+                formData.append("toDate", `${year}-${endMonth}-${endDay}`);
+                formData.append("userEmail", props.user.email);
+            }
+
             const response = await fetch(
                 "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/incidentAuditing",
                 {
@@ -385,7 +405,20 @@ const IncidentAuditing = (props) => {
                             </div>
                             <Toggle
                                 checked={syncEnabled}
-                                onChange={() => setSyncEnabled(!syncEnabled)}
+                                onChange={() => {
+                                    setSyncEnabled(!syncEnabled);
+                                    if (!syncEnabled) {
+                                        setIncidentAuditingFiles([]);
+                                    } else {
+                                        // sync turning OFF
+                                        setStartDay("");
+                                        setStartMonth("");
+                                        setEndDay("");
+                                        setEndMonth("");
+                                    }
+                                }}
+
+
                                 className="custom-toggle"
                                 icons={false}
                             />
@@ -490,7 +523,14 @@ const IncidentAuditing = (props) => {
 
                     {/* File uploader */}
                     <div className="uploader-grid" style={{ display: "flex", justifyContent: "center" }}>
-                        <div style={{ width: "50%" }}>
+                        <div
+                            style={{
+                                width: "50%",
+                                opacity: syncEnabled ? 0.5 : 1,
+                                pointerEvents: syncEnabled ? "none" : "auto",
+                                cursor: syncEnabled ? "not-allowed" : "pointer"
+                            }}
+                        >
                             <UploadFiles
                                 files={incidentAuditingFiles}
                                 setFiles={setIncidentAuditingFiles}

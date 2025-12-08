@@ -491,7 +491,7 @@ const HomePage = () => {
                   <Client_Event_Reporting selectedRole='Participant Events & Incident Management' />
                 </div>
                 <div style={{ display: selectedRole === "Incident Auditing" ? "block" : "none" }}>
-                  <IncidentAuditing selectedRole='Incident Auditing' />
+                  <IncidentAuditing selectedRole='Incident Auditing' user={user}/>
                 </div>
 
                 <div style={{ display: selectedRole === "Quarterly Financial Reporting" ? "block" : "none" }}>
