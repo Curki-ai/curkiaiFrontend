@@ -982,7 +982,7 @@ export default function TlcNewCustomerReporting(props) {
                     style={{
                         padding: "8px 16px",
                         borderRadius: "8px",
-                        background: tab.id === activeTab ? "#1f2d3d" : "#f3f4f6",
+                        background: tab.id === activeTab ? "#6C4CDC" : "#f3f4f6",
                         color: tab.id === activeTab ? "#fff" : "#000",
                         cursor: "pointer",
                         display: "flex",
@@ -1082,7 +1082,7 @@ export default function TlcNewCustomerReporting(props) {
                 alt="Toggle"
                 style={{
                     width: "18px",
-                    height: "12px",
+                    height: "10px",
                     transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
                     transition: "transform 0.2s ease",
                     flexShrink: 0,
