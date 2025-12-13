@@ -26,6 +26,7 @@ import TlcPayrollDownloadIcon from "../../../Images/TlcPayrollDownloadIcon.png"
 import { dummyData, dummyPayload } from "./TlcPayrollDummyData";
 import TlcSaveButton from "../../../Images/Tlc_Save_Button.png"
 import TlcCompareAnalyseIcon from "../../../Images/Tlc_Compare_Analyse_Icon.png"
+import TlcAiWordExporter from "./TlcAiWordExporter";
 export default function TlcNewCustomerReporting(props) {
     // -------------------- MULTI TAB SUPPORT --------------------
     const USE_DUMMY_DATA = true;
@@ -1060,6 +1061,8 @@ export default function TlcNewCustomerReporting(props) {
         isOpen,
         onClick,
         showInsightIcon = false,
+        showDownloadIcon = false,   // ✅ NEW
+        onDownload,
     }) => (
         <div
             onClick={onClick}
@@ -1102,6 +1105,22 @@ export default function TlcNewCustomerReporting(props) {
                         height: "18px",
                         marginLeft: "4px",
                         flexShrink: 0,
+                    }}
+                />
+            )}
+            {showDownloadIcon && (
+                <img
+                    src={TlcPayrollDownloadIcon}
+                    alt="Download AI Summary"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onDownload?.();
+                    }}
+                    style={{
+                        width: "18px",
+                        height: "18px",
+                        marginLeft: "auto",
+                        cursor: "pointer",
                     }}
                 />
             )}
@@ -1189,6 +1208,11 @@ export default function TlcNewCustomerReporting(props) {
         activeTabData.page2 ||
         activeTabData.page3 ||
         activeTabData.page4;
+
+    const downloadWord = TlcAiWordExporter({
+        markdown: activeTabData.aiReport,
+        fileName: `AI_Summary_${formatDateRange()?.replace(/\s+/g, "_")}`,
+    });
 
 
     return (
@@ -1511,7 +1535,14 @@ export default function TlcNewCustomerReporting(props) {
                                 <div key={item.key} className="data-upload-card">
                                     {/* header */}
                                     <div className="data-upload-header">
-                                        <span className="data-upload-template">
+                                        <span className="data-upload-template" onClick={() => {
+                                            const link = document.createElement("a");
+                                            link.href = "/templates/SmartRosteringTemplate.xlsx";
+                                            link.download = "Payroll Template.xlsx";
+                                            document.body.appendChild(link);
+                                            link.click();
+                                            document.body.removeChild(link);
+                                        }}>
                                             <img
                                                 src={TlcPayrollDownloadIcon}
                                                 alt="download"
@@ -1519,10 +1550,10 @@ export default function TlcNewCustomerReporting(props) {
                                             />
                                             Download Template
                                         </span>
-                                        <span className="data-upload-label" style={{marginRight:"auto" , marginLeft:"12px"}}>
+                                        <span className="data-upload-label" style={{ marginRight: "auto", marginLeft: "12px" }}>
                                             {files.length === 0 ? "Upload Data" : "Upload Content"}
                                         </span>
-                                        
+
                                     </div>
 
 
@@ -1620,6 +1651,8 @@ export default function TlcNewCustomerReporting(props) {
                                 }`}
                             isOpen={activeTabData.aiAccordion}
                             showInsightIcon={true}
+                            showDownloadIcon={!!activeTabData.aiReport}   // ✅ only show when ready
+                            onDownload={downloadWord}
                             onClick={() => {
                                 const willOpen = !activeTabData.aiAccordion;
                                 updateTab({ aiAccordion: willOpen });
