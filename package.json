@@ -19,6 +19,7 @@
     "file-saver": "^2.0.5",
     "firebase": "^11.5.0",
     "html-react-parser": "^5.2.7",
+    "html2canvas": "^1.4.1",
     "html2pdf.js": "^0.10.3",
     "jszip": "^3.10.1",
     "markdown-parser-react": "^2.0.2",

@@ -43,6 +43,9 @@ import "highlight.js/styles/github.css";
 import incrementAnalysisCount from "./Modules/FinancialModule/TLcAnalysisCount";
 import TlcClientProfitability from "./Modules/FinancialModule/TlcClientProfitability";
 import TlcNewCustomerReporting from "./Modules/FinancialModule/TlcNewCustomReporting";
+import PopupModalLeft from "./ModalLeft";
+import NewFinancialHealth from "./Modules/FinancialModule/NewFinancialModule";
+import TlcNewClientProfitability from "./Modules/FinancialModule/TlcNewClientProfitibility";
 
 const HomePage = () => {
   const [sidebarVisible, setSidebarVisible] = useState(true);
@@ -53,6 +56,7 @@ const HomePage = () => {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState([]);
   const [isModalVisible, setModalVisible] = useState(false);
+  const [isModalLeftVisible, setLeftModalVisible] = useState(false);
   const [showSignIn, setShowSignIn] = useState(false);
   const [user, setUser] = useState(null);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -76,6 +80,8 @@ const HomePage = () => {
   const [manualResumeZip, setManualResumeZip] = useState(null);
   const handleModalOpen = () => setModalVisible(true);
   const handleModalClose = () => setModalVisible(false);
+  const handleLeftModalOpen = () => setLeftModalVisible(true);
+  const handleLeftModalClose = () => setLeftModalVisible(false);
   const moduleSuggestions = {
     tlc: [
       "Which 10 employees in NDIS have the highest overtime hours and overtime $ as a percentage of their total hours and pay?",
@@ -467,11 +473,29 @@ const HomePage = () => {
           <div style={{ flex: 1, height: "100vh", overflowY: "auto" }}>
             <SignIn show={showSignIn} onClose={() => setShowSignIn(false)} />
 
-            <div className="typeofreportmaindiv" style={{ display: "flex", justifyContent: "flex-end", width: "100%", borderBottom: "1px solid #E8ECEF", backgroundColor: "white" }}>
+            <div
+              className="typeofreportmaindiv"
+              style={{
+                display: "flex",
+                justifyContent: "space-between", // ✅ LEFT & RIGHT
+                alignItems: "center",
+                width: "100%",
+                borderBottom: "1px solid #E8ECEF",
+                backgroundColor: "white",
+                padding: "12px 20px",
+              }}
+            >
+              {/* LEFT */}
+              <div className="page-title-btn" onClick={handleLeftModalOpen}>
+                <IoMdInformationCircleOutline size={20} color="#5B36E1" />Our AI will instantly give.....
+              </div>
+
+              {/* RIGHT */}
               <div className="page-title-btn" onClick={handleModalOpen}>
                 <IoMdInformationCircleOutline size={20} color="#5B36E1" /> Accepted Types Of Reports
               </div>
             </div>
+
 
             <div className={isTlcPage ? "tlc-custom-main-content" : isSmartRosteringPage ? "smart-rostering-main-content" : "main-content"}>
               {showFeedbackPopup && <FeedbackModal userEmail={user?.email} />}
@@ -481,7 +505,8 @@ const HomePage = () => {
                   <SoftwareConnect user={user} />
                 )}
                 <div style={{ display: selectedRole === "Financial Health" ? "block" : "none" }}>
-                  <FinancialHealth selectedRole="Financial Health" handleClick={handleClick} setShowFeedbackPopup={setShowFeedbackPopup} user={user} />
+                  {/* <FinancialHealth selectedRole="Financial Health" handleClick={handleClick} setShowFeedbackPopup={setShowFeedbackPopup} user={user} /> */}
+                  <NewFinancialHealth selectedRole="Financial Health" handleClick={handleClick} setShowFeedbackPopup={setShowFeedbackPopup} user={user} />
                 </div>
 
                 <div style={{ display: selectedRole === "SIRS Analysis" ? "block" : "none" }}>
@@ -492,7 +517,7 @@ const HomePage = () => {
                   <Client_Event_Reporting selectedRole='Participant Events & Incident Management' />
                 </div>
                 <div style={{ display: selectedRole === "Incident Auditing" ? "block" : "none" }}>
-                  <IncidentAuditing selectedRole='Incident Auditing' user={user}/>
+                  <IncidentAuditing selectedRole='Incident Auditing' user={user} />
                 </div>
 
                 <div style={{ display: selectedRole === "Quarterly Financial Reporting" ? "block" : "none" }}>
@@ -513,7 +538,12 @@ const HomePage = () => {
                 </div>
 
                 <div style={{ display: selectedRole === 'Clients Profitability' ? "block" : "none" }}>
-                  <TlcClientProfitability
+                  {/* <TlcClientProfitability
+                    onPrepareAiPayload={(payload) => setTlcClientProfitabilityPayload(payload)}
+                    tlcClientProfitabilityPayload={tlcClientProfitabilityPayload}
+                    user={user}
+                  /> */}
+                  <TlcNewClientProfitability
                     onPrepareAiPayload={(payload) => setTlcClientProfitabilityPayload(payload)}
                     tlcClientProfitabilityPayload={tlcClientProfitabilityPayload}
                     user={user}
@@ -542,6 +572,7 @@ const HomePage = () => {
               </>
 
               <Modal isVisible={isModalVisible} onClose={handleModalClose}></Modal>
+              <PopupModalLeft isVisible={isModalLeftVisible} onClose={handleLeftModalClose} module={selectedRole}></PopupModalLeft>
 
 
               <div className="ask-ai-button" onClick={() => setShowAIChat(!showAIChat)}>

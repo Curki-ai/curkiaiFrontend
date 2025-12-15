@@ -74,7 +74,7 @@ html,
   max-height: 100vh; */
   box-sizing: border-box;
   text-align: center;
-  padding: 8px 5% 40px 5%
+  padding: 24px 4%;
 }
 .tlc-custom-main-content{
   flex:1;

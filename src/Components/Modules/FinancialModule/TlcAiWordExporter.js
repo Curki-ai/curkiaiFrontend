@@ -45,7 +45,7 @@ const cleanMarkdownForWord = (markdown) => {
         // Step 7: Remove special characters if they're causing issues
         .replace(/[↑↓◆●]/g, '');
 };
-const parseMarkdownToDocx = (markdown) => {
+export const parseMarkdownToDocx = (markdown) => {
 
     const cleanMarkdown = cleanMarkdownForWord(markdown);
     const tokens = marked.lexer(cleanMarkdown);
@@ -156,7 +156,7 @@ const parseMarkdownToDocx = (markdown) => {
     return content;
 };
 
-const TlcAiWordExporter = ({ markdown, fileName }) => {
+export const TlcAiWordExporter = ({ markdown, fileName }) => {
     const downloadWord = async () => {
         if (!markdown) {
             alert("No AI summary available");

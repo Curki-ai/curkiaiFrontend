@@ -55,7 +55,7 @@ const SummaryReport = ({
     <div className="summary-report-container">
       {selectedRole === "Financial Health" ? (
         <>
-          <div className="title" style={{ textAlign: "center", marginBottom: '30px' }}>AI SUMMARY</div>
+          {/* <div className="title" style={{ textAlign: "center", marginBottom: '30px' }}>AI SUMMARY</div> */}
           <div className="financial-health-markdown">
             <ReactMarkdown
               children={review_response}
