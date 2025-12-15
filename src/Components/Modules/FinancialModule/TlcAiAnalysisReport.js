@@ -5,13 +5,13 @@ import rehypeRaw from "rehype-raw";
 import rehypeHighlight from "rehype-highlight";
 import "highlight.js/styles/github.css";
 
-export default function AIAnalysisReportViewer({ reportText, loading }) {
+export default function AIAnalysisReportViewer({ reportText, loading,onDownload }) {
   if (loading) {
     return (
       <div
         style={{
           textAlign: "center",
-          padding: "20px",
+          // padding: "20px",
           color: "#6b7280",
           fontFamily: "Inter, sans-serif",
         }}
@@ -29,7 +29,7 @@ export default function AIAnalysisReportViewer({ reportText, loading }) {
       style={{
         background: "#ffffff",
         borderRadius: "12px",
-        padding: "28px",
+        // padding: "28px",
         marginBottom: "30px",
         border: "1px solid #e5e7eb",
         fontFamily: "Inter, sans-serif",
@@ -37,6 +37,7 @@ export default function AIAnalysisReportViewer({ reportText, loading }) {
         lineHeight: "1.75",
         color: "#1f2937",
         textAlign: "left", // ✅ FORCE LEFT ALIGN
+        marginLeft:"10px"
       }}
     >
       <ReactMarkdown
@@ -45,18 +46,7 @@ export default function AIAnalysisReportViewer({ reportText, loading }) {
         rehypePlugins={[rehypeRaw, rehypeHighlight]}
         components={{
           /* ---------- TITLES ---------- */
-          h1: ({ node, ...props }) => (
-            <h1
-              style={{
-                textAlign: "center", // ✅ ONLY MAIN TITLE CENTERED
-                fontSize: "28px",
-                fontWeight: 700,
-                marginBottom: "28px",
-                color: "#111827",
-              }}
-              {...props}
-            />
-          ),
+          h1: () => null,
 
           h2: ({ node, ...props }) => (
             <h2
@@ -69,6 +59,7 @@ export default function AIAnalysisReportViewer({ reportText, loading }) {
                 paddingBottom: "6px",
                 color: "#111827",
                 textAlign: "left",
+                marginLeft:"10px"
               }}
               {...props}
             />
@@ -83,6 +74,7 @@ export default function AIAnalysisReportViewer({ reportText, loading }) {
                 marginBottom: "8px",
                 color: "#374151",
                 textAlign: "left",
+                marginLeft:"10px"
               }}
               {...props}
             />
@@ -95,6 +87,7 @@ export default function AIAnalysisReportViewer({ reportText, loading }) {
                 marginBottom: "10px",
                 color: "#2d2d2d",
                 textAlign: "left",
+                marginLeft:"10px"
               }}
               {...props}
             />
@@ -105,6 +98,7 @@ export default function AIAnalysisReportViewer({ reportText, loading }) {
               style={{
                 fontWeight: 600,
                 color: "#111827",
+                marginLeft:"10px"
               }}
               {...props}
             />
@@ -118,6 +112,7 @@ export default function AIAnalysisReportViewer({ reportText, loading }) {
                 marginBottom: "12px",
                 listStyleType: "disc",
                 textAlign: "left",
+                marginLeft:"10px"
               }}
               {...props}
             />
@@ -130,6 +125,7 @@ export default function AIAnalysisReportViewer({ reportText, loading }) {
                 marginBottom: "12px",
                 listStyleType: "decimal",
                 textAlign: "left",
+                marginLeft:"10px"
               }}
               {...props}
             />
@@ -139,6 +135,7 @@ export default function AIAnalysisReportViewer({ reportText, loading }) {
             <li
               style={{
                 marginBottom: "6px",
+                marginLeft:"10px"
               }}
               {...props}
             />
@@ -154,6 +151,7 @@ export default function AIAnalysisReportViewer({ reportText, loading }) {
                 marginBottom: "20px",
                 fontSize: "14px",
                 textAlign: "left",
+                marginLeft:"10px"
               }}
               {...props}
             />
@@ -167,6 +165,7 @@ export default function AIAnalysisReportViewer({ reportText, loading }) {
                 padding: "8px",
                 fontWeight: 600,
                 color: "#111827",
+                marginLeft:"10px"
               }}
               {...props}
             />
@@ -178,6 +177,7 @@ export default function AIAnalysisReportViewer({ reportText, loading }) {
                 border: "1px solid #e5e7eb",
                 padding: "8px",
                 color: "#374151",
+                marginLeft:"10px"
               }}
               {...props}
             />

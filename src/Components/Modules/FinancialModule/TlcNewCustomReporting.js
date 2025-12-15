@@ -3,10 +3,8 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import "../../../Styles/TlcNewCustomReporting.css";
 import TLCLogo from "../../../Images/TLCLogo.png";
-import UploadTlcIcon from "../../../Images/UploadTlcIcon.png";
 import { FiChevronDown } from "react-icons/fi";
 import parse, { domToReact } from "html-react-parser";
-import { RiDeleteBin6Line } from "react-icons/ri";
 import star from '../../../Images/star.png';
 import AIAnalysisReportViewer from "./TlcAiAnalysisReport";
 import incrementAnalysisCount from "./TLcAnalysisCount";
@@ -22,11 +20,17 @@ import TlcPayrollDepartmentIcon from "../../../Images/TlcPayrollDepartmentIcon.p
 import TlcPayrollTypeIcon from "../../../Images/TlcPayrollType.png"
 import TlcPayrollStateIcon from "../../../Images/TlcPayrollStateIcon.png"
 import TlcPayrollHistoryIcon from "../../../Images/TlcPayrollHistory.png"
+import UploadTlcIcon from "../../../Images/UploadTlcIcon.png";
+import { RiDeleteBin6Line } from "react-icons/ri";
 import TlcPayrollDownloadIcon from "../../../Images/TlcPayrollDownloadIcon.png"
 import { dummyData, dummyPayload } from "./TlcPayrollDummyData";
 import TlcSaveButton from "../../../Images/Tlc_Save_Button.png"
 import TlcCompareAnalyseIcon from "../../../Images/Tlc_Compare_Analyse_Icon.png"
-import TlcAiWordExporter from "./TlcAiWordExporter";
+import TlcAiWordExporter, { parseMarkdownToDocx } from "./TlcAiWordExporter";
+import { Document, Packer, Paragraph, HeadingLevel, ImageRun } from "docx";
+import { saveAs } from "file-saver";
+import html2canvas from "html2canvas";
+
 export default function TlcNewCustomerReporting(props) {
     // -------------------- MULTI TAB SUPPORT --------------------
     const USE_DUMMY_DATA = true;
@@ -141,6 +145,7 @@ export default function TlcNewCustomerReporting(props) {
     const [selectedHistoryId, setSelectedHistoryId] = useState(null);
     const [deleting, setDeleting] = useState(false);
     const [isAllowed, setIsAllowed] = useState(null);
+    const reportRef = useRef(null);
 
     const optionsState = [
         { label: "New South Wales", value: "New South Wales" },
@@ -218,6 +223,147 @@ export default function TlcNewCustomerReporting(props) {
         if (!start || !end) return null;
         return `${start.toLocaleDateString("en-US")} - ${end.toLocaleDateString("en-US")}`;
     };
+    // ✅ ADD THIS AT THE BOTTOM
+    const buildMarkdownDocxContent = (markdown) => {
+        if (!markdown) return [];
+
+        return [
+            new Paragraph({
+                text: "AI Summary Report",
+                heading: HeadingLevel.HEADING_1,
+                spacing: { after: 300 },
+            }),
+            ...parseMarkdownToDocx(markdown),
+        ];
+    };
+
+    const captureNode = async (node) => {
+        // ⏳ wait for SVG & fonts to paint
+        await new Promise((r) => setTimeout(r, 600));
+
+        const canvas = await html2canvas(node, {
+            scale: 2,
+            backgroundColor: "#ffffff",
+            useCORS: true,
+            foreignObjectRendering: true,
+        });
+
+        return {
+            data: Uint8Array.from(
+                atob(canvas.toDataURL("image/png").split(",")[1]),
+                (c) => c.charCodeAt(0)
+            ),
+            width: canvas.width,
+            height: canvas.height,
+        };
+    };
+
+    const handleDownloadWordReport = async () => {
+        if (!reportRef.current) return;
+
+        const children = [];
+
+        /* ================= TITLE ================= */
+        children.push(
+            new Paragraph({
+                text: "Payroll Analysis Report",
+                heading: HeadingLevel.TITLE,
+                spacing: { after: 400 },
+            })
+        );
+
+        children.push(
+            new Paragraph({
+                text: `Date Range: ${formatDateRange()}`,
+                spacing: { after: 300 },
+            })
+        );
+
+        /* ================= AI MARKDOWN (USING TlcAiWordExporter) ================= */
+        if (activeTabData.aiReport) {
+            children.push(...buildMarkdownDocxContent(activeTabData.aiReport));
+        }
+
+        /* ================= DASHBOARD ================= */
+        const sectionTitles = reportRef.current.querySelectorAll(
+            '[style*="font-weight: 600"]'
+        );
+
+        for (const sectionTitle of sectionTitles) {
+            children.push(
+                new Paragraph({
+                    text: sectionTitle.innerText,
+                    heading: HeadingLevel.HEADING_2,
+                    spacing: { before: 300, after: 200 },
+                })
+            );
+
+            /* ===== SCORE CARDS ===== */
+            const scoreCards =
+                sectionTitle.parentElement.querySelectorAll(".summary-card");
+
+            scoreCards.forEach((card) => {
+                const label = card.querySelector("p")?.innerText;
+                const value = card.querySelector("h3")?.innerText;
+
+                if (label && value) {
+                    children.push(
+                        new Paragraph({
+                            text: `${label}: ${value}`,
+                            spacing: { after: 120 },
+                        })
+                    );
+                }
+            });
+
+            /* ===== CHARTS ===== */
+            const charts = sectionTitle
+                .closest("section")
+                ?.querySelectorAll(".charts-grid > div")
+
+            await new Promise((r) => setTimeout(r, 300));
+
+            for (const chart of charts) {
+                console.log("chart",chart)
+                // ⛔ skip invisible / empty charts
+                if (!chart.offsetWidth || !chart.offsetHeight) continue;
+
+                const { data, width, height } = await captureNode(chart);
+
+                const maxWidth = 550;
+                const ratio = height / width;
+
+                children.push(
+                    new Paragraph({
+                        children: [
+                            new ImageRun({
+                                data, // ✅ ONLY Uint8Array goes here
+                                transformation: {
+                                    width: maxWidth,
+                                    height: Math.round(maxWidth * ratio), // ✅ aspect ratio safe
+                                },
+                            }),
+                        ],
+                        spacing: { after: 300 },
+                    })
+                );
+            }
+
+
+        }
+
+        /* ================= CREATE ONE WORD FILE ================= */
+        const doc = new Document({
+            sections: [{ children }],
+        });
+
+        const blob = await Packer.toBlob(doc);
+        saveAs(blob, `Payroll_Report_${formatDateRange()}.docx`);
+    };
+
+
+
+
 
     const handleFileChange = (e, type) => {
         const files = Array.from(e.target.files);
@@ -1076,7 +1222,7 @@ export default function TlcNewCustomerReporting(props) {
                 gap: "12px",
                 fontWeight: 600,
                 marginBottom: "12px",
-                color: "#fff",
+                color: "black",
             }}
         >
             {/* ⬇️ DOWN ARROW (LEFT) */}
@@ -1108,7 +1254,7 @@ export default function TlcNewCustomerReporting(props) {
                     }}
                 />
             )}
-            {showDownloadIcon && (
+            {/* {showDownloadIcon && (
                 <img
                     src={TlcPayrollDownloadIcon}
                     alt="Download AI Summary"
@@ -1123,7 +1269,7 @@ export default function TlcNewCustomerReporting(props) {
                         cursor: "pointer",
                     }}
                 />
-            )}
+            )} */}
         </div>
     );
 
@@ -1526,45 +1672,47 @@ export default function TlcNewCustomerReporting(props) {
                     Object.keys(activeTabData.analysisData).length === 0) && (
 
                     <section className="data-upload-wrapper">
-                        {[
-                            { key: "payroll", title: "Upload Data Context" },
-                            { key: "people", title: "Upload Data" },
-                        ].map((item) => {
+                        {(() => {
+                            const item = { key: "payroll", title: "Upload Data" };
                             const files = activeTabData.fileNames[item.key] || [];
 
                             return (
-                                <div key={item.key} className="data-upload-card">
-                                    {/* header */}
+                                <div className="data-upload-card">
+                                    {/* HEADER */}
                                     <div className="data-upload-header">
-                                        <span className="data-upload-template" onClick={() => {
-                                            const link = document.createElement("a");
-                                            link.href = "/templates/SmartRosteringTemplate.xlsx";
-                                            link.download = "Payroll Template.xlsx";
-                                            document.body.appendChild(link);
-                                            link.click();
-                                            document.body.removeChild(link);
-                                        }}>
+                                        <span
+                                            className="data-upload-template"
+                                            onClick={() => {
+                                                const link = document.createElement("a");
+                                                link.href = "/templates/SmartRosteringTemplate.xlsx";
+                                                link.download = "Payroll Template.xlsx";
+                                                document.body.appendChild(link);
+                                                link.click();
+                                                document.body.removeChild(link);
+                                            }}
+                                        >
+                                            Download Template
                                             <img
                                                 src={TlcPayrollDownloadIcon}
                                                 alt="download"
-                                                style={{ width: "14px", height: "14px" }}
+                                                style={{ width: "24px", height: "24px" }}
                                             />
-                                            Download Template
+
                                         </span>
-                                        <span className="data-upload-label" style={{ marginRight: "auto", marginLeft: "12px" }}>
+
+                                        <span
+                                            className="data-upload-label"
+                                            style={{ marginRight: "auto", marginLeft: "12px" }}
+                                        >
                                             {files.length === 0 ? "Upload Data" : "Upload Content"}
                                         </span>
-
                                     </div>
 
-
-                                    {/* drop area */}
+                                    {/* DROP AREA */}
                                     <div
                                         className="data-upload-droparea"
                                         onClick={() =>
-                                            document
-                                                .getElementById(`file-${activeTab}-${item.key}`)
-                                                .click()
+                                            document.getElementById(`file-${activeTab}-${item.key}`).click()
                                         }
                                     >
                                         <input
@@ -1575,7 +1723,6 @@ export default function TlcNewCustomerReporting(props) {
                                             hidden
                                             onChange={(e) => handleFileChange(e, item.key)}
                                         />
-
 
                                         {files.length === 0 ? (
                                             <div className="data-upload-empty">
@@ -1611,9 +1758,10 @@ export default function TlcNewCustomerReporting(props) {
                                                                             ...activeTabData.fileNames,
                                                                             [item.key]: updated,
                                                                         },
-                                                                        [`${item.key}Files`]: activeTabData[`${item.key}Files`]?.filter(
-                                                                            (_, i) => i !== idx
-                                                                        ),
+                                                                        [`${item.key}Files`]:
+                                                                            activeTabData[`${item.key}Files`]?.filter(
+                                                                                (_, i) => i !== idx
+                                                                            ),
                                                                     });
                                                                 }}
                                                             />
@@ -1621,13 +1769,13 @@ export default function TlcNewCustomerReporting(props) {
                                                     </div>
                                                 ))}
                                             </div>
-
                                         )}
                                     </div>
                                 </div>
                             );
-                        })}
+                        })()}
                     </section>
+
                 )}
             {activeTabData.stage === "loading" && (
                 <div className="inline-loader-wrapper">
@@ -1643,6 +1791,7 @@ export default function TlcNewCustomerReporting(props) {
 
                 {activeTabData.stage === "overview" && activeTabData.analysisData && (
                     <section
+                        ref={reportRef}
                         className={`dashboard ${!isAnyAccordionOpen ? "dashboard-decrease-margin-bottom" : ""}`}
                     >
                         <AccordionHeader
@@ -1675,6 +1824,7 @@ export default function TlcNewCustomerReporting(props) {
                                     <AIAnalysisReportViewer
                                         reportText={activeTabData.aiReport}
                                         loading={false}
+                                        onDownload={downloadWord}
                                     />
                                 )}
 
@@ -1705,7 +1855,14 @@ export default function TlcNewCustomerReporting(props) {
                                     ).map(([label, value], index) => (
                                         <div key={index} className="summary-card">
                                             <p>{label}</p>
-                                            <h3>{value}</h3>
+                                            <h3>
+                                                {typeof value === "number" || !isNaN(value)
+                                                    ? Number(value).toLocaleString(undefined, {
+                                                        minimumFractionDigits: 2,
+                                                        maximumFractionDigits: 2,
+                                                    })
+                                                    : value}
+                                            </h3>
                                         </div>
                                     ))}
                                 </div>
@@ -1802,16 +1959,56 @@ export default function TlcNewCustomerReporting(props) {
                         )}
                     </section>
                 )}
-
                 {activeTabData.stage === "filters" && !activeTabData.analysisData && (
-                    <button className="search-btn" onClick={handleAnalyse} disabled={activeTabData.loading}>
+                    <button className="search-btn" onClick={handleAnalyse} disabled={activeTabData.loading} >
                         {activeTabData.loading ? "Processing..." : "AI Analyse"}
+                        <img
+                            src={TlcPayrollInsightIcon}
+                            alt="AI Insight"
+                            style={{
+                                width: "18px",
+                                height: "18px",
+                                flexShrink: 0,
+                                filter: "brightness(0) invert(1)",
+                                marginLeft: "8px"
+                            }}
+                        />
                     </button>
                 )}
             </div>
 
             {activeTabData.stage !== "loading" && (
                 <section className="history-container">
+                    {activeTabData?.analysisData && <button
+                        onClick={handleDownloadWordReport}
+                        style={{
+                            background: "var(--Curki-2nd-Portal-1, #14C8A8)",
+                            color: "#fff",
+                            border: "none",
+                            padding: "8px 16px",
+                            borderRadius: "8px",
+                            fontSize: "14px",
+                            fontWeight: 400,
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
+                            marginLeft: "auto", // ✅ PUSH TO END
+                            marginBottom: "7px",
+                            opacity:
+                                activeTabData.loading || activeTabData.uploading?.accounts
+                                    ? 0.6
+                                    : 1,
+                        }}
+                    >
+                        <img
+                            src={TlcCompareAnalyseIcon}
+                            alt="download"
+                            style={{ width: "14px", height: "14px" }}
+                        />
+                        Download Report
+                    </button>
+                    }
                     <div
                         style={{
                             display: "flex",
@@ -1826,10 +2023,19 @@ export default function TlcNewCustomerReporting(props) {
                                 width: "22px",
                                 height: "21px",
                                 pointerEvents: "none",
-                                marginBottom:"13px"
+                                marginBottom: "13px"
                             }}
                         />
-                        <div className="history-title">History</div>
+                        <div
+                            style={{
+                                display: "flex",
+                                alignItems: "center",
+                                width: "100%",
+                            }}
+                        >
+                            <div className="history-title">History</div>
+                        </div>
+
                     </div>
 
                     {loadingHistory ? (

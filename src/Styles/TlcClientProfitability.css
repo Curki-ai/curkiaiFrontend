@@ -124,5 +124,24 @@
 .tab-btn:not(.active):hover {
     border-color: #bfbfbf;
 }
+/* Keep date picker popup from pushing layout */
+.date-filter-wrapper {
+  position: relative;
+  z-index: 5;
+}
+
+/* If your DateRangePicker uses react-datepicker internally */
+.react-datepicker-popper {
+  position: absolute !important;
+  z-index: 9999 !important;
+}
+
+/* Ensure grid items stay aligned */
+.filters-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(200px, 1fr));
+  gap: 12px;
+  align-items: start; /* 👈 important */
+}
 
 
