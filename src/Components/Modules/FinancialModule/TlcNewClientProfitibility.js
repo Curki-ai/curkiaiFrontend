@@ -1002,7 +1002,7 @@ const TlcNewClientProfitability = (props) => {
                         </button>
 
                     </div>
-                    {renderHistorySection()}
+                    {/* {renderHistorySection()} */}
                 </>
             ) : (
                 <>
@@ -1283,9 +1283,9 @@ const TlcNewClientProfitability = (props) => {
                             )}
                         </div>
                     )}
-                    {renderHistorySection()}
                 </>
             )}
+            {renderHistorySection()}
         </div>
     );
 };
