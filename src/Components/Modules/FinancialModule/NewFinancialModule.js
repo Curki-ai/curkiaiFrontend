@@ -229,53 +229,53 @@ const NewFinancialHealth = (props) => {
         e.target.value = "";
     };
 
-   const AccordionHeader = ({ title, isOpen, onClick }) => {
-    const showInsightIcon =
-        typeof title === "string" && title.startsWith("AI Insight");
+    const AccordionHeader = ({ title, isOpen, onClick }) => {
+        const showInsightIcon =
+            typeof title === "string" && title.startsWith("AI Insight");
 
-    return (
-        <div
-            onClick={onClick}
-            style={{
-                padding: "14px 18px",
-                background:
-                    "linear-gradient(180deg, #6C4CDC -65.32%, #FFFFFF 157.07%, #FFFFFF 226.61%)",
-                borderRadius: "8px",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                gap: "12px",
-                fontWeight: 600,
-                marginBottom: "12px",
-                color: "black",
-            }}
-        >
-            {/* Arrow */}
-            <img
-                src={TlcPayrollDownArrow}
-                alt="toggle"
+        return (
+            <div
+                onClick={onClick}
                 style={{
-                    width: "18px",
-                    height: "10px",
-                    transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
-                    transition: "transform 0.2s ease",
+                    padding: "14px 18px",
+                    background:
+                        "linear-gradient(180deg, #6C4CDC -65.32%, #FFFFFF 157.07%, #FFFFFF 226.61%)",
+                    borderRadius: "8px",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "12px",
+                    fontWeight: 600,
+                    marginBottom: "12px",
+                    color: "black",
                 }}
-            />
-
-            {/* Title */}
-            <span>{title}</span>
-
-            {/* ✅ ONLY AI INSIGHT ICON */}
-            {showInsightIcon && (
+            >
+                {/* Arrow */}
                 <img
-                    src={TlcPayrollInsightIcon}
-                    alt="AI Insight"
-                    style={{ width: "18px", height: "18px", marginLeft: "4px" }}
+                    src={TlcPayrollDownArrow}
+                    alt="toggle"
+                    style={{
+                        width: "18px",
+                        height: "10px",
+                        transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
+                        transition: "transform 0.2s ease",
+                    }}
                 />
-            )}
-        </div>
-    );
-};
+
+                {/* Title */}
+                <span>{title}</span>
+
+                {/* ✅ ONLY AI INSIGHT ICON */}
+                {showInsightIcon && (
+                    <img
+                        src={TlcPayrollInsightIcon}
+                        alt="AI Insight"
+                        style={{ width: "18px", height: "18px", marginLeft: "4px" }}
+                    />
+                )}
+            </div>
+        );
+    };
 
 
 
@@ -679,7 +679,7 @@ const NewFinancialHealth = (props) => {
                     <div className="financial-header">
                         <div
                             className="role-selector"
-                            style={{ display: "flex", gap: "16px", alignItems: "center" }}
+                            style={{ display: "flex", gap: "24px", alignItems: "center" }}
                         >
                             <WhoAreYouToggle
                                 value={selectedActor === "aged-care" ? "Aged Care" : "NDIS"}
@@ -705,7 +705,7 @@ const NewFinancialHealth = (props) => {
                         <div className="sync-toggle">
                             <div
                                 style={{
-                                    fontSize: "14px",
+                                    fontSize: "13px",
                                     fontWeight: "500",
                                     fontFamily: "Inter",
                                 }}
@@ -722,23 +722,14 @@ const NewFinancialHealth = (props) => {
                     </div>
                     <div
                         style={{
-                            borderBottom: "1px solid #E5E7EB",
-                            background: "#fff",
-                        }}
-                    ></div>
-                    <div
-                        style={{
                             display: "flex",
-                            alignItems: "flex-start",
+                            alignItems: "center",
                             justifyContent: "space-between",
                             width: "100%",
-                            // marginTop: "12px",
                         }}
                     >
                         {/* LEFT: UI TABS */}
-                        <div>
-                            {renderUiTabBar()}
-                        </div>
+                        {renderUiTabBar()}
 
                         {/* RIGHT: COMPARE & ANALYSE */}
                         <div
@@ -873,63 +864,52 @@ const NewFinancialHealth = (props) => {
                         </div>
                     </section>
 
-                    <div>
-
-                        <div
-                            className="uploader-grid"
-                            style={{ display: "flex", justifyContent: "center" }}
+                    <section className="data-upload-wrapper">
+                        <TlcUploadBox
+                            id="financial-health-files"
+                            title="Upload Financial Data"
+                            subtitle="Upload multiple .xlsx, .csv or .xls files"
+                            accept=".xlsx,.xls,.csv"
+                            files={financialReportFiles}
+                            setFiles={setFinancialReportFiles}
+                            multiple
+                            onTemplateDownload={() => {
+                                const link = document.createElement("a");
+                                link.href = "/templates/FinancialTemplate.xlsx";
+                                link.download = "FinancialTemplate.xlsx";
+                                document.body.appendChild(link);
+                                link.click();
+                                document.body.removeChild(link);
+                            }}
+                        />
+                    </section>
+                    <div className="search-section">
+                        <button
+                            className="analyse-btn"
+                            disabled={isButtonDisabled || isFinancialProcessing}
+                            style={{
+                                backgroundColor:
+                                    isButtonDisabled || isFinancialProcessing ? "#A1A1AA" : "#000",
+                                cursor: isFinancialProcessing ? "not-allowed" : "pointer",
+                            }}
+                            onClick={handleAnalyse}
                         >
-
-                            <div style={{ width: "50%" }}>
-
-                                <TlcUploadBox
-                                    id="financial-health-files"
-                                    title="Upload Financial Data"
-                                    subtitle="Upload multiple .xlsx, .csv or .xls files"
-                                    accept=".xlsx,.xls,.csv"
-                                    files={financialReportFiles}
-                                    setFiles={setFinancialReportFiles}
-                                    multiple
-                                    onTemplateDownload={() => {
-                                        const link = document.createElement("a");
-                                        link.href = "/templates/FinancialTemplate.xlsx";
-                                        link.download = "FinancialTemplate.xlsx";
-                                        document.body.appendChild(link);
-                                        link.click();
-                                        document.body.removeChild(link);
-                                    }}
-                                />
-
-                            </div>
-                        </div>
+                            {isFinancialProcessing ? (
+                                `${financialprogress}% Processing...`
+                            ) : (
+                                <div
+                                    style={{ display: "flex", alignItems: "center", gap: "10px" }}
+                                >
+                                    Analyse
+                                    <img
+                                        src={star}
+                                        alt="img"
+                                        style={{ width: "20px", height: "20px" }}
+                                    />
+                                </div>
+                            )}
+                        </button>
                     </div>
-
-                    <button
-                        className="analyse-btn"
-                        disabled={isButtonDisabled || isFinancialProcessing}
-                        style={{
-                            backgroundColor:
-                                isButtonDisabled || isFinancialProcessing ? "#A1A1AA" : "#000",
-                            cursor: isFinancialProcessing ? "not-allowed" : "pointer",
-                            marginRight: "80px"
-                        }}
-                        onClick={handleAnalyse}
-                    >
-                        {isFinancialProcessing ? (
-                            `${financialprogress}% Processing...`
-                        ) : (
-                            <div
-                                style={{ display: "flex", alignItems: "center", gap: "10px" }}
-                            >
-                                Analyse
-                                <img
-                                    src={star}
-                                    alt="img"
-                                    style={{ width: "20px", height: "20px" }}
-                                />
-                            </div>
-                        )}
-                    </button>
                     <div
                         style={{
                             fontSize: "12px",
@@ -938,7 +918,6 @@ const NewFinancialHealth = (props) => {
                             fontWeight: "400",
                             textAlign: "center",
                             marginTop: "12px",
-                            marginRight: "70px"
                         }}
                     >
                         **Estimated Time to Analyse 4 min**

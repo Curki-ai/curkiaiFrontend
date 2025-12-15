@@ -40,7 +40,7 @@ const MultiSelectCustom = ({
         className="custom-input"
         onClick={() => setOpen(!open)}
         style={{
-          height,
+          height: placeholder === "Role" ? "31px" : height,
           display: "flex",
           alignItems: "center",
           border: "1px solid #D1D5DB",

@@ -150,7 +150,6 @@ const TlcNewClientProfitability = (props) => {
                 alignItems: "center",
                 marginBottom: "16px",
                 paddingTop: "16px",
-                marginTop: "12px"
             }}
         >
             {uiTabs.map(tab => (
@@ -755,7 +754,7 @@ const TlcNewClientProfitability = (props) => {
             <div className="financial-header">
                 <div
                     className="role-selector"
-                    style={{ display: "flex", gap: "16px", alignItems: "center" }}
+                    style={{ display: "flex", gap: "24px", alignItems: "center" }}
                 >
                     <WhoAreYouToggle
                         value={selectedActor === "aged-care" ? "Aged Care" : "NDIS"}
@@ -797,7 +796,7 @@ const TlcNewClientProfitability = (props) => {
                 <div className="sync-toggle">
                     <div
                         style={{
-                            fontSize: "14px",
+                            fontSize: "13px",
                             fontWeight: "500",
                             fontFamily: "Inter",
                         }}
@@ -812,12 +811,6 @@ const TlcNewClientProfitability = (props) => {
                     />
                 </div>
             </div>
-            <div
-                style={{
-                    borderBottom: "1px solid #E5E7EB",
-                    background: "#fff",
-                }}
-            ></div>
             <div className="left-headerss">
                 {/* {responseData && <img src={TlcLogo} alt="Logo" className="tlclogo" />}
                  */}
@@ -972,35 +965,29 @@ const TlcNewClientProfitability = (props) => {
                             </div>
                         </section>
 
-                        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginTop: '30px' }}>
-                            <div style={{ marginBottom: "16px", width: '40%' }}>
-                                {/* <div style={{ fontSize: "14px", fontFamily: "Inter", fontWeight: 500, marginBottom: '6px', }}>
-                                Upload Receivables, Payables and Profitables Data
-                            </div> */}
-
-                                <TlcUploadBox
-                                    id="client-profit-files"
-                                    title="Upload Data"
-                                    subtitle=".XLSX, .XLS"
-                                    accept=".xlsx,.xls"
-                                    files={clientFiles}
-                                    setFiles={setClientFiles}
-                                    onTemplateDownload={() => {
-                                        const link = document.createElement("a");
-                                        link.href = "/templates/ClientProfitabilityTemplate.xlsx";
-                                        link.download = "ClientProfitabilityTemplate.xlsx";
-                                        document.body.appendChild(link);
-                                        link.click();
-                                        document.body.removeChild(link);
-                                    }}
-                                />
-                            </div>
+                        <section className="data-upload-wrapper">
+                            <TlcUploadBox
+                                id="client-profit-files"
+                                title="Upload Data"
+                                subtitle=".XLSX, .XLS"
+                                accept=".xlsx,.xls"
+                                files={clientFiles}
+                                setFiles={setClientFiles}
+                                onTemplateDownload={() => {
+                                    const link = document.createElement("a");
+                                    link.href = "/templates/ClientProfitabilityTemplate.xlsx";
+                                    link.download = "ClientProfitabilityTemplate.xlsx";
+                                    document.body.appendChild(link);
+                                    link.click();
+                                    document.body.removeChild(link);
+                                }}
+                            />
+                        </section>
+                        <div className="search-section">
+                            <button className="analyse-btn" disabled={isTlcClientProfitabilityLoading} style={{ backgroundColor: '#000' }} onClick={handleAnalyse}>
+                                {isTlcClientProfitabilityLoading ? `Analysing...` : <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>Analyse<img src={star} alt='img' style={{ width: '20px', height: '20px' }} /></div>}
+                            </button>
                         </div>
-
-                        <button className="analyse-btn" disabled={isTlcClientProfitabilityLoading} style={{ backgroundColor: '#000', marginTop: '20px' }} onClick={handleAnalyse}>
-                            {isTlcClientProfitabilityLoading ? `Analysing...` : <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>Analyse<img src={star} alt='img' style={{ width: '20px', height: '20px' }} /></div>}
-                        </button>
-
                     </div>
                     {/* {renderHistorySection()} */}
                 </>
@@ -1055,7 +1042,7 @@ const TlcNewClientProfitability = (props) => {
                     {/* AI Panel */}
                     {/* ================= AI INSIGHT ACCORDION ================= */}
                     <AccordionHeader
-                         title={
+                        title={
                             startDate && endDate
                                 ? `AI Insight (${startDate.toLocaleDateString("en-US")} - ${endDate.toLocaleDateString("en-US")})`
                                 : "Exported Data"
@@ -1250,7 +1237,7 @@ const TlcNewClientProfitability = (props) => {
 
                     {/* ================= JSON TABLE ACCORDION ================= */}
                     <AccordionHeader
-                       title={
+                        title={
                             startDate && endDate
                                 ? `Participant Level Details (${startDate.toLocaleDateString("en-US")} - ${endDate.toLocaleDateString("en-US")})`
                                 : "Participant Level Details"
