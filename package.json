@@ -51,7 +51,7 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "CI=false GENERATE_SOURCEMAP=false react-scripts build",
+    "build": "NODE_OPTIONS=--max_old_space_size=4096 CI=false GENERATE_SOURCEMAP=false react-scripts build",
     "test": "echo \"Skipping tests during deployment\" && exit 0",
     "eject": "react-scripts eject"
   },
