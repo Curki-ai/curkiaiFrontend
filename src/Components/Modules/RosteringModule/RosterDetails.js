@@ -161,7 +161,7 @@ const RosterDetails = ({ setScreen, rosteringResponse, API_BASE, selectedClient,
 
                 rosteringManagers: [
                     {
-                        name: "Kris",
+                        name: "Rostering Manager",
                         email: userEmail,
                         role: "RM"
                     }

@@ -51,12 +51,12 @@ const TlcNewClientProfitability = (props) => {
     const [payload, setPayload] = useState(null);
     const [isAllowed, setIsAllowed] = useState(null);
     const [aiAccordionOpen, setAiAccordionOpen] = useState(false);
-    const [chartsAccordionOpen, setChartsAccordionOpen] = useState(true);
-    const [tablesAccordionOpen, setTablesAccordionOpen] = useState(true);
-    const [directAccordionOpen, setDirectAccordionOpen] = useState(true);
+    const [chartsAccordionOpen, setChartsAccordionOpen] = useState(false);
+    const [tablesAccordionOpen, setTablesAccordionOpen] = useState(false);
+    const [directAccordionOpen, setDirectAccordionOpen] = useState(false);
     const [planAccordionOpen, setPlanAccordionOpen] = useState(false);
-    const [scorecardAccordionOpen, setScorecardAccordionOpen] = useState(true);
-    const [jsonTableAccordionOpen, setJsonTableAccordionOpen] = useState(true);
+    const [scorecardAccordionOpen, setScorecardAccordionOpen] = useState(false);
+    const [jsonTableAccordionOpen, setJsonTableAccordionOpen] = useState(false);
     const [selectedState, setSelectedState] = useState([]);
     const [selectedDepartment, setSelectedDepartment] = useState([]);
     const [selectedType, setSelectedType] = useState([]);

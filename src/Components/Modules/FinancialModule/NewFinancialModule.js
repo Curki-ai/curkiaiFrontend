@@ -67,9 +67,9 @@ const NewFinancialHealth = (props) => {
 
     const [titleArray, setTitleArray] = useState([]);
     const [accordions, setAccordions] = useState({
-        aiInsight: true,
-        charts: true,
-        summary: true,
+        aiInsight: false,
+        charts: false,
+        summary: false,
     });
     const [aiInsightOpen, setAiInsightOpen] = useState(false);
     const [historyList, setHistoryList] = useState([]);
