@@ -55,6 +55,7 @@ const TlcNewClientProfitability = (props) => {
     const [tablesAccordionOpen, setTablesAccordionOpen] = useState(false);
     const [directAccordionOpen, setDirectAccordionOpen] = useState(false);
     const [planAccordionOpen, setPlanAccordionOpen] = useState(false);
+    const [scorecardAccordionOpen, setScorecardAccordionOpen] = useState(false);
     const [jsonTableAccordionOpen, setJsonTableAccordionOpen] = useState(false);
     const [selectedState, setSelectedState] = useState([]);
     const [selectedDepartment, setSelectedDepartment] = useState([]);
@@ -68,8 +69,7 @@ const TlcNewClientProfitability = (props) => {
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [selectedHistoryId, setSelectedHistoryId] = useState(null);
 
-    // const BASE_URL = "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net";
-    const BASE_URL = "https://curki-backend-api-container.yellowflower-c21bea82.australiaeast.azurecontainerapps.io"
+    const BASE_URL = "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net";
     // 🔹 MOCK FILTER OPTIONS (SHOWCASE ONLY)
     const optionsState = [
         { label: "NSW", value: "NSW" },
@@ -277,58 +277,21 @@ const TlcNewClientProfitability = (props) => {
             )}
         </div>
     );
-    // const handleUpload = async () => {
-    //     try {
-    //         const formData = new FormData();
-    //         for (let file of selectedFiles) formData.append("files", file);
-
-    //         console.log("form data",formData)
-    //         const uploadRes = await fetch(`${BASE_URL}/header_modules/clients_profitability/analyze`, {
-    //             method: "POST",
-    //             body: formData
-    //         });
-
-    //         const uploadData = await uploadRes.json();
-    //         console.log("UPLOAD RESPONSE", uploadData);
-
-    //         // const ids = uploadData.files?.map(f => f.documentId) || [];
-    //         // setDocumentIds(ids);
-
-    //         return uploadData;
-    //     } catch (err) {
-    //         console.error(err);
-    //         return null;
-    //     }
-    // };
     const handleUpload = async () => {
         try {
             const formData = new FormData();
+            for (let file of selectedFiles) formData.append("files", file);
 
-            selectedFiles.forEach((file) => {
-                if (file.name.endsWith(".txt")) {
-                    // ✅ what backend wants
-                    formData.append("kb_file", file);
-                } else {
-                    // ✅ excel files
-                    formData.append("files", file);
-                }
+            const uploadRes = await fetch(`${BASE_URL}/tlcClientProfitibility/upload-profitibility`, {
+                method: "POST",
+                body: formData
             });
-
-            // DEBUG (important once)
-            for (const pair of formData.entries()) {
-                console.log("FD:", pair[0], pair[1].name);
-            }
-
-            const uploadRes = await fetch(
-                `${BASE_URL}/header_modules/clients_profitability/analyze`,
-                {
-                    method: "POST",
-                    body: formData, // ❗ no headers
-                }
-            );
 
             const uploadData = await uploadRes.json();
             console.log("UPLOAD RESPONSE", uploadData);
+
+            const ids = uploadData.files?.map(f => f.documentId) || [];
+            setDocumentIds(ids);
 
             return uploadData;
         } catch (err) {
@@ -338,34 +301,34 @@ const TlcNewClientProfitability = (props) => {
     };
 
 
-    // const handleFinalAnalysis = async (finalPayload) => {
-    //     console.log("props.tlcClientProfitabilityPayload in handleFinal analysis", props?.tlcClientProfitabilityPayload)
-    //     console.log("finalPayload", finalPayload)
-    //     try {
-    //         console.log("🔄 Starting final analysis request...");
-    //         const analyzeRes = await fetch(
-    //             `${BASE_URL}/tlcClientProfitibility/analyze-from-files?userEmail=${userEmail}`,
-    //             {
-    //                 method: "POST",
-    //                 headers: { "Content-Type": "application/json" },
-    //                 body: JSON.stringify({ payload: finalPayload })
-    //             }
-    //         );
+    const handleFinalAnalysis = async (finalPayload) => {
+        console.log("props.tlcClientProfitabilityPayload in handleFinal analysis", props?.tlcClientProfitabilityPayload)
+        console.log("finalPayload", finalPayload)
+        try {
+            console.log("🔄 Starting final analysis request...");
+            const analyzeRes = await fetch(
+                `${BASE_URL}/tlcClientProfitibility/analyze-from-files?userEmail=${userEmail}`,
+                {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ payload: finalPayload })
+                }
+            );
 
 
-    //         if (!analyzeRes.ok) {
-    //             throw new Error(`HTTP error! status: ${analyzeRes.status}`);
-    //         }
+            if (!analyzeRes.ok) {
+                throw new Error(`HTTP error! status: ${analyzeRes.status}`);
+            }
 
-    //         const analyzeData = await analyzeRes.json();
-    //         console.log("✅ FINAL ANALYSIS RESPONSE:", analyzeData);
-    //         setResponseData(analyzeData);
-    //         return analyzeData;
-    //     } catch (error) {
-    //         console.error("❌ Final analysis error:", error);
-    //         throw error; // Re-throw to handle in calling function
-    //     }
-    // };
+            const analyzeData = await analyzeRes.json();
+            console.log("✅ FINAL ANALYSIS RESPONSE:", analyzeData);
+            setResponseData(analyzeData);
+            return analyzeData;
+        } catch (error) {
+            console.error("❌ Final analysis error:", error);
+            throw error; // Re-throw to handle in calling function
+        }
+    };
 
     const handleFileChange = (e) => {
         const fileList = Array.from(e.target.files);
@@ -380,10 +343,10 @@ const TlcNewClientProfitability = (props) => {
 
     const handleAnalyse = async () => {
         try {
-            // if (!startDate || !endDate) {
-            //     alert("Please select both start and end months");
-            //     return;
-            // }
+            if (!startDate || !endDate) {
+                alert("Please select both start and end months");
+                return;
+            }
 
             setTlcClientProfitabilityLoading(true);
 
@@ -392,12 +355,9 @@ const TlcNewClientProfitability = (props) => {
             // Upload → get sessionId
             if (selectedFiles.length > 0) {
                 const uploadData = await handleUpload();
-                // sessionId = uploadData?.sessionId || null;
-                setResponseData(uploadData);
-                onPrepareAiPayload({
-                    table_data: uploadData.table
-                });
-                // console.log("🆔 SESSION FROM UPLOAD:", sessionId);
+                sessionId = uploadData?.sessionId || null;
+
+                console.log("🆔 SESSION FROM UPLOAD:", sessionId);
             } else {
                 console.log("📝 No upload → prepare without sessionId");
             }
@@ -406,22 +366,22 @@ const TlcNewClientProfitability = (props) => {
             const safeSessionId = sessionId ? sessionId : undefined;
 
             // Prepare analysis
-            // const prepareData = await handlePrepareAnalysis(safeSessionId);
-            // console.log("PREPARE DATA:", prepareData);
+            const prepareData = await handlePrepareAnalysis(safeSessionId);
+            console.log("PREPARE DATA:", prepareData);
 
-            // if (!prepareData?.ok) {
-            //     alert("Prepare failed");
-            //     return;
-            // }
+            if (!prepareData?.ok) {
+                alert("Prepare failed");
+                return;
+            }
 
             // Save AI payload
-            // if (prepareData.payload && onPrepareAiPayload) {
-            //     onPrepareAiPayload(prepareData?.payload);
-            //     setPayload(prepareData?.payload)
-            // }
+            if (prepareData.payload && onPrepareAiPayload) {
+                onPrepareAiPayload(prepareData?.payload);
+                setPayload(prepareData?.payload)
+            }
 
             // Final server analysis
-            // await handleFinalAnalysis(prepareData.payload);
+            await handleFinalAnalysis(prepareData.payload);
 
         } catch (err) {
             console.error("❌ ERROR IN handleAnalyse:", err);
@@ -430,25 +390,77 @@ const TlcNewClientProfitability = (props) => {
             setTlcClientProfitabilityLoading(false);
         }
     };
-    const fetchAiSummary = async () => {
+
+
+
+    const handlePrepareAnalysis = async (sessionId) => {
         try {
-            if (!responseData?.table || responseData.table.length === 0) {
-                console.warn("No table data to send to AI");
-                return;
+            const from = formatYearMonth(startDate);
+            const to = formatYearMonth(endDate);
+
+            console.log("from", from); // 2025-07
+            console.log("to", to);     // 2025-10
+            console.log("📊 Preparing analysis with:", { from, to, sessionId });
+
+            // BASE URL
+            let url = `${BASE_URL}/tlcClientProfitibility/prepare-analysis-data?from=${from}&to=${to}`;
+
+            // 🚫 If sessionId null OR undefined → DO NOT append
+            if (sessionId && sessionId !== "null") {
+                url += `&sessionId=${sessionId}`;
             }
-            console.log("responseData in fetch ai summary", responseData)
+
+            console.log("➡️ FINAL PREPARE URL:", url);
+
+            const prepareRes = await fetch(url, { method: "GET" });
+
+            const text = await prepareRes.text();
+
+            // 🔥 Fix for HTML parsing issue
+            try {
+                return JSON.parse(text);
+            } catch (parseErr) {
+                console.error("❌ Server returned HTML instead of JSON:", text.slice(0, 200));
+                return { ok: false, message: "Server returned invalid JSON" };
+            }
+
+        } catch (error) {
+            console.error("Prepare analysis error:", error);
+            return { ok: false, message: error.message };
+        }
+    };
+
+
+
+    const prepareAiPayload = async (payload) => {
+        try {
             const res = await fetch(
-                `${BASE_URL}/header_modules/clients_profitability/ai_analysis`,
+                `${BASE_URL}/tlcClientProfitibility/prepare_ai_payload`,
                 {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-
-                    // ✅ DIRECTLY SEND TABLE
-                    body: JSON.stringify({
-                        table_data: responseData.table
-                    })
+                    body: JSON.stringify({ payload })
                 }
             );
+            const data = await res.json();
+            console.log("AI PREPARE:", data);
+            return data;
+        } catch (err) {
+            console.error("AI prepare error:", err);
+        }
+    };
+
+    const fetchAiSummary = async () => {
+        try {
+            const res = await fetch(
+                `${BASE_URL}/tlcClientProfitibility/ask_ai_summary?userEmail=${userEmail}`,
+                {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ payload: props.tlcClientProfitabilityPayload })
+                }
+            );
+
 
             const data = await res.json();
             console.log("AI SUMMARY:", data);
@@ -519,223 +531,212 @@ const TlcNewClientProfitability = (props) => {
         return `${from} – ${to}`;
     };
 
-    // useEffect(() => {
-    //     if (!responseData?.direct_service) return;
-
-    //     const summary = responseData.direct_service.tables.by_reference;
-    //     const details = responseData.direct_service.tables.detail;
-
-    //     const summaryCols = summary.columns || [];
-    //     const summaryRows = summary.rows || [];
-    //     const detailCols = details.columns || [];
-    //     const detailRows = details.rows || [];
-
-    //     // Normalize keys
-    //     const normalizeObjKeys = (obj) => {
-    //         const normalized = {};
-    //         Object.keys(obj || {}).forEach(k => {
-    //             normalized[k.trim().toLowerCase()] = obj[k];
-    //         });
-    //         return normalized;
-    //     };
-
-    //     const findIndex = (cols, keywords) =>
-    //         cols.findIndex(c =>
-    //             keywords.some(k =>
-    //                 c?.toString?.().toLowerCase().includes(k.toLowerCase())
-    //             )
-    //         );
-
-    //     const sNdisIndex = findIndex(summaryCols, ["ndis", "reference"]);
-    //     const sPartIndex = findIndex(summaryCols, ["participant"]);
-
-    //     const dNdisIndex = findIndex(detailCols, ["ndis", "reference"]);
-    //     const dPartIndex = findIndex(detailCols, ["participant"]);
-
-    //     if (sNdisIndex < 0 || sPartIndex < 0 || dNdisIndex < 0 || dPartIndex < 0) {
-    //         console.error("🏳️ Required key columns missing.");
-    //         return;
-    //     }
-
-    //     // Convert row → array by column order
-    //     const toRowArray = (obj, cols) => {
-    //         const norm = normalizeObjKeys(obj);
-    //         return cols.map(c => norm[c.toLowerCase()] ?? "");
-    //     };
-
-    //     // Identify detail-only columns
-    //     const detailOnlyCols = detailCols.filter(c => !summaryCols.includes(c));
-
-    //     // ---------------------------
-    //     // BUILD DETAIL MAP
-    //     // ---------------------------
-    //     const detailMap = {};
-
-    //     detailRows.forEach(dr => {
-    //         const norm = normalizeObjKeys(dr);
-
-    //         // Skip if detail is actually same as summary (happens when no extra columns)
-    //         if (detailOnlyCols.length === 0) return;
-
-    //         const ndis =
-    //             dr[detailCols[dNdisIndex]] ??
-    //             dr[dNdisIndex] ??
-    //             norm[detailCols[dNdisIndex].toLowerCase()] ??
-    //             "";
-
-    //         const part =
-    //             dr[detailCols[dPartIndex]] ??
-    //             dr[dPartIndex] ??
-    //             norm[detailCols[dPartIndex].toLowerCase()] ??
-    //             "";
-
-    //         const key = `${ndis}___${part}`;
-
-    //         if (!detailMap[key]) detailMap[key] = [];
-    //         detailMap[key].push(toRowArray(dr, detailCols));
-    //     });
-
-    //     // ---------------------------
-    //     // REMOVE DUPLICATE SUMMARY ROWS
-    //     // ---------------------------
-    //     const seenParents = new Set();
-    //     const uniqueSummaryRows = [];
-
-    //     summaryRows.forEach(sr => {
-    //         const parent = toRowArray(sr, summaryCols);
-
-    //         const sNdis =
-    //             sr[summaryCols[sNdisIndex]] ??
-    //             sr[sNdisIndex] ??
-    //             parent[sNdisIndex] ??
-    //             "";
-
-    //         const sPart =
-    //             sr[summaryCols[sPartIndex]] ??
-    //             sr[sPartIndex] ??
-    //             parent[sPartIndex] ??
-    //             "";
-
-    //         const key = `${sNdis}___${sPart}`;
-
-    //         if (!seenParents.has(key)) {
-    //             seenParents.add(key);
-    //             uniqueSummaryRows.push(sr);
-    //         }
-    //     });
-
-    //     // ---------------------------
-    //     // MERGE SUMMARY + DETAIL
-    //     // ---------------------------
-    //     const finalRows = uniqueSummaryRows.map(sr => {
-    //         const parent = toRowArray(sr, summaryCols);
-
-    //         const sNdis =
-    //             sr[summaryCols[sNdisIndex]] ??
-    //             sr[sNdisIndex] ??
-    //             parent[sNdisIndex] ??
-    //             "";
-
-    //         const sPart =
-    //             sr[summaryCols[sPartIndex]] ??
-    //             sr[sPartIndex] ??
-    //             parent[sPartIndex] ??
-    //             "";
-
-    //         const key = `${sNdis}___${sPart}`;
-
-    //         return {
-    //             parent,
-    //             children: detailMap[key] || [],
-    //             participant: sPart,
-    //             ndis: sNdis
-    //         };
-    //     });
-
-    //     // ---------------------------
-    //     // FILTER VALUES
-    //     // ---------------------------
-    //     const regions = new Set();
-    //     const depts = new Set();
-
-    //     const regionIdx = findIndex(detailCols, ["region"]);
-    //     const deptIdx = findIndex(detailCols, ["department", "dept"]);
-
-    //     detailRows.forEach(dr => {
-    //         const n = normalizeObjKeys(dr);
-
-    //         if (regionIdx >= 0) {
-    //             const r = n[detailCols[regionIdx].toLowerCase()];
-    //             if (r) regions.add(r);
-    //         }
-    //         if (deptIdx >= 0) {
-    //             const d = n[detailCols[deptIdx].toLowerCase()];
-    //             if (d) depts.add(d);
-    //         }
-    //     });
-
-    //     // ---------------------------
-    //     // SET FINAL OUTPUT
-    //     // ---------------------------
-    //     setDirectFinalTable({
-    //         columns: summaryCols,
-    //         rows: finalRows,
-    //         detailCols,
-    //         regions: [...regions],
-    //         departments: [...depts]
-    //     });
-
-    // }, [responseData]);
     useEffect(() => {
-        if (!responseData?.table || responseData.table.length === 0) return;
+        if (!responseData?.direct_service) return;
 
-        setDirectFinalTable({
-            columns: Object.keys(responseData.table[0]),
-            rows: responseData.table,
-            regions: [],
-            departments: []
+        const summary = responseData.direct_service.tables.by_reference;
+        const details = responseData.direct_service.tables.detail;
+
+        const summaryCols = summary.columns || [];
+        const summaryRows = summary.rows || [];
+        const detailCols = details.columns || [];
+        const detailRows = details.rows || [];
+
+        // Normalize keys
+        const normalizeObjKeys = (obj) => {
+            const normalized = {};
+            Object.keys(obj || {}).forEach(k => {
+                normalized[k.trim().toLowerCase()] = obj[k];
+            });
+            return normalized;
+        };
+
+        const findIndex = (cols, keywords) =>
+            cols.findIndex(c =>
+                keywords.some(k =>
+                    c?.toString?.().toLowerCase().includes(k.toLowerCase())
+                )
+            );
+
+        const sNdisIndex = findIndex(summaryCols, ["ndis", "reference"]);
+        const sPartIndex = findIndex(summaryCols, ["participant"]);
+
+        const dNdisIndex = findIndex(detailCols, ["ndis", "reference"]);
+        const dPartIndex = findIndex(detailCols, ["participant"]);
+
+        if (sNdisIndex < 0 || sPartIndex < 0 || dNdisIndex < 0 || dPartIndex < 0) {
+            console.error("🏳️ Required key columns missing.");
+            return;
+        }
+
+        // Convert row → array by column order
+        const toRowArray = (obj, cols) => {
+            const norm = normalizeObjKeys(obj);
+            return cols.map(c => norm[c.toLowerCase()] ?? "");
+        };
+
+        // Identify detail-only columns
+        const detailOnlyCols = detailCols.filter(c => !summaryCols.includes(c));
+
+        // ---------------------------
+        // BUILD DETAIL MAP
+        // ---------------------------
+        const detailMap = {};
+
+        detailRows.forEach(dr => {
+            const norm = normalizeObjKeys(dr);
+
+            // Skip if detail is actually same as summary (happens when no extra columns)
+            if (detailOnlyCols.length === 0) return;
+
+            const ndis =
+                dr[detailCols[dNdisIndex]] ??
+                dr[dNdisIndex] ??
+                norm[detailCols[dNdisIndex].toLowerCase()] ??
+                "";
+
+            const part =
+                dr[detailCols[dPartIndex]] ??
+                dr[dPartIndex] ??
+                norm[detailCols[dPartIndex].toLowerCase()] ??
+                "";
+
+            const key = `${ndis}___${part}`;
+
+            if (!detailMap[key]) detailMap[key] = [];
+            detailMap[key].push(toRowArray(dr, detailCols));
         });
-    }, [responseData]);
 
-    const handleDownloadReport = () => {
+        // ---------------------------
+        // REMOVE DUPLICATE SUMMARY ROWS
+        // ---------------------------
+        const seenParents = new Set();
+        const uniqueSummaryRows = [];
+
+        summaryRows.forEach(sr => {
+            const parent = toRowArray(sr, summaryCols);
+
+            const sNdis =
+                sr[summaryCols[sNdisIndex]] ??
+                sr[sNdisIndex] ??
+                parent[sNdisIndex] ??
+                "";
+
+            const sPart =
+                sr[summaryCols[sPartIndex]] ??
+                sr[sPartIndex] ??
+                parent[sPartIndex] ??
+                "";
+
+            const key = `${sNdis}___${sPart}`;
+
+            if (!seenParents.has(key)) {
+                seenParents.add(key);
+                uniqueSummaryRows.push(sr);
+            }
+        });
+
+        // ---------------------------
+        // MERGE SUMMARY + DETAIL
+        // ---------------------------
+        const finalRows = uniqueSummaryRows.map(sr => {
+            const parent = toRowArray(sr, summaryCols);
+
+            const sNdis =
+                sr[summaryCols[sNdisIndex]] ??
+                sr[sNdisIndex] ??
+                parent[sNdisIndex] ??
+                "";
+
+            const sPart =
+                sr[summaryCols[sPartIndex]] ??
+                sr[sPartIndex] ??
+                parent[sPartIndex] ??
+                "";
+
+            const key = `${sNdis}___${sPart}`;
+
+            return {
+                parent,
+                children: detailMap[key] || [],
+                participant: sPart,
+                ndis: sNdis
+            };
+        });
+
+        // ---------------------------
+        // FILTER VALUES
+        // ---------------------------
+        const regions = new Set();
+        const depts = new Set();
+
+        const regionIdx = findIndex(detailCols, ["region"]);
+        const deptIdx = findIndex(detailCols, ["department", "dept"]);
+
+        detailRows.forEach(dr => {
+            const n = normalizeObjKeys(dr);
+
+            if (regionIdx >= 0) {
+                const r = n[detailCols[regionIdx].toLowerCase()];
+                if (r) regions.add(r);
+            }
+            if (deptIdx >= 0) {
+                const d = n[detailCols[deptIdx].toLowerCase()];
+                if (d) depts.add(d);
+            }
+        });
+
+        // ---------------------------
+        // SET FINAL OUTPUT
+        // ---------------------------
+        setDirectFinalTable({
+            columns: summaryCols,
+            rows: finalRows,
+            detailCols,
+            regions: [...regions],
+            departments: [...depts]
+        });
+
+    }, [responseData]);
+    const handleDownloadReport = ()=>{
         console.log("report download")
     }
     const renderHistorySection = () => (
         <section className="history-container">
-            {responseData && (
-                <div
-                    style={{
-                        width: "100%",
-                        display: "flex",
-                        justifyContent: "flex-end",
-                        marginBottom: "12px",
-                    }}
-                >
-                    <button
-                        onClick={handleDownloadReport}
+              {responseData && (
+                    <div
                         style={{
-                            background: "var(--Curki-2nd-Portal-1, #14C8A8)",
-                            color: "#fff",
-                            border: "none",
-                            padding: "8px 16px",
-                            borderRadius: "8px",
-                            fontSize: "14px",
-                            fontWeight: 400,
-                            cursor: "pointer",
+                            width: "100%",
                             display: "flex",
-                            alignItems: "center",
-                            gap: "8px",
+                            justifyContent: "flex-end",
+                            marginBottom: "12px",
                         }}
                     >
-                        <img
-                            src={TlcCompareAnalyseIcon}
-                            alt="download"
-                            style={{ width: "14px", height: "14px" }}
-                        />
-                        Download Report
-                    </button>
-                </div>
-            )}
+                        <button
+                            onClick={handleDownloadReport}
+                            style={{
+                                background: "var(--Curki-2nd-Portal-1, #14C8A8)",
+                                color: "#fff",
+                                border: "none",
+                                padding: "8px 16px",
+                                borderRadius: "8px",
+                                fontSize: "14px",
+                                fontWeight: 400,
+                                cursor: "pointer",
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "8px",
+                            }}
+                        >
+                            <img
+                                src={TlcCompareAnalyseIcon}
+                                alt="download"
+                                style={{ width: "14px", height: "14px" }}
+                            />
+                            Download Report
+                        </button>
+                    </div>
+                )}
             {/* HEADER */}
             <div style={{ display: "flex", gap: "8px" }}>
                 <img
@@ -905,6 +906,54 @@ const TlcNewClientProfitability = (props) => {
 
             </div>
 
+            {/* <div className="info-table">
+                <div className="table-headerss">
+                    <span>If You Upload This...</span>
+                    <span>Our AI Will Instantly...</span>
+                </div>
+                <div className="table-rowss">
+                    <div>Finance System - Client Revenue & Cost Allocation Report</div>
+                    <ul>
+                        <li>Client Margin Forecasts – Predict low-profit clients ahead of time.</li>
+                        <li>
+                            Claim Leakage Alerts – Detect missed or under-billed services.
+                        </li>
+                    </ul>
+                </div>
+                <div className="table-rowss">
+                    <div>Care Management System - Client Funding Utilisation & Service Delivery Report</div>
+                    <ul>
+                        <li>Roster Optimisation – Recommend cost-efficient shift allocations.</li>
+                        <li>Funding Utilisation – Track and lift package use to 95%+.</li>
+                    </ul>
+                </div>
+                <div className="table-rowss">
+                    <div>Rostering System - Roster vs Actual Labour Cost Report</div>
+                    <ul>
+                        <li>Workforce Productivity – Identify high and low performers by billed hours.</li>
+                        <li>
+                            Overtime Risk Warnings – Flag and prevent high-cost shifts.
+                        </li>
+                    </ul>
+                </div>
+                <div className="table-rowss">
+                    <div>HR System - Timesheet Accuracy & Workforce Utilisation Report</div>
+                    <ul>
+                        <li>Service Line Profitability – Show which service types drive margin.</li>
+                        <li>Client Mix Optimisation – Recommend the most profitable client ratios.</li>
+                    </ul>
+                </div>
+                <div className="table-rowss">
+                    <div>Claims/Billing System - Claim Leakage & Rejection Summary Report</div>
+                    <ul>
+                        <li>Cost Variance Analysis – Expose clients with abnormal cost patterns.</li>
+                        <li>
+                            Cashflow Forecasting – Predict liquidity impact from claims/wages.
+                        </li>
+                    </ul>
+                </div>
+            </div> */}
+
             {!responseData ? (
                 <>
                     <div>
@@ -959,8 +1008,8 @@ const TlcNewClientProfitability = (props) => {
                                 title="Upload Data"
                                 subtitle=".XLSX, .XLS"
                                 accept=".xlsx,.xls"
-                                files={selectedFiles}
-                                setFiles={setSelectedFiles}
+                                files={clientFiles}
+                                setFiles={setClientFiles}
                                 onTemplateDownload={() => {
                                     const link = document.createElement("a");
                                     link.href = "/templates/ClientProfitabilityTemplate.xlsx";
@@ -981,15 +1030,59 @@ const TlcNewClientProfitability = (props) => {
                 </>
             ) : (
                 <>
-                    
-                  
+                    {/* header + tabs */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', textAlign: 'left', marginTop: '20px', marginBottom: '20px' }}>
+                        {/* <div>
+                            <div style={{ fontSize: '24px', fontWeight: '600', fontFamily: 'Inter', marginBottom: '10px' }}>
+                                Participant Profitability Overview
+                            </div>
+                            <div style={{ fontFamily: 'Inter', fontSize: '14px', fontWeight: '500', color: '#928F8F' }}>
+                                Scorecards and charts at the top, detailed per-participant table with filters at the bottom.
+                            </div>
+                        </div> */}
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12,marginLeft:"auto" }}>
+                            <div style={{ display: 'flex', gap: 8 }}>
+                                <button onClick={() => setActiveTab("plan")} className={`tab-btn ${activeTab === "plan" ? "active" : ""}`}>Plan Managed </button>
+                                <button onClick={() => setActiveTab("direct")} className={`tab-btn ${activeTab === "direct" ? "active" : ""}`}>Direct Services</button>
+                            </div>
+                            {/* 
+                            <button
+                                onClick={async () => {
+                                    if (onPrepareAiPayload) {
+                                        console.log("Rebuilding JSON files before Summary...");
+                                        // await prepareAiPayload(props.tlcClientProfitabilityPayload);
+                                    }
+
+                                    setShowAiPanel(true);
+                                    await fetchAiSummary();
+                                }}
+                                style={{
+                                    border: 'none',
+                                    borderRadius: '30px',
+                                    fontFamily: 'Inter',
+                                    padding: '14px 32px',
+                                    fontSize: '16px',
+                                    fontWeight: '500',
+                                    color: 'white',
+                                    outline: 'none',
+                                    cursor: 'pointer',
+                                    backgroundColor: '#6c4cdc'
+                                }}
+                            >
+                                AI Analyse
+                            </button> */}
+
+
+                        </div>
+                    </div>
                     {/* AI Panel */}
                     {/* ================= AI INSIGHT ACCORDION ================= */}
                     <AccordionHeader
                         title={
                             startDate && endDate
                                 ? `AI Insight (${startDate.toLocaleDateString("en-US")} - ${endDate.toLocaleDateString("en-US")})`
-                                : "AI Insight"
+                                : "Exported Data"
                         }
                         isOpen={aiAccordionOpen}
                         showInsightIcon
@@ -1014,8 +1107,96 @@ const TlcNewClientProfitability = (props) => {
                         </div>
                     )}
 
-                   
 
+                    {/* common scorecards (showing direct or plan depending on activeTab) */}
+                    {/* ================= SCORECARDS ACCORDION ================= */}
+                    <AccordionHeader
+                        title={
+                            startDate && endDate
+                                ? `Profitibility Summary (${startDate.toLocaleDateString("en-US")} - ${endDate.toLocaleDateString("en-US")})`
+                                : "Profitibility Summary"
+                        }
+                        isOpen={scorecardAccordionOpen}
+                        onClick={() => setScorecardAccordionOpen(!scorecardAccordionOpen)}
+                    />
+
+                    {scorecardAccordionOpen && (
+                        <div className="tlcClient-dashboard-summary">
+                            {/* DIRECT SERVICES */}
+                            {activeTab === "direct" && responseData?.direct_service && (
+                                <>
+                                    <div className="tlcClient-dashboard-card">
+                                        <p>Total Revenue</p>
+                                        <h3>
+                                            ${responseData.direct_service.scorecards.total_revenue.toLocaleString()}
+                                        </h3>
+                                        <p>All months, All Participants</p>
+                                    </div>
+
+                                    <div className="tlcClient-dashboard-card">
+                                        <p>Total Expense</p>
+                                        <h3>
+                                            ${responseData.direct_service.scorecards.total_expense.toLocaleString()}
+                                        </h3>
+                                        <p>Allocated expense</p>
+                                    </div>
+
+                                    <div className="tlcClient-dashboard-card">
+                                        <p>Total Profit</p>
+                                        <h3>
+                                            ${responseData.direct_service.scorecards.total_profit.toLocaleString()}
+                                        </h3>
+                                        <p>Revenue minus expense</p>
+                                    </div>
+
+                                    <div className="tlcClient-dashboard-card">
+                                        <p>Overall Margin</p>
+                                        <h3>
+                                            {(responseData.direct_service.scorecards.total_margin * 100).toFixed(2)}%
+                                        </h3>
+                                        <p>Profit / Revenue</p>
+                                    </div>
+                                </>
+                            )}
+
+                            {/* PLAN MANAGED */}
+                            {activeTab === "plan" && responseData?.plan_managed && (
+                                <>
+                                    <div className="tlcClient-dashboard-card">
+                                        <p>Total Revenue</p>
+                                        <h3>
+                                            ${responseData.plan_managed.scorecards.total_revenue.toLocaleString()}
+                                        </h3>
+                                        <p>All Plan Managed participants</p>
+                                    </div>
+
+                                    <div className="tlcClient-dashboard-card">
+                                        <p>Total Expense</p>
+                                        <h3>
+                                            ${responseData.plan_managed.scorecards.total_expense.toLocaleString()}
+                                        </h3>
+                                        <p>Invoice-linked expenses</p>
+                                    </div>
+
+                                    <div className="tlcClient-dashboard-card">
+                                        <p>Total Profit</p>
+                                        <h3>
+                                            ${responseData.plan_managed.scorecards.total_profit.toLocaleString()}
+                                        </h3>
+                                        <p>Revenue minus expense</p>
+                                    </div>
+
+                                    <div className="tlcClient-dashboard-card">
+                                        <p>Overall Margin</p>
+                                        <h3>
+                                            {(responseData.plan_managed.scorecards.total_margin * 100).toFixed(2)}%
+                                        </h3>
+                                        <p>Profit / Revenue</p>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    )}
 
 
                     {/* charts */}
@@ -1031,27 +1212,27 @@ const TlcNewClientProfitability = (props) => {
 
                     {chartsAccordionOpen && (
                         <div className="client-profitability-graph">
-                            {responseData?.graphs && (
+                            {activeTab === "direct" && responseData?.direct_service && (
                                 <>
                                     <div className="chart-box" style={{ marginBottom: "30px" }}>
-                                        <RenderHtmlFigure htmlString={responseData.graphs.department_revenue_expense} />
+                                        <RenderHtmlFigure htmlString={responseData.direct_service.graphs.department_profit} />
                                     </div>
 
                                     <div className="chart-box" style={{ marginBottom: "30px" }}>
-                                        <RenderHtmlFigure htmlString={responseData.graphs.region_revenue_expense} />
+                                        <RenderHtmlFigure htmlString={responseData.direct_service.graphs.department_revenue_expense} />
                                     </div>
 
-                                    {/* <div className="chart-box" style={{ marginBottom: "30px" }}>
+                                    <div className="chart-box" style={{ marginBottom: "30px" }}>
                                         <RenderHtmlFigure htmlString={responseData.direct_service.graphs.region_profit} />
                                     </div>
 
                                     <div className="chart-box" style={{ marginBottom: "30px" }}>
                                         <RenderHtmlFigure htmlString={responseData.direct_service.graphs.region_revenue_expense} />
-                                    </div> */}
+                                    </div>
                                 </>
                             )}
 
-                            {/* {activeTab === "plan" && responseData?.plan_managed && (
+                            {activeTab === "plan" && responseData?.plan_managed && (
                                 <>
                                     <div className="chart-box" style={{ marginBottom: "30px" }}>
                                         <RenderHtmlFigure htmlString={responseData.plan_managed.graphs.profit_by_region} />
@@ -1061,13 +1242,13 @@ const TlcNewClientProfitability = (props) => {
                                         <RenderHtmlFigure htmlString={responseData.plan_managed.graphs.revenue_expense_by_region} />
                                     </div>
                                 </>
-                            )} */}
+                            )}
                         </div>
                     )}
 
 
                     {/* summary tables */}
-                    {/* <AccordionHeader
+                    <AccordionHeader
                         title={
                             startDate && endDate
                                 ? `Detailed Table (${startDate.toLocaleDateString("en-US")} - ${endDate.toLocaleDateString("en-US")})`
@@ -1075,9 +1256,9 @@ const TlcNewClientProfitability = (props) => {
                         }
                         isOpen={tablesAccordionOpen}
                         onClick={() => setTablesAccordionOpen(!tablesAccordionOpen)}
-                    /> */}
+                    />
 
-                    {/* {tablesAccordionOpen && (
+                    {tablesAccordionOpen && (
                         <>
                             <div className="table-box" style={{ marginTop: "40px" }}>
                                 {activeTab === "direct" && (
@@ -1088,7 +1269,7 @@ const TlcNewClientProfitability = (props) => {
                                 )}
                             </div>
                         </>
-                    )} */}
+                    )}
 
 
                     {/* ================= JSON TABLE ACCORDION ================= */}
@@ -1105,7 +1286,7 @@ const TlcNewClientProfitability = (props) => {
                     {jsonTableAccordionOpen && (
                         <div style={{ marginTop: "24px" }}>
                             {/* DIRECT SERVICES JSON TABLE */}
-                            {/* {activeTab === "direct" && directFinalTable && (
+                            {activeTab === "direct" && directFinalTable && (
                                 <JsonTableCard
                                     title="Direct Services – NDIS Reference (click + to see detail)"
                                     data={directFinalTable}
@@ -1115,23 +1296,15 @@ const TlcNewClientProfitability = (props) => {
                                     summaryTable={responseData.direct_service.tables.by_reference}
                                     detailsTable={responseData.direct_service.tables.detail}
                                 />
-                            )} */}
-                            {jsonTableAccordionOpen && directFinalTable && (
-                                <div style={{ marginTop: "24px" }}>
-                                    <JsonTableCard
-                                        title="Client Profitability Table"
-                                        data={directFinalTable}
-                                    />
-                                </div>
                             )}
 
                             {/* PLAN MANAGED JSON TABLE */}
-                            {/* {activeTab === "plan" && responseData?.plan_managed?.tables?.detail && (
+                            {activeTab === "plan" && responseData?.plan_managed?.tables?.detail && (
                                 <JsonTableCard
                                     title="Plan Managed — Detailed Table"
                                     data={responseData.plan_managed.tables.detail}
                                 />
-                            )} */}
+                            )}
                         </div>
                     )}
                 </>

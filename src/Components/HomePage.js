@@ -90,9 +90,9 @@ const HomePage = () => {
       "Top 5 Departments with the highest Gross for this pay run"
     ],
     tlcClientProfitability: [
-      "Whats total Gross for Plan Management Clearing Account",
+      "Which Client has the highest gross margin?",
       "who are the top 5 most profitable participants, and what are their total revenue, total costs and margin %?",
-      "Whats the Total Net Operating Revenue for NSW",
+      "Which region has the highest total revenue?",
       "Top 5 Participants per Department"
     ],
     smart: [
@@ -262,11 +262,19 @@ const HomePage = () => {
 
         // Step 2: Ask AI
         const userEmail = user?.email
-        const response = await axios.post(
-          `https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/tlcClientProfitibility/ask_ai?userEmail=${userEmail}`,
+        // const response = await axios.post(
+        //   `https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/tlcClientProfitibility/ask_ai?userEmail=${userEmail}`,
+        //   {
+        //     question: finalQuery,
+        //     payload: tlcClientProfitabilityPayload
+        //   }
+        // )
+        console.log("tlcClientProfitabilityPayload in homepage",tlcClientProfitabilityPayload)
+         const response = await axios.post(
+          `https://curki-backend-api-container.yellowflower-c21bea82.australiaeast.azurecontainerapps.io/header_modules/clients_profitability/ask_ai`,
           {
             question: finalQuery,
-            payload: tlcClientProfitabilityPayload
+            table_data: tlcClientProfitabilityPayload
           }
         )
 
