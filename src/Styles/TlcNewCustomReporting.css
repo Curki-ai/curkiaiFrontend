@@ -163,8 +163,8 @@ body {
     background: #6C4CDC;
     color: white;
     border: none;
-    padding: 12px 40px;
-    border-radius: 25px;
+    padding: 12px 20px;
+    border-radius: 20px;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.25s ease;
@@ -619,14 +619,16 @@ body {
 }
 
 .search-btn {
-    background: #6C4CDC;
-    color: white;
-    border: none;
-    padding: 12px 40px;
-    border-radius: 25px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.25s ease;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 20px;
+  font-size: 16px;
+  cursor: pointer;
+  background-color: #6C4CDC;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .search-btn:hover {

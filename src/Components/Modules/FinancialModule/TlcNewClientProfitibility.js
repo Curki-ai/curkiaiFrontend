@@ -697,9 +697,45 @@ const TlcNewClientProfitability = (props) => {
         });
 
     }, [responseData]);
-
+    const handleDownloadReport = ()=>{
+        console.log("report download")
+    }
     const renderHistorySection = () => (
         <section className="history-container">
+              {responseData && (
+                    <div
+                        style={{
+                            width: "100%",
+                            display: "flex",
+                            justifyContent: "flex-end",
+                            marginBottom: "12px",
+                        }}
+                    >
+                        <button
+                            onClick={handleDownloadReport}
+                            style={{
+                                background: "var(--Curki-2nd-Portal-1, #14C8A8)",
+                                color: "#fff",
+                                border: "none",
+                                padding: "8px 16px",
+                                borderRadius: "8px",
+                                fontSize: "14px",
+                                fontWeight: 400,
+                                cursor: "pointer",
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "8px",
+                            }}
+                        >
+                            <img
+                                src={TlcCompareAnalyseIcon}
+                                alt="download"
+                                style={{ width: "14px", height: "14px" }}
+                            />
+                            Download Report
+                        </button>
+                    </div>
+                )}
             {/* HEADER */}
             <div style={{ display: "flex", gap: "8px" }}>
                 <img
@@ -985,7 +1021,7 @@ const TlcNewClientProfitability = (props) => {
                         </section>
                         <div className="search-section">
                             <button className="analyse-btn" disabled={isTlcClientProfitabilityLoading} style={{ backgroundColor: '#000' }} onClick={handleAnalyse}>
-                                {isTlcClientProfitabilityLoading ? `Analysing...` : <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>Analyse<img src={star} alt='img' style={{ width: '20px', height: '20px' }} /></div>}
+                                {isTlcClientProfitabilityLoading ? `Analysing...` : <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>AI Analyse<img src={star} alt='img' style={{ width: '20px', height: '20px' }} /></div>}
                             </button>
                         </div>
                     </div>
@@ -995,16 +1031,16 @@ const TlcNewClientProfitability = (props) => {
                 <>
                     {/* header + tabs */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', textAlign: 'left', marginTop: '20px', marginBottom: '20px' }}>
-                        <div>
+                        {/* <div>
                             <div style={{ fontSize: '24px', fontWeight: '600', fontFamily: 'Inter', marginBottom: '10px' }}>
                                 Participant Profitability Overview
                             </div>
                             <div style={{ fontFamily: 'Inter', fontSize: '14px', fontWeight: '500', color: '#928F8F' }}>
                                 Scorecards and charts at the top, detailed per-participant table with filters at the bottom.
                             </div>
-                        </div>
+                        </div> */}
 
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12,marginLeft:"auto" }}>
                             <div style={{ display: 'flex', gap: 8 }}>
                                 <button onClick={() => setActiveTab("plan")} className={`tab-btn ${activeTab === "plan" ? "active" : ""}`}>Plan Managed </button>
                                 <button onClick={() => setActiveTab("direct")} className={`tab-btn ${activeTab === "direct" ? "active" : ""}`}>Direct Services</button>

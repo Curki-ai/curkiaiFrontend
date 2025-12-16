@@ -11,8 +11,8 @@ import axios from "axios";
 const API_BASE = "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net";
 
 const RosterHistory = (props) => {
-    // const userEmail = props?.userEmail
-    const userEmail = "kris@curki.ai"
+    const userEmail = props?.userEmail
+    // const userEmail = "kris@curki.ai"
     // === state kept as original
     const [selected, setSelected] = useState(null);
     const today = new Date();
