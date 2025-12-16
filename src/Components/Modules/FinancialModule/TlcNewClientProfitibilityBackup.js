@@ -503,13 +503,13 @@ const TlcNewClientProfitability = (props) => {
             });
 
             // Optional: Force resize charts if they have resize methods
-            setTimeout(() => {
-                if (window.Chart && typeof window.Chart.instances !== 'undefined') {
-                    Object.values(window.Chart.instances).forEach(chart => {
-                        chart.resize();
-                    });
-                }
-            }, 100);
+            // setTimeout(() => {
+            //     if (window.Chart && typeof window.Chart.instances !== 'undefined') {
+            //         Object.values(window.Chart.instances).forEach(chart => {
+            //             chart.resize();
+            //         });
+            //     }
+            // }, 100);
 
         }, [htmlString]);
 
