@@ -16,6 +16,7 @@ const API_BASE = "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azur
 
 const SmartRostering = (props) => {
     const userEmail = props?.user?.email;
+    console.log("userEmail",userEmail)
     const [screen, setScreen] = useState(1);
     const [query, setQuery] = useState("");
     const [selectedFile, setSelectedFile] = useState([]);
