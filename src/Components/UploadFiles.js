@@ -22,7 +22,7 @@ const UploadFiles = ({ files, setFiles, title, subtitle, removeFile, fileformat,
             selectedFiles = [selectedFiles[selectedFiles.length - 1]];
             setFiles(selectedFiles);
         }
-        else if (selectedFiles.length > 0) {
+        else if (selectedFiles.length > 0)  {
             setLoading(true);
             setTimeout(() => {
                 if (title === "Custom Reporting") {
