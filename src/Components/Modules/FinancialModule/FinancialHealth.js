@@ -187,6 +187,8 @@ const FinancialHealth = (props) => {
       }
 
       const userEmail = props.user.email.trim().toLowerCase();
+
+      
       // const userEmail = "kris@curki.ai"
       // console.log("Using email:", userEmail);
 

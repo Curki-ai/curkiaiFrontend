@@ -71,4 +71,5 @@ jobs:
           app-name: 'Intelcarefrontend'
           slot-name: 'Production'
           package: .
+
           
