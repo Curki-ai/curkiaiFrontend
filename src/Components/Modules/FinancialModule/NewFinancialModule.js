@@ -74,6 +74,8 @@ const NewFinancialHealth = (props) => {
     const [aiInsightOpen, setAiInsightOpen] = useState(false);
     const [historyList, setHistoryList] = useState([]);
     const [loadingHistory, setLoadingHistory] = useState(false);
+    const [reportType, setReportType] = useState(null);
+
     // ---------------- UI TABS (SAFE, ISOLATED) ----------------
     const [uiTabs, setUiTabs] = useState([
         {
@@ -88,7 +90,7 @@ const NewFinancialHealth = (props) => {
 
     const uiActiveTab = uiTabs.find(t => t.id === uiActiveTabId);
     const previewRef = useRef(null);
- 
+
     const handleUiNewTab = () => {
         const newId = uiTabs.length
             ? Math.max(...uiTabs.map(t => t.id)) + 1
@@ -314,9 +316,6 @@ const NewFinancialHealth = (props) => {
 
         return `${year}-${mm}-${dd}T00:00:00Z`;
     }
-    const handleDownloadReport = ()=>{
-        console.log("report download")
-    }
     const handleDownloadStandardExcel = async () => {
         if (
             !Array.isArray(standardFinancialExcelFile) ||
@@ -395,12 +394,29 @@ const NewFinancialHealth = (props) => {
 
             // Determine type correctly
             let type = "upload";
-            if (syncEnabled && financialReportFiles.length > 0) type = "hybrid";
-            else if (syncEnabled && financialReportFiles.length === 0) type = "api";
+            // if (syncEnabled && financialReportFiles.length > 0) type = "hybrid";
+            if (syncEnabled && financialReportFiles.length === 0) type = "api";
+
+            setReportType(type);
 
             // Handle dates
             let fromDate, toDate;
-            if (type === "api" || type === "hybrid") {
+            // if (type === "api" || type === "hybrid") {
+            //     fromDate = startDate.toISOString();
+            //     toDate = endDate.toISOString();
+
+            //     if (!fromDate || !toDate) {
+            //         alert("Please select valid start and end dates for sync mode.");
+            //         clearInterval(interval);
+            //         setIsFinancialProcessing(false);
+            //         return;
+            //     }
+            // } else {
+            //     const currentYear = new Date().getFullYear();
+            //     fromDate = `${currentYear}-01-01T00:00:00Z`;
+            //     toDate = `${currentYear}-12-31T23:59:59Z`;
+            // }
+            if (type === "api") {
                 fromDate = startDate.toISOString();
                 toDate = endDate.toISOString();
 
@@ -415,7 +431,6 @@ const NewFinancialHealth = (props) => {
                 fromDate = `${currentYear}-01-01T00:00:00Z`;
                 toDate = `${currentYear}-12-31T23:59:59Z`;
             }
-
             // Validate user email
             if (!props.user?.email) {
                 alert("User email is required. Please log in again.");
@@ -425,7 +440,7 @@ const NewFinancialHealth = (props) => {
             }
 
             const userEmail = props.user.email.trim().toLowerCase();
-            
+
             // const userEmail = "kris@curki.ai"
             // console.log("Using email:", userEmail);
 
@@ -437,7 +452,16 @@ const NewFinancialHealth = (props) => {
             formData.append("toDate", toDate);
 
             // Append files if needed
-            if (type === "upload" || type === "hybrid") {
+            // if (type === "upload" || type === "hybrid") {
+            //     if (financialReportFiles.length === 0) {
+            //         alert("No files selected for upload.");
+            //         clearInterval(interval);
+            //         setIsFinancialProcessing(false);
+            //         return;
+            //     }
+            //     financialReportFiles.forEach((file) => formData.append("files", file));
+            // }
+            if (type === "upload") {
                 if (financialReportFiles.length === 0) {
                     alert("No files selected for upload.");
                     clearInterval(interval);
@@ -476,7 +500,7 @@ const NewFinancialHealth = (props) => {
                 to_date: toDate,
                 userEmail: userEmail
             };
-
+            // console.log("vizPayload", vizPayload)
 
             // --- Step 3: Call Visualization API ---
             let vizData = null;
@@ -620,7 +644,7 @@ const NewFinancialHealth = (props) => {
             }
             // console.log("apiExcelUrls in handle analyse", apiExcelUrls)
             const figures = normalizeFigures(vizData);
-
+            // console.log("analysisData", analysisData)
             // --- Step 5: Save state ---
             setFinancialReport(analysisData.final);
             setFinancialVisualizations(figures);
@@ -670,7 +694,7 @@ const NewFinancialHealth = (props) => {
         setIsConsentChecked(false);
     };
     // console.log("financial Visualizations", financialVisualizations);
-
+    // console.log("accordions", accordions)
     return (
 
         <>
@@ -1171,13 +1195,28 @@ const NewFinancialHealth = (props) => {
                                             config={{ responsive: true, displayModeBar: false }}
                                         />
                                     )}
+                                    {item.type === "image" && item.image && (
+                                        <div style={{ textAlign: "center" }}>
+                                            <h4 style={{ marginBottom: "8px" }}>{item.metricName}</h4>
+                                            <img
+                                                src={item.image}
+                                                alt={item.metricName}
+                                                style={{
+                                                    maxWidth: "100%",
+                                                    height: "auto",
+                                                    borderRadius: "8px",
+                                                    boxShadow: "0 4px 10px rgba(0,0,0,0.1)"
+                                                }}
+                                            />
+                                        </div>
+                                    )}
                                 </div>
                             ))}
                         </div>
                     )}
 
                     {/* ================= RAW DATA / EXPORT ================= */}
-                    <AccordionHeader
+                    {reportType === "api" && <AccordionHeader
                         title={
                             startDate && endDate
                                 ? `Exported Data (${startDate.toLocaleDateString("en-US")} - ${endDate.toLocaleDateString("en-US")})`
@@ -1185,7 +1224,7 @@ const NewFinancialHealth = (props) => {
                         }
                         isOpen={accordions.summary}
                         onClick={() => toggleAccordion("summary")}
-                    />
+                    />}
 
                     {accordions.summary && apiExcelUrls?.length > 0 && (
                         <PreviewDataSection
