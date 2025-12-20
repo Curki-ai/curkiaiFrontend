@@ -85,8 +85,8 @@ const Sidebar = ({
     "SIRS Analysis",
     "Incident Report",
     "Custom Incident Management",
-    "Quarterly Financial Reporting",
-    "Annual Financial Reporting",
+    // "Quarterly Financial Reporting",
+    // "Annual Financial Reporting",
   ]
 
   const roleIcons = {
