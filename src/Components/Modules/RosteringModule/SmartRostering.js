@@ -782,12 +782,14 @@ const SmartRostering = (props) => {
                     selectedClient={selectedClient}
                     visualCareCreds={visualCareCreds}
                     userEmail={userEmail}
+                    SetIsSmartRosteringDetails={props.SetIsSmartRosteringDetails}
                 />
             )}
             {screen === 3 && (
                 <RosterHistory
                     setScreen={setScreen}
                     userEmail={userEmail}
+                    SetIsSmartRosteringHistory = {props.SetIsSmartRosteringHistory}
                 />
             )}
             {loading && (

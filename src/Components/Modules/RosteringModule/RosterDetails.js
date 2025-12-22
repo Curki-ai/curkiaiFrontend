@@ -8,7 +8,7 @@ import axios from "axios";
 import clockCircleIcon from "../../../Images/clock circle.png"
 import clickHandIcon from "../../../Images/clock hand.png"
 import star_icon from "../../../Images/rostering_star.png"
-const RosterDetails = ({ setScreen, rosteringResponse, API_BASE, selectedClient, visualCareCreds, userEmail }) => {
+const RosterDetails = ({ setScreen, rosteringResponse, API_BASE, selectedClient, visualCareCreds, userEmail, SetIsSmartRosteringDetails }) => {
     // console.log("rosteringResponse", rosteringResponse);
     const [selected, setSelected] = useState([]);
     const [showSuccess, setShowSuccess] = useState(false);
@@ -22,6 +22,17 @@ const RosterDetails = ({ setScreen, rosteringResponse, API_BASE, selectedClient,
     const [rankedStaffState, setRankedStaffState] = useState([]);
 
     const clashingList = rosteringResponse?.preffered_worker_clashing_roster || [];
+    useEffect(() => {
+        if (typeof SetIsSmartRosteringDetails === "function") {
+            SetIsSmartRosteringDetails(true);
+        }
+
+        return () => {
+            if (typeof SetIsSmartRosteringDetails === "function") {
+                SetIsSmartRosteringDetails(false);
+            }
+        };
+    }, []);
     const formatDateTime = (isoString) => {
         if (!isoString) return "N/A";
 
@@ -214,9 +225,9 @@ const RosterDetails = ({ setScreen, rosteringResponse, API_BASE, selectedClient,
                 const refined = response.data.refinement.final_ranked;
 
                 if (Array.isArray(refined)) {
-                    setRankedStaffState(refined); 
-                    setRefinedStaff([]);          
-                    setSelected([]);             
+                    setRankedStaffState(refined);
+                    setRefinedStaff([]);
+                    setSelected([]);
                 }
 
             }
@@ -342,7 +353,13 @@ const RosterDetails = ({ setScreen, rosteringResponse, API_BASE, selectedClient,
             <div className="roster-layout">
                 <div
                     className="roster-back-btn"
-                    onClick={() => setScreen(1)}
+                    onClick={() => {
+                        if (typeof SetIsSmartRosteringDetails === "function") {
+                            SetIsSmartRosteringDetails(false);
+                        }
+                        setScreen(1);
+                    }}
+                    style={{top:"-51px"}}
                 >
                     <GoArrowLeft size={22} color="#6C4CDC" />
                     <span>Back</span>

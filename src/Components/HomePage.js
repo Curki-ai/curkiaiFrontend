@@ -78,6 +78,8 @@ const HomePage = () => {
   const [Suggestions, setSuggestions] = useState([]);
   const [manualAskAiFile, setManualAskAiFile] = useState(null);
   const [manualResumeZip, setManualResumeZip] = useState(null);
+  const [IsSmartRosteringHistory, SetIsSmartRosteringHistory] = useState(false);
+  const [IsSmartRosteringDetails, SetIsSmartRosteringDetails] = useState(false);
   const handleModalOpen = () => setModalVisible(true);
   const handleModalClose = () => setModalVisible(false);
   const handleLeftModalOpen = () => setLeftModalVisible(true);
@@ -269,8 +271,8 @@ const HomePage = () => {
         //     payload: tlcClientProfitabilityPayload
         //   }
         // )
-        console.log("tlcClientProfitabilityPayload in homepage",tlcClientProfitabilityPayload)
-         const response = await axios.post(
+        console.log("tlcClientProfitabilityPayload in homepage", tlcClientProfitabilityPayload)
+        const response = await axios.post(
           `https://curki-backend-api-container.yellowflower-c21bea82.australiaeast.azurecontainerapps.io/header_modules/clients_profitability/ask_ai`,
           {
             question: finalQuery,
@@ -494,9 +496,23 @@ const HomePage = () => {
               }}
             >
               {/* LEFT */}
-              <div className="page-title-btn" onClick={handleLeftModalOpen}>
-                <IoMdInformationCircleOutline size={20} color="#5B36E1" />Our AI will instantly give.....
+              <div
+                className="page-title-btn"
+                style={
+                  selectedRole === "Smart Rostering"
+                    ? IsSmartRosteringDetails
+                      ? { marginLeft: "120px" }
+                      : IsSmartRosteringHistory
+                        ? { marginLeft: "84px" }
+                        : {}
+                    : {}
+                }
+                onClick={handleLeftModalOpen}
+              >
+                <IoMdInformationCircleOutline size={20} color="#5B36E1" />
+                Our AI will instantly give.....
               </div>
+
 
               {/* RIGHT */}
               <div className="page-title-btn" onClick={handleModalOpen}>
@@ -575,7 +591,7 @@ const HomePage = () => {
                 </div>
 
                 <div style={{ display: selectedRole === "Smart Rostering" ? "block" : "none" }}>
-                  <RosteringDashboard user={user} setManualAskAiFile={setManualAskAiFile} />
+                  <RosteringDashboard user={user} SetIsSmartRosteringHistory={SetIsSmartRosteringHistory} SetIsSmartRosteringDetails={SetIsSmartRosteringDetails} setManualAskAiFile={setManualAskAiFile} />
                 </div>
               </>
 

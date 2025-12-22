@@ -54,6 +54,17 @@ const RosterHistory = (props) => {
         return value;
     };
 
+    useEffect(() => {
+        if (typeof props.SetIsSmartRosteringHistory === "function") {
+            props.SetIsSmartRosteringHistory(true);
+        }
+
+        return () => {
+            if (typeof props.SetIsSmartRosteringHistory === "function") {
+                props.SetIsSmartRosteringHistory(false);
+            }
+        };
+    }, []);
 
     useEffect(() => {
         const fetchClients = async () => {
@@ -478,7 +489,12 @@ const RosterHistory = (props) => {
     return (
         <div className="rostering-history-container">
 
-            <div className="roster-back-btn" onClick={() => props.setScreen(1)} style={{ left: '30px', top: '-45px' }}>
+            <div className="roster-back-btn" onClick={() => {
+                if (typeof props.setIsSmartRosteringHistory === "function") {
+                    props.SetIsSmartRosteringHistory(false);
+                }
+                props.setScreen(1);
+            }} style={{ left: '30px', top: '-45px' }}>
                 <GoArrowLeft size={22} color="#6C4CDC" />
                 <span>Back</span>
             </div>
