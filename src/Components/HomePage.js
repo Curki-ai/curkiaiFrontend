@@ -51,6 +51,7 @@ import newChatBtnIcon from "../Images/AskAiNewChat.png"
 import newChatBtnNoteIcon from "../Images/AskAiNewChatPen.png"
 import askAiSearchIcon from "../Images/AskAiSearch.png"
 import askAiSendBtn from "../Images/askaISendBtn.png"
+import newTlcLogo from "../Images/newTlcLogo.png"
 const HomePage = () => {
   const [sidebarVisible, setSidebarVisible] = useState(true);
   const [documentString, setDocumentString] = useState("");
@@ -491,7 +492,7 @@ const HomePage = () => {
               className="typeofreportmaindiv"
               style={{
                 display: "flex",
-                justifyContent: "space-between", // ✅ LEFT & RIGHT
+                justifyContent: "space-between", 
                 alignItems: "center",
                 width: "100%",
                 borderBottom: "1px solid #E8ECEF",
@@ -500,23 +501,42 @@ const HomePage = () => {
                 boxShadow: "0px 12px 40px -12px rgba(0, 0, 0, 0.06)",
               }}
             >
-              {/* LEFT */}
               <div
-                className="page-title-btn"
-                style={
-                  selectedRole === "Smart Rostering"
-                    ? IsSmartRosteringDetails
-                      ? { marginLeft: "120px" }
-                      : IsSmartRosteringHistory
-                        ? { marginLeft: "84px" }
-                        : {}
-                    : {}
-                }
-                onClick={handleLeftModalOpen}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "20px", 
+                }}
               >
-                <IoMdInformationCircleOutline size={20} color="#5B36E1" />
-                Our AI will instantly give.....
+                {(isTlcPage || isTlcClientProfitabilityPage) && (
+                  <img
+                    src={newTlcLogo}
+                    alt="TLC"
+                    style={{
+                      height: "32px",
+                      width: "auto",
+                    }}
+                  />
+                )}
+                <div
+                  className="page-title-btn"
+                  onClick={handleLeftModalOpen}
+                  style={
+                    selectedRole === "Smart Rostering"
+                      ? IsSmartRosteringDetails
+                        ? { marginLeft: "120px" }
+                        : IsSmartRosteringHistory
+                          ? { marginLeft: "84px" }
+                          : {}
+                      : {}
+                  }
+                >
+                  <IoMdInformationCircleOutline size={20} color="#5B36E1" />
+                  Our AI will instantly give.....
+                </div>
               </div>
+
+
 
 
               {/* RIGHT */}
