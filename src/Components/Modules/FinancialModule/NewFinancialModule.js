@@ -686,7 +686,7 @@ const NewFinancialHealth = (props) => {
                     apiExcelUrls: [],
                     titleArray: [],
                     excel_exports: {},
-                     ...(historyTabName ? { name: historyTabName } : {}),
+                    ...(historyTabName ? { name: historyTabName } : {}),
                 });
 
             } else {
@@ -1187,8 +1187,11 @@ const NewFinancialHealth = (props) => {
                             {/* SAVED ON */}
                             <div className="saved-on">
                                 <span className="saved-label">Saved on: </span>
-                                {new Date(item.createdAt).toLocaleString()}
+                                <span style={{ color: "#000" }}>
+                                    {new Date(item.createdAt).toLocaleString()}
+                                </span>
                             </div>
+
 
                             {/* FILTER SUMMARY */}
                             {item.filters && (

@@ -318,14 +318,14 @@ html,
   right: 30px;
   color: #ffffff;
   border-radius: 40px;
-  height: 50px;
+  height: 52px;
   display: flex;
   justify-content: center;
   align-items: center;
   font-size:  16px;
   cursor: pointer;
   z-index: 999;
-  padding: 10px 20px;
+  padding: 14px 33px;
   gap: 10px;
   /* background: linear-gradient(180deg, #6C4CDC 0%, #1B00A8 100%); */
   border: 1.06px solid; 
@@ -599,4 +599,27 @@ html,
 }
 .ask-ai-res-div::-webkit-scrollbar {
   display: none;
+}
+/* Hide scrollbar (already using, keep it) */
+.predefined-prompts-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+/* 🔥 Fade effect (top & bottom) */
+.predefined-prompts-scroll {
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    black 12%,
+    black 88%,
+    transparent 100%
+  );
+
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    black 12%,
+    black 88%,
+    transparent 100%
+  );
 }
