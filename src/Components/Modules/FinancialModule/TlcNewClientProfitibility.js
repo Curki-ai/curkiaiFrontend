@@ -833,7 +833,7 @@ const TlcNewClientProfitability = (props) => {
                         >
                             {/* TOP ROW */}
                             <div className="history-top">
-                                <div className="history-date-range">
+                                {/* <div className="history-date-range">
                                     <span className="label">Date Range: </span>
                                     <span className="value">
                                         <span className="value">
@@ -844,7 +844,7 @@ const TlcNewClientProfitability = (props) => {
                                         </span>
 
                                     </span>
-                                </div>
+                                </div> */}
 
                                 {/* RIGHT SIDE ACTIONS */}
                                 <button
@@ -875,8 +875,11 @@ const TlcNewClientProfitability = (props) => {
                             {/* SAVED ON */}
                             <div className="saved-on">
                                 <span className="saved-label">Saved on: </span>
-                                {formatHistoryDateRange(item.createdAt)}
+                                <span style={{ color: "#000" }}>
+                                    {new Date(item.createdAt).toLocaleString()}
+                                </span>
                             </div>
+
                             {/* FILTER SUMMARY (MISSING PART) */}
                             {item.filters && (
                                 <div className="history-filters">

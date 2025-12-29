@@ -50,6 +50,8 @@ import crossIcon from "../Images/AskAiCross.png"
 import newChatBtnIcon from "../Images/AskAiNewChat.png"
 import newChatBtnNoteIcon from "../Images/AskAiNewChatPen.png"
 import askAiSearchIcon from "../Images/AskAiSearch.png"
+import askAiSendBtn from "../Images/askaISendBtn.png"
+import newTlcLogo from "../Images/newTlcLogo.png"
 const HomePage = () => {
   const [sidebarVisible, setSidebarVisible] = useState(true);
   const [documentString, setDocumentString] = useState("");
@@ -490,31 +492,51 @@ const HomePage = () => {
               className="typeofreportmaindiv"
               style={{
                 display: "flex",
-                justifyContent: "space-between", // ✅ LEFT & RIGHT
+                justifyContent: "space-between", 
                 alignItems: "center",
                 width: "100%",
                 borderBottom: "1px solid #E8ECEF",
-                backgroundColor: "white",
+                backgroundColor: "#FFFFF9",
                 padding: "12px 20px",
+                boxShadow: "0px 12px 40px -12px rgba(0, 0, 0, 0.06)",
               }}
             >
-              {/* LEFT */}
               <div
-                className="page-title-btn"
-                style={
-                  selectedRole === "Smart Rostering"
-                    ? IsSmartRosteringDetails
-                      ? { marginLeft: "120px" }
-                      : IsSmartRosteringHistory
-                        ? { marginLeft: "84px" }
-                        : {}
-                    : {}
-                }
-                onClick={handleLeftModalOpen}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "20px", 
+                }}
               >
-                <IoMdInformationCircleOutline size={20} color="#5B36E1" />
-                Our AI will instantly give.....
+                {(isTlcPage || isTlcClientProfitabilityPage) && (
+                  <img
+                    src={newTlcLogo}
+                    alt="TLC"
+                    style={{
+                      height: "32px",
+                      width: "auto",
+                    }}
+                  />
+                )}
+                <div
+                  className="page-title-btn"
+                  onClick={handleLeftModalOpen}
+                  style={
+                    selectedRole === "Smart Rostering"
+                      ? IsSmartRosteringDetails
+                        ? { marginLeft: "120px" }
+                        : IsSmartRosteringHistory
+                          ? { marginLeft: "84px" }
+                          : {}
+                      : {}
+                  }
+                >
+                  <IoMdInformationCircleOutline size={20} color="#5B36E1" />
+                  Our AI will instantly give.....
+                </div>
               </div>
+
+
 
 
               {/* RIGHT */}
@@ -524,308 +546,372 @@ const HomePage = () => {
             </div>
 
 
-            <div className={isTlcPage ? "tlc-custom-main-content" : isSmartRosteringPage ? "smart-rostering-main-content" : "main-content"}>
+            <div className={isTlcPage ? "tlc-custom-main-content" : isSmartRosteringPage ? "smart-rostering-main-content" : "main-content"} style={{
+              display: showAIChat ? "none" : "block",
+            }}>
               {showFeedbackPopup && <FeedbackModal userEmail={user?.email} />}
+              {!loadingUser && selectedRole === "Connect Your Systems" && user && (
+                <SoftwareConnect user={user} />
+              )}
+              <div style={{ display: selectedRole === "Financial Health" ? "block" : "none" }}>
+                {/* <FinancialHealth selectedRole="Financial Health" handleClick={handleClick} setShowFeedbackPopup={setShowFeedbackPopup} user={user} /> */}
+                <NewFinancialHealth selectedRole="Financial Health" handleClick={handleClick} setShowFeedbackPopup={setShowFeedbackPopup} user={user} />
+              </div>
 
-              <>
-                {!loadingUser && selectedRole === "Connect Your Systems" && user && (
-                  <SoftwareConnect user={user} />
-                )}
-                <div style={{ display: selectedRole === "Financial Health" ? "block" : "none" }}>
-                  {/* <FinancialHealth selectedRole="Financial Health" handleClick={handleClick} setShowFeedbackPopup={setShowFeedbackPopup} user={user} /> */}
-                  <NewFinancialHealth selectedRole="Financial Health" handleClick={handleClick} setShowFeedbackPopup={setShowFeedbackPopup} user={user} />
-                </div>
+              <div style={{ display: selectedRole === "SIRS Analysis" ? "block" : "none" }}>
+                <SirsAnalysis selectedRole="SIRS Analysis" handleClick={handleClick} setShowFeedbackPopup={setShowFeedbackPopup} />
+              </div>
 
-                <div style={{ display: selectedRole === "SIRS Analysis" ? "block" : "none" }}>
-                  <SirsAnalysis selectedRole="SIRS Analysis" handleClick={handleClick} setShowFeedbackPopup={setShowFeedbackPopup} />
-                </div>
+              <div style={{ display: selectedRole === "Participant Events & Incident Management" ? "block" : "none" }}>
+                <Client_Event_Reporting selectedRole='Participant Events & Incident Management' />
+              </div>
+              <div style={{ display: selectedRole === "Incident Auditing" ? "block" : "none" }}>
+                <IncidentAuditing selectedRole='Incident Auditing' user={user} />
+              </div>
 
-                <div style={{ display: selectedRole === "Participant Events & Incident Management" ? "block" : "none" }}>
-                  <Client_Event_Reporting selectedRole='Participant Events & Incident Management' />
-                </div>
-                <div style={{ display: selectedRole === "Incident Auditing" ? "block" : "none" }}>
-                  <IncidentAuditing selectedRole='Incident Auditing' user={user} />
-                </div>
+              <div style={{ display: selectedRole === "Quarterly Financial Reporting" ? "block" : "none" }}>
+                <Qfr selectedRole="Quarterly Financial Reporting" handleClick={handleClick} setShowFeedbackPopup={setShowFeedbackPopup} />
+              </div>
 
-                <div style={{ display: selectedRole === "Quarterly Financial Reporting" ? "block" : "none" }}>
-                  <Qfr selectedRole="Quarterly Financial Reporting" handleClick={handleClick} setShowFeedbackPopup={setShowFeedbackPopup} />
-                </div>
+              <div style={{ display: selectedRole === "Annual Financial Reporting" ? "block" : "none" }}>
+                <Afr selectedRole="Annual Financial Reporting" handleClick={handleClick} setShowFeedbackPopup={setShowFeedbackPopup} />
+              </div>
 
-                <div style={{ display: selectedRole === "Annual Financial Reporting" ? "block" : "none" }}>
-                  <Afr selectedRole="Annual Financial Reporting" handleClick={handleClick} setShowFeedbackPopup={setShowFeedbackPopup} />
-                </div>
+              <div style={{ display: selectedRole === "Custom Incident Management" ? "block" : "none" }}>
+                <IncidentManagement selectedRole="Custom Incident Management" handleClick={handleClick} setShowFeedbackPopup={setShowFeedbackPopup} />
+              </div>
 
-                <div style={{ display: selectedRole === "Custom Incident Management" ? "block" : "none" }}>
-                  <IncidentManagement selectedRole="Custom Incident Management" handleClick={handleClick} setShowFeedbackPopup={setShowFeedbackPopup} />
-                </div>
+              <div style={{ display: selectedRole === "Payroll Analysis" ? "block" : "none" }}>
+                {/* <CustomReporting selectedRole="Custom Reporting" handleClick={handleClick} setShowFeedbackPopup={setShowFeedbackPopup} /> */}
+                <TlcNewCustomerReporting user={user} setTlcAskAiPayload={setTlcAskAiPayload} tlcAskAiPayload={tlcAskAiPayload} setTlcAskAiHistoryPayload={setTlcAskAiHistoryPayload} tlcAskAiHistoryPayload={tlcAskAiHistoryPayload} />
+              </div>
 
-                <div style={{ display: selectedRole === "Payroll Analysis" ? "block" : "none" }}>
-                  {/* <CustomReporting selectedRole="Custom Reporting" handleClick={handleClick} setShowFeedbackPopup={setShowFeedbackPopup} /> */}
-                  <TlcNewCustomerReporting user={user} setTlcAskAiPayload={setTlcAskAiPayload} tlcAskAiPayload={tlcAskAiPayload} setTlcAskAiHistoryPayload={setTlcAskAiHistoryPayload} tlcAskAiHistoryPayload={tlcAskAiHistoryPayload} />
-                </div>
-
-                <div style={{ display: selectedRole === 'Clients Profitability' ? "block" : "none" }}>
-                  {/* <TlcClientProfitability
+              <div style={{ display: selectedRole === 'Clients Profitability' ? "block" : "none" }}>
+                {/* <TlcClientProfitability
                     onPrepareAiPayload={(payload) => setTlcClientProfitabilityPayload(payload)}
                     tlcClientProfitabilityPayload={tlcClientProfitabilityPayload}
                     user={user}
                   /> */}
-                  <TlcNewClientProfitability
-                    onPrepareAiPayload={(payload) => setTlcClientProfitabilityPayload(payload)}
-                    tlcClientProfitabilityPayload={tlcClientProfitabilityPayload}
-                    user={user}
-                  />
-                </div>
-
-                <div style={{ display: selectedRole === "Smart Onboarding (Staff)" ? "block" : "none" }}>
-                  <HRAnalysis handleClick={handleClick} selectedRole="Smart Onboarding (Staff)" setShowFeedbackPopup={setShowFeedbackPopup} user={user} setManualResumeZip={setManualResumeZip} />
-                </div>
-
-                <div style={{ display: selectedRole === "Client Profitability & Service" ? "block" : "none" }}>
-                  <CareServicesEligibility selectedRole="Client Profitability & Service" handleClick={handleClick} setShowFeedbackPopup={setShowFeedbackPopup} />
-                </div>
-
-                <div style={{ display: selectedRole === "Incident Report" ? "block" : "none" }}>
-                  <IncidentReport selectedRole="Incident Report" handleClick={handleClick} setShowFeedbackPopup={setShowFeedbackPopup} />
-                </div>
-
-                <div style={{ display: selectedRole === "Quality and Risk Reporting" ? "block" : "none" }}>
-                  <QualityandRisk selectedRole="Quality and Risk Reporting" handleClick={handleClick} setShowFeedbackPopup={setShowFeedbackPopup} />
-                </div>
-
-                <div style={{ display: selectedRole === "Smart Rostering" ? "block" : "none" }}>
-                  <RosteringDashboard user={user} SetIsSmartRosteringHistory={SetIsSmartRosteringHistory} SetIsSmartRosteringDetails={SetIsSmartRosteringDetails} setManualAskAiFile={setManualAskAiFile} />
-                </div>
-              </>
-
-              <Modal isVisible={isModalVisible} onClose={handleModalClose}></Modal>
-              <PopupModalLeft isVisible={isModalLeftVisible} onClose={handleLeftModalClose} module={selectedRole}></PopupModalLeft>
-
-
-              <div className="ask-ai-button" onClick={() => setShowAIChat(!showAIChat)}>
-                <img src={askAiStar} alt="askAiStar" style={{ width: "22px", height: "22px" }} />
-                <div style={{ fontFamily: "Inter", fontSize: "16px", color: "white" }}>Ask AI</div>
+                <TlcNewClientProfitability
+                  onPrepareAiPayload={(payload) => setTlcClientProfitabilityPayload(payload)}
+                  tlcClientProfitabilityPayload={tlcClientProfitabilityPayload}
+                  user={user}
+                />
               </div>
 
-              {showAIChat && (
-                <div style={{ position: "fixed", bottom: "85px", right: "30px", width: "45%", height: "80%", backgroundColor: "#FFFEFF", borderRadius: "24px", zIndex: 999, display: "flex", flexDirection: "column", justifyContent: "space-between", border: '1.09px solid #6C4CDC', boxShadow: '0px 4.36px 65.42px 0px #FFFFFF03', padding: ' 14px 30px' }}>
-                  <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", borderTopRightRadius: "24px", borderTopLeftRadius: "24px", }}>
-                    <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: "44px" }}>
-                      <div
-                        onClick={() => setMessages([])}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "8px",
-                          padding: "6px 12px",
-                          borderRadius: "6px",
-                          backgroundColor: "#6c4cdc",
-                          cursor: "pointer"
-                        }}
-                      >
-                        <img
-                          src={newChatBtnNoteIcon}
-                          alt="new-chat"
-                          style={{ width: "14px", height: "14px" }}
-                        />
-                        <span
-                          style={{
-                            color: "#fff",
-                            fontSize: "12px",
-                            fontFamily: "Inter",
-                            fontWeight: 500
-                          }}
-                        >
-                          New Chat
-                        </span>
-                      </div>
+              <div style={{ display: selectedRole === "Smart Onboarding (Staff)" ? "block" : "none" }}>
+                <HRAnalysis handleClick={handleClick} selectedRole="Smart Onboarding (Staff)" setShowFeedbackPopup={setShowFeedbackPopup} user={user} setManualResumeZip={setManualResumeZip} />
+              </div>
+
+              <div style={{ display: selectedRole === "Client Profitability & Service" ? "block" : "none" }}>
+                <CareServicesEligibility selectedRole="Client Profitability & Service" handleClick={handleClick} setShowFeedbackPopup={setShowFeedbackPopup} />
+              </div>
+
+              <div style={{ display: selectedRole === "Incident Report" ? "block" : "none" }}>
+                <IncidentReport selectedRole="Incident Report" handleClick={handleClick} setShowFeedbackPopup={setShowFeedbackPopup} />
+              </div>
+
+              <div style={{ display: selectedRole === "Quality and Risk Reporting" ? "block" : "none" }}>
+                <QualityandRisk selectedRole="Quality and Risk Reporting" handleClick={handleClick} setShowFeedbackPopup={setShowFeedbackPopup} />
+              </div>
+
+              <div style={{ display: selectedRole === "Smart Rostering" ? "block" : "none" }}>
+                <RosteringDashboard user={user} SetIsSmartRosteringHistory={SetIsSmartRosteringHistory} SetIsSmartRosteringDetails={SetIsSmartRosteringDetails} setManualAskAiFile={setManualAskAiFile} />
+              </div>
+            </div>
 
 
+            <Modal isVisible={isModalVisible} onClose={handleModalClose}></Modal>
+            <PopupModalLeft isVisible={isModalLeftVisible} onClose={handleLeftModalClose} module={selectedRole}></PopupModalLeft>
+
+            <div className="ask-ai-button" onClick={() => setShowAIChat(!showAIChat)}>
+              <img src={askAiStar} alt="askAiStar" style={{ width: "22px", height: "22px" }} />
+              <div style={{ fontFamily: "Inter", fontSize: "16px", color: "white" }}>Ask AI</div>
+            </div>
+
+            {showAIChat && (
+              <div style={{ position: "fixed", bottom: "85px", right: "30px", width: "76%", height: "80%", backgroundColor: "#FFFEFF", borderRadius: "24px", zIndex: 999, display: "flex", flexDirection: "column", justifyContent: "space-between", border: '1.09px solid #6C4CDC', boxShadow: '0px 4.36px 65.42px 0px #FFFFFF03', padding: ' 14px 30px', marginBottom: "8px" }}>
+                <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", borderTopRightRadius: "24px", borderTopLeftRadius: "24px", }}>
+                  <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: "44px" }}>
+                    <div
+                      onClick={() => setMessages([])}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "4px",
+                        padding: "6px 12px",
+                        borderRadius: "6px",
+                        backgroundColor: "#6c4cdc",
+                        cursor: "pointer"
+                      }}
+                    >
                       <img
-                        src={crossIcon}
-                        alt="close"
-                        style={{ cursor: "pointer", width: "28px" }}
-                        onClick={() => setShowAIChat(false)}
-                      />
-                    </div>
-
-                  </div>
-                  {messages.length === 0 &&
-                    <div>
-                      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: '20px' }}>
-                        <img src={purpleStar} alt='blue-star' style={{ width: '36px', height: 'auto' }} />
-                      </div>
-                      <div style={{ textAlign: 'center', fontSize: '24px', fontFamily: 'Inter', fontWeight: '500' }}>
-                        Got a question? Just ask AI.
-                      </div>
-                      <div style={{ textAlign: 'center', fontSize: '16px', fontWeight: '400', marginTop: '10px' }}>
-                        Your Aged Care & NDIS helper.<br></br>Ask a question get simple, trusted guidance.
-                      </div>
-                    </div>
-                  }
-
-                  <div style={{ flex: 1, marginTop: "10px", overflowY: "auto", padding: "10px" }}>
-                    {messages.map((msg, index) => (
-                      <div
-                        key={index}
+                        src={newChatBtnNoteIcon}
+                        alt="new-chat"
                         style={{
-                          display: "flex",
-                          justifyContent: msg.sender === "user" ? "flex-end" : "flex-start",
-                          marginBottom: "8px",
-                          position: "relative"
+                          width: "14px", height: "14px",
+                        }}
+                      />
+                      <span
+                        style={{
+                          color: "#fff",
+                          fontSize: "14px",
+                          fontWeight: 500,
+                          fontFamily: "Inter",
+                          fontWeight: 500
                         }}
                       >
-                        <div style={{ display: "flex", flexDirection: "column", alignItems: msg.sender === "user" ? "flex-end" : "flex-start", position: "relative", maxWidth: '100%' }}>
-                          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '4px', maxWidth: '100%' }}>
+                        New Chat
+                      </span>
+                    </div>
+
+
+                    <img
+                      src={crossIcon}
+                      alt="close"
+                      style={{ cursor: "pointer", width: "28px" }}
+                      onClick={() => setShowAIChat(false)}
+                    />
+                  </div>
+
+                </div>
+                {messages.length === 0 &&
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: '20px' }}>
+                      <img src={purpleStar} alt='blue-star' style={{ width: '36px', height: 'auto' }} />
+                    </div>
+                    <div style={{ textAlign: 'center', fontSize: '24px', fontFamily: 'Inter', fontWeight: '500' }}>
+                      Got a question? Just ask AI.
+                    </div>
+                    <div style={{ textAlign: 'center', fontSize: '16px', fontWeight: '400', marginTop: '10px' }}>
+                      Your Aged Care & NDIS helper.<br></br>Ask a question get simple, trusted guidance.
+                    </div>
+                  </div>
+                }
+
+                <div style={{ flex: 1, marginTop: "10px", overflowY: "auto", padding: "10px" }}>
+                  {messages.map((msg, index) => (
+                    <div
+                      key={index}
+                      style={{
+                        display: "flex",
+                        justifyContent: msg.sender === "user" ? "flex-end" : "flex-start",
+                        marginBottom: "8px",
+                        position: "relative"
+                      }}
+                    >
+                      <div style={{ display: "flex", flexDirection: "column", alignItems: msg.sender === "user" ? "flex-end" : "flex-start", position: "relative", maxWidth: '100%' }}>
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '4px', maxWidth: '100%' }}>
+                          <div
+                            style={{
+                              display: msg.sender === "user" ? "none" : "flex",
+                              flexDirection: "column",
+                              alignItems: "flex-start",
+                              gap: "6px"
+                            }}
+                          >
+                            {/* ⭐ STAR */}
+                            <img
+                              src={aksAiPurpleStar}
+                              alt="ai star"
+                              style={{
+                                width: "32px",
+                                height: "32px"
+                              }}
+                            />
+
+                            {/* 💬 ANSWER / GENERATING RESPONSE */}
                             <div
                               style={{
-                                display: msg.sender === "user" ? "none" : "flex",
-                                flexDirection: "column",
-                                alignItems: "flex-start",
-                                gap: "6px"
+                                backgroundColor: "#F9F8FF",
+                                padding: "16px 18px",
+                                borderRadius: "26px",
+                                width: "100%",        // ✅ full width
+                                maxWidth: "100%",
+                                fontSize: "14px",
+                                lineHeight: "16px",
+                                textAlign: "left",
+                                color: "black",
+                                fontFamily: "Inter",
+                                border: "1px solid #6c4cdc",
+                                overflowY: "auto",
+                                scrollbarWidth: "none",
+                                msOverflowStyle: "none"
+                              }}
+                              className="ask-ai-res-div"
+                            >
+                              <ReactMarkdown
+                                children={msg.text
+                                  .replace(/```(?:\w+)?\n?/, "")
+                                  .replace(/```$/, "")
+                                }
+                                remarkPlugins={[remarkGfm]}
+                                rehypePlugins={[rehypeRaw, rehypeHighlight]}
+                              />
+                            </div>
+                          </div>
+                          {msg.sender === "user" && (
+                            <div
+                              style={{
+                                backgroundColor: "#FFFFFF",
+                                padding: "16px 18px",
+                                borderRadius: "26px",
+                                maxWidth: "90%",
+                                fontSize: "14px",
+                                lineHeight: "16px",
+                                textAlign: "left",
+                                color: "black",
+                                fontFamily: "Inter",
+                                border: "1px solid #6c4cdc"
                               }}
                             >
-                              {/* ⭐ STAR */}
-                              <img
-                                src={aksAiPurpleStar}
-                                alt="ai star"
-                                style={{
-                                  width: "32px",
-                                  height: "32px"
-                                }}
-                              />
-
-                              {/* 💬 ANSWER / GENERATING RESPONSE */}
-                              <div
-                                style={{
-                                  backgroundColor: "#F9F8FF",
-                                  padding: "16px 18px",
-                                  borderRadius: "26px",
-                                  width: "100%",        // ✅ full width
-                                  maxWidth: "100%",
-                                  fontSize: "14px",
-                                  lineHeight: "16px",
-                                  textAlign: "left",
-                                  color: "black",
-                                  fontFamily: "Inter",
-                                  border: "1px solid #6c4cdc",
-                                  overflowY: "auto",
-                                  scrollbarWidth: "none",
-                                  msOverflowStyle: "none"
-                                }}
-                                className="ask-ai-res-div"
-                              >
-                                <ReactMarkdown
-                                  children={msg.text
-                                    .replace(/```(?:\w+)?\n?/, "")
-                                    .replace(/```$/, "")
-                                  }
-                                  remarkPlugins={[remarkGfm]}
-                                  rehypePlugins={[rehypeRaw, rehypeHighlight]}
-                                />
-                              </div>
+                              {msg.text}
                             </div>
-                            {msg.sender === "user" && (
-                              <div
-                                style={{
-                                  backgroundColor: "#FFFFFF",
-                                  padding: "16px 18px",
-                                  borderRadius: "26px",
-                                  maxWidth: "90%",
-                                  fontSize: "14px",
-                                  lineHeight: "16px",
-                                  textAlign: "left",
-                                  color: "black",
-                                  fontFamily: "Inter",
-                                  border: "1px solid #6c4cdc"
-                                }}
-                              >
-                                {msg.text}
-                              </div>
-                            )}
+                          )}
 
-                            <img
-                              src={askAiPersonIcon}
-                              alt="user icon"
-                              style={{ width: "52px", height: "52px", display: msg.sender === 'user' ? 'block' : 'none' }}
-                            />
-                          </div>
+                          <img
+                            src={askAiPersonIcon}
+                            alt="user icon"
+                            style={{ width: "52px", height: "52px", display: msg.sender === 'user' ? 'block' : 'none' }}
+                          />
                         </div>
                       </div>
-                    ))}
+                    </div>
+                  ))}
 
-                  </div>
-                  <div>
-                    {messages.length === 0 &&
-                      <div>
-                        {Suggestions.length !== 0 &&
-                          <div style={{ textAlign: 'left', marginBottom: '14px', fontSize: '14px', fontWeight: '500', fontFamily: 'Inter' }}>
-                            Predefined Prompts
-                          </div>
-                        }
-                        <div style={{ display: "flex", flexDirection: 'column', width: '100%' }}>
+                </div>
+                <div>
+                  {messages.length === 0 &&
+                    <div>
+                      {Suggestions.length !== 0 &&
+                        <div style={{ textAlign: 'left', marginBottom: '9px', fontSize: '14px', fontWeight: '500', fontFamily: 'Inter' }}>
+                          Predefined Prompts
+                        </div>
+                      }
+                      <div
+                        style={{
+                          width: "60%",
+                          maxHeight: "240px",
+                          overflowY: "auto",
+                          boxSizing: "border-box",
+                          paddingTop: "10px",       // ✅ ADD
+                          paddingBottom: "12px",
+                          scrollbarWidth: "none",    // Firefox
+                          msOverflowStyle: "none"    // IE/Edge
+                        }}
+                        className="predefined-prompts-scroll"
+                      >
+                        <div style={{ display: "flex", flexDirection: "column" }}>
                           {Suggestions.map((q, i) => (
                             <button
                               key={i}
                               onClick={() => handleSend(q)}
-                              style={{ padding: "12px", borderRadius: "8px", background: "#F9F8FF", border: "1px solid #6c4cdc", cursor: "pointer", marginBottom: '10px', textAlign: 'left', width: "100%" }}
+                              style={{
+                                padding: "12px",
+                                borderRadius: "8px",
+                                background: "#F9F8FF",
+                                border: "1px solid #6c4cdc",
+                                cursor: "pointer",
+                                marginBottom: "10px",
+                                textAlign: "left",
+                                width: "100%"
+                              }}
                             >
                               {q}
                             </button>
                           ))}
                         </div>
                       </div>
-                    }
 
-                    <div style={{ position: "relative", marginTop: "10px", marginBottom: "16px", width: "100%", display: "flex", alignSelf: "center" }}>
-                      <img
-                        src={askAiSearchIcon}
-                        alt="search"
-                        style={{
-                          position: "absolute",
-                          left: "14px",
-                          top: "50%",
-                          transform: "translateY(-50%)",
-                          width: "18px",
-                          height: "18px",
-                          opacity: 0.7
-                        }}
-                      />
 
-                      <textarea
-                        rows={1}
-                        placeholder="Ask me anything..."
-                        value={input}
-                        onChange={(e) => {
-                          setInput(e.target.value);
-                          e.target.style.height = "auto";
-                          e.target.style.height = e.target.scrollHeight + "px";
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" && !e.shiftKey) {
-                            e.preventDefault();
-                            handleSend();
-                          }
-                        }}
-                        style={{
-                          width: "100%",
-                          resize: "none",
-                          padding: "10px 40px 10px 44px",
-                          borderRadius: "10px",
-                          border: "1px solid #1602114D",
-                          lineHeight: "22px",
-                          overflowY: "auto",
-                          scrollbarWidth: "none",
-                          msOverflowStyle: "none",
-                          maxHeight: "120px"
-                        }}
-                      />
-                      <FaCircleArrowRight onClick={handleSend} size={22} style={{ position: "absolute", right: "14px", top: "50%", transform: "translateY(-50%)", cursor: "pointer", color: "#6C4CDC" }} />
                     </div>
+                  }
+
+                  <div style={{ position: "relative", marginTop: "10px", marginBottom: "18px", width: "100%", display: "flex", alignSelf: "center" }}>
+                    <img
+                      src={askAiSearchIcon}
+                      alt="search"
+                      style={{
+                        position: "absolute",
+                        left: "32px",              // ✅ was 14px → more gap like screenshot
+                        top: "32px",
+                        bottom: "75px",               // ✅ center vertically
+                        transform: "translateY(-50%)",
+                        width: "18px",
+                        height: "18px",
+                        opacity: 0.7
+                      }}
+                    />
+
+                    <textarea
+                      rows={1}
+                      placeholder="Ask me anything..."
+                      value={input}
+                      onChange={(e) => {
+                        setInput(e.target.value);
+                        // const el = e.target;
+                        // el.style.height = "56px";              // base height
+                        // el.style.height = el.scrollHeight + "px";
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !e.shiftKey) {
+                          e.preventDefault();
+                          handleSend();
+                        }
+                      }}
+                      style={{
+                        width: "100%",
+                        resize: "none",
+                        padding: "22px 56px 16px 63px", // ✅ KEY CHANGE (more left space)
+                        borderRadius: "14px",
+                        border: "none",
+                        outline: "none",
+                        lineHeight: "22px",
+                        backgroundColor: "#F0EDF6",
+                        height: "120px",
+                        maxHeight: "120px",
+                        color: "#000",
+                        overflowY: "auto",
+                        scrollbarWidth: "none",
+                        msOverflowStyle: "none"
+                      }}
+
+
+                    />
+                    {/* <FaCircleArrowRight onClick={handleSend} size={22} style={{ position: "absolute", right: "14px", top: "50%", transform: "translateY(-50%)", cursor: "pointer", color: "#6C4CDC" }} /> */}
+                    <div
+                      onClick={handleSend}
+                      style={{
+                        position: "absolute",
+                        right: "32px",
+                        top: "63%",
+                        transform: "translateY(-50%)",
+                        width: "32px",
+                        height: "32px",
+                        backgroundColor: "#6C4CDC",   // purple background
+                        borderRadius: "10px",         // rounded square
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        cursor: "pointer",
+                      }}
+                    >
+                      <img
+                        src={askAiSendBtn}
+                        alt="send"
+                        style={{
+                          width: "16px",
+                          height: "16px",
+                          pointerEvents: "none", // click handled by parent div
+                        }}
+                      />
+                    </div>
+
                   </div>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
+
           </div>
         </div>
       )}
