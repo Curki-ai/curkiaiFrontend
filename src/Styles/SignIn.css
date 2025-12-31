@@ -1,11 +1,15 @@
 /* Overlay background */
-.overlay {
+.overlay-sign {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgb(255, 255, 255);
+  /* background-color: rgb(255, 255, 255); */
+  background-image: url('../Images/SignInBg.png');
+  background-repeat: no-repeat;
+  background-size: cover;        /* ✅ correct */
+  background-position: center;   /* ✅ recommended */
   /* Opaque background */
   display: flex;
   justify-content: center;
@@ -14,12 +18,12 @@
 }
 
 /* Popup container */
-.popup {
-  background:#FAF9FF;
-  padding: 2rem;
-  border-radius: 12px;
+.popup-sign {
+  background: radial-gradient(51.17% 39.86% at 35.21% 60.14%, #FFFFFF 0%, rgba(255, 255, 255, 0.7) 79.38%);
+  padding: 40px 80px;
+  border-radius: 30px;
   position: relative;
-  max-width: 450px;
+  max-width: 600px;
   width: 90%;
   box-shadow: 0 4px 16px rgba(150, 109, 215, 0.3);
 }
@@ -48,20 +52,20 @@ h2 {
   font-size: 24px;
 }
 
-.divider {
+.dividerss {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 20px 0;
+  margin: 24px 0;
 }
 
-.divider hr {
+.dividerss hr {
   flex: 1;
   border: none;
-  border-top: 1px solid black;
+  border-top: 1px solid #e4e6ec;
 }
 
-.divider span {
+.dividerss span {
   margin: 0 10px;
   font-size: 14px;
 }
@@ -69,32 +73,27 @@ h2 {
 .social-buttons {
   display: flex;
   flex-direction: column;
-  margin-bottom: 20px;
+  /* margin-bottom: 20px; */
 }
 
 .social-btn {
-  border: 1.6px solid #E0E2E9;
-  background-color: white;
-  color: black;
-  padding: 10px;
-  border-radius: 10px;
+  background-color: #6c4cdc;
+  border: none;
+  color: white;
+  padding: 12px 20px;
+  border-radius: 80px;
   width: '100%';
-  height: 45px;
+  height: 50px;
   font-size: 14px;
   cursor: pointer;
   transition: 0.3s;
-  margin-bottom: 10px;
+  /* margin-bottom: 10px; */
   font-family: 'Inter';
   display: flex;
   gap: 8px;
   align-items: center;
   justify-content: center;
   font-weight: 600;
-}
-
-.social-btn:hover {
-  background-color: white;
-  color: black;
 }
 
 form {
@@ -120,17 +119,22 @@ input::placeholder {
   color: white;
   border: none;
   padding: 12px;
-  border-radius: 8px;
-  font-weight: bold;
+  border-radius: 40px;
+  font-weight: 600;
   cursor: pointer;
   transition: 0.3s;
-  font-size: 16px;
-  background: linear-gradient(180deg, rgba(139, 117, 255, 0.9) 27.88%, #6D51FF 100%);
-
+  font-size: 14px;
+  background: #6c4cdc;
+  width: 100%;
+  height: 50px;
+  padding: 12px 20px;
 }
-
+.signin-btn:disabled{
+  color: white;
+  background-color: #A3A0B4;
+}
 .signin-btn:hover {
-  background-color: #4218db;
+  background-color: #85819F;
 }
 
 .register-text {
