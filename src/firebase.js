@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getAuth, signInWithEmailAndPassword,createUserWithEmailAndPassword, GoogleAuthProvider,FacebookAuthProvider, signInWithPopup,signOut,sendPasswordResetEmail} from "firebase/auth";
+import { getAuth, signInWithEmailAndPassword,createUserWithEmailAndPassword, GoogleAuthProvider,FacebookAuthProvider, signInWithPopup,signOut,sendPasswordResetEmail,fetchSignInMethodsForEmail,sendEmailVerification,onAuthStateChanged} from "firebase/auth";
 import {getDatabase,ref,get,set,onValue,increment} from "firebase/database";
 
 const firebaseConfig = {
@@ -43,4 +43,4 @@ const onCountChange = (callback) => {
   });
 };
 
-export { auth, googleProvider,facebookProvider, signInWithEmailAndPassword,createUserWithEmailAndPassword,signInWithPopup,signOut,getCount,incrementCount,onCountChange,sendPasswordResetEmail};
+export { auth, googleProvider,facebookProvider, signInWithEmailAndPassword,createUserWithEmailAndPassword,signInWithPopup,signOut,getCount,incrementCount,onCountChange,sendPasswordResetEmail,fetchSignInMethodsForEmail,sendEmailVerification,onAuthStateChanged};

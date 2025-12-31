@@ -405,13 +405,32 @@ const HomePage = () => {
   };
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((currentUser) => {
+    const unsubscribe = auth.onAuthStateChanged(async (currentUser) => {
       setUser(currentUser);
-      setShowSignIn(!currentUser);
       setLoadingUser(false);
+  
+      if (!currentUser) {
+        // Not logged in → show signin popup
+        setShowSignIn(true);
+        return;
+      }
+  
+      // Reload user to get latest emailVerified value
+      await currentUser.reload();
+  
+      if (!currentUser.emailVerified) {
+        // 🚫 Logged in BUT NOT verified → KEEP popup open
+        setShowSignIn(true);
+        return;
+      }
+  
+      // ✅ Logged in AND verified → close popup
+      setShowSignIn(false);
     });
+  
     return () => unsubscribe();
   }, []);
+  
 
   useEffect(() => {
     getCount();
