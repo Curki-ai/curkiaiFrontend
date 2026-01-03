@@ -1,4 +1,4 @@
-import React, { useState,useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import {
   auth,
   googleProvider,
@@ -45,7 +45,7 @@ const SignIn = ({ show, onClose }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [passwordError,setPasswordError]=useState('');
+  const [passwordError, setPasswordError] = useState('');
 
 
   useEffect(() => {
@@ -58,29 +58,51 @@ const SignIn = ({ show, onClose }) => {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (!firebaseUser) return;
-  
+
       await firebaseUser.reload();
       const freshUser = auth.currentUser;
-  
+
       if (!freshUser?.emailVerified) return;
-  
+
       const emailForVerification = localStorage.getItem("emailForVerification");
       if (!emailForVerification) return; // 🚫 Not coming from verify flow
-  
+
       // ✅ One-time success
       localStorage.removeItem("emailForVerification");
-  
+
       alert("Email verified! Logged in successfully.");
       onClose(); // or navigate
     });
-  
+
     return () => unsubscribe();
   }, []);
-  
+
+  useEffect(() => {
+    if (step !== "verify-email") return;
+
+    const interval = setInterval(async () => {
+      const user = auth.currentUser;
+      if (!user) return;
+
+      await user.reload();
+
+      if (user.emailVerified) {
+        localStorage.removeItem("emailForVerification");
+        clearInterval(interval);
+
+        alert("Email verified! Logged in successfully.");
+        onClose(); // or navigate
+      }
+    }, 3000); // check every 3 seconds
+
+    return () => clearInterval(interval);
+  }, [step]);
+
+
 
   if (!show) return null;
 
-  
+
 
   const handleContinueWithEmail = async () => {
     setError("");
@@ -88,36 +110,43 @@ const SignIn = ({ show, onClose }) => {
 
     try {
       const methods = await fetchSignInMethodsForEmail(auth, email);
-      console.log(methods);
 
       if (methods.length === 0) {
         // 🆕 New user
-        setIsSignUp(true);      // show create account UI
+        setIsSignUp(true);
         setStep("signup");
 
       } else if (methods.includes("password")) {
         // 🔐 Existing email/password user
-        setIsSignUp(false);     // show password login UI
+        setIsSignUp(false);
         setStep("login");
 
       } else {
         // 🔵 Google / Facebook user
         setError(
-          "This email is already linked with a google login. Please continue using that option."
+          "This email is already linked with Google or Facebook. Please continue using that option."
         );
       }
+
     } catch (err) {
-      setError(err.message);
+      // ✅ Handle invalid email nicely
+      if (err.code === "auth/invalid-email") {
+        setError("Please enter a valid email address.");
+      } else {
+        setError("Something went wrong. Please try again.");
+      }
+
     } finally {
       setLoading(false);
     }
   };
 
 
+
   // Handle Sign In or Sign Up
   const handleAuth = async (e) => {
     e.preventDefault();
-    if(confirmNewPassword!==newPassword){
+    if (confirmNewPassword !== newPassword) {
       setPasswordError('Password and confirm password is not matching');
     }
     setIsCreatingAccount(true) // Show loader
@@ -309,7 +338,7 @@ const SignIn = ({ show, onClose }) => {
         {/* <button className="close-btn" onClick={onClose}>×</button> */}
         {step === '' &&
           <div>
-            <div style={{ textAlign: 'center', fontSize: '33px', fontWeight: '700', fontFamily: 'Inter' }}>Welcome to Curki AI</div>
+            <div style={{ textAlign: 'center', fontSize: '33px', fontWeight: '700', fontFamily: 'Inter', color: '#17175' }}>Welcome to Curki AI</div>
             <div style={{ fontSize: '22px', color: '#707493', fontWeight: '500', marginTop: '6px', textAlign: 'center', marginBottom: '30px' }}>Get clarity in minutes</div>
 
 
@@ -337,7 +366,7 @@ const SignIn = ({ show, onClose }) => {
                     left: "20px",
                     top: "50%",
                     transform: "translateY(-50%)",
-                    color: "#aaa",
+                    color: isEmailFocused ? "#000000" : "#8b8b8b",
                   }}
                   size={20}
                 />
@@ -358,11 +387,12 @@ const SignIn = ({ show, onClose }) => {
                     borderRadius: '40px',
                     fontSize: '14px',
                     outline: 'none',
-                    paddingLeft: '45px'
+                    paddingLeft: '45px',
+                    backgroundColor: 'transparent'
                   }}
                 />
               </div>
-              {error && <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', color: 'red', fontWeight: '400', marginBottom: '6px',textAlign:'left'}}><CiWarning size={20} />{error}</div>}
+              {error && <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', color: 'red', fontWeight: '400', marginBottom: '6px', textAlign: 'left' }}><CiWarning size={20} />{error}</div>}
             </div>
             {loading ? (
               <div
@@ -383,7 +413,7 @@ const SignIn = ({ show, onClose }) => {
         }
         {step === 'login' &&
           <div>
-            <div style={{ textAlign: 'center', fontSize: '33px', fontWeight: '700', fontFamily: 'Inter' }}>Welcome back !</div>
+            <div style={{ textAlign: 'center', fontSize: '33px', fontWeight: '700', fontFamily: 'Inter', color: '#17175' }}>Welcome back !</div>
             <div style={{ fontSize: '16px', color: '#707493', fontWeight: '500', marginTop: '6px', textAlign: 'center', marginBottom: '30px' }}>Enter Your Password to continue</div>
             <div style={{ position: "relative", marginBottom: "10px" }}>
               <FiLock
@@ -392,11 +422,11 @@ const SignIn = ({ show, onClose }) => {
                   left: "20px",
                   top: "50%",
                   transform: "translateY(-50%)",
-                  color: "#aaa",
+                  color: isPassWordFocused ? "#000000" : "#8b8b8b",
                 }}
               />
               <input
-               type={showPassword ? "text" : "password"}
+                type={showPassword ? "text" : "password"}
                 placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -426,7 +456,7 @@ const SignIn = ({ show, onClose }) => {
                 }}
                 onClick={() => setShowPassword(!showPassword)}
               >
-               {showPassword ? <PiEyeLight size={20} /> : <PiEyeSlash size={20} />}
+                {showPassword ? <PiEyeLight size={20} /> : <PiEyeSlash size={20} />}
               </div>
             </div>
             {error && <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', color: 'red', fontWeight: '400', marginBottom: '6px' }}><CiWarning size={20} />{error}</div>}
@@ -451,8 +481,8 @@ const SignIn = ({ show, onClose }) => {
         }
         {step === 'signup' &&
           <div>
-            <div style={{ textAlign: 'center', fontSize: '33px', fontWeight: '700', fontFamily: 'Inter' }}>Create your Curki account</div>
-            <div style={{ fontSize: '16px', color: '#707493', fontWeight: '500', marginTop: '6px', textAlign: 'center', marginBottom: '30px' }}>No account found for <span style={{ fontWeight: 'bold', color: 'black' }}>{email}</span>.<br></br> Let’s create one.</div>
+            <div style={{ textAlign: 'center', fontSize: '33px', fontWeight: '700', fontFamily: 'Inter', color: '#17175' }}>Create your Curki account</div>
+            <div style={{ fontSize: '16px', color: '#707493', fontWeight: '500', marginTop: '6px', textAlign: 'center', marginBottom: '30px', lineHeight: '22px' }}>No account found for <span style={{ fontWeight: 'bold', color: 'black' }}>{email}</span>.<br></br> Let’s create one.</div>
             <div style={{ position: "relative", marginBottom: "10px" }}>
               <IoPersonOutline
                 style={{
@@ -460,7 +490,7 @@ const SignIn = ({ show, onClose }) => {
                   left: "20px",
                   top: "50%",
                   transform: "translateY(-50%)",
-                  color: "#aaa",
+                  color: isNameFocused ? "#000000" : "#8b8b8b",
                 }}
                 size={20}
               />
@@ -492,7 +522,7 @@ const SignIn = ({ show, onClose }) => {
                   left: "20px",
                   top: "50%",
                   transform: "translateY(-50%)",
-                  color: "#aaa",
+                  color: isOrganizationFocused ? "#000000" : "#8b8b8b",
                 }}
                 size={20}
               />
@@ -524,11 +554,11 @@ const SignIn = ({ show, onClose }) => {
                   left: "20px",
                   top: "50%",
                   transform: "translateY(-50%)",
-                  color: "#aaa",
+                  color: isNewPassWordFocused ? "#000000" : "#8b8b8b",
                 }}
               />
               <input
-                 type={showNewPassword ? "text" : "password"}
+                type={showNewPassword ? "text" : "password"}
                 placeholder="Password"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
@@ -558,7 +588,7 @@ const SignIn = ({ show, onClose }) => {
                 }}
                 onClick={() => setShowNewPassword(!showNewPassword)}
               >
-               {showNewPassword ? <PiEyeLight size={20} /> : <PiEyeSlash size={20} />}
+                {showNewPassword ? <PiEyeLight size={20} /> : <PiEyeSlash size={20} />}
               </div>
             </div>
             <div style={{ position: "relative", marginBottom: "10px" }}>
@@ -568,7 +598,7 @@ const SignIn = ({ show, onClose }) => {
                   left: "20px",
                   top: "50%",
                   transform: "translateY(-50%)",
-                  color: "#aaa",
+                  color: isConfirmNewPasswordFocused ? "#000000" : "#8b8b8b",
                 }}
               />
               <input
@@ -602,19 +632,33 @@ const SignIn = ({ show, onClose }) => {
                 }}
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
               >
-              {showConfirmPassword ? <PiEyeLight size={20} /> : <PiEyeSlash size={20} />}
+                {showConfirmPassword ? <PiEyeLight size={20} /> : <PiEyeSlash size={20} />}
               </div>
             </div>
             <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginTop: '30px', marginBottom: '30px' }}>
               <input
                 type="checkbox"
                 onChange={() => setIsagreedToTc(!isagreedToTc)}
+                className="tc-checkbox"
               />
-              <div style={{ textAlign: 'left', fontSize: '14px', fontWeight: '500', fontFamily: 'Inter', color: '#969AB8' }}>We’ll never share your email. By continuing you agree to our <span style={{ fontWeight: 'bold', color: 'black', fontFamily: 'Inter' }}>Privacy Policy</span>.</div>
+              <div style={{ textAlign: 'left', fontSize: '14px', fontWeight: '500', fontFamily: 'Inter', color: '#969AB8', lineHeight: '20px' }}>We’ll never share your email. By continuing you agree to our  <a
+                href="https://www.curki.ai/privacy-policy"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  fontWeight: 'bold',
+                  color: 'black',
+                  fontFamily: 'Inter',
+                  textDecoration: 'none',
+                  cursor: 'pointer'
+                }}
+              >
+                Privacy Policy
+              </a>.</div>
             </div>
-            {passwordError && <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', color: 'red', fontWeight: '400', marginBottom: '6px',textAlign:'left'}}><CiWarning size={20} />{passwordError}</div>}
+            {passwordError && <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', color: 'red', fontWeight: '400', marginBottom: '6px', textAlign: 'left' }}><CiWarning size={20} />{passwordError}</div>}
             <button className="signin-btn" disabled={name === '' || newPassword === '' || confirmNewPassword === '' || !isagreedToTc} onClick={handleAuth}>
-            {isCreatingAccount ? "Creating account..." : "Create Account"}
+              {isCreatingAccount ? "Creating account..." : "Create Account"}
             </button>
             <div
               style={{ fontSize: '14px', fontWeight: '600', marginTop: '20px', cursor: 'pointer', color: '#707493', fontFamily: 'Inter' }}
@@ -627,9 +671,9 @@ const SignIn = ({ show, onClose }) => {
         {step === "verify-email" &&
           <div>
             <div style={{ textAlign: 'center', fontSize: '33px', fontWeight: '700', fontFamily: 'Inter' }}>Check Your Inbox</div>
-            <div style={{ fontSize: '16px', color: '#707493', fontWeight: '500', marginTop: '6px', textAlign: 'center', marginBottom: '30px' }}>We’ve sent a verification link to<br></br><span style={{ fontWeight: 'bold', color: 'black' }}>{email}</span>
+            <div style={{ fontSize: '16px', color: '#707493', fontWeight: '500', marginTop: '6px', textAlign: 'center', marginBottom: '30px' }}>We’ve sent a verification link to<br></br><span style={{ fontWeight: '500', color: '#0E0C16' }}>{email}</span>
             </div>
-            <div style={{ fontSize: '14px', fontWeight: '500', fontFamily: 'Inter', color: '#707493', marginBottom: '30px' }}>
+            <div style={{ fontSize: '14px', fontWeight: '500', fontFamily: 'Inter', color: '#707493', marginBottom: '30px', lineHeight: '20px' }}>
               Open the email and click the link to verify your account.<br></br>If you don’t see it, please check your spam or junk folder.
             </div>
             <button className="signin-btn"
