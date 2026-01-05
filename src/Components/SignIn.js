@@ -152,6 +152,7 @@ const SignIn = ({ show, onClose }) => {
     }
     if (confirmNewPassword !== newPassword) {
       setPasswordError('Password and confirm password is not matching');
+      return;
     }
     setIsCreatingAccount(true) // Show loader
 
