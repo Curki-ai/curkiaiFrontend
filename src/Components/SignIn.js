@@ -146,6 +146,10 @@ const SignIn = ({ show, onClose }) => {
   // Handle Sign In or Sign Up
   const handleAuth = async (e) => {
     e.preventDefault();
+    if (newPassword.length < 8) {
+      setPasswordError("Password should be at least 8 characters");
+      return;
+    }
     if (confirmNewPassword !== newPassword) {
       setPasswordError('Password and confirm password is not matching');
     }
@@ -232,11 +236,6 @@ const SignIn = ({ show, onClose }) => {
 
   const handleLoginwithEmailPassword = async (e) => {
     e.preventDefault();
-
-    if (password.length < 8) {
-      setError("Password should be at least 8 characters");
-      return;
-    }
 
     setError("");
     setIsLoggingIn(true);
@@ -482,7 +481,7 @@ const SignIn = ({ show, onClose }) => {
         {step === 'signup' &&
           <div>
             <div style={{ textAlign: 'center', fontSize: '33px', fontWeight: '700', fontFamily: 'Inter', color: '#17175' }}>Create your Curki account</div>
-            <div style={{ fontSize: '16px', color: '#707493', fontWeight: '500', marginTop: '6px', textAlign: 'center', marginBottom: '30px', lineHeight: '22px' }}>No account found for <span style={{ fontWeight: 'bold', color: 'black' }}>{email}</span>.<br></br> Let’s create one.</div>
+            <div style={{ fontSize: '16px', color: '#707493', fontWeight: '500', marginTop: '6px', textAlign: 'center', marginBottom: '30px', lineHeight: '22px' }}>No account found for <span style={{ fontWeight: '500', color: 'black' }}>{email}</span>.<br></br> Let’s create one.</div>
             <div style={{ position: "relative", marginBottom: "10px" }}>
               <IoPersonOutline
                 style={{
