@@ -133,10 +133,8 @@ input::placeholder {
   color: white;
   background-color: #A3A0B4;
 }
+
 .signin-btn:not(:disabled):hover {
-  background-color: #A3A0B4;
-}
-.signin-btn:hover {
   background-color: #513acc;
 }
 

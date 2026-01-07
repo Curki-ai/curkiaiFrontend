@@ -152,8 +152,24 @@ const RosterHistory = (props) => {
                 const timeStr = formatTimeRange(record);
 
                 (record.staffMembers || []).forEach(staff => {
-                    let status = (staff.status || "pending").toLowerCase();
-                    if (status === "pending") status = "waiting";
+                    let status;
+
+                    //RM accepted
+                    if (staff.status === "accepted" && staff.managerApproved === true) {
+                        status = "accepted";
+                    }
+
+                    //RM rejected
+                    else if (staff.status === "rejected" && staff.rejectedByRM === true) {
+                        status = "rejected";
+                    }
+
+                    //Staff Y / Staff N / Pending → waiting
+                    else {
+                        status = "waiting";
+                    }
+
+
 
                     // compute day/dayName/monthName as old UI expects these to appear
                     const d = new Date(baseDate);

@@ -75,6 +75,7 @@ const Sidebar = ({
   const AiAutomationButtons = [
     "Smart Rostering",
     "Smart Onboarding (Staff)",
+    // "Voice AI Module"
   ];
   const NDISButton = [
     "Participant Events & Incident Management",
