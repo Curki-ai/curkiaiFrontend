@@ -35,7 +35,8 @@ import WhoAreYouToggle from "./WhoAreYouToggle";
 import "../../../Styles/TlcNewCustomReporting.css";
 import { RiDeleteBin6Line } from "react-icons/ri";
 import { useRef } from "react";
-
+import { GoArrowLeft } from "react-icons/go";
+import FinancialAnalysisReportViewer from "./FinancialAnalysisReportViewer.js"
 const NewFinancialHealth = (props) => {
 
     const [financialTemplate, setFinancialTemplate] = useState(null);
@@ -1139,6 +1140,16 @@ const NewFinancialHealth = (props) => {
             </div>
 
             {/* BODY */}
+            {loadingHistory && (
+                <p style={{ textAlign: "center", color: "#555", marginTop: "20px" }}>
+                    Loading history...
+                </p>
+            )}
+            {!loadingHistory && historyList.length === 0 && (
+                <p style={{ textAlign: "center", color: "#777", marginTop: "20px" }}>
+                    No saved history found.
+                </p>
+            )}
             {!loadingHistory && historyList.length > 0 && (
                 <div className="history-list">
                     {historyList.map(item => (
@@ -1292,7 +1303,7 @@ const NewFinancialHealth = (props) => {
 
         </section>
     );
-
+    console.log("activeTabData", activeTabData)
     return (
 
         <>
@@ -1706,7 +1717,8 @@ const NewFinancialHealth = (props) => {
                                 });
                             }}
                         >
-                            ← Back
+                            <GoArrowLeft size={22} color="#6C4CDC" />
+                            Back
                         </div>
                     )}
                     {/* <div
@@ -1757,7 +1769,7 @@ const NewFinancialHealth = (props) => {
                                     borderRadius: "10px",
                                 }}
                             >
-                                <SummaryReport
+                                {/* <SummaryReport
                                     summaryText={activeTabData.responseData}
                                     handleDownloadAnalyedReportUploadedCSV={
                                         handleDownloadUploadedExcel
@@ -1767,8 +1779,15 @@ const NewFinancialHealth = (props) => {
                                     }
                                     selectedRole={props.selectedRole}
                                     resetFinancialHealthState={resetFinancialHealthState}
-                                />
-
+                                /> */}
+                                {activeTabData.aiInsightOpen && (
+                                    <div style={{ marginTop: "16px" }}>
+                                        <FinancialAnalysisReportViewer
+                                            reportText={activeTabData.responseData}
+                                            loading={!activeTabData.responseData}
+                                        />
+                                    </div>
+                                )}
                                 {activeTabData.responseData && activeTabData.apiExcelUrls?.length > 0 && (
                                     <PreviewDataSection
                                         apiExcelUrls={activeTabData.apiExcelUrls}
@@ -1988,8 +2007,6 @@ const NewFinancialHealth = (props) => {
                 </>
             )}
             {renderHistorySection()}
-
-
 
         </>
 

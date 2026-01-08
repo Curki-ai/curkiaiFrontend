@@ -376,7 +376,7 @@ const PreviewDataSection = forwardRef(
     return (
         <div style={{ margin: "20px 0", backgroundColor: "#fff", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" }}>
             {!isCollapsed && (
-                <div style={{ padding: "16px 18px" }}>
+                <div>
                     {/* Sheet Tabs */}
                     <div style={{ marginBottom: "16px", display: "flex", gap: "10px", borderBottom: "1px solid #e5e7eb" }}>
                         {Object.keys(sheets).map((sheetName) => (

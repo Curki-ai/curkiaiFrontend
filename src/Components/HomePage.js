@@ -96,9 +96,9 @@ const HomePage = () => {
   const handleLeftModalClose = () => setLeftModalVisible(false);
   const moduleSuggestions = {
     tlc: [
-      "Which 10 employees in NDIS have the highest overtime hours and overtime $ as a percentage of their total hours and pay?",
-      "Which employees had negative amounts in any pay-related column (e.g. reversals/adjustments), and what were those values?",
-      "By Cost Centre, what is the total Gross, Net, Tax and Super for this pay run, and which centres are the most expensive?",
+      "Which 10 employees in NDIS Department have the highest overtime hours and overtime $ ?",
+      "Which employees had negative amounts in any pay-related column (e.g. reversals/adjustments), and what were those values ?",
+      "By Cost Centre, what is the total Gross, Net, Tax and Super for this pay run, and which centres are the most expensive ?",
       "Top 5 Departments with the highest Gross for this pay run."
     ],
     tlcClientProfitability: [
