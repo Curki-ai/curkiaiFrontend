@@ -152,8 +152,24 @@ const RosterHistory = (props) => {
                 const timeStr = formatTimeRange(record);
 
                 (record.staffMembers || []).forEach(staff => {
-                    let status = (staff.status || "pending").toLowerCase();
-                    if (status === "pending") status = "waiting";
+                    let status;
+
+                    //RM accepted
+                    if (staff.status === "accepted" && staff.managerApproved === true) {
+                        status = "accepted";
+                    }
+
+                    //RM rejected
+                    else if (staff.status === "rejected" && staff.rejectedByRM === true) {
+                        status = "rejected";
+                    }
+
+                    //Staff Y / Staff N / Pending → waiting
+                    else {
+                        status = "waiting";
+                    }
+
+
 
                     // compute day/dayName/monthName as old UI expects these to appear
                     const d = new Date(baseDate);
@@ -291,14 +307,31 @@ const RosterHistory = (props) => {
             setAssignmentsData(prev =>
                 prev.map(a =>
                     a.originalStaffObject?.staffId === selectedAssignment.originalStaffObject.staffId
-                        ? { ...a, status: "accepted" }
+                        ? {
+                            ...a,
+                            status: "accepted",
+                            originalStaffObject: {
+                                ...a.originalStaffObject,
+                                status: "accepted",
+                                managerApproved: true
+                            }
+                        }
                         : a
                 )
             );
 
+
             // If the selectedAssignment matches, update it too
             if (selectedAssignment?.originalStaffObject?.staffId === selectedAssignment.originalStaffObject.staffId) {
-                setSelectedAssignment(prev => ({ ...prev, status: "accepted" }));
+                setSelectedAssignment(prev => ({
+                    ...prev,
+                    status: "accepted",
+                    originalStaffObject: {
+                        ...prev.originalStaffObject,
+                        status: "accepted",
+                        managerApproved: true
+                    }
+                }));
             }
         } catch (err) {
             console.error("approveStaff error:", err);
@@ -315,13 +348,31 @@ const RosterHistory = (props) => {
             setAssignmentsData(prev =>
                 prev.map(a =>
                     a.originalStaffObject?.staffId === selectedAssignment.originalStaffObject.staffId
-                        ? { ...a, status: "rejected" }
+                        ? {
+                            ...a,
+                            status: "rejected",
+                            originalStaffObject: {
+                                ...a.originalStaffObject,
+                                status: "rejected",
+                                rejectedByRM: true
+                            }
+                        }
                         : a
                 )
             );
 
+
             if (selectedAssignment?.originalStaffObject?.staffId === selectedAssignment.originalStaffObject.staffId) {
-                setSelectedAssignment(prev => ({ ...prev, status: "rejected" }));
+                setSelectedAssignment(prev => ({
+                    ...prev,
+                    status: "rejected",
+                    originalStaffObject: {
+                        ...prev.originalStaffObject,
+                        status: "rejected",
+                        rejectedByRM: true
+                    }
+                }));
+
             }
         } catch (err) {
             console.error("rejectStaff error:", err);
@@ -485,6 +536,15 @@ const RosterHistory = (props) => {
     console.log("staffInfoList", staffInfoList)
     // input value for chat (kept like original)
     const [inputValue, setInputValue] = useState("");
+    console.log("selectedAssignment", selectedAssignment)
+    const staffStatus = selectedAssignment?.originalStaffObject?.status;
+
+    const isStaffAccepted = staffStatus === "accepted";
+    const isStaffRejected = staffStatus === "rejected";
+    const isStaffPending = !staffStatus || staffStatus === "pending";
+    const isRMDecided =
+        selectedAssignment?.originalStaffObject?.managerApproved === true ||
+        selectedAssignment?.originalStaffObject?.rejectedByRM === true;
 
     return (
         <div className="rostering-history-container">
@@ -641,18 +701,100 @@ const RosterHistory = (props) => {
                                     {/* ===== Staff Basic Info ===== */}
 
                                     {/* Divider */}
-                                    <div style={{ borderBottom: '1px solid #ede8f1', padding: '16px 12px', backgroundColor: '#F8FAFB', }}>
-                                        {selectedAssignment.status === "waiting" ? (
-                                            <div style={{ display: 'flex', gap: '16px', justifyContent: 'center' }}>
-                                                <button style={{ padding: '8px 16px', borderRadius: '6px', border: 'none', fontSize: '13px', cursor: 'pointer', background: '#E63946', color: '#fff' }} onClick={() => rejectStaff(selectedAssignment.originalRecord?.id || selectedAssignment.recordId, selectedAssignment.originalStaffObject?.phone)}>Reject</button>
-                                                <button style={{ padding: '8px 16px', borderRadius: '6px', border: 'none', fontSize: '13px', cursor: 'pointer', background: '#4CAF50', color: '#fff' }} onClick={() => approveStaff(selectedAssignment.originalRecord?.id || selectedAssignment.recordId, selectedAssignment.originalStaffObject?.phone)}>Accept</button>
-                                            </div>
-                                        ) : selectedAssignment.status === "accepted" ? (
-                                            <span style={{ color: '#4CAF50', fontWeight: 600, textAlign: 'center' }}>Staff accepted for this assignment</span>
-                                        ) : (
-                                            <span style={{ color: '#E63946', fontWeight: 600, textAlign: 'center' }}>Staff rejected for this assignment</span>
+                                    <div
+                                        style={{
+                                            borderBottom: '1px solid #ede8f1',
+                                            padding: '16px 12px',
+                                            backgroundColor: '#F8FAFB',
+                                            display: 'flex',
+                                            justifyContent: 'center',
+                                            gap: '16px'
+                                        }}
+                                    >
+                                        {/* ❌ RM already decided → NO buttons */}
+                                        {isRMDecided && (
+                                            <span style={{ fontWeight: 600, color: '#6B7280' }}>
+                                                Decision already taken
+                                            </span>
+                                        )}
+
+                                        {/* ❌ Staff has not replied */}
+                                        {!isRMDecided && isStaffPending && (
+                                            <span style={{ color: '#9CA3AF', fontWeight: 500 }}>
+                                                Waiting for staff response
+                                            </span>
+                                        )}
+
+                                        {/* ✅ Staff said YES → show BOTH buttons */}
+                                        {!isRMDecided && isStaffAccepted && (
+                                            <>
+                                                <button
+                                                    style={{
+                                                        padding: '8px 16px',
+                                                        borderRadius: '6px',
+                                                        border: 'none',
+                                                        fontSize: '13px',
+                                                        background: '#E63946',
+                                                        color: '#fff',
+                                                        cursor: 'pointer'
+                                                    }}
+                                                    onClick={() =>
+                                                        rejectStaff(
+                                                            selectedAssignment.originalRecord?.id,
+                                                            selectedAssignment.originalStaffObject?.phone
+                                                        )
+                                                    }
+                                                >
+                                                    Reject
+                                                </button>
+
+                                                <button
+                                                    style={{
+                                                        padding: '8px 16px',
+                                                        borderRadius: '6px',
+                                                        border: 'none',
+                                                        fontSize: '13px',
+                                                        background: '#4CAF50',
+                                                        color: '#fff',
+                                                        cursor: 'pointer'
+                                                    }}
+                                                    onClick={() =>
+                                                        approveStaff(
+                                                            selectedAssignment.originalRecord?.id,
+                                                            selectedAssignment.originalStaffObject?.phone
+                                                        )
+                                                    }
+                                                >
+                                                    Accept
+                                                </button>
+                                            </>
+                                        )}
+
+                                        {/* ❌ Staff said NO → only Reject */}
+                                        {!isRMDecided && isStaffRejected && (
+                                            <button
+                                                style={{
+                                                    padding: '8px 16px',
+                                                    borderRadius: '6px',
+                                                    border: 'none',
+                                                    fontSize: '13px',
+                                                    background: '#E63946',
+                                                    color: '#fff',
+                                                    cursor: 'pointer'
+                                                }}
+                                                onClick={() =>
+                                                    rejectStaff(
+                                                        selectedAssignment.originalRecord?.id,
+                                                        selectedAssignment.originalStaffObject?.phone
+                                                    )
+                                                }
+                                            >
+                                                Reject
+                                            </button>
                                         )}
                                     </div>
+
+
 
 
                                     {/* ===== WHY STAFF BLOCK ===== */}

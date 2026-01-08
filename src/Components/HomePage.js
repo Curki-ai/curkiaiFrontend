@@ -54,6 +54,7 @@ import askAiSendBtn from "../Images/askaISendBtn.png"
 import newTlcLogo from "../Images/newTlcLogo.png"
 import PricingPlansModal from "./NewPricingModal";
 import NewSubscriptionStatus from "./NewSubscriptionStatus";
+import VoiceModule from "./Modules/SupportAtHomeModule.js/VoiceModule";
 const HomePage = () => {
   const [sidebarVisible, setSidebarVisible] = useState(true);
   const [documentString, setDocumentString] = useState("");
@@ -700,7 +701,9 @@ const HomePage = () => {
                   <div style={{ display: selectedRole === "Smart Onboarding (Staff)" ? "block" : "none" }}>
                     <HRAnalysis handleClick={handleClick} selectedRole="Smart Onboarding (Staff)" setShowFeedbackPopup={setShowFeedbackPopup} user={user} setManualResumeZip={setManualResumeZip} />
                   </div>
-
+                  <div style={{ display: selectedRole === "Voice AI Module" ? "block" : "none" }}>
+                    <VoiceModule />
+                  </div>
                   <div style={{ display: selectedRole === "Client Profitability & Service" ? "block" : "none" }}>
                     <CareServicesEligibility selectedRole="Client Profitability & Service" handleClick={handleClick} setShowFeedbackPopup={setShowFeedbackPopup} />
                   </div>

@@ -33,6 +33,38 @@ const RosterDetails = ({ setScreen, rosteringResponse, API_BASE, selectedClient,
             }
         };
     }, []);
+    const normalizeInPhone = (input) => {
+        if (!input || typeof input !== "string") return null;
+
+        // 1. Remove all non-digit characters
+        let digits = input.replace(/\D/g, "");
+
+        // 2. Remove leading country code (91)
+        if (digits.startsWith("91")) {
+            digits = digits.slice(2);
+        }
+
+        // 3. Remove leading zero (some numbers start with 0)
+        if (digits.startsWith("0")) {
+            digits = digits.slice(1);
+        }
+
+        // 4. Validate Indian mobile number length (10 digits)
+        if (digits.length !== 10) {
+            console.warn("Invalid IN phone number:", input);
+            return null;
+        }
+
+        // 5. Indian mobile numbers start with 6,7,8,9
+        if (!/^[6-9]/.test(digits)) {
+            console.warn("Invalid IN mobile prefix:", input);
+            return null;
+        }
+        console.log(`normalized Indian number +91${digits}`)
+        // 6. Return E.164 format
+        return `+91${digits}`;
+    };
+
     const normalizeAuPhone = (input) => {
         if (!input || typeof input !== "string") return null;
 
@@ -162,7 +194,6 @@ const RosterDetails = ({ setScreen, rosteringResponse, API_BASE, selectedClient,
 
                     // ✔ Phone
                     Phone: normalizeAuPhone(selectedClient.phone),
-
                     // ✔ Address (auto split)
                     Address1: selectedClient.address || "",
                     Address2: "",
