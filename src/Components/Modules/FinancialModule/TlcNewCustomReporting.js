@@ -30,6 +30,7 @@ import TlcAiWordExporter, { parseMarkdownToDocx } from "./TlcAiWordExporter";
 import { Document, Packer, Paragraph, HeadingLevel, ImageRun } from "docx";
 import { saveAs } from "file-saver";
 import html2canvas from "html2canvas";
+import { GoArrowLeft } from "react-icons/go";
 
 export default function TlcNewCustomerReporting(props) {
     // -------------------- MULTI TAB SUPPORT --------------------
@@ -1837,9 +1838,9 @@ export default function TlcNewCustomerReporting(props) {
                                         page4: false,
                                     });
                                 }}
-
                             >
-                                ← Back
+                                <GoArrowLeft size={22} color="#6C4CDC" />
+                                Back
                             </div>
                         )}
 
@@ -1862,7 +1863,7 @@ export default function TlcNewCustomerReporting(props) {
                         />
 
                         {activeTabData.aiAccordion && (
-                            <div style={{ marginTop: "16px" }}>
+                            <div style={{ marginTop: "16px" ,marginBottom:"16px"}}>
                                 {activeTabData.aiLoading && (
                                     <p style={{ textAlign: "center", color: "#6C4CDC" }}>
                                         ⏳ Generating AI summary...
@@ -2113,7 +2114,7 @@ export default function TlcNewCustomerReporting(props) {
 
                                 return (
                                     <div
-                                        key={item.id || index}
+                                        key={item.id}
                                         className="history-card-modern"
                                         style={{
                                             position: "relative",

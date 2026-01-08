@@ -28,6 +28,7 @@ import WhoAreYouToggle from "./WhoAreYouToggle";
 import { RiDeleteBin6Line } from "react-icons/ri";
 import "../../../Styles/TlcNewCustomReporting.css";
 import TlcSaveButton from "../../../Images/Tlc_Save_Button.png"
+import { GoArrowLeft } from "react-icons/go";
 const TlcNewClientProfitability = (props) => {
     const onPrepareAiPayload = props.onPrepareAiPayload;
     const user = props.user
@@ -327,7 +328,6 @@ const TlcNewClientProfitability = (props) => {
                     body: formData,
                 }
             );
-
             return await res.json();
         } catch (err) {
             console.error(err);
@@ -756,20 +756,55 @@ const TlcNewClientProfitability = (props) => {
     //     });
 
     // }, [responseData]);
+    // useEffect(() => {
+    //     if (!activeTabData?.responseData?.table || activeTabData?.responseData.table.length === 0) return;
+
+    //     updateTab({
+    //         directFinalTable: {
+    //             columns: Object.keys(activeTabData.responseData.table[0]),
+    //             rows: activeTabData.responseData.table,
+    //             regions: [],
+    //             departments: [],
+    //         }
+    //     });
+
+    // }, [activeTabData?.responseData]);
+
     useEffect(() => {
-        if (!activeTabData?.responseData?.table || activeTabData?.responseData.table.length === 0) return;
+        if (!activeTabData?.responseData?.table || activeTabData.responseData.table.length === 0) return;
+
+        const COLUMN_ORDER = [
+            "Clean_Client",
+            "Region",
+            "Department",
+            "Revenue",
+            "Revenue_AUD",
+            "Direct_Cost",
+            "Gross_Margin",
+            "Gross_Margin_Pct",
+            "Indirect_Cost",
+            "Allocated_Cost",
+        ];
+
+        // keep only columns that actually exist in data
+        const availableColumns = Object.keys(activeTabData.responseData.table[0]);
+
+        const orderedColumns = COLUMN_ORDER.filter(col =>
+            availableColumns.includes(col)
+        );
 
         updateTab({
             directFinalTable: {
-                columns: Object.keys(activeTabData.responseData.table[0]),
+                columns: orderedColumns,
                 rows: activeTabData.responseData.table,
                 regions: [],
                 departments: [],
             }
         });
-
     }, [activeTabData?.responseData]);
 
+
+    console.log("activeTabData", activeTabData)
     const handleDownloadReport = () => {
         console.log("report download")
     }
@@ -822,6 +857,17 @@ const TlcNewClientProfitability = (props) => {
             </div>
 
             {/* BODY */}
+            {loadingHistory && (
+                <p style={{ textAlign: "center", color: "#555", marginTop: "20px" }}>
+                    Loading history...
+                </p>
+            )}
+            {!loadingHistory && historyList.length === 0 && (
+                <p style={{ textAlign: "center", color: "#777", marginTop: "20px" }}>
+                    No saved history found.
+                </p>
+            )}
+
             {!loadingHistory && historyList.length > 0 && (
                 <div className="history-list">
                     {historyList.map(item => (
@@ -1357,7 +1403,8 @@ const TlcNewClientProfitability = (props) => {
                                 });
                             }}
                         >
-                            ← Back
+                            <GoArrowLeft size={22} color="#6C4CDC" />
+                            Back
                         </div>
                     )}
 
