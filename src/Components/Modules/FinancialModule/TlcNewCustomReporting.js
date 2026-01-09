@@ -26,7 +26,7 @@ import TlcPayrollDownloadIcon from "../../../Images/TlcPayrollDownloadIcon.png"
 import { dummyData, dummyPayload } from "./TlcPayrollDummyData";
 import TlcSaveButton from "../../../Images/Tlc_Save_Button.png"
 import TlcCompareAnalyseIcon from "../../../Images/Tlc_Compare_Analyse_Icon.png"
-import TlcAiWordExporter, { parseMarkdownToDocx } from "./TlcAiWordExporter";
+import TlcAiWordExporter, { addSectionWithGraphsToWord, parseMarkdownToDocx } from "./TlcAiWordExporter";
 import { Document, Packer, Paragraph, HeadingLevel, ImageRun } from "docx";
 import { saveAs } from "file-saver";
 import html2canvas from "html2canvas";
@@ -68,6 +68,8 @@ export default function TlcNewCustomerReporting(props) {
             headerRole: "",
             syncEnabled: false,
             dateOpen: false,
+            aiProgress: 0,
+            exporting: false,
         },
     ]);
     const [activeTab, setActiveTab] = useState(1);
@@ -123,6 +125,8 @@ export default function TlcNewCustomerReporting(props) {
             headerRole: "",
             syncEnabled: false,
             dateOpen: false,
+            aiProgress: 0,
+            exporting: false,
         };
         setTabs((prev) => [...prev, newTab]);
         setActiveTab(newId);
@@ -238,29 +242,66 @@ export default function TlcNewCustomerReporting(props) {
         ];
     };
 
+    const waitForChartToRender = async (node, timeout = 4000) => {
+        const start = Date.now();
+
+        while (Date.now() - start < timeout) {
+            if (node.querySelector("svg") || node.querySelector("canvas")) {
+                return;
+            }
+            await new Promise(r => setTimeout(r, 200));
+        }
+
+        console.warn("⚠️ Chart render timeout");
+    };
+
     const captureNode = async (node) => {
-        // ⏳ wait for SVG & fonts to paint
-        await new Promise((r) => setTimeout(r, 600));
+        await waitForChartToRender(node); // 🔥 KEY FIX
 
         const canvas = await html2canvas(node, {
-            scale: 2,
+            scale: 1.25,
             backgroundColor: "#ffffff",
             useCORS: true,
-            foreignObjectRendering: true,
+            foreignObjectRendering: false, // 🔥 IMPORTANT
         });
 
         return {
             data: Uint8Array.from(
                 atob(canvas.toDataURL("image/png").split(",")[1]),
-                (c) => c.charCodeAt(0)
+                c => c.charCodeAt(0)
             ),
             width: canvas.width,
             height: canvas.height,
         };
     };
 
+
     const handleDownloadWordReport = async () => {
-        if (!reportRef.current) return;
+        const prevAccordionState = {
+            aiAccordion: activeTabData.aiAccordion,
+            page1: activeTabData.page1,
+            page2: activeTabData.page2,
+            page3: activeTabData.page3,
+            page4: activeTabData.page4,
+        };
+        updateTab({ exporting: true });
+        // 🔓 Force open all accordions before capture
+
+
+        updateTab({
+            aiAccordion: true,
+            page1: true,
+            page2: true,
+            page3: true,
+            page4: true,
+        });
+
+        // 🧠 DOM ko render hone ka time do
+        await new Promise(r => setTimeout(r, 600));
+        if (!reportRef.current) {
+            updateTab({ exporting: false });
+            return;
+        }
 
         const children = [];
 
@@ -286,72 +327,51 @@ export default function TlcNewCustomerReporting(props) {
         }
 
         /* ================= DASHBOARD ================= */
-        const sectionTitles = reportRef.current.querySelectorAll(
-            '[style*="font-weight: 600"]'
-        );
-
-        for (const sectionTitle of sectionTitles) {
-            children.push(
-                new Paragraph({
-                    text: sectionTitle.innerText,
-                    heading: HeadingLevel.HEADING_2,
-                    spacing: { before: 300, after: 200 },
-                })
-            );
-
-            /* ===== SCORE CARDS ===== */
-            const scoreCards =
-                sectionTitle.parentElement.querySelectorAll(".summary-card");
-
-            scoreCards.forEach((card) => {
-                const label = card.querySelector("p")?.innerText;
-                const value = card.querySelector("h3")?.innerText;
-
-                if (label && value) {
-                    children.push(
-                        new Paragraph({
-                            text: `${label}: ${value}`,
-                            spacing: { after: 120 },
-                        })
-                    );
-                }
-            });
-
-            /* ===== CHARTS ===== */
-            const charts = sectionTitle
-                .closest("section")
-                ?.querySelectorAll(".charts-grid > div")
-
-            await new Promise((r) => setTimeout(r, 300));
-
-            for (const chart of charts) {
-                console.log("chart", chart)
-                // ⛔ skip invisible / empty charts
-                if (!chart.offsetWidth || !chart.offsetHeight) continue;
-
-                const { data, width, height } = await captureNode(chart);
-
-                const maxWidth = 550;
-                const ratio = height / width;
-
-                children.push(
-                    new Paragraph({
-                        children: [
-                            new ImageRun({
-                                data, // ✅ ONLY Uint8Array goes here
-                                transformation: {
-                                    width: maxWidth,
-                                    height: Math.round(maxWidth * ratio), // ✅ aspect ratio safe
-                                },
-                            }),
-                        ],
-                        spacing: { after: 300 },
-                    })
-                );
-            }
-
-
+        /* ================= AI INSIGHT ================= */
+        if (activeTabData.aiReport) {
+            children.push(...buildMarkdownDocxContent(activeTabData.aiReport));
         }
+
+        await addSectionWithGraphsToWord({
+            title: `AI Insight (${formatDateRange()})`,
+            sectionKey: "ai-insight",
+            children,
+            reportRoot: reportRef.current,
+            captureNode,
+        });
+
+        await addSectionWithGraphsToWord({
+            title: `Payroll Overview (${formatDateRange()})`,
+            sectionKey: "payroll-overview",
+            children,
+            reportRoot: reportRef.current,
+            captureNode,
+        });
+
+        await addSectionWithGraphsToWord({
+            title: `Detailed Breakdown (${formatDateRange()})`,
+            sectionKey: "detailed-breakdown",
+            children,
+            reportRoot: reportRef.current,
+            captureNode,
+        });
+
+        await addSectionWithGraphsToWord({
+            title: `Leave and absence (${formatDateRange()})`,
+            sectionKey: "leave-absence",
+            children,
+            reportRoot: reportRef.current,
+            captureNode,
+        });
+
+        await addSectionWithGraphsToWord({
+            title: `Payroll Comparison (${formatDateRange()})`,
+            sectionKey: "payroll-comparison",
+            children,
+            reportRoot: reportRef.current,
+            captureNode,
+        });
+
 
         /* ================= CREATE ONE WORD FILE ================= */
         const doc = new Document({
@@ -360,6 +380,10 @@ export default function TlcNewCustomerReporting(props) {
 
         const blob = await Packer.toBlob(doc);
         saveAs(blob, `Payroll_Report_${formatDateRange()}.docx`);
+        updateTab({
+            exporting: false,
+            ...prevAccordionState,
+        });
     };
 
 
@@ -597,7 +621,9 @@ export default function TlcNewCustomerReporting(props) {
                 loading: false,
                 uploading: false,
                 progressStage: "idle",
-                name: formatDateRange()
+                // name: formatDateRange()
+                name: `${startDate.getDate()}-${startDate.getMonth() + 1}-${startDate.getFullYear()} - ${endDate.getDate()}-${endDate.getMonth() + 1}-${endDate.getFullYear()}`
+
             });
             try {
                 const userEmail = props?.user?.email?.trim()?.toLowerCase();
@@ -814,6 +840,7 @@ export default function TlcNewCustomerReporting(props) {
     }, [props.user]);
 
     const handleAiAnalysis = async () => {
+        let aiProgressInterval;
         if (activeTabData.aiReport || activeTabData.aiLoading) return;
         if (!activeTabData?.analysisData) {
             alert("Please run the regular analysis first.");
@@ -846,7 +873,14 @@ export default function TlcNewCustomerReporting(props) {
         try {
             // ✅ Step 2: Start loading
             updateTab({ aiLoading: true, aiReport: null });
+            updateTab({ aiProgress: 5 });
 
+            let progress = 5;
+            aiProgressInterval = setInterval(() => {
+                progress += Math.random() * 6; // smooth fake increase
+                if (progress > 70) progress = 70;
+                updateTab({ aiProgress: Math.floor(progress) });
+            }, 600);
             console.log("Sending full payload to AI Analysis API...");
             const userEmail = props?.user?.email?.trim()?.toLowerCase();
             // const userEmail = "kris@curki.ai"
@@ -871,10 +905,13 @@ export default function TlcNewCustomerReporting(props) {
             }
 
             // ✅ Step 4: Save report into tab
+            clearInterval(aiProgressInterval);
+
             updateTab({
                 aiReport: data?.report_md,
                 showReport: true,
                 aiLoading: false,
+                aiProgress: 100,   // ✅ COMPLETE
             });
             try {
                 const userEmail = props?.user?.email?.trim()?.toLowerCase();
@@ -885,9 +922,10 @@ export default function TlcNewCustomerReporting(props) {
                 console.error("Error incrementing AI analysis count:", err);
             }
         } catch (err) {
+            clearInterval(aiProgressInterval);
             console.error("❌ AI Analysis Error:", err);
             alert("AI Analysis failed: " + err.message);
-            updateTab({ aiLoading: false });
+            updateTab({ aiLoading: false, aiProgress: 0 });
         }
     };
 
@@ -922,7 +960,11 @@ export default function TlcNewCustomerReporting(props) {
                 endDate: end ? new Date(end) : null,
 
                 // ✅ tab name shows date
-                name: start && end ? `${start} - ${end}` : "History",
+                // name: start && end ? `${start} - ${end}` : "History",
+                name: start && end
+  ? `${new Date(start).getDate()}-${new Date(start).getMonth() + 1}-${new Date(start).getFullYear()} - ${new Date(end).getDate()}-${new Date(end).getMonth() + 1}-${new Date(end).getFullYear()}`
+  : "History",
+
             });
 
             // ✅ Show markdown report if exists
@@ -947,10 +989,17 @@ export default function TlcNewCustomerReporting(props) {
     };
 
 
-    const formatDateRange = () => {
-        if (!activeTabData || !activeTabData.startDate || !activeTabData.endDate) return "Selected Date Range";
-        return `${activeTabData.startDate.toLocaleDateString()} - ${activeTabData.endDate.toLocaleDateString()}`;
-    };
+ const formatDateRange = () => {
+    if (!activeTabData || !activeTabData.startDate || !activeTabData.endDate)
+        return "Selected Date Range";
+
+    const format = (date) =>
+        `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
+
+    return `${format(activeTabData.startDate)} - ${format(activeTabData.endDate)}`;
+};
+
+
 
     // ------------------- CUSTOM MULTISELECT -------------------
     const MultiSelectCustom = ({
@@ -1787,9 +1836,9 @@ export default function TlcNewCustomerReporting(props) {
                 <div className="inline-loader-wrapper">
                     <div className="loader"></div>
                     <div className="loading-text">
-                        {activeTabData.progressStage === "uploading" && "📤 Uploading your files..."}
-                        {activeTabData.progressStage === "analysing" && "🔍 Analysing data..."}
-                        {activeTabData.progressStage === "preparing" && "📊 Preparing your dashboard..."}
+                        {activeTabData.progressStage === "uploading" && "Uploading your files..."}
+                        {activeTabData.progressStage === "analysing" && "Analysing data..."}
+                        {activeTabData.progressStage === "preparing" && "Preparing your dashboard..."}
                     </div>
                 </div>
             )}
@@ -1843,170 +1892,172 @@ export default function TlcNewCustomerReporting(props) {
                                 Back
                             </div>
                         )}
+                        <section data-report-section="ai-insight">
+                            <AccordionHeader
+                                title={`AI Insight ${activeTabData.startDate && activeTabData.endDate
+                                    ? `(${formatDateRange()})`
+                                    : ""
+                                    }`}
+                                isOpen={activeTabData.aiAccordion}
+                                showInsightIcon={true}
+                                showDownloadIcon={!!activeTabData.aiReport}   // ✅ only show when ready
+                                onDownload={downloadWord}
+                                onClick={() => {
+                                    const willOpen = !activeTabData.aiAccordion;
+                                    updateTab({ aiAccordion: willOpen });
+                                    if (willOpen && !activeTabData.aiReport && !activeTabData.aiLoading) {
+                                        handleAiAnalysis();
+                                    }
+                                }}
+                            />
 
-                        <AccordionHeader
-                            title={`AI Insight ${activeTabData.startDate && activeTabData.endDate
-                                ? `(${formatDateRange()})`
-                                : ""
-                                }`}
-                            isOpen={activeTabData.aiAccordion}
-                            showInsightIcon={true}
-                            showDownloadIcon={!!activeTabData.aiReport}   // ✅ only show when ready
-                            onDownload={downloadWord}
-                            onClick={() => {
-                                const willOpen = !activeTabData.aiAccordion;
-                                updateTab({ aiAccordion: willOpen });
-                                if (willOpen && !activeTabData.aiReport && !activeTabData.aiLoading) {
-                                    handleAiAnalysis();
-                                }
-                            }}
-                        />
-
-                        {activeTabData.aiAccordion && (
-                            <div style={{ marginTop: "16px" ,marginBottom:"16px"}}>
-                                {activeTabData.aiLoading && (
-                                    <p style={{ textAlign: "center", color: "#6C4CDC" }}>
-                                        ⏳ Generating AI summary...
-                                    </p>
-                                )}
-
-                                {!activeTabData.aiLoading && activeTabData.aiReport && (
+                            {activeTabData.aiAccordion && (
+                                <div style={{ marginBottom: "10px" }}>
                                     <AIAnalysisReportViewer
                                         reportText={activeTabData.aiReport}
-                                        loading={false}
+                                        loading={activeTabData.aiLoading}
                                         onDownload={downloadWord}
+                                        progress={activeTabData.aiProgress}
                                     />
-                                )}
+                                </div>
+                            )}
 
-                                {!activeTabData.aiLoading && !activeTabData.aiReport && (
-                                    <p style={{ textAlign: "center", color: "#777" }}>
-                                        Click to generate AI summary
-                                    </p>
-                                )}
-                            </div>
-                        )}
-
+                        </section>
                         {/* ================= PAGE 1 ================= */}
-                        <AccordionHeader
-                            title={`Payroll Overview ${activeTabData.startDate && activeTabData.endDate
-                                ? `(${formatDateRange()})`
-                                : ""
-                                }`}
-                            isOpen={activeTabData.page1}
-                            showInsightIcon={false}
-                            onClick={() => togglePage("page1")}
-                        />
+                        <section data-report-section="payroll-overview">
+                            <AccordionHeader
+                                title={`Payroll Overview ${activeTabData.startDate && activeTabData.endDate
+                                    ? `(${formatDateRange()})`
+                                    : ""
+                                    }`}
+                                isOpen={activeTabData.page1}
+                                showInsightIcon={false}
+                                onClick={() => togglePage("page1")}
+                            />
 
-                        {activeTabData.page1 && (
-                            <>
-                                <div className="summary-cards">
-                                    {Object.entries(
-                                        activeTabData.analysisData.pages?.["page 1"]?.scorecard || {}
-                                    ).map(([label, value], index) => (
-                                        <div key={index} className="summary-card">
-                                            <p>{label}</p>
-                                            <h3>
-                                                {typeof value === "number" || !isNaN(value)
-                                                    ? Number(value).toLocaleString(undefined, {
-                                                        minimumFractionDigits: 2,
-                                                        maximumFractionDigits: 2,
-                                                    })
-                                                    : value}
-                                            </h3>
+                            {activeTabData.page1 && (
+                                <>
+                                    <div className="summary-cards">
+                                        {Object.entries(
+                                            activeTabData.analysisData.pages?.["page 1"]?.scorecard || {}
+                                        ).map(([label, value], index) => (
+                                            <div key={index} className="summary-card">
+                                                <p>{label}</p>
+                                                <h3>
+                                                    {typeof value === "number" || !isNaN(value)
+                                                        ? Number(value).toLocaleString(undefined, {
+                                                            minimumFractionDigits: 2,
+                                                            maximumFractionDigits: 2,
+                                                        })
+                                                        : value}
+                                                </h3>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <div className="charts-grid">
+                                        {(activeTabData.analysisData.pages?.["page 1"]?.figures || []).map(
+                                            (html, index) => (
+                                                <div key={index}>{renderHtmlFigure(html)}</div>
+                                            )
+                                        )}
+                                    </div>
+
+                                    {activeTabData.analysisData.pages?.["page 1"]?.table && (
+                                        <div className="table-box">
+                                            {renderHtmlFigure(
+                                                activeTabData.analysisData.pages["page 1"].table
+                                            )}
                                         </div>
-                                    ))}
-                                </div>
-
-                                <div className="charts-grid">
-                                    {(activeTabData.analysisData.pages?.["page 1"]?.figures || []).map(
-                                        (html, index) => (
-                                            <div key={index}>{renderHtmlFigure(html)}</div>
-                                        )
                                     )}
-                                </div>
-
-                                {activeTabData.analysisData.pages?.["page 1"]?.table && (
-                                    <div className="table-box">
-                                        {renderHtmlFigure(
-                                            activeTabData.analysisData.pages["page 1"].table
-                                        )}
-                                    </div>
-                                )}
-                            </>
-                        )}
-
+                                </>
+                            )}
+                        </section>
                         {/* ================= PAGE 2 ================= */}
-                        <AccordionHeader
-                            title={`Detailed Breakdown ${activeTabData.startDate && activeTabData.endDate
-                                ? `(${formatDateRange()})`
-                                : ""
-                                }`}
-                            isOpen={activeTabData.page2}
-                            showInsightIcon={false}
-                            onClick={() => togglePage("page2")}
-                        />
+                        <section data-report-section="detailed-breakdown">
+                            <AccordionHeader
+                                title={`Detailed Breakdown ${activeTabData.startDate && activeTabData.endDate
+                                    ? `(${formatDateRange()})`
+                                    : ""
+                                    }`}
+                                isOpen={activeTabData.page2}
+                                showInsightIcon={false}
+                                onClick={() => togglePage("page2")}
+                            />
 
-                        {activeTabData.page2 && (
-                            <div className="charts-grid">
-                                {(activeTabData.analysisData.pages?.["page 2"]?.figures || []).map(
-                                    (html, index) => (
-                                        <div key={index}>{renderHtmlFigure(html)}</div>
-                                    )
-                                )}
-                            </div>
-                        )}
-
-                        {/* ================= PAGE 3 ================= */}
-                        <AccordionHeader
-                            title={`Leave and absence ${activeTabData.startDate && activeTabData.endDate
-                                ? `(${formatDateRange()})`
-                                : ""
-                                }`}
-                            isOpen={activeTabData.page3}
-                            showInsightIcon={false}
-                            onClick={() => togglePage("page3")}
-                        />
-
-                        {activeTabData.page3 && (
-                            <>
-                                {(activeTabData.analysisData.pages?.["page 3"]?.figures || []).map(
-                                    (html, index) => (
-                                        <div key={index}>{renderHtmlFigure(html)}</div>
-                                    )
-                                )}
-                            </>
-                        )}
-
-                        {/* ================= PAGE 4 ================= */}
-                        <AccordionHeader
-                            title={`Payroll Comparison ${activeTabData.startDate && activeTabData.endDate
-                                ? `(${formatDateRange()})`
-                                : ""
-                                }`}
-                            isOpen={activeTabData.page4}
-                            showInsightIcon={false}
-                            onClick={() => togglePage("page4")}
-                        />
-
-                        {activeTabData.page4 && (
-                            <>
+                            {activeTabData.page2 && (
                                 <div className="charts-grid">
-                                    {(activeTabData.analysisData.pages?.["page 4"]?.figures || []).map(
+                                    {(activeTabData.analysisData.pages?.["page 2"]?.figures || []).map(
                                         (html, index) => (
                                             <div key={index}>{renderHtmlFigure(html)}</div>
                                         )
                                     )}
                                 </div>
+                            )}
+                        </section>
+                        {/* ================= PAGE 3 ================= */}
+                        <section data-report-section="leave-absence">
+                            <AccordionHeader
+                                title={`Leave and absence ${activeTabData.startDate && activeTabData.endDate
+                                    ? `(${formatDateRange()})`
+                                    : ""
+                                    }`}
+                                isOpen={activeTabData.page3}
+                                showInsightIcon={false}
+                                onClick={() => togglePage("page3")}
+                            />
 
-                                {activeTabData.analysisData.pages?.["page 4"]?.table && (
-                                    <div className="table-box">
-                                        {renderHtmlFigure(
-                                            activeTabData.analysisData.pages["page 4"].table
+                            {/* {activeTabData.page3 && (
+                                <>
+                                    {(activeTabData.analysisData.pages?.["page 3"]?.figures || []).map(
+                                        (html, index) => (
+                                            <div key={index}>{renderHtmlFigure(html)}</div>
+                                        )
+                                    )}
+                                </>
+                            )} */}
+                            {activeTabData.page3 && (
+                                <div className="charts-grid">
+                                    {(activeTabData.analysisData.pages?.["page 3"]?.figures || []).map(
+                                        (html, index) => (
+                                            <div key={index}>{renderHtmlFigure(html)}</div>
+                                        )
+                                    )}
+                                </div>
+                            )}
+                        </section>
+                        {/* ================= PAGE 4 ================= */}
+                        <section data-report-section="payroll-comparison">
+                            <AccordionHeader
+                                title={`Payroll Comparison ${activeTabData.startDate && activeTabData.endDate
+                                    ? `(${formatDateRange()})`
+                                    : ""
+                                    }`}
+                                isOpen={activeTabData.page4}
+                                showInsightIcon={false}
+                                onClick={() => togglePage("page4")}
+                            />
+
+                            {activeTabData.page4 && (
+                                <>
+                                    <div className="charts-grid">
+                                        {(activeTabData.analysisData.pages?.["page 4"]?.figures || []).map(
+                                            (html, index) => (
+                                                <div key={index}>{renderHtmlFigure(html)}</div>
+                                            )
                                         )}
                                     </div>
-                                )}
-                            </>
-                        )}
+
+                                    {activeTabData.analysisData.pages?.["page 4"]?.table && (
+                                        <div className="table-box">
+                                            {renderHtmlFigure(
+                                                activeTabData.analysisData.pages["page 4"].table
+                                            )}
+                                        </div>
+                                    )}
+                                </>
+                            )}
+                        </section>
                     </section>
                 )}
                 {activeTabData.stage === "filters" && !activeTabData.analysisData && (
@@ -2281,6 +2332,47 @@ export default function TlcNewCustomerReporting(props) {
                     )}
                 </section>
             )}
+            {activeTabData.exporting && (
+                <div
+                    style={{
+                        position: "fixed",
+                        inset: 0,
+                        background: "rgba(255,255,255,0.85)",
+                        zIndex: 99999,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontFamily: "Inter, sans-serif",
+                    }}
+                >
+                    <div style={{ textAlign: "center" }}>
+                        {/* 🔄 CIRCULAR LOADER */}
+                        <div
+                            style={{
+                                width: "48px",
+                                height: "48px",
+                                border: "4px solid #E5E7EB",
+                                borderTop: "4px solid #6C4CDC",
+                                borderRadius: "50%",
+                                animation: "spin 1s linear infinite",
+                                margin: "0 auto 12px",
+                            }}
+                        />
+
+                        <div
+                            style={{
+                                fontSize: "14px",
+                                fontWeight: 500,
+                                color: "#374151",
+                            }}
+                        >
+                            Generating Word report…
+                        </div>
+                    </div>
+                </div>
+            )}
+
+
         </div>
     );
 }

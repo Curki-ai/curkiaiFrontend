@@ -56,7 +56,9 @@ export const addSectionWithGraphsToWord = async ({
         );
     });
 
-    const charts = sectionEl.querySelectorAll(".charts-grid > div");
+    // const charts = sectionEl.querySelectorAll(".charts-grid > div");
+    const charts = sectionEl.querySelectorAll(".chart-box");
+
 
     console.log(`📊 Charts found in ${sectionKey}:`, charts.length);
 
@@ -273,7 +275,7 @@ export const parseMarkdownToDocx = (markdown) => {
     return content;
 };
 
-export const TlcAiWordExporter = ({ markdown, fileName }) => {
+export const TlcClientProfitibilityAiWordExporter = ({ markdown, fileName }) => {
     const downloadWord = async () => {
         if (!markdown) {
             alert("No AI summary available");
@@ -302,4 +304,4 @@ export const TlcAiWordExporter = ({ markdown, fileName }) => {
     return downloadWord;
 };
 
-export default TlcAiWordExporter;
+export default TlcClientProfitibilityAiWordExporter;
