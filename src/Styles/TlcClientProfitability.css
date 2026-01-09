@@ -1,91 +1,93 @@
 .tlcClient-dashboard-summary {
-    display: grid;
-    grid-template-columns: 23.5% 23.5% 23.5% 23.5%;
-    column-gap: 2%;
+  display: grid;
+  grid-template-columns: 23.5% 23.5% 23.5% 23.5%;
+  column-gap: 2%;
 }
 
 .tlcClient-dashboard-card {
-    background: #ffffff;
-    border-radius: 10px;
-    flex: 1;
-    text-align: center;
-    padding: 24px 18px;
-    border: 1px solid;
-    border-image-source: linear-gradient(0deg, #E5E5E5, #E5E5E5);
-    box-shadow: 0px 0px 4px 0px #00000040;
-    text-align: left;
-    margin-bottom: 40px;
+  background: #ffffff;
+  border-radius: 10px;
+  flex: 1;
+  text-align: center;
+  padding: 24px 18px;
+  border: 1px solid;
+  border-image-source: linear-gradient(0deg, #E5E5E5, #E5E5E5);
+  box-shadow: 0px 0px 4px 0px #00000040;
+  text-align: left;
+  margin-bottom: 40px;
 }
 
 .tlcClient-dashboard-card p {
-    font-size: 14px;
-    font-weight: 400;
-    font-family: 'Inter';
-    color: #6b6b6b;
+  font-size: 14px;
+  font-weight: 400;
+  font-family: 'Inter';
+  color: #6b6b6b;
 }
 
 .tlcClient-dashboard-card h3 {
-    font-size: 20px;
-    font-weight: 500;
-    font-family: 'Inter';
-    color: #000000;
-    margin-top: 6px;
-    margin-bottom: 6px;
+  font-size: 20px;
+  font-weight: 500;
+  font-family: 'Inter';
+  color: #000000;
+  margin-top: 6px;
+  margin-bottom: 6px;
 }
 
 
 .client-profitabilty-graph-each {
-    box-shadow: 0px 0px 4px 0px #00000040;
-    border: 1px solid;
-    border-image-source: linear-gradient(0deg, #E5E5E5, #E5E5E5);
-    border-radius: 12px;
-    margin-bottom: 24px;
-    padding: 12px;
-    
+  box-shadow: 0px 0px 4px 0px #00000040;
+  border: 1px solid;
+  border-image-source: linear-gradient(0deg, #E5E5E5, #E5E5E5);
+  border-radius: 12px;
+  margin-bottom: 24px;
+  padding: 12px;
+
 }
 
 .filter-dropdown {
-    text-align: left !important;
-    width: 100%;
-    font-size: 14px;
-    border-radius: 8px;
-    font-family: 'Inter';
+  text-align: left !important;
+  width: 100%;
+  font-size: 14px;
+  border-radius: 8px;
+  font-family: 'Inter';
 }
 
 .filter-search-input {
-    padding: 10px 16px;
-    border-radius: 6px;
-    border: 1px solid #ccc;
-    font-size: 14px;
-    font-family: Inter;
-    width: 100%;
+  padding: 10px 16px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+  font-family: Inter;
+  width: 100%;
 }
 
 .filter-search-input:focus {
-    border-color: #6c4cdc;
+  border-color: #6c4cdc;
 }
+
 .json-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-family: Inter;
-    font-size: 14px;
+  width: 100%;
+  border-collapse: collapse;
+  font-family: Inter;
+  font-size: 14px;
 }
 
 .json-table th {
-    background: #f4f4f4;
-    padding: 10px;
-    border: 1px solid #ccc;
-    font-weight: 600;
+  background: #f4f4f4;
+  padding: 10px;
+  border: 1px solid #ccc;
+  font-weight: 600;
 }
 
 .json-table td {
-    padding: 10px;
-    border: 1px solid #e0e0e0;
+  padding: 10px;
+  border: 1px solid #e0e0e0;
 }
 
 .json-table tr:hover {
-    background: #f9f6ff;
+  background: #f9f6ff;
 }
+
 .drill-toggle-btn {
   border: none;
   background: #e5e7eb;
@@ -96,34 +98,36 @@
   cursor: pointer;
   margin-right: 6px;
 }
+
 .tab-btn {
-    padding: 10px 22px;
-    font-size: 14px;
-    font-family: Inter, sans-serif;
-    font-weight: 500;
-    border: 1.5px solid #d3d3d3;
-    border-radius: 8px;
-    background: #f7f7f7;
-    cursor: pointer;
-    transition: all 0.25s ease;
-    color: #444;
+  padding: 10px 22px;
+  font-size: 14px;
+  font-family: Inter, sans-serif;
+  font-weight: 500;
+  border: 1.5px solid #d3d3d3;
+  border-radius: 8px;
+  background: #f7f7f7;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  color: #444;
 }
 
 .tab-btn:hover {
-    background: #ececec;
+  background: #ececec;
 }
 
 .tab-btn.active {
-    background: #6C4CDC;
-    border-color: #6C4CDC;
-    color: white;
-    box-shadow: 0px 4px 10px rgba(108, 76, 220, 0.3);
-    transform: translateY(-1px);
+  background: #6C4CDC;
+  border-color: #6C4CDC;
+  color: white;
+  box-shadow: 0px 4px 10px rgba(108, 76, 220, 0.3);
+  transform: translateY(-1px);
 }
 
 .tab-btn:not(.active):hover {
-    border-color: #bfbfbf;
+  border-color: #bfbfbf;
 }
+
 /* Keep date picker popup from pushing layout */
 .date-filter-wrapper {
   position: relative;
@@ -141,8 +145,10 @@
   display: grid;
   grid-template-columns: repeat(4, minmax(200px, 1fr));
   gap: 12px;
-  align-items: start; /* 👈 important */
+  align-items: start;
+  /* 👈 important */
 }
+
 /* ===============================
    FIX HISTORY CARD FONT & COLOR
    =============================== */
@@ -165,7 +171,8 @@
 
 /* Saved on */
 .history-card-modern .saved-on {
-  color: #9ca3af; /* light grey */
+  color: #9ca3af;
+  /* light grey */
   font-size: 13px;
   font-weight: 400;
 }
@@ -194,7 +201,6 @@
   display: flex;
   align-items: center;
   gap: 6px;
-
   cursor: pointer;
   color: #6C4CDC;
   font-weight: 600;
@@ -202,10 +208,9 @@
   margin-left: 4px;
   margin-bottom: 14px;
   margin-top: 6px;
+  width: 66px;
 }
 
 .tlc-profitibility-history-back-btn:hover {
   color: #4b2cc0;
 }
-
-

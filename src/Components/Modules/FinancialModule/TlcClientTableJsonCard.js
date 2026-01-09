@@ -138,6 +138,19 @@ const formatValue = (value) => {
 };
 
 const JsonTableCard = ({ title, data }) => {
+  const COLUMN_WIDTHS = {
+    "Client Name": "220px",
+    "Region": "80px",
+    "Department": "110px",
+    "Revenue": "140px",
+    "Direct Cost": "130px",
+    "Gross Profit": "140px",
+    "Gross Margin": "140px",
+    "Gross Margin %": "120px",
+    "Indirect Cost": "130px",
+    "Allocated Cost": "140px",
+  };
+
   const [selectedRegion, setSelectedRegion] = useState("ALL");
   const [selectedDepartment, setSelectedDepartment] = useState("ALL");
 
@@ -230,7 +243,7 @@ const JsonTableCard = ({ title, data }) => {
           width: "100%",
         }}
       >
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
           <thead
             style={{
               position: "sticky",
@@ -248,6 +261,9 @@ const JsonTableCard = ({ title, data }) => {
                     borderBottom: "2px solid #e5e7eb",
                     textAlign: "left",
                     whiteSpace: "nowrap",
+                    // width: col === "Client Name" ? "220px" : "auto",
+                    width: COLUMN_WIDTHS[col] || "120px",
+
                   }}
                 >
                   {col}
@@ -266,6 +282,9 @@ const JsonTableCard = ({ title, data }) => {
                       padding: 12,
                       textAlign: "left",
                       whiteSpace: "nowrap",
+                      width: COLUMN_WIDTHS[col] || "120px",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
                     }}
                   >
                     {formatValue(row[col])}

@@ -37,6 +37,8 @@ import { RiDeleteBin6Line } from "react-icons/ri";
 import { useRef } from "react";
 import { GoArrowLeft } from "react-icons/go";
 import FinancialAnalysisReportViewer from "./FinancialAnalysisReportViewer.js"
+import TlcPayrollSyncTickIcon from "../../../Images/TlcPayrollSyncTick.png";
+
 const NewFinancialHealth = (props) => {
 
     const [financialTemplate, setFinancialTemplate] = useState(null);
@@ -173,13 +175,14 @@ const NewFinancialHealth = (props) => {
     const formatDateRangeForTab = (startDate, endDate) => {
         if (!startDate || !endDate) return null;
 
-        const format = (d) =>
-            d instanceof Date
-                ? d.toISOString().split("T")[0]
-                : new Date(d).toISOString().split("T")[0];
+        const format = (d) => {
+            const date = d instanceof Date ? d : new Date(d);
+            return `${date.getDate()}-${date.getMonth() + 1}-${date.getFullYear()}`;
+        };
 
         return `${format(startDate)} - ${format(endDate)}`;
     };
+
 
     const formatHistoryDateRange = (dateRange) => {
         if (!Array.isArray(dateRange) || dateRange.length !== 2) return "–";
@@ -1342,7 +1345,7 @@ const NewFinancialHealth = (props) => {
 
 
                         {/* <h1 className="titless">FINANCIAL HEALTH</h1> */}
-                        <div className="sync-toggle">
+                        {/* <div className="sync-toggle">
                             <div
                                 style={{
                                     fontSize: "13px",
@@ -1358,6 +1361,50 @@ const NewFinancialHealth = (props) => {
                                 className="custom-toggle"
                                 icons={false} // ✅ No icons
                             />
+                        </div> */}
+                        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                            <span style={{ fontSize: "13px", fontWeight: 500, fontFamily: "Inter" }}>
+                                Sync With Your System
+                            </span>
+
+                            <div
+                                onClick={() => setSyncEnabled(!syncEnabled)}
+                                style={{
+                                    width: "40px",
+                                    height: "22px",
+                                    borderRadius: "20px",
+                                    background: syncEnabled ? "#6C4CDC" : "#E5E7EB",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    padding: "2px",
+                                    cursor: "pointer",
+                                    transition: "all 0.2s ease",
+                                }}
+                            >
+                                <div
+                                    style={{
+                                        width: "18px",
+                                        height: "18px",
+                                        borderRadius: "50%",
+                                        background: "#fff",
+                                        transform: syncEnabled
+                                            ? "translateX(18px)"
+                                            : "translateX(0)",
+                                        transition: "all 0.2s ease",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                    }}
+                                >
+                                    {syncEnabled && (
+                                        <img
+                                            src={TlcPayrollSyncTickIcon}
+                                            alt="tick"
+                                            style={{ width: "10px", height: "10px" }}
+                                        />
+                                    )}
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div
@@ -1596,7 +1643,7 @@ const NewFinancialHealth = (props) => {
 
 
                         {/* <h1 className="titless">FINANCIAL HEALTH</h1> */}
-                        <div className="sync-toggle">
+                        {/* <div className="sync-toggle">
                             <div
                                 style={{
                                     fontSize: "13px",
@@ -1612,6 +1659,50 @@ const NewFinancialHealth = (props) => {
                                 className="custom-toggle"
                                 icons={false} // ✅ No icons
                             />
+                        </div> */}
+                        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                            <span style={{ fontSize: "13px", fontWeight: 500, fontFamily: "Inter" }}>
+                                Sync With Your System
+                            </span>
+
+                            <div
+                                onClick={() => setSyncEnabled(!syncEnabled)}
+                                style={{
+                                    width: "40px",
+                                    height: "22px",
+                                    borderRadius: "20px",
+                                    background: syncEnabled ? "#6C4CDC" : "#E5E7EB",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    padding: "2px",
+                                    cursor: "pointer",
+                                    transition: "all 0.2s ease",
+                                }}
+                            >
+                                <div
+                                    style={{
+                                        width: "18px",
+                                        height: "18px",
+                                        borderRadius: "50%",
+                                        background: "#fff",
+                                        transform: syncEnabled
+                                            ? "translateX(18px)"
+                                            : "translateX(0)",
+                                        transition: "all 0.2s ease",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                    }}
+                                >
+                                    {syncEnabled && (
+                                        <img
+                                            src={TlcPayrollSyncTickIcon}
+                                            alt="tick"
+                                            style={{ width: "10px", height: "10px" }}
+                                        />
+                                    )}
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div

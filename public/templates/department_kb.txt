@@ -1,0 +1,11 @@
+Department Code	Department Short Description	Department Long Description	Service Name
+32	SUP_CO	Support Coordination	0106 Assistance in Coordinating or Managing Life Stages, Transitions And Supports
+41	ACC	Accommodation (SIL/SDA)	SIL Household - Weekly
+41	ACC	Accommodation (SIL/SDA)	0115 Assistance with Daily Life Tasks in a Group or Shared Living Arrangement
+71	DS_PROG	Direct Services - Programs	0136 Group and Centre Based Activities
+72	DS_FLEX	Direct Services - Flexible Supports	0125 Participation in Community, Social and Civic Activities
+72	DS_FLEX	Direct Services - Flexible Supports	0107 Daily Personal Activities
+72	DS_FLEX	Direct Services - Flexible Supports	0117 Development of Daily Living and Life Skills
+72	DS_FLEX	Direct Services - Flexible Supports	0104 High Intensity Daily Personal Activities
+72	DS_FLEX	Direct Services - Flexible Supports	0120 Household tasks
+72	DS_FLEX	Direct Services - Flexible Supports	15_128 - Community Engagement Assistance 1:3

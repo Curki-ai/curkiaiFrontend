@@ -28,7 +28,13 @@ import WhoAreYouToggle from "./WhoAreYouToggle";
 import { RiDeleteBin6Line } from "react-icons/ri";
 import "../../../Styles/TlcNewCustomReporting.css";
 import TlcSaveButton from "../../../Images/Tlc_Save_Button.png"
+import TlcPayrollSyncTickIcon from "../../../Images/TlcPayrollSyncTick.png";
 import { GoArrowLeft } from "react-icons/go";
+import { Document, Packer, Paragraph, HeadingLevel, TextRun, ImageRun } from "docx";
+import { saveAs } from "file-saver";
+import html2canvas from "html2canvas";
+import { addSectionWithGraphsToWord, parseMarkdownToDocx } from "./TlcClientProfitibilityExport";
+
 const TlcNewClientProfitability = (props) => {
     const onPrepareAiPayload = props.onPrepareAiPayload;
     const user = props.user
@@ -58,7 +64,10 @@ const TlcNewClientProfitability = (props) => {
     const [loadingHistory, setLoadingHistory] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [selectedHistoryId, setSelectedHistoryId] = useState(null);
+    const [aiProgressDisplay, setAiProgressDisplay] = useState(0);
     const [deleting, setDeleting] = useState(false);
+    const aiProgressRef = useRef({});
+    const reportRef = useRef(null);
 
     const [tabs, setTabs] = useState([
         {
@@ -83,6 +92,9 @@ const TlcNewClientProfitability = (props) => {
             directFinalTable: null,
             isFromHistory: false,
             saving: false,
+            aiLoading: false,
+            aiProgress: 0,
+            exporting: false,
         },
     ]);
 
@@ -124,6 +136,130 @@ const TlcNewClientProfitability = (props) => {
         { label: "Coordinator", value: "Coordinator" },
         { label: "Admin", value: "Admin" },
     ];
+    const waitForChartToRender = async (node, timeout = 4000) => {
+        const start = Date.now();
+        while (Date.now() - start < timeout) {
+            if (
+                node.querySelector("svg") ||
+                node.querySelector("canvas") ||
+                node.querySelector(".chart-container svg")
+            ) {
+                return;
+            }
+
+            await new Promise(r => setTimeout(r, 200));
+        }
+    };
+
+    const captureNode = async (node) => {
+        await waitForChartToRender(node);
+
+        const canvas = await html2canvas(node, {
+            scale: 1.25,
+            backgroundColor: "#ffffff",
+            useCORS: true,
+        });
+
+        return {
+            data: Uint8Array.from(
+                atob(canvas.toDataURL("image/png").split(",")[1]),
+                c => c.charCodeAt(0)
+            ),
+            width: canvas.width,
+            height: canvas.height,
+        };
+    };
+    const handleDownloadReport = async () => {
+        if (!reportRef.current) return;
+
+        const prevState = {
+            ai: activeTabData.aiAccordionOpen,
+            charts: activeTabData.chartsAccordionOpen,
+            table: activeTabData.jsonTableAccordionOpen,
+        };
+
+        updateTab({
+            exporting: true,
+            aiAccordionOpen: true,
+            chartsAccordionOpen: true,
+            jsonTableAccordionOpen: true,
+        });
+
+        // await new Promise(r => setTimeout(r, 2000));
+        // wait for React to commit DOM
+        await new Promise(r => requestAnimationFrame(r));
+        await new Promise(r => requestAnimationFrame(r));
+
+        // safety buffer for charts
+        await new Promise(r => setTimeout(r, 500));
+
+
+        const children = [];
+
+        // TITLE
+        children.push(
+            new Paragraph({
+                text: "Client Profitability Report",
+                heading: HeadingLevel.TITLE,
+                spacing: { after: 400 },
+            })
+        );
+
+        // DATE RANGE
+        if (startDate && endDate) {
+            children.push(
+                new Paragraph({
+                    text: `Period: ${formatMonthRange(startDate, endDate)}`,
+                    spacing: { after: 300 },
+                })
+            );
+        }
+
+        // AI SUMMARY
+        if (activeTabData.aiSummary) {
+            children.push(
+                new Paragraph({
+                    text: "AI Insight",
+                    heading: HeadingLevel.HEADING_1,
+                    spacing: { after: 300 },
+                }),
+                ...parseMarkdownToDocx(activeTabData.aiSummary)
+            );
+        }
+
+        // SECTIONS
+        await addSectionWithGraphsToWord({
+            title: "Charts Overview",
+            sectionKey: "client-charts",
+            children,
+            reportRoot: reportRef.current,
+            captureNode,
+        });
+
+        await addSectionWithGraphsToWord({
+            title: "Participant Level Details",
+            sectionKey: "client-table",
+            children,
+            reportRoot: reportRef.current,
+            captureNode,
+        });
+
+        // CREATE WORD FILE
+        const doc = new Document({
+            sections: [{ children }],
+        });
+
+        const blob = await Packer.toBlob(doc);
+        saveAs(blob, `Client_Profitability_${formatMonthRange(startDate, endDate)}.docx`);
+
+        updateTab({
+            exporting: false,
+            aiAccordionOpen: prevState.ai,
+            chartsAccordionOpen: prevState.charts,
+            jsonTableAccordionOpen: prevState.table,
+        });
+    };
+
     const formatYearMonth = (date) => {
         if (!date) return "";
 
@@ -161,6 +297,9 @@ const TlcNewClientProfitability = (props) => {
                 directFinalTable: null,
                 isFromHistory: false,
                 saving: false,
+                aiLoading: false,
+                aiProgress: 0,
+                exporting: false,
             },
         ]);
 
@@ -218,6 +357,9 @@ const TlcNewClientProfitability = (props) => {
         );
     };
 
+    useEffect(() => {
+        setAiProgressDisplay(aiProgressRef.current[activeTab] || 0);
+    }, [activeTab]);
 
     useEffect(() => {
         const userEmail = user?.email?.toLowerCase().trim();
@@ -313,14 +455,24 @@ const TlcNewClientProfitability = (props) => {
         try {
             const formData = new FormData();
 
-            activeTabData.selectedFiles.forEach((file) => {
-                if (file.name.endsWith(".txt")) {
-                    formData.append("kb_file", file);
-                } else {
-                    formData.append("files", file);
-                }
+            // ✅ 1. Load department_kb.txt from public/templates
+            const kbResponse = await fetch("/templates/department_kb.txt");
+            const kbText = await kbResponse.text();
+
+            const kbBlob = new Blob([kbText], { type: "text/plain" });
+            const kbFile = new File([kbBlob], "department_kb.txt", {
+                type: "text/plain",
             });
 
+            // 🔑 SAME KEY backend expects
+            formData.append("kb_file", kbFile);
+
+            // ✅ 2. Append user uploaded Excel / CSV files
+            activeTabData.selectedFiles.forEach((file) => {
+                formData.append("files", file);
+            });
+
+            // ✅ 3. Send request
             const res = await fetch(
                 `${BASE_URL}/header_modules/clients_profitability/analyze`,
                 {
@@ -328,12 +480,15 @@ const TlcNewClientProfitability = (props) => {
                     body: formData,
                 }
             );
-            return await res.json();
+            const finalReponse = await res.json();
+            console.log("final response", finalReponse)
+            return finalReponse;
         } catch (err) {
-            console.error(err);
+            console.error("Upload failed:", err);
             return null;
         }
     };
+
 
 
 
@@ -393,6 +548,20 @@ const TlcNewClientProfitability = (props) => {
     const fetchAiSummary = async () => {
         try {
             if (!activeTabData?.responseData?.table) return;
+            updateTab({ aiLoading: true, aiProgress: 5 });
+
+            let progress = 5;
+
+            const aiProgressInterval = setInterval(() => {
+                progress += Math.random() * 6;
+
+                // ⛔ HOLD AT 70%
+                if (progress > 70) progress = 70;
+
+                // updateTab({ aiProgress: Math.floor(progress) });
+                aiProgressRef.current[activeTab] = Math.floor(progress);
+                setAiProgressDisplay(aiProgressRef.current[activeTab]);
+            }, 600);
 
             const res = await fetch(
                 `${BASE_URL}/header_modules/clients_profitability/ai_analysis`,
@@ -406,12 +575,14 @@ const TlcNewClientProfitability = (props) => {
             );
 
             const data = await res.json();
-
+            clearInterval(aiProgressInterval);
             updateTab({
                 aiSummary: data.summary_md || data.report_md || "",
+                aiLoading: false,
             });
         } catch (err) {
             console.error(err);
+            updateTab({ aiLoading: false, aiProgress: 0 });
         }
     };
     const handleSaveClientProfitability = async () => {
@@ -774,17 +945,18 @@ const TlcNewClientProfitability = (props) => {
         if (!activeTabData?.responseData?.table || activeTabData.responseData.table.length === 0) return;
 
         const COLUMN_ORDER = [
-            "Clean_Client",
+            "Client Name",
             "Region",
             "Department",
             "Revenue",
-            "Revenue_AUD",
-            "Direct_Cost",
-            "Gross_Margin",
-            "Gross_Margin_Pct",
-            "Indirect_Cost",
-            "Allocated_Cost",
+            "Direct Cost",
+            "Gross Profit",
+            "Gross Margin",
+            "Gross Margin %",
+            "Indirect Cost",
+            "Allocated Cost",
         ];
+
 
         // keep only columns that actually exist in data
         const availableColumns = Object.keys(activeTabData.responseData.table[0]);
@@ -805,9 +977,6 @@ const TlcNewClientProfitability = (props) => {
 
 
     console.log("activeTabData", activeTabData)
-    const handleDownloadReport = () => {
-        console.log("report download")
-    }
     const renderHistorySection = () => (
         <section className="history-container">
             {activeTabData?.responseData && (
@@ -1141,7 +1310,7 @@ const TlcNewClientProfitability = (props) => {
                         </div>
                     </Tippy> */}
                 </div>
-                <div className="sync-toggle">
+                {/* <div className="sync-toggle">
                     <div
                         style={{
                             fontSize: "13px",
@@ -1157,7 +1326,52 @@ const TlcNewClientProfitability = (props) => {
                         className="custom-toggle"
                         icons={false} // ✅ No icons
                     />
+                </div> */}
+                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                    <span style={{ fontSize: "13px", fontWeight: 500 }}>
+                        Sync With Your System
+                    </span>
+
+                    <div
+                        onClick={() => setSyncEnabled(!syncEnabled)}
+                        style={{
+                            width: "40px",
+                            height: "22px",
+                            borderRadius: "20px",
+                            background: syncEnabled ? "#6C4CDC" : "#E5E7EB",
+                            display: "flex",
+                            alignItems: "center",
+                            padding: "2px",
+                            cursor: "pointer",
+                            transition: "all 0.2s ease",
+                        }}
+                    >
+                        <div
+                            style={{
+                                width: "18px",
+                                height: "18px",
+                                borderRadius: "50%",
+                                background: "#fff",
+                                transform: syncEnabled
+                                    ? "translateX(18px)"
+                                    : "translateX(0)",
+                                transition: "all 0.2s ease",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                            }}
+                        >
+                            {syncEnabled && (
+                                <img
+                                    src={TlcPayrollSyncTickIcon}
+                                    alt="tick"
+                                    style={{ width: "10px", height: "10px" }}
+                                />
+                            )}
+                        </div>
+                    </div>
                 </div>
+
             </div>
             <div className="left-headerss">
                 {/* {responseData && <img src={TlcLogo} alt="Logo" className="tlclogo" />}
@@ -1410,78 +1624,80 @@ const TlcNewClientProfitability = (props) => {
 
                     {/* AI Panel */}
                     {/* ================= AI INSIGHT ACCORDION ================= */}
-                    <AccordionHeader
-                        title={
-                            startDate && endDate
-                                ? `AI Insight (${startDate.toLocaleDateString("en-US")} - ${endDate.toLocaleDateString("en-US")})`
-                                : "AI Insight"
-                        }
-                        isOpen={activeTabData?.aiAccordionOpen}
-                        showInsightIcon
-                        onClick={async () => {
-                            const willOpen = !activeTabData.aiAccordionOpen;
-                            updateTab({
-                                aiAccordionOpen: !activeTabData.aiAccordionOpen,
-                            });
-
-
-                            if (willOpen && !activeTabData.aiSummary) {
-                                setShowAiPanel(true);
-                                await fetchAiSummary();
+                    <div ref={reportRef}>
+                        <AccordionHeader
+                            title={
+                                startDate && endDate
+                                    ? `AI Insight (${startDate.toLocaleDateString("en-US")} - ${endDate.toLocaleDateString("en-US")})`
+                                    : "AI Insight"
                             }
-                        }}
-                    />
+                            isOpen={activeTabData?.aiAccordionOpen}
+                            showInsightIcon
+                            onClick={async () => {
+                                const willOpen = !activeTabData.aiAccordionOpen;
+                                updateTab({
+                                    aiAccordionOpen: !activeTabData.aiAccordionOpen,
+                                });
 
 
-                    {activeTabData.aiAccordionOpen && (
-                        <div style={{ marginTop: "16px" }}>
-                            <ClientProfitabilityAIAnalysisReportViewer
-                                reportText={activeTabData.aiSummary}
-                                loading={!activeTabData.aiSummary}
-                            />
-                        </div>
-                    )}
+                                if (willOpen && !activeTabData.aiSummary) {
+                                    setShowAiPanel(true);
+                                    await fetchAiSummary();
+                                }
+                            }}
+                        />
+
+
+                        {activeTabData.aiAccordionOpen && (
+                            <div style={{ marginBottom: "10px" }}>
+                                <ClientProfitabilityAIAnalysisReportViewer
+                                    reportText={activeTabData.aiSummary}
+                                    loading={activeTabData.aiLoading}
+                                    progress={aiProgressDisplay}
+                                />
+                            </div>
+                        )}
 
 
 
 
 
-                    {/* charts */}
-                    <AccordionHeader
-                        title={
-                            startDate && endDate
-                                ? `Charts Overview (${startDate.toLocaleDateString("en-US")} - ${endDate.toLocaleDateString("en-US")})`
-                                : "Charts Overview"
-                        }
-                        isOpen={activeTabData?.chartsAccordionOpen}
-                        onClick={() =>
-                            updateTab({
-                                chartsAccordionOpen: !activeTabData.chartsAccordionOpen
-                            })
-                        }
-                    />
+                        {/* charts */}
+                        <AccordionHeader
+                            title={
+                                startDate && endDate
+                                    ? `Charts Overview (${startDate.toLocaleDateString("en-US")} - ${endDate.toLocaleDateString("en-US")})`
+                                    : "Charts Overview"
+                            }
+                            isOpen={activeTabData?.chartsAccordionOpen}
+                            onClick={() =>
+                                updateTab({
+                                    chartsAccordionOpen: !activeTabData.chartsAccordionOpen
+                                })
+                            }
+                        />
+                        <section data-report-section="client-charts">
+                            {activeTabData.chartsAccordionOpen && (
+                                <div className="client-profitability-graph">
+                                    {activeTabData?.responseData?.graphs && (
+                                        <>
+                                            <div className="chart-box" style={{ marginBottom: "30px" }}>
+                                                <RenderHtmlFigure
+                                                    htmlString={activeTabData.responseData.graphs.department_revenue_expense}
+                                                />
+                                            </div>
 
-                    {activeTabData.chartsAccordionOpen && (
-                        <div className="client-profitability-graph">
-                            {activeTabData?.responseData?.graphs && (
-                                <>
-                                    <div className="chart-box" style={{ marginBottom: "30px" }}>
-                                        <RenderHtmlFigure
-                                            htmlString={activeTabData.responseData.graphs.department_revenue_expense}
-                                        />
-                                    </div>
-
-                                    <div className="chart-box" style={{ marginBottom: "30px" }}>
-                                        <RenderHtmlFigure htmlString={activeTabData?.responseData?.graphs.region_revenue_expense} />
-                                    </div>
-                                </>
+                                            <div className="chart-box" style={{ marginBottom: "30px" }}>
+                                                <RenderHtmlFigure htmlString={activeTabData?.responseData?.graphs.region_revenue_expense} />
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
                             )}
-                        </div>
-                    )}
+                        </section>
 
-
-                    {/* summary tables */}
-                    {/* <AccordionHeader
+                        {/* summary tables */}
+                        {/* <AccordionHeader
                         title={
                             startDate && endDate
                                 ? `Detailed Table (${startDate.toLocaleDateString("en-US")} - ${endDate.toLocaleDateString("en-US")})`
@@ -1491,7 +1707,7 @@ const TlcNewClientProfitability = (props) => {
                         onClick={() => setTablesAccordionOpen(!tablesAccordionOpen)}
                     /> */}
 
-                    {/* {tablesAccordionOpen && (
+                        {/* {tablesAccordionOpen && (
                         <>
                             <div className="table-box" style={{ marginTop: "40px" }}>
                                 {activeTab === "direct" && (
@@ -1505,25 +1721,25 @@ const TlcNewClientProfitability = (props) => {
                     )} */}
 
 
-                    {/* ================= JSON TABLE ACCORDION ================= */}
-                    <AccordionHeader
-                        title={
-                            startDate && endDate
-                                ? `Participant Level Details (${startDate.toLocaleDateString("en-US")} - ${endDate.toLocaleDateString("en-US")})`
-                                : "Participant Level Details"
-                        }
-                        isOpen={activeTabData?.jsonTableAccordionOpen}
-                        onClick={() =>
-                            updateTab({
-                                jsonTableAccordionOpen: !activeTabData?.jsonTableAccordionOpen
-                            })
-                        }
-                    />
-
-                    {activeTabData.jsonTableAccordionOpen && (
-                        <div style={{ marginTop: "24px" }}>
-                            {/* DIRECT SERVICES JSON TABLE */}
-                            {/* {activeTab === "direct" && directFinalTable && (
+                        {/* ================= JSON TABLE ACCORDION ================= */}
+                        <AccordionHeader
+                            title={
+                                startDate && endDate
+                                    ? `Participant Level Details (${startDate.toLocaleDateString("en-US")} - ${endDate.toLocaleDateString("en-US")})`
+                                    : "Participant Level Details"
+                            }
+                            isOpen={activeTabData?.jsonTableAccordionOpen}
+                            onClick={() =>
+                                updateTab({
+                                    jsonTableAccordionOpen: !activeTabData?.jsonTableAccordionOpen
+                                })
+                            }
+                        />
+                        <section data-report-section="client-table">
+                            {activeTabData.jsonTableAccordionOpen && (
+                                <div style={{ marginTop: "24px" }}>
+                                    {/* DIRECT SERVICES JSON TABLE */}
+                                    {/* {activeTab === "direct" && directFinalTable && (
                                 <JsonTableCard
                                     title="Direct Services – NDIS Reference (click + to see detail)"
                                     data={directFinalTable}
@@ -1534,27 +1750,70 @@ const TlcNewClientProfitability = (props) => {
                                     detailsTable={responseData.direct_service.tables.detail}
                                 />
                             )} */}
-                            {activeTabData.jsonTableAccordionOpen && activeTabData?.directFinalTable && (
-                                <div style={{ marginTop: "24px" }}>
-                                    <JsonTableCard
-                                        title="Client Profitability Table"
-                                        data={activeTabData.directFinalTable}
-                                    />
-                                </div>
-                            )}
+                                    {activeTabData.jsonTableAccordionOpen && activeTabData?.directFinalTable && (
+                                        <div className="table-box" style={{ marginTop: "24px" }}>
+                                            <JsonTableCard
+                                                title="Client Profitability Table"
+                                                data={activeTabData.directFinalTable}
+                                            />
+                                        </div>
+                                    )}
 
-                            {/* PLAN MANAGED JSON TABLE */}
-                            {/* {activeTab === "plan" && responseData?.plan_managed?.tables?.detail && (
+                                    {/* PLAN MANAGED JSON TABLE */}
+                                    {/* {activeTab === "plan" && responseData?.plan_managed?.tables?.detail && (
                                 <JsonTableCard
                                     title="Plan Managed — Detailed Table"
                                     data={responseData.plan_managed.tables.detail}
                                 />
                             )} */}
-                        </div>
-                    )}
+                                </div>
+                            )}
+                        </section>
+                    </div>
                 </>
             )}
             {renderHistorySection()}
+            {activeTabData.exporting && (
+                <div
+                    onClick={(e) => e.stopPropagation()}   // 🔥 BLOCK CLICKS
+                    style={{
+                        position: "fixed",
+                        inset: 0,
+                        background: "rgba(255,255,255,0.85)",
+                        zIndex: 99999,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        pointerEvents: "all",               // 🔥 IMPORTANT
+                        fontFamily: "Inter, sans-serif",
+                    }}
+                >
+                    <div style={{ textAlign: "center" }}>
+                        {/* 🔄 CIRCULAR LOADER */}
+                        <div
+                            style={{
+                                width: "48px",
+                                height: "48px",
+                                border: "4px solid #E5E7EB",
+                                borderTop: "4px solid #6C4CDC",
+                                borderRadius: "50%",
+                                animation: "spin 1s linear infinite",
+                                margin: "0 auto 12px",
+                            }}
+                        />
+
+                        <div
+                            style={{
+                                fontSize: "14px",
+                                fontWeight: 500,
+                                color: "#374151",
+                            }}
+                        >
+                            Generating Word report…
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
