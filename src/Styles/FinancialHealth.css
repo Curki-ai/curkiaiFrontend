@@ -1,121 +1,123 @@
 body {
-    background: #fffdfc;
-    font-family: "Inter", sans-serif;
-    margin: 0;
-    padding: 0;
-    overflow-x: hidden !important;
-    /* ✅ Prevent any horizontal scroll globally */
+  background: #fffdfc;
+  font-family: "Inter", sans-serif;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden !important;
+  /* ✅ Prevent any horizontal scroll globally */
 }
+
 .financial-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    /* margin-bottom: 10px; */
-    /* margin-top: 16px; */
-    padding: 12px 20px;
-    border-bottom: 1px solid #E5E7EB;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  /* margin-bottom: 10px; */
+  /* margin-top: 16px; */
+  padding: 12px 20px;
+  border-bottom: 1px solid #E5E7EB;
 }
 
 .role-selector {
-    display: flex;
-    align-items: center;
-    gap: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .role-toggle-container {
-    display: flex;
-    align-items: center;
-    border-radius: 4px;
-    border: 0.6px solid #6C4CDC,
+  display: flex;
+  align-items: center;
+  border-radius: 4px;
+  border: 0.6px solid #6C4CDC,
 }
 
 .titless {
-    font-size: 24px;
-    font-weight: 600;
-    font-family: 'Inter';
+  font-size: 24px;
+  font-weight: 600;
+  font-family: 'Inter';
 }
 
 .sync-toggle {
-    display: flex;
-    align-items: center;
-    gap: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 /* Customize react-toggle */
 .custom-toggle.react-toggle {
-    --toggle-bg: #E5E7EB;
-    height: 22px;
-    width: 40px;
+  --toggle-bg: #E5E7EB;
+  height: 22px;
+  width: 40px;
 }
 
 .react-toggle-track {
-    background-color: #E5E7EB !important;
-    border-radius: 30px;
+  background-color: #E5E7EB !important;
+  border-radius: 30px;
 }
 
 .react-toggle--checked .react-toggle-track {
-    background-color: #6C4CDC !important;
+  background-color: #6C4CDC !important;
 }
 
 .react-toggle-thumb {
-    border: none;
-    background-color: #fff;
-    border-color: #6C4CDC;
-    /* box-shadow: 0px 0px 5px 5px #6C4CDC; */
-    box-shadow: none;
+  border: none;
+  background-color: #fff;
+  border-color: #6C4CDC;
+  /* box-shadow: 0px 0px 5px 5px #6C4CDC; */
+  box-shadow: none;
 }
 
 /* Info Table */
 .info-table {
-    border-bottom: 1px solid #ccc;
-    margin-top: 20px;
+  border-bottom: 1px solid #ccc;
+  margin-top: 20px;
 }
 
 .table-headerss {
-    display: grid;
-    grid-template-columns: 2fr 2fr;
-    font-weight: bold;
-    padding: 10px 0;
-    border-bottom: 1px solid #ccc;
-    text-align: start;
-    font-size: 16px;
+  display: grid;
+  grid-template-columns: 2fr 2fr;
+  font-weight: bold;
+  padding: 10px 0;
+  border-bottom: 1px solid #ccc;
+  text-align: start;
+  font-size: 16px;
 }
 
 .table-rowss {
-    display: grid;
-    grid-template-columns: 2fr 2fr;
-    padding: 8px 0;
-    /* border-bottom: 1px solid #eee; */
-    text-align: start;
-    font-size: 14px;
+  display: grid;
+  grid-template-columns: 2fr 2fr;
+  padding: 8px 0;
+  /* border-bottom: 1px solid #eee; */
+  text-align: start;
+  font-size: 14px;
 }
 
 .table-rowss ul {
-    margin: 0;
-    padding-left: 30px;
+  margin: 0;
+  padding-left: 30px;
 }
+
 /* Date Section */
 .date-section {
-    display: flex;
-    justify-content: center;
-    gap: 15%;
-    margin-top: 30px;
-    margin-bottom: 30px;
-  }
-  
-  .date-picker {
-    text-align: left;
-  }
-  
-  .date-inputs {
-    display: flex;
-    gap: 10px;
-    margin-top: 8px;
-    font-size: 14px;
-    font-family: 'Inter';
-  }
-  
-  /* .date-inputs select {
+  display: flex;
+  justify-content: center;
+  gap: 15%;
+  margin-top: 30px;
+  margin-bottom: 30px;
+}
+
+.date-picker {
+  text-align: left;
+}
+
+.date-inputs {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+  font-size: 14px;
+  font-family: 'Inter';
+}
+
+/* .date-inputs select {
     padding: 10px 14px;
     border-radius: 8px;
     border: 1px solid #6C4CDC;
@@ -123,40 +125,42 @@ body {
     font-family: 'Inter';
   } */
 
-  .date-inputs select {
-    appearance: none;
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    padding: 10px 36px 10px 10px;
-    font-size: 16px;
-    font-family: 'Inter', sans-serif;
-    font-weight: 500;
-    border: 1px solid #6C4CDC;
-    border-radius: 8px;
-    background-color: #fff;
-    background-image: url("data:image/svg+xml;charset=UTF-8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='black'><path d='M4 6l4 4 4-4'/></svg>");
-    background-repeat: no-repeat;
-    background-position: right 10px center; 
-    background-size: 14px;
-    cursor: pointer;
-  }
-  
-  .date-inputs select:focus {
-    outline: none;
-    border-color: #5a3fe0; /* Slightly darker on focus */
-  }
-  .graph-gridsss{
-    display: grid;
-    grid-template-columns: 49% 49%;
-    column-gap: 2%;
-    margin-bottom: 40px;
-    margin-top: 40px;
-  }
-  .financial-health-history-back-btn {
+.date-inputs select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  padding: 10px 36px 10px 10px;
+  font-size: 16px;
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  border: 1px solid #6C4CDC;
+  border-radius: 8px;
+  background-color: #fff;
+  background-image: url("data:image/svg+xml;charset=UTF-8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='black'><path d='M4 6l4 4 4-4'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 14px;
+  cursor: pointer;
+}
+
+.date-inputs select:focus {
+  outline: none;
+  border-color: #5a3fe0;
+  /* Slightly darker on focus */
+}
+
+.graph-gridsss {
+  display: grid;
+  grid-template-columns: 49% 49%;
+  column-gap: 2%;
+  margin-bottom: 40px;
+  margin-top: 40px;
+}
+
+.financial-health-history-back-btn {
   display: flex;
   align-items: center;
   gap: 6px;
-
   cursor: pointer;
   color: #6C4CDC;
   font-weight: 600;
@@ -164,9 +168,9 @@ body {
   margin-left: 4px;
   margin-bottom: 14px;
   margin-top: 6px;
+  width: 66px;
 }
 
 .financial-health-history-back-btn:hover {
   color: #4b2cc0;
 }
-  

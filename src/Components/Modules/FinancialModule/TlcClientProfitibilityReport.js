@@ -8,21 +8,65 @@ import "highlight.js/styles/github.css";
 export default function ClientProfitabilityAIAnalysisReportViewer({
     reportText,
     loading,
+    progress = 0,
 }) {
-    if (loading) {
-        return (
-            <div
-                style={{
-                    textAlign: "center",
-                    color: "#6b7280",
-                    fontFamily: "Inter, sans-serif",
-                    padding: "16px",
-                }}
-            >
-                ⏳ Generating AI insights...
-            </div>
-        );
-    }
+ if (loading) {
+  return (
+    <div
+      style={{
+        padding: "16px",
+        borderRadius: "10px",
+        background: "#f9fafb",
+        border: "1px solid #e5e7eb",
+        fontFamily: "Inter, sans-serif",
+      }}
+    >
+      <div
+        style={{
+          fontSize: "14px",
+          fontWeight: 500,
+          marginBottom: "10px",
+          color: "#374151",
+        }}
+      >
+        Generating AI insights…
+      </div>
+
+      {/* PROGRESS BAR */}
+      <div
+        style={{
+          height: "8px",
+          width: "100%",
+          background: "#e5e7eb",
+          borderRadius: "999px",
+          overflow: "hidden",
+        }}
+      >
+        <div
+          style={{
+            height: "100%",
+            width: `${Math.max(5, progress || 0)}%`,
+            background: "linear-gradient(90deg, #6C4CDC, #8B5CF6)",
+            transition: "width 0.4s ease",
+          }}
+        />
+      </div>
+
+      {/* PERCENTAGE */}
+      <div
+        style={{
+          textAlign: "right",
+          marginTop: "6px",
+          fontSize: "12px",
+          color: "#6b7280",
+        }}
+      >
+        {progress || 0}%
+      </div>
+    </div>
+  );
+}
+
 
     if (!reportText) return null;
 
