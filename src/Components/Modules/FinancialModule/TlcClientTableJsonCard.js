@@ -139,12 +139,13 @@ const formatValue = (value) => {
 
 const JsonTableCard = ({ title, data }) => {
   const COLUMN_WIDTHS = {
-    "Client Name": "220px",
+    "Client Name": "210px",
     "Region": "80px",
     "Department": "110px",
     "Revenue": "140px",
-    "Direct Cost": "130px",
-    "Gross Profit": "140px",
+    "Direct Cost": "125px",
+    "Gross Profit": "130px",
+    "Gross Profit %": "140px",
     "Gross Margin": "140px",
     "Gross Margin %": "127px",
     "Indirect Cost": "130px",
