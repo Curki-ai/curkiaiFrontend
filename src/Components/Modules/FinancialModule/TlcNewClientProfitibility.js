@@ -39,7 +39,6 @@ const TlcNewClientProfitability = (props) => {
     const onPrepareAiPayload = props.onPrepareAiPayload;
     const user = props.user
     // console.log("user in client profitibility", user)
-    const userEmail = user?.email
     // console.log("useremail in profitibility",userEmail)
     const [startMonth, setStartMonth] = useState("");
     const [endMonth, setEndMonth] = useState("");
@@ -68,7 +67,13 @@ const TlcNewClientProfitability = (props) => {
     const [deleting, setDeleting] = useState(false);
     const aiProgressRef = useRef({});
     const reportRef = useRef(null);
-
+    const EMAIL_STATE_MAP = {
+        "molley@tenderlovingcaredisability.com.au": "Queensland",
+        "laurente@tenderlovingcaredisability.com.au": "Victoria",
+        "kbrennen@tenderlovingcaredisability.com.au": "New South Wales",
+    };
+    const userEmail = user?.email;
+    const userState = EMAIL_STATE_MAP[userEmail];
     const [tabs, setTabs] = useState([
         {
             id: 1,
@@ -78,7 +83,15 @@ const TlcNewClientProfitability = (props) => {
             responseData: null,
             selectedFiles: [],
             files: [],
-            dateRange: [null, null],
+            // ⬇️ DATE (Custom Reporting style)
+            startDate: null,
+            endDate: null,
+
+            // ⬇️ FILTERS (PER TAB)
+            selectedState: [],
+            selectedDepartment: [],
+            selectedType: [],
+            selectedRole: [],
             aiSummary: "",
 
             // accordions
@@ -101,7 +114,8 @@ const TlcNewClientProfitability = (props) => {
     const [activeTab, setActiveTab] = useState(1);
 
     const activeTabData = tabs.find(t => t.id === activeTab);
-    const [startDate, endDate] = activeTabData?.dateRange || [];
+    const { startDate, endDate } = activeTabData || {};
+
 
     const updateTab = (updates) => {
         setTabs(prev =>
@@ -115,9 +129,9 @@ const TlcNewClientProfitability = (props) => {
     const BASE_URL = "https://curki-backend-api-container.yellowflower-c21bea82.australiaeast.azurecontainerapps.io"
     // 🔹 MOCK FILTER OPTIONS (SHOWCASE ONLY)
     const optionsState = [
-        { label: "NSW", value: "NSW" },
-        { label: "VIC", value: "VIC" },
-        { label: "QLD", value: "QLD" },
+        { label: "New South Wales", value: "New South Wales" },
+        { label: "Queensland", value: "Queensland" },
+        { label: "Victoria", value: "Victoria" },
     ];
 
     const optionsDepartment = [
@@ -136,6 +150,22 @@ const TlcNewClientProfitability = (props) => {
         { label: "Coordinator", value: "Coordinator" },
         { label: "Admin", value: "Admin" },
     ];
+    const formatSavedOnDate = (date) =>
+        new Date(date).toLocaleDateString("en-GB", {
+            day: "2-digit",
+            month: "short",
+            year: "2-digit",
+        });
+    const formatDateRange = () => {
+        if (!activeTabData || !startDate || !endDate)
+            return "Selected Date Range";
+
+        const format = (date) =>
+            `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
+
+        return `${format(startDate)} - ${format(endDate)}`;
+    };
+
     const waitForChartToRender = async (node, timeout = 4000) => {
         const start = Date.now();
         while (Date.now() - start < timeout) {
@@ -285,7 +315,15 @@ const TlcNewClientProfitability = (props) => {
                 responseData: null,
                 selectedFiles: [],
                 files: [],
-                dateRange: [null, null],
+                // ⬇️ DATE (Custom Reporting style)
+                startDate: null,
+                endDate: null,
+
+                // ⬇️ FILTERS (PER TAB)
+                selectedState: [],
+                selectedDepartment: [],
+                selectedType: [],
+                selectedRole: [],
                 aiSummary: "",
 
                 aiAccordionOpen: false,
@@ -532,6 +570,12 @@ const TlcNewClientProfitability = (props) => {
 
                 updateTab({
                     responseData: uploadData,
+                    name:
+                        startDate && endDate
+                            ? `${startDate.getDate()}-${startDate.getMonth() + 1}-${startDate.getFullYear()}
+               - 
+               ${endDate.getDate()}-${endDate.getMonth() + 1}-${endDate.getFullYear()}`
+                            : activeTabData.name,
                 });
 
                 onPrepareAiPayload({
@@ -597,6 +641,10 @@ const TlcNewClientProfitability = (props) => {
                 filters: {
                     start: startDate ? formatYearMonth(startDate) : null,
                     end: endDate ? formatYearMonth(endDate) : null,
+                    state: activeTabData.selectedState.map(s => s.value).join(", "),
+                    department: activeTabData.selectedDepartment.map(d => d.value).join(", "),
+                    role: activeTabData.selectedRole.map(r => r.value).join(", "),
+                    employmentType: activeTabData.selectedType.map(t => t.value).join(", "),
                 },
                 aiSummary: activeTabData.aiSummary,
             };
@@ -677,10 +725,31 @@ const TlcNewClientProfitability = (props) => {
             updateTab({
                 responseData: record.responseData,
                 aiSummary: record.aiSummary || "",
-                dateRange: [
-                    start ? new Date(start) : null,
-                    end ? new Date(end) : null,
-                ],
+                // ✅ DATE RESTORE (new structure)
+                startDate: start ? new Date(start) : null,
+                endDate: end ? new Date(end) : null,
+
+                // ✅ FILTERS RESTORE (⭐ THIS IS YOUR ANSWER)
+                selectedState: record.filters?.state
+                    ? record.filters.state.split(", ").map(v => ({ label: v, value: v }))
+                    : [],
+
+                selectedDepartment: record.filters?.department
+                    ? record.filters.department.split(", ").map(v => ({ label: v, value: v }))
+                    : [],
+
+                selectedRole: record.filters?.role
+                    ? record.filters.role.split(", ").map(v => ({ label: v, value: v }))
+                    : [],
+
+                selectedType: record.filters?.employmentType
+                    ? record.filters.employmentType.split(", ").map(v => ({ label: v, value: v }))
+                    : [],
+                name: start && end
+                    ? `${new Date(start).getDate()}-${new Date(start).getMonth() + 1}-${new Date(start).getFullYear()}
+           -
+           ${new Date(end).getDate()}-${new Date(end).getMonth() + 1}-${new Date(end).getFullYear()}`
+                    : activeTabData.name,
 
                 aiAccordionOpen: false,
                 chartsAccordionOpen: false,
@@ -950,11 +1019,12 @@ const TlcNewClientProfitability = (props) => {
             "Department",
             "Revenue",
             "Direct Cost",
-            "Gross Profit",
             "Gross Margin",
             "Gross Margin %",
-            "Indirect Cost",
             "Allocated Cost",
+            "Indirect Cost",
+            "Total Expense",
+            "Gross Profit",
         ];
 
 
@@ -1048,7 +1118,7 @@ const TlcNewClientProfitability = (props) => {
                         >
                             {/* TOP ROW */}
                             <div className="history-top">
-                                {/* <div className="history-date-range">
+                                <div className="history-date-range">
                                     <span className="label">Date Range: </span>
                                     <span className="value">
                                         <span className="value">
@@ -1059,7 +1129,7 @@ const TlcNewClientProfitability = (props) => {
                                         </span>
 
                                     </span>
-                                </div> */}
+                                </div>
 
                                 {/* RIGHT SIDE ACTIONS */}
                                 <button
@@ -1091,7 +1161,7 @@ const TlcNewClientProfitability = (props) => {
                             <div className="saved-on">
                                 <span className="saved-label">Saved on: </span>
                                 <span style={{ color: "#000" }}>
-                                    {new Date(item.createdAt).toLocaleString()}
+                                    {formatSavedOnDate(item.createdAt)}
                                 </span>
                             </div>
 
@@ -1226,7 +1296,14 @@ const TlcNewClientProfitability = (props) => {
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error || "Failed to fetch history");
 
-                setHistoryList(data.data);
+                // setHistoryList(data.data);
+                const filteredHistory = userState
+                    ? data.data.filter(item =>
+                        item.filters?.state?.toLowerCase() === userState.toLowerCase()
+                    )
+                    : data.data;
+
+                setHistoryList(filteredHistory);
             } catch (err) {
                 console.error("❌ Error fetching history:", err);
             } finally {
@@ -1283,8 +1360,8 @@ const TlcNewClientProfitability = (props) => {
                     <div style={{ minWidth: "180px" }}>
                         <MultiSelectCustom
                             options={optionsRole}
-                            selected={selectedRole}
-                            setSelected={setSelectedRole}
+                            selected={activeTabData.selectedRole}
+                            setSelected={(v) => updateTab({ selectedRole: v })}
                             placeholder="Role"
                             leftIcon={TlcPayrollRoleIcon}
                             rightIcon={TlcPayrollRoleDownArrowIcon}
@@ -1521,17 +1598,23 @@ const TlcNewClientProfitability = (props) => {
                                 {/* DATE RANGE (reuse your existing one) */}
                                 <div className="date-filter-wrapper">
                                     <DateRangePicker
-                                        startDate={startDate}
-                                        endDate={endDate}
-                                        onChange={(dates) => updateTab({ dateRange: dates })}
+                                        startDate={activeTabData.startDate}
+                                        endDate={activeTabData.endDate}
+                                        onChange={([start, end]) =>
+                                            updateTab({
+                                                startDate: start,
+                                                endDate: end,
+                                            })
+                                        }
                                     />
+
                                 </div>
 
                                 {/* STATE FILTER */}
                                 <MultiSelectCustom
                                     options={optionsState}
-                                    selected={selectedState}
-                                    setSelected={setSelectedState}
+                                    selected={activeTabData.selectedState}
+                                    setSelected={(v) => updateTab({ selectedState: v })}
                                     placeholder="State"
                                     leftIcon={TlcPayrollStateIcon}
                                     rightIcon={TlcPayrollDownArrow}
@@ -1540,8 +1623,8 @@ const TlcNewClientProfitability = (props) => {
                                 {/* DEPARTMENT FILTER */}
                                 <MultiSelectCustom
                                     options={optionsDepartment}
-                                    selected={selectedDepartment}
-                                    setSelected={setSelectedDepartment}
+                                    selected={activeTabData.selectedDepartment}
+                                    setSelected={(v) => updateTab({ selectedDepartment: v })}
                                     placeholder="Department"
                                     leftIcon={TlcPayrollDepartmentIcon}
                                     rightIcon={TlcPayrollDownArrow}
@@ -1550,8 +1633,8 @@ const TlcNewClientProfitability = (props) => {
                                 {/* TYPE FILTER */}
                                 <MultiSelectCustom
                                     options={optionsType}
-                                    selected={selectedType}
-                                    setSelected={setSelectedType}
+                                    selected={activeTabData.selectedType}
+                                    setSelected={(v) => updateTab({ selectedType: v })}
                                     placeholder="Type"
                                     leftIcon={TlcPayrollTypeIcon}
                                     rightIcon={TlcPayrollDownArrow}
@@ -1598,20 +1681,20 @@ const TlcNewClientProfitability = (props) => {
                                 updateTab({
                                     // 🔁 history mode off
                                     isFromHistory: false,
-
                                     // 🧹 clear analysis
                                     responseData: null,
                                     aiSummary: "",
                                     directFinalTable: null,
-
-                                    // 📅 clear date range
-                                    dateRange: [null, null],
-
+                                    startDate: null,
+                                    endDate: null,
+                                    selectedState: [],
+                                    selectedDepartment: [],
+                                    selectedRole: [],
+                                    selectedType: [],
                                     // 🧠 close accordions
                                     aiAccordionOpen: false,
                                     chartsAccordionOpen: false,
                                     jsonTableAccordionOpen: false,
-
                                     // 🏷️ reset tab name
                                     name: `Tab ${activeTab}`,
                                 });
@@ -1628,7 +1711,7 @@ const TlcNewClientProfitability = (props) => {
                         <AccordionHeader
                             title={
                                 startDate && endDate
-                                    ? `AI Insight (${startDate.toLocaleDateString("en-US")} - ${endDate.toLocaleDateString("en-US")})`
+                                    ? `AI Insight (${formatDateRange()})`
                                     : "AI Insight"
                             }
                             isOpen={activeTabData?.aiAccordionOpen}
@@ -1666,7 +1749,7 @@ const TlcNewClientProfitability = (props) => {
                         <AccordionHeader
                             title={
                                 startDate && endDate
-                                    ? `Charts Overview (${startDate.toLocaleDateString("en-US")} - ${endDate.toLocaleDateString("en-US")})`
+                                    ? `Charts Overview (${formatDateRange()})`
                                     : "Charts Overview"
                             }
                             isOpen={activeTabData?.chartsAccordionOpen}
@@ -1725,7 +1808,7 @@ const TlcNewClientProfitability = (props) => {
                         <AccordionHeader
                             title={
                                 startDate && endDate
-                                    ? `Participant Level Details (${startDate.toLocaleDateString("en-US")} - ${endDate.toLocaleDateString("en-US")})`
+                                    ? `Participant Level Details (${formatDateRange()})`
                                     : "Participant Level Details"
                             }
                             isOpen={activeTabData?.jsonTableAccordionOpen}

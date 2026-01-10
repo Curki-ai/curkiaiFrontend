@@ -146,7 +146,7 @@ const JsonTableCard = ({ title, data }) => {
     "Direct Cost": "130px",
     "Gross Profit": "140px",
     "Gross Margin": "140px",
-    "Gross Margin %": "120px",
+    "Gross Margin %": "127px",
     "Indirect Cost": "130px",
     "Allocated Cost": "140px",
   };
