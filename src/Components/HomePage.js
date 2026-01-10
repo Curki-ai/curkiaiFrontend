@@ -24,15 +24,15 @@ import Qfr from "./Modules/FinancialModule/Qfr";
 import Afr from "./Modules/FinancialModule/Afr";
 import IncidentManagement from "./Modules/FinancialModule/IncidentManagement";
 import CustomReporting from "./Modules/FinancialModule/CustomReporting";
-import CareServicesEligibility from "./Modules/SupportAtHomeModule.js/CareServicesEligibilty";
-import IncidentReport from "./Modules/SupportAtHomeModule.js/IncidentReport";
-import QualityandRisk from "./Modules/SupportAtHomeModule.js/QualityandRisk";
+import CareServicesEligibility from "./Modules/SupportAtHomeModule/CareServicesEligibilty";
+import IncidentReport from "./Modules/SupportAtHomeModule/IncidentReport";
+import QualityandRisk from "./Modules/SupportAtHomeModule/QualityandRisk";
 import AiRostering from "./Modules/RosteringModule/Rostering";
-import ResumeScreening from "./Modules/SupportAtHomeModule.js/HRStaffView";
+import ResumeScreening from "./Modules/SupportAtHomeModule/HRStaffView";
 import Client_Event_Reporting from "./Modules/NDISModule/Client_Event_Reporting";
 import SoftwareConnect from "./Modules/ConnectModule/SoftwareConnect";
 import RosteringDashboard from "./Modules/RosteringModule/SmartRostering";
-import HRAnalysis from "./Modules/SupportAtHomeModule.js/HRAnalysis";
+import HRAnalysis from "./Modules/SupportAtHomeModule/HRAnalysis";
 import IncidentAuditing from "./Modules/NDISModule/IncidentAuditing";
 // import TlcCustomerReporting from "./Modules/FinancialModule/TlcCustomReporting";
 import ReactMarkdown from "react-markdown";
@@ -54,7 +54,7 @@ import askAiSendBtn from "../Images/askaISendBtn.png"
 import newTlcLogo from "../Images/newTlcLogo.png"
 import PricingPlansModal from "./NewPricingModal";
 import NewSubscriptionStatus from "./NewSubscriptionStatus";
-import VoiceModule from "./Modules/SupportAtHomeModule.js/VoiceModule";
+import VoiceModule from "./Modules/SupportAtHomeModule/VoiceModule";
 const HomePage = () => {
   const [sidebarVisible, setSidebarVisible] = useState(true);
   const [documentString, setDocumentString] = useState("");

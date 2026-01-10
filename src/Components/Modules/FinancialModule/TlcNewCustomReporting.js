@@ -91,6 +91,13 @@ export default function TlcNewCustomerReporting(props) {
             props.setTlcAskAiHistoryPayload(active.tlcAskAiHistoryPayload || "");
         }
     }, [activeTab, tabs]);
+    const EMAIL_STATE_MAP = {
+        "molley@tenderlovingcaredisability.com.au": "Queensland",
+        "laurente@tenderlovingcaredisability.com.au": "Victoria",
+        "kbrennen@tenderlovingcaredisability.com.au": "New South Wales",
+    };
+    const userEmail = props?.user?.email;
+    const userState = EMAIL_STATE_MAP[userEmail];
     const handleNewTab = () => {
         const newId = tabs.length ? Math.max(...tabs.map((t) => t.id)) + 1 : 1;
         const newTab = {
@@ -828,7 +835,13 @@ export default function TlcNewCustomerReporting(props) {
                 const res = await fetch(`https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/payroll/history?email=${email}`);
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error || "Failed to fetch history");
-                setHistoryList(data.data);
+                const filteredHistory = userState
+                    ? data.data.filter(item =>
+                        item.filters?.state?.toLowerCase() === userState.toLowerCase()
+                    )
+                    : data.data;
+
+                setHistoryList(filteredHistory);
             } catch (err) {
                 console.error("❌ Error fetching history:", err);
             } finally {
@@ -962,8 +975,8 @@ export default function TlcNewCustomerReporting(props) {
                 // ✅ tab name shows date
                 // name: start && end ? `${start} - ${end}` : "History",
                 name: start && end
-  ? `${new Date(start).getDate()}-${new Date(start).getMonth() + 1}-${new Date(start).getFullYear()} - ${new Date(end).getDate()}-${new Date(end).getMonth() + 1}-${new Date(end).getFullYear()}`
-  : "History",
+                    ? `${new Date(start).getDate()}-${new Date(start).getMonth() + 1}-${new Date(start).getFullYear()} - ${new Date(end).getDate()}-${new Date(end).getMonth() + 1}-${new Date(end).getFullYear()}`
+                    : "History",
 
             });
 
@@ -989,15 +1002,15 @@ export default function TlcNewCustomerReporting(props) {
     };
 
 
- const formatDateRange = () => {
-    if (!activeTabData || !activeTabData.startDate || !activeTabData.endDate)
-        return "Selected Date Range";
+    const formatDateRange = () => {
+        if (!activeTabData || !activeTabData.startDate || !activeTabData.endDate)
+            return "Selected Date Range";
 
-    const format = (date) =>
-        `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
+        const format = (date) =>
+            `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
 
-    return `${format(activeTabData.startDate)} - ${format(activeTabData.endDate)}`;
-};
+        return `${format(activeTabData.startDate)} - ${format(activeTabData.endDate)}`;
+    };
 
 
 
