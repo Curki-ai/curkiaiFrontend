@@ -1025,6 +1025,7 @@ const TlcNewClientProfitability = (props) => {
             "Indirect Cost",
             "Total Expense",
             "Gross Profit",
+            "Gross Profit %"
         ];
 
 
