@@ -1,0 +1,204 @@
+.onboarding-overlay {
+    position: fixed;
+    inset: 0;
+    background: #261A5057;;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    padding-left: 16%;
+  }
+  
+  .onboarding-modal {
+    background: #fff;
+    width: 720px;
+    max-height: 90vh;
+    overflow-y: auto;
+    border-radius: 14px;
+    padding: 40px 34px;
+    position: relative;
+    font-family: Inter;
+  }
+  
+  .onboarding-close {
+    background: none;
+    border: none;
+    font-size: 22px;
+    cursor: pointer;
+    color: #8B8B8B;
+    padding: 2px 8px;
+    border-radius: 50%;
+  }
+  .onboarding-close:hover{
+    background-color: #EAE8F2;
+  }
+  
+  .onboarding-titlesss {
+    font-weight: 600;
+    text-align: left;
+    font-size: 24px;
+
+  }
+  
+  .onboarding-row {
+    display: flex;
+    gap: 16px;
+  }
+  
+  .onboarding-field {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 24px;
+  }
+  
+  .onboarding-field label {
+    font-weight: 500;
+    text-align: left;
+    font-size: 16px;
+    font-family: 'Inter';
+    line-height: 24px;
+  }
+  
+  .onboarding-field input,
+  .onboarding-field select,
+  .onboarding-field textarea {
+    padding: 14px 20px;
+    border-radius: 8px;
+    border: 1.43px solid #D2D0D0;
+    font-size: 14px;
+    font-weight: 500;
+    outline: none;
+  }
+  .onboarding-field select {
+    padding: 14px 20px;
+    border-radius: 8px;
+    border: 1.43px solid #D2D0D0;
+    font-size: 14px;
+    font-weight: 500;
+    outline: none;
+    cursor: pointer;
+  
+    /* remove default arrow */
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+  
+    /* custom arrow */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238b8b8b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+  }
+  
+  
+  .onboarding-field textarea {
+    resize: none;
+    min-height: 80px;
+  }
+  
+  .onboarding-count {
+    font-size: 14px;
+    font-weight: 500;
+    color: #A3A3A3;
+    text-align: right;
+    font-family: 'Inter';
+    margin-top: 4px;
+    margin-bottom: -16px;
+  }
+  .onboarding-count.danger {
+    color: #ff3b30;
+    font-weight: 500;
+  }
+  
+  .onboarding-toggle {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 24px 0;
+  }
+  
+  .onboarding-footer {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 32px;
+  }
+  
+  .onboarding-save-btn {
+    background: #6c4cdc;
+    color: #fff;
+    border: none;
+    padding: 12px 26px;
+    border-radius: 24px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .tippy-box[data-theme~='onboarding'] {
+    background-color: #706995;
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 500;
+    font-family: 'Inter';
+    line-height: 24px;
+    max-width: 260px !important;
+  }
+  .tippy-box[data-theme~='onboarding'] > .tippy-arrow::before {
+    color: #706995; /* same as background */
+  }
+  .toggle-switches {
+    position: relative;
+    display: inline-block;
+    width: 42px;
+    height: 22px;
+  }
+  
+  .toggle-switches input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+  
+  /* Slider */
+  .sliderss {
+    position: absolute;
+    cursor: pointer;
+    inset: 0;
+    background-color: #d1d1d1;
+    transition: 0.3s;
+    border-radius: 22px;
+  }
+  
+  /* Knob */
+  .sliderss::before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 2px;
+    bottom: 2px;
+    background-color: white;
+    transition: 0.3s;
+    border-radius: 50%;
+  }
+  
+  /* ON state */
+  .toggle-switches input:checked + .sliderss {
+    background-color: #6c4cdc;
+  }
+  
+  .toggle-switches input:checked + .sliderss::before {
+    transform: translateX(20px);
+  }
+  .days-select {
+    color: #000; /* normal color */
+  }
+  
+  /* Placeholder color */
+  .days-select[value=""] {
+    color: #8B8B8B;
+  }
+  
+  /* OR modern browser-safe way */
+  .days-select:has(option[value=""]:checked) {
+    color: #8B8B8B;
+  }
+  

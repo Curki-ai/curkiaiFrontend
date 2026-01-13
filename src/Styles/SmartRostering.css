@@ -183,4 +183,24 @@
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
+.roster-settings-btn {
+  padding: 10px 20px;
+  border-radius: 44px;
+  outline: none;
+  color: #707493;
+  font-size: 14px;
+  font-family: Inter;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid #EEEEEE;
+  background-color: white;
+  transition: background-color 0.2s ease;
+}
+
+.roster-settings-btn:hover {
+  background-color: #EAE8F2;
+}
 
