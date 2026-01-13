@@ -701,8 +701,8 @@ const HomePage = () => {
                   <div style={{ display: selectedRole === "Smart Onboarding (Staff)" ? "block" : "none" }}>
                     <HRAnalysis handleClick={handleClick} selectedRole="Smart Onboarding (Staff)" setShowFeedbackPopup={setShowFeedbackPopup} user={user} setManualResumeZip={setManualResumeZip} />
                   </div>
-                  <div style={{ display: selectedRole === "Voice AI Module" ? "block" : "none" }}>
-                    <VoiceModule />
+                  <div style={{ display: selectedRole === "Care Voice" ? "block" : "none" }}>
+                    <VoiceModule user={user}/>
                   </div>
                   <div style={{ display: selectedRole === "Client Profitability & Service" ? "block" : "none" }}>
                     <CareServicesEligibility selectedRole="Client Profitability & Service" handleClick={handleClick} setShowFeedbackPopup={setShowFeedbackPopup} />

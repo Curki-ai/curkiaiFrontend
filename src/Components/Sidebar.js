@@ -29,6 +29,9 @@ import purpleConnectSystem from '../Images/Purple_ConnectSystem.png';
 import whiteConnectSystem from '../Images/White_ConnectSystem.png';
 import purpleIncidentAuditing from '../Images/puple_incident_Auditing.png';
 import whiteIncidentAuditing from '../Images/white_incident_Auditing.png';
+import voiceModuleIcon from '../Images/voiceModuleIcon.png';
+import voiceModuleIconWhite from '../Images/voiceModuleWhiteIcon.png';
+
 import lock from "../Images/lock.png";
 import { IoIosContact, IoIosLogOut } from "react-icons/io";
 import { FaChevronUp } from "react-icons/fa";
@@ -75,7 +78,7 @@ const Sidebar = ({
   const AiAutomationButtons = [
     "Smart Rostering",
     "Smart Onboarding (Staff)",
-    // "Voice AI Module"
+    "Care Voice"
   ];
   const NDISButton = [
     "Participant Events & Incident Management",
@@ -97,15 +100,19 @@ const Sidebar = ({
     "Annual Financial Reporting": { white: whiteAnnual, purple: purpleAnnual },
     "Custom Incident Management": { white: whiteIncidentManagement, purple: purpleIncidentManagement },
     "Payroll Analysis": { white: whitecustom, purple: purpleCustom },
-    "Clients Profitability":{white:whiteCareplan,purple:purpleCareplan},
+    "Clients Profitability": { white: whiteCareplan, purple: purpleCareplan },
     "Client Profitability & Service": { white: whiteCareplan, purple: purpleCareplan },
     "Incident Report": { white: whiteIncidentReport, purple: purpleIncidentReport },
     "Quality and Risk Reporting": { white: whiteqirs, purple: purpleqirs },
     "Smart Onboarding (Staff)": { white: whiteSmartOnboarding, purple: purpleSmartOnboarding },
     "Smart Rostering": { white: whiteSmartRostering, purple: purpleSmartRostering },
     "Participant Events & Incident Management": { white: whiteEventandIncident, purple: purpleEventandIncident },
-    "Incident Auditing":{white:whiteIncidentAuditing,purple:purpleIncidentAuditing},
-    "Connect Your Systems": { white: whiteConnectSystem, purple: purpleConnectSystem }
+    "Incident Auditing": { white: whiteIncidentAuditing, purple: purpleIncidentAuditing },
+    "Connect Your Systems": { white: whiteConnectSystem, purple: purpleConnectSystem },
+    "Care Voice": {
+      white: voiceModuleIconWhite,        
+      purple: voiceModuleIcon,  
+    },
   };
 
   return (
