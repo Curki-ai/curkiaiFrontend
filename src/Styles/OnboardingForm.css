@@ -70,6 +70,14 @@
     font-weight: 500;
     outline: none;
   }
+  .countryCode{
+    padding: 14px 20px;
+    border-radius: 8px;
+    border: 1.43px solid #D2D0D0;
+    font-size: 14px;
+    font-weight: 500;
+    outline: none;
+  }
   .onboarding-field select {
     padding: 14px 20px;
     border-radius: 8px;
@@ -201,4 +209,16 @@
   .days-select:has(option[value=""]:checked) {
     color: #8B8B8B;
   }
-  
+  .addEmail{
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    color: #6c4cdc;
+    font-size: 14px;
+    font-weight: 500;
+    font-family: 'Inter';
+    line-height: 24px;
+    margin-top: -16px;
+    cursor: pointer;
+    margin-bottom: 24px;
+  }

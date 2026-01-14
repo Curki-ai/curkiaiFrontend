@@ -3,12 +3,30 @@ import "../Styles/OnboardingForm.css";
 import Tippy from '@tippyjs/react';
 import 'tippy.js/dist/tippy.css';
 import { IoMdInformationCircleOutline } from "react-icons/io";
+import { GoPlus } from "react-icons/go";
 
 const OnboardingForm = ({ onClose }) => {
     const MAX_CHARS = 150;
+    const [providerName, setProviderName] = useState('');
+    const [rosteringManagers, setRosteringManagers] = useState([{ email: "", phone: "" }]);
     const [shortlistCriteria, setShortlistCriteria] = useState("");
+    const [clientSmsTemplate,setClientSmsTemplate]=useState('');
+    const [staffSmsTemplate,setStaffSmsTemplate]=useState('');
     const [overtimeCriteria, setOvertimeCriteria] = useState("");
     const [days, setDays] = useState('');
+    const addMoreEmails = () => {
+        setRosteringManagers([
+            ...rosteringManagers,
+            { email: "", phone: "" }
+        ]);
+    };
+
+    const handleManagerChange = (index, field, value) => {
+        const updated = [...rosteringManagers];
+        updated[index][field] = value;
+        setRosteringManagers(updated);
+    };
+
     return (
         <div className="onboarding-overlay">
             <div className="onboarding-modal">
@@ -24,7 +42,12 @@ const OnboardingForm = ({ onClose }) => {
                         <div style={{ display: 'flex', gap: '4px', alignItems: 'center', marginBottom: '4px' }}>
                             <label>Provider Name</label>
                         </div>
-                        <input type="text" placeholder="Provider Name" />
+                        <input
+                            type="text"
+                            placeholder="Provider Name"
+                            value={providerName}
+                            onChange={(e) => setProviderName(e.target.value)}
+                        />
                     </div>
 
                     <div className="onboarding-field">
@@ -56,6 +79,49 @@ const OnboardingForm = ({ onClose }) => {
                         </select>
 
                     </div>
+                </div>
+                {rosteringManagers.map((manager, index) => (
+                    <div className="onboarding-row" key={index}>
+                        <div className="onboarding-field">
+                            <div style={{ display: 'flex', gap: '4px', alignItems: 'center', marginBottom: '4px' }}>
+                                <label className="roster-label">
+                                    Rostering Manager Email <sup style={{ color: '#C14B40' }}>*</sup>
+                                </label>
+                            </div>
+                            <input
+                                type="text"
+                                placeholder="Rostering Manager Email"
+                                value={manager.email}
+                                onChange={(e) =>
+                                    handleManagerChange(index, "email", e.target.value)
+                                }
+                            />
+                        </div>
+
+                        <div className="onboarding-field">
+                            <div style={{ display: 'flex', gap: '4px', alignItems: 'center', marginBottom: '4px' }}>
+                                <label className="roster-label">
+                                    Rostering Manager Phone number <sup style={{ color: '#C14B40' }}>*</sup>
+                                </label>
+                            </div>
+                            <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                                <div className="countryCode">+61</div>
+                                <input
+                                    type="text"
+                                    placeholder="Rostering Manager Phone no."
+                                    value={manager.phone}
+                                    onChange={(e) =>
+                                        handleManagerChange(index, "phone", e.target.value)
+                                    }
+                                    style={{ width: '92%' }}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                ))}
+
+                <div className="addEmail" onClick={addMoreEmails}>
+                    <GoPlus color="#6c4cdc" size={20} />{" "} Add More Emails
                 </div>
 
                 <div className="onboarding-field">
@@ -116,6 +182,66 @@ const OnboardingForm = ({ onClose }) => {
                             }`}
                     >
                         {MAX_CHARS - overtimeCriteria.length} characters left
+                    </span>
+
+                </div>
+                <div className="onboarding-field">
+                    <div style={{ display: 'flex', gap: '4px', alignItems: 'center', marginBottom: '4px' }}>
+                        <label>Client SMS Template</label>
+                        {/* <Tippy
+                            content={'Client SMS Template'}
+                            trigger="mouseenter focus click"
+                            interactive={true}
+                            placement="bottom"
+                            theme="onboarding"
+                        >
+                            <div style={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+                                <IoMdInformationCircleOutline size={20} color="#8B8B8B" />
+                            </div>
+                        </Tippy> */}
+                    </div>
+                    <textarea
+                        maxLength={MAX_CHARS}
+                        value={clientSmsTemplate}
+                        onChange={(e) => setClientSmsTemplate(e.target.value)}
+                        placeholder="Describe client sms template"
+                    />
+
+                    <span
+                        className={`onboarding-count ${MAX_CHARS - clientSmsTemplate.length < 20 ? "danger" : ""
+                            }`}
+                    >
+                        {MAX_CHARS - clientSmsTemplate.length} characters left
+                    </span>
+
+                </div>
+                <div className="onboarding-field">
+                    <div style={{ display: 'flex', gap: '4px', alignItems: 'center', marginBottom: '4px' }}>
+                        <label>Staff SMS Template</label>
+                        {/* <Tippy
+                            content={'Staff SMS Template'}
+                            trigger="mouseenter focus click"
+                            interactive={true}
+                            placement="bottom"
+                            theme="onboarding"
+                        >
+                            <div style={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+                                <IoMdInformationCircleOutline size={20} color="#8B8B8B" />
+                            </div>
+                        </Tippy> */}
+                    </div>
+                    <textarea
+                        maxLength={MAX_CHARS}
+                        value={staffSmsTemplate}
+                        onChange={(e) => setStaffSmsTemplate(e.target.value)}
+                        placeholder="Describe staff sms template "
+                    />
+
+                    <span
+                        className={`onboarding-count ${MAX_CHARS - staffSmsTemplate.length < 20 ? "danger" : ""
+                            }`}
+                    >
+                        {MAX_CHARS - staffSmsTemplate.length} characters left
                     </span>
 
                 </div>
