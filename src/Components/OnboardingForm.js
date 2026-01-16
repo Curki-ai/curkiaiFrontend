@@ -364,18 +364,18 @@ const OnboardingForm = ({ onClose, userEmail }) => {
                         </Tippy> */}
                     </div>
                     <textarea
-                        maxLength={MAX_CHARS}
+                        // maxLength={MAX_CHARS}
                         value={clientSmsTemplate}
                         onChange={(e) => setClientSmsTemplate(e.target.value)}
                         placeholder="Describe client sms template"
                     />
 
-                    <span
+                    {/* <span
                         className={`onboarding-count ${MAX_CHARS - clientSmsTemplate.length < 20 ? "danger" : ""
                             }`}
                     >
                         {MAX_CHARS - clientSmsTemplate.length} characters left
-                    </span>
+                    </span> */}
 
                 </div>
                 <div className="onboarding-field">
@@ -394,18 +394,18 @@ const OnboardingForm = ({ onClose, userEmail }) => {
                         </Tippy> */}
                     </div>
                     <textarea
-                        maxLength={MAX_CHARS}
+                        // maxLength={MAX_CHARS}
                         value={staffSmsTemplate}
                         onChange={(e) => setStaffSmsTemplate(e.target.value)}
                         placeholder="Describe staff sms template "
                     />
 
-                    <span
+                    {/* <span
                         className={`onboarding-count ${MAX_CHARS - staffSmsTemplate.length < 20 ? "danger" : ""
                             }`}
                     >
                         {MAX_CHARS - staffSmsTemplate.length} characters left
-                    </span>
+                    </span> */}
 
                 </div>
 
