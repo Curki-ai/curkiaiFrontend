@@ -412,18 +412,17 @@
 
 /* ===== Global back button near top header ===== */
 .roster-history-back-btn {
-    position: fixed;
-    top: 18px;
-    left: 340px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    cursor: pointer;
-    color: #6C4CDC;
-    font-weight: 600;
-    font-size: 15px;
-    transition: color 0.2s ease, transform 0.2s ease;
-    height: auto;
+  position: absolute;   /* 👈 key fix */
+  top: -42px;
+  left: 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  color: #6C4CDC;
+  font-weight: 600;
+  font-size: 15px;
+  z-index: 10;
 }
 
 .roster-history-back-btn:hover {

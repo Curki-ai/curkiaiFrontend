@@ -106,7 +106,7 @@ export default function AIAnalysisReportViewer({
   onDownload,
   progress=0
 }) {
-  console.log("reportText",reportText)
+  // console.log("reportText",reportText)
  if (loading) {
   return (
     <div

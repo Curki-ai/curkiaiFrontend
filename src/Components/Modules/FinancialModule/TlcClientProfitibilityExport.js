@@ -11,7 +11,7 @@ export const addSectionWithGraphsToWord = async ({
     reportRoot,
     captureNode,
 }) => {
-    console.log("📄 WORD EXPORT → Section:", sectionKey);
+    // console.log("📄 WORD EXPORT → Section:", sectionKey);
 
     children.push(
         new Paragraph({
@@ -30,7 +30,7 @@ export const addSectionWithGraphsToWord = async ({
         `[data-report-section="${sectionKey}"]`
     );
 
-    console.log("🔍 sectionEl:", sectionEl);
+    // console.log("🔍 sectionEl:", sectionEl);
 
     if (!sectionEl) {
         console.warn(`❌ No section found for ${sectionKey}`);
@@ -60,7 +60,7 @@ export const addSectionWithGraphsToWord = async ({
     const charts = sectionEl.querySelectorAll(".chart-box");
 
 
-    console.log(`📊 Charts found in ${sectionKey}:`, charts.length);
+    // console.log(`📊 Charts found in ${sectionKey}:`, charts.length);
 
 
 
@@ -94,7 +94,7 @@ export const addSectionWithGraphsToWord = async ({
     // ✅ TABLE EXPORT (Payroll Comparison ka last table)
     const tables = sectionEl.querySelectorAll(".table-box");
 
-    console.log(`📋 Tables found in ${sectionKey}:`, tables.length);
+    // console.log(`📋 Tables found in ${sectionKey}:`, tables.length);
 
     for (let i = 0; i < tables.length; i++) {
         const table = tables[i];

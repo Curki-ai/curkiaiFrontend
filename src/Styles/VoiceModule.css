@@ -1156,6 +1156,28 @@
   color: #6b7280;
 }
 
+/* ===============================
+   TEMPLATE SLIDER – FORCE 2 CARDS
+================================ */
+
+.vm-template-slider-wrapper {
+  width: 856px;          /* (420 × 2) + 16px gap */
+  overflow: hidden;     /* 👈 hide extra cards */
+  margin-top: 12px;
+}
+
+.vm-template-slider {
+  display: flex;
+  gap: 16px;
+  scroll-behavior: smooth;
+}
+
+/* FIXED CARD WIDTH */
+.vm-template-card {
+  width: 420px;
+  min-width: 420px;
+  flex-shrink: 0;
+}
 
 /* ================= RESPONSIVE ADJUSTMENTS ================= */
 @media (max-width: 768px) {

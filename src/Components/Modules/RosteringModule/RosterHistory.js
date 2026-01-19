@@ -577,7 +577,6 @@ const RosterHistory = (props) => {
     const isRMDecided =
         selectedAssignment?.originalStaffObject?.managerApproved === true ||
         selectedAssignment?.originalStaffObject?.rejectedByRM === true;
-
     return (
         <div className="rostering-history-container">
 

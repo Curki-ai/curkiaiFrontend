@@ -8,6 +8,82 @@ import "highlight.js/styles/github.css";
 /**
  * Normalize financial response into markdown string
  */
+function fixMarkdownTables(markdown) {
+  if (!markdown) return markdown;
+
+  const lines = markdown.split("\n");
+  const output = [];
+  let i = 0;
+
+  while (i < lines.length) {
+    const line = lines[i];
+
+    if (line.trim().startsWith("|") && line.includes("|")) {
+      const tableLines = [];
+
+      while (i < lines.length && lines[i].trim().startsWith("|")) {
+        tableLines.push(lines[i]);
+        i++;
+      }
+
+      if (tableLines.length >= 2) {
+        output.push(reconstructTable(tableLines));
+      } else {
+        output.push(...tableLines);
+      }
+    } else {
+      output.push(line);
+      i++;
+    }
+  }
+
+  return output.join("\n");
+}
+
+function reconstructTable(tableLines) {
+  const rows = tableLines
+    .map(line =>
+      line
+        .split("|")
+        .map(cell => cell.trim())
+        .filter((_, i, arr) => i > 0 && i < arr.length - 1)
+    )
+    // ❌ remove separator rows like ----, :----:, ---:
+    .filter(row =>
+      !row.every(cell => /^:?-+:?$/.test(cell))
+    )
+    // ❌ remove ellipsis placeholder rows like ... | ... | ...
+    .filter(row =>
+      !row.every(cell => cell === "...")
+    )
+    // ❌ remove fully empty rows
+    .filter(row =>
+      row.some(cell => cell !== "")
+    );
+
+  if (rows.length < 2) return tableLines.join("\n");
+
+  const headers = rows[0];
+  const dataRows = rows.slice(1);
+
+  let table = "";
+
+  // Header row
+  table += "| " + headers.join(" | ") + " |\n";
+
+  // Alignment row (always valid markdown)
+  table += "| " + headers.map(() => "---").join(" | ") + " |\n";
+
+  // Data rows
+  dataRows.forEach(row => {
+    while (row.length < headers.length) row.push("");
+    table += "| " + row.slice(0, headers.length).join(" | ") + " |\n";
+  });
+
+  return table;
+}
+
+
 const normalizeFinancialReport = (data) => {
   if (!data) return "";
 
@@ -65,7 +141,10 @@ export default function FinancialAnalysisReportViewer({
     );
   }
 
-  const markdown = normalizeFinancialReport(reportText);
+  const cleaned = normalizeFinancialReport(reportText)
+    .replace(/```(?:markdown)?|```/g, "");
+
+  const markdown = fixMarkdownTables(cleaned);
   if (!markdown) return null;
 
   return (
@@ -179,15 +258,24 @@ export default function FinancialAnalysisReportViewer({
             />
           ),
 
-          td: ({ ...props }) => (
+          td: ({ style, children, ...props }) => (
             <td
               style={{
                 border: "1px solid #e5e7eb",
                 padding: "8px",
+
+                // ✅ FIX FOR BROKEN CELLS
+                whiteSpace: "nowrap",
+                wordBreak: "keep-all",
+
+                ...style,
               }}
               {...props}
-            />
+            >
+              {children}
+            </td>
           ),
+
         }}
       />
     </div>

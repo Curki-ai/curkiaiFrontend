@@ -556,7 +556,7 @@ const NewFinancialHealth = (props) => {
                 }
 
                 const json = await res.json();
-                console.log("json", json)
+                // console.log("json", json)
                 setHistoryList(json.data || []);
             } catch (err) {
                 console.error("Failed to load history", err);
@@ -1306,7 +1306,7 @@ const NewFinancialHealth = (props) => {
 
         </section>
     );
-    console.log("activeTabData", activeTabData)
+    // console.log("activeTabData", activeTabData)
     return (
 
         <>

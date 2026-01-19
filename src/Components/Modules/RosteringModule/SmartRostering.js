@@ -64,7 +64,7 @@ const SmartRostering = (props) => {
 
         fetchRosteringSettings();
     }, [userEmail]);
-    console.log("rostering settings in smart rostering main page", rosteringSettings)
+    // console.log("rostering settings in smart rostering main page", rosteringSettings)
     const handleScroll = () => {
         const container = document.getElementById("unallocated-scroll-container");
         if (!container) return;
@@ -84,7 +84,7 @@ const SmartRostering = (props) => {
     const [unauthorized, setUnauthorized] = useState(false);
     const visualCareCreds =
         rosteringSettings?.integrations?.softwares?.visualcare?.creds || null;
-    console.log("visual care creds", visualCareCreds)
+    // console.log("visual care creds", visualCareCreds)
     // console.log("unallocatedClients.length", unallocatedClients.length)
     const formatDateDMY = (dateStr) => {
         if (!dateStr) return "";

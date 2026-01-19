@@ -51,19 +51,19 @@ const RosterDetails = ({ setScreen, rosteringResponse, API_BASE, selectedClient,
     }, [bulkQueue]);
     useEffect(() => {
         if (!bulkQueue) return;
-         if (bulkQueue.length === 0 && activeTab !== null) {
+        if (bulkQueue.length === 0 && activeTab !== null) {
             setActiveTab(null);
             setCurrentBulkResponse(null);
             setBulkResults({});
             setSelected([]);
 
-            setScreen(1); 
+            setScreen(1);
         }
     }, [bulkQueue]);
 
 
-    console.log("rosteringResponse", rosteringResponse);
-    console.log("selectedClient", selectedClient)
+    // console.log("rosteringResponse", rosteringResponse);
+    // console.log("selectedClient", selectedClient)
 
     const [selected, setSelected] = useState([]);
     const [showSuccess, setShowSuccess] = useState(false);
@@ -75,15 +75,25 @@ const RosterDetails = ({ setScreen, rosteringResponse, API_BASE, selectedClient,
     const [refining, setRefining] = useState(false);
     const [refinedStaff, setRefinedStaff] = useState([]);
     const [rankedStaffState, setRankedStaffState] = useState([]);
+    const activeBulkResult = bulkResults?.[activeTab];
+
     const effectiveResponse =
         bulkQueue?.length
-            ? bulkResults[activeTab]?.data || {}
-            : rosteringResponse || {};
+            ? activeBulkResult?.status === "completed"
+                ? activeBulkResult.data
+                : null
+            : rosteringResponse || null;
+
 
     const activeClient =
         bulkQueue?.length && activeTab
             ? bulkQueue.find(q => q.id === activeTab)?.client ?? null
             : selectedClient ?? null;
+    // ✅ BULK TAB LOADING STATE
+    const isBulkLoading =
+        bulkQueue?.length > 0 &&
+        activeTab &&
+        (!activeBulkResult || activeBulkResult.status === "processing");
 
     const clashingList = effectiveResponse?.preffered_worker_clashing_roster || [];
     useEffect(() => {
@@ -133,7 +143,7 @@ const RosterDetails = ({ setScreen, rosteringResponse, API_BASE, selectedClient,
             console.warn("Invalid IN mobile prefix:", input);
             return null;
         }
-        console.log(`normalized Indian number +91${digits}`)
+        // console.log(`normalized Indian number +91${digits}`)
         // 6. Return E.164 format
         return `+91${digits}`;
     };
@@ -202,8 +212,10 @@ const RosterDetails = ({ setScreen, rosteringResponse, API_BASE, selectedClient,
     }
 
     // STAFF
-    let rankedStaff = [];
-    if (isFillerResponse) {
+    let rankedStaff = null;
+    if (!effectiveResponse) {
+        rankedStaff = null;
+    } else if (isFillerResponse) {
         rankedStaff = effectiveResponse?.rostering_summary?.final_ranked || [];
     } else if (isManualResponse) {
         rankedStaff = effectiveResponse?.final_ranked || [];
@@ -254,29 +266,22 @@ const RosterDetails = ({ setScreen, rosteringResponse, API_BASE, selectedClient,
                 clientData: {
                     // ✔ Correct client ID
                     ClientId: isManualResponse ? Date.now() : activeClient?.clientId,
-
                     // ✔ Correct name
                     PreferredName: activeClient?.name,
                     FirstName: activeClient?.name,
-
                     // ✔ Gender
                     Gender: activeClient?.sex,
-
                     // ✔ DOB (not available → null)
                     DateOfBirth: activeClient?.dob || null,
-
                     // ✔ Phone
                     Phone: normalizeAuPhone(activeClient?.phone),
                     Address1: activeClient?.address || "",
                     Address2: "",
-
                     Suburb: "",
                     State: "",
                     PostCode: "",
-
                     // ✔ Skills
                     prefSkillsDescription: activeClient?.prefSkillsDescription || [],
-
                     // ✔ Use selectedClient startTime + minutes
                     startTime: activeClient?.startTime,
                     minutes: parseInt(activeClient?.minutes) || request.minutes,
@@ -310,7 +315,7 @@ const RosterDetails = ({ setScreen, rosteringResponse, API_BASE, selectedClient,
 
 
 
-            console.log("Broadcast Payload:", payload);
+            // console.log("Broadcast Payload:", payload);
 
             const response = await axios.post(`${API_BASE}/api/sampleBroadcast`, payload);
 
@@ -443,7 +448,7 @@ const RosterDetails = ({ setScreen, rosteringResponse, API_BASE, selectedClient,
     useEffect(() => {
         setSelected([]);
     }, [activeTab]);
-    console.log("rankedStaff length", rankedStaff?.length)
+    // console.log("rankedStaff length", rankedStaff?.length)
     const ClockIcon = () => (
         <div
             style={{
@@ -503,8 +508,9 @@ const RosterDetails = ({ setScreen, rosteringResponse, API_BASE, selectedClient,
                 <div style={{ marginBottom: "20px" }}>
                     <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
                         {bulkQueue.map(q => {
-                            const status = bulkResults[q.id]?.status;
-                            const isProcessing = status === "processing";
+                            // const status = bulkResults[q.id]?.status;
+                            // const isProcessing = bulkStatus !== "completed";
+                            const bulkStatus = bulkResults?.[q.id]?.status;
 
                             return (
                                 <div
@@ -515,7 +521,9 @@ const RosterDetails = ({ setScreen, rosteringResponse, API_BASE, selectedClient,
                                     <span>{q.client.name}</span>
 
                                     {/* loader inside tab */}
-                                    {isProcessing && <span className="tab-loader" />}
+                                    {bulkResults?.[q.id]?.status !== "completed" && (
+                                        <span className="tab-loader" />
+                                    )}
 
                                     {/* cross button */}
                                     <span
@@ -666,7 +674,11 @@ const RosterDetails = ({ setScreen, rosteringResponse, API_BASE, selectedClient,
                     Available Staff
                 </h3>
 
-                {rankedStaffState.length > 0 ? (
+                {isBulkLoading || rankedStaffState === null ? (
+                    <div className="center-loader">
+                        <div className="big-loader" />
+                    </div>
+                ) : rankedStaffState.length > 0 ? (
                     <div className="roster-staff-cards">
                         {rankedStaffState.map((staff, index) => (
                             <div
@@ -841,13 +853,10 @@ const RosterDetails = ({ setScreen, rosteringResponse, API_BASE, selectedClient,
                             </div>
                         ))}
                     </div>
-                ) : bulkResults[activeTab]?.status === "processing" ? (
-                    <div className="center-loader">
-                        <div className="big-loader" />
-                    </div>
                 ) : (
                     <p>No staff available for this shift.</p>
                 )}
+
             </div>
 
             {/* Preferred Worker Clashing Roster */}
