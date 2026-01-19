@@ -31,7 +31,10 @@ import { Document, Packer, Paragraph, HeadingLevel, ImageRun } from "docx";
 import { saveAs } from "file-saver";
 import html2canvas from "html2canvas";
 import { GoArrowLeft } from "react-icons/go";
+import { registerLocale } from "react-datepicker";
+import enGB from "date-fns/locale/en-GB";
 
+registerLocale("en-GB", enGB);
 export default function TlcNewCustomerReporting(props) {
     // -------------------- MULTI TAB SUPPORT --------------------
     const USE_DUMMY_DATA = false;
@@ -168,20 +171,20 @@ export default function TlcNewCustomerReporting(props) {
     const optionsDepartment = [
         { label: "ACAC", value: "ACAC" },
         { label: "AUGU", value: "AUGU" },
-        { label: "AUS Chief Executive Officer", value: "AUS Chief Executive Officer" },
+        // { label: "AUS Chief Executive Officer", value: "AUS Chief Executive Officer" },
         { label: "Accommodation", value: "Accommodation" },
         { label: "Allied Health", value: "Allied Health" },
         { label: "Behaviour", value: "Behaviour" },
         { label: "Customer Care", value: "Customer Care" },
         { label: "DS - WERR", value: "DS - WERR" },
         { label: "Day Program", value: "Day Program" },
-        { label: "Finance", value: "Finance" },
-        { label: "Global Chief Executive Officer", value: "Global Chief Executive Officer" },
-        { label: "Growth and Marketing", value: "Growth and Marketing" },
+        // { label: "Finance", value: "Finance" },
+        // { label: "Global Chief Executive Officer", value: "Global Chief Executive Officer" },
+        // { label: "Growth and Marketing", value: "Growth and Marketing" },
         { label: "HUB - Central Coast", value: "HUB - Central Coast" },
         { label: "Hub - Bankstown", value: "Hub - Bankstown" },
         { label: "Inactive", value: "Inactive" },
-        { label: "Information Communications and Technology", value: "Information Communications and Technology" },
+        // { label: "Information Communications and Technology", value: "Information Communications and Technology" },
         { label: "MAC", value: "MAC" },
         { label: "MayeFoodz", value: "MayeFoodz" },
         { label: "NDIS", value: "NDIS" },
@@ -189,8 +192,8 @@ export default function TlcNewCustomerReporting(props) {
         { label: "Operations", value: "Operations" },
         { label: "PHYSIO", value: "PHYSIO" },
         { label: "PSYCH", value: "PSYCH" },
-        { label: "People and Culture", value: "People and Culture" },
-        { label: "Quality and Safeguards", value: "Quality and Safeguards" },
+        // { label: "People and Culture", value: "People and Culture" },
+        // { label: "Quality and Safeguards", value: "Quality and Safeguards" },
         { label: "Scheduling", value: "Scheduling" },
         { label: "Speech", value: "Speech" },
         { label: "Support Coordination", value: "Support Coordination" },
@@ -235,6 +238,14 @@ export default function TlcNewCustomerReporting(props) {
         if (!start || !end) return null;
         return `${start.toLocaleDateString("en-US")} - ${end.toLocaleDateString("en-US")}`;
     };
+    const formatDMY = (date) => {
+        if (!date) return "";
+        const d = date.getDate();
+        const m = date.getMonth() + 1;
+        const y = date.getFullYear();
+        return `${d}-${m}-${y}`;
+    };
+
     // ✅ ADD THIS AT THE BOTTOM
     const buildMarkdownDocxContent = (markdown) => {
         if (!markdown) return [];
@@ -565,9 +576,10 @@ export default function TlcNewCustomerReporting(props) {
             // STEP 2️⃣: RUN ANALYSIS API
             // -------------------------------
             const query = new URLSearchParams({
-                start: startDate.toISOString().split("T")[0],
-                end: endDate.toISOString().split("T")[0],
+                start: `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, "0")}-${String(startDate.getDate()).padStart(2, "0")}`,
+                end: `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, "0")}-${String(endDate.getDate()).padStart(2, "0")}`,
             });
+
 
             if (selectedState.length)
                 query.append("state", selectedState.map((s) => s.value).join(","));
@@ -751,8 +763,8 @@ export default function TlcNewCustomerReporting(props) {
                 pages: analysisData?.pages,
                 scorecard: analysisData?.scorecard,
                 filters: {
-                    start: startDate ? startDate.toISOString().split("T")[0] : null,
-                    end: endDate ? endDate.toISOString().split("T")[0] : null,
+                    start: `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, "0")}-${String(startDate.getDate()).padStart(2, "0")}`,
+                    end: `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, "0")}-${String(endDate.getDate()).padStart(2, "0")}`,
                     state: selectedState.map((s) => s.value).join(", "),
                     department: selectedDepartment.map((d) => d.value).join(", "),
                     role: selectedRole.map((r) => r.value).join(", "),
@@ -1392,9 +1404,9 @@ export default function TlcNewCustomerReporting(props) {
                         }}
                     >
                         {!hasStart && "Select Date Range"}
-                        {hasStart && !hasEnd && startDate.toLocaleDateString()}
+                        {hasStart && !hasEnd && formatDMY(startDate)}
                         {hasStart && hasEnd &&
-                            `${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}`
+                            `${formatDMY(startDate)} - ${formatDMY(endDate)}`
                         }
                     </span>
 
@@ -1656,6 +1668,7 @@ export default function TlcNewCustomerReporting(props) {
                     <div className="filters-grid">
                         <div>
                             <DatePicker
+                                locale="en-GB"                 // ✅ FORCE DD/MM/YYYY behaviour
                                 selectsRange
                                 startDate={activeTabData.startDate}
                                 endDate={activeTabData.endDate}
@@ -1671,16 +1684,16 @@ export default function TlcNewCustomerReporting(props) {
                                     });
                                 }}
 
-                                dateFormat="dd/MM/yy"
-
+                                dateFormat="dd-MM-yyyy"        // ✅ DISPLAY FORMAT (input + typing)
                                 customInput={
                                     <DateRangeInput
                                         startDate={activeTabData.startDate}
                                         endDate={activeTabData.endDate}
-                                        isOpen={activeTabData.dateOpen}   // ✅ PER TAB
+                                        isOpen={activeTabData.dateOpen}   // ✅ PER TAB (unchanged)
                                     />
                                 }
                             />
+
                         </div>
                         <MultiSelectCustom
                             options={optionsState}

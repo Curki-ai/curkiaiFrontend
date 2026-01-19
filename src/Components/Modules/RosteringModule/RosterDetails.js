@@ -8,8 +8,63 @@ import axios from "axios";
 import clockCircleIcon from "../../../Images/clock circle.png"
 import clickHandIcon from "../../../Images/clock hand.png"
 import star_icon from "../../../Images/rostering_star.png"
-const RosterDetails = ({ setScreen, rosteringResponse, API_BASE, selectedClient, visualCareCreds, userEmail, SetIsSmartRosteringDetails }) => {
-    // console.log("rosteringResponse", rosteringResponse);
+const RosterDetails = ({ setScreen, rosteringResponse, API_BASE, selectedClient, visualCareCreds, userEmail, SetIsSmartRosteringDetails, bulkQueue, setBulkQueue,
+    bulkResults,
+    setBulkResults,
+    activeTab,
+    setActiveTab,
+    handleClientClickBulk }) => {
+    const [currentBulkResponse, setCurrentBulkResponse] = useState(null);
+    useEffect(() => {
+        if (!bulkQueue?.length) return;
+
+        bulkQueue.forEach((item) => {
+            const id = item.id;
+
+            // already completed → skip
+            if (bulkResults[id]?.status === "completed") return;
+
+            // mark processing
+            setBulkResults(prev => ({
+                ...prev,
+                [id]: { status: "processing" }
+            }));
+
+            // 🔥 PARALLEL API CALL
+            handleClientClickBulk(item.client)
+                .then(data => {
+                    setBulkResults(prev => ({
+                        ...prev,
+                        [id]: {
+                            status: "completed",
+                            data
+                        }
+                    }));
+                })
+                .catch(() => {
+                    setBulkResults(prev => ({
+                        ...prev,
+                        [id]: { status: "error" }
+                    }));
+                });
+        });
+    }, [bulkQueue]);
+    useEffect(() => {
+        if (!bulkQueue) return;
+         if (bulkQueue.length === 0 && activeTab !== null) {
+            setActiveTab(null);
+            setCurrentBulkResponse(null);
+            setBulkResults({});
+            setSelected([]);
+
+            setScreen(1); 
+        }
+    }, [bulkQueue]);
+
+
+    console.log("rosteringResponse", rosteringResponse);
+    console.log("selectedClient", selectedClient)
+
     const [selected, setSelected] = useState([]);
     const [showSuccess, setShowSuccess] = useState(false);
     const [broadcasting, setBroadcasting] = useState(false);
@@ -20,8 +75,17 @@ const RosterDetails = ({ setScreen, rosteringResponse, API_BASE, selectedClient,
     const [refining, setRefining] = useState(false);
     const [refinedStaff, setRefinedStaff] = useState([]);
     const [rankedStaffState, setRankedStaffState] = useState([]);
+    const effectiveResponse =
+        bulkQueue?.length
+            ? bulkResults[activeTab]?.data || {}
+            : rosteringResponse || {};
 
-    const clashingList = rosteringResponse?.preffered_worker_clashing_roster || [];
+    const activeClient =
+        bulkQueue?.length && activeTab
+            ? bulkQueue.find(q => q.id === activeTab)?.client ?? null
+            : selectedClient ?? null;
+
+    const clashingList = effectiveResponse?.preffered_worker_clashing_roster || [];
     useEffect(() => {
         if (typeof SetIsSmartRosteringDetails === "function") {
             SetIsSmartRosteringDetails(true);
@@ -33,6 +97,15 @@ const RosterDetails = ({ setScreen, rosteringResponse, API_BASE, selectedClient,
             }
         };
     }, []);
+    const formatDateDMY = (dateStr) => {
+        if (!dateStr) return "";
+
+        // expect YYYY-MM-DD
+        const [year, month, day] = dateStr.split("-");
+        if (!year || !month || !day) return dateStr;
+
+        return `${day}-${month}-${year}`;
+    };
     const normalizeInPhone = (input) => {
         if (!input || typeof input !== "string") return null;
 
@@ -107,52 +180,52 @@ const RosterDetails = ({ setScreen, rosteringResponse, API_BASE, selectedClient,
         return date.toLocaleString("en-AU", options);
     };
 
-    const isFillerResponse = rosteringResponse?.filler;
+    const isFillerResponse = effectiveResponse?.filler;
 
     const isManualResponse =
-        rosteringResponse?.parsed_client_profile &&
-        rosteringResponse?.final_ranked &&
-        !rosteringResponse?.data;
+        effectiveResponse?.parsed_client_profile &&
+        effectiveResponse?.final_ranked &&
+        !effectiveResponse?.data;
 
     // CLIENT
     let client = {};
     if (isFillerResponse) {
-        client = rosteringResponse?.filler?.match?.matched_record || {};
+        client = effectiveResponse?.filler?.match?.matched_record || {};
     } else if (isManualResponse) {
         client = {
-            client_name: rosteringResponse?.parsed_client_profile?.client_name || "Unknown",
-            required_skills: rosteringResponse?.parsed_client_profile?.required_skills || [],
-            gender: rosteringResponse?.parsed_client_profile?.preferences?.gender || "any"
+            client_name: effectiveResponse?.parsed_client_profile?.client_name || "Unknown",
+            required_skills: effectiveResponse?.parsed_client_profile?.required_skills || [],
+            gender: effectiveResponse?.parsed_client_profile?.preferences?.gender || "any"
         };
     } else {
-        client = rosteringResponse?.data?.client || {};
+        client = effectiveResponse?.data?.client || {};
     }
 
     // STAFF
     let rankedStaff = [];
     if (isFillerResponse) {
-        rankedStaff = rosteringResponse?.rostering_summary?.final_ranked || [];
+        rankedStaff = effectiveResponse?.rostering_summary?.final_ranked || [];
     } else if (isManualResponse) {
-        rankedStaff = rosteringResponse?.final_ranked || [];
+        rankedStaff = effectiveResponse?.final_ranked || [];
     } else {
-        rankedStaff = rosteringResponse?.data?.final_ranked || [];
+        rankedStaff = effectiveResponse?.data?.final_ranked || [];
     }
     useEffect(() => {
         setRankedStaffState(rankedStaff);
-    }, [rosteringResponse]);
+    }, [effectiveResponse, activeTab]);
 
     // REQUEST
     let request = {};
     if (isFillerResponse) {
-        request = rosteringResponse?.filler?.llm?.inputs || {};
+        request = effectiveResponse?.filler?.llm?.inputs || {};
     } else if (isManualResponse) {
         request = {
-            shift_date: rosteringResponse?.parsed_shift?.date || null,
-            start_time: rosteringResponse?.parsed_shift?.start_time || null,
-            duration_minutes: rosteringResponse?.parsed_shift?.duration_minutes || 0
+            shift_date: effectiveResponse?.parsed_shift?.date || null,
+            start_time: effectiveResponse?.parsed_shift?.start_time || null,
+            duration_minutes: effectiveResponse?.parsed_shift?.duration_minutes || 0
         };
     } else {
-        request = rosteringResponse?.data?.request || {};
+        request = effectiveResponse?.data?.request || {};
     }
     const handleSelect = (id) => {
         if (selected.includes(id)) {
@@ -180,22 +253,21 @@ const RosterDetails = ({ setScreen, rosteringResponse, API_BASE, selectedClient,
             const payload = {
                 clientData: {
                     // ✔ Correct client ID
-                    ClientId: isManualResponse ? Date.now() : selectedClient.clientId,
+                    ClientId: isManualResponse ? Date.now() : activeClient?.clientId,
 
                     // ✔ Correct name
-                    PreferredName: selectedClient.name,
-                    FirstName: selectedClient.name,
+                    PreferredName: activeClient?.name,
+                    FirstName: activeClient?.name,
 
                     // ✔ Gender
-                    Gender: selectedClient.sex,
+                    Gender: activeClient?.sex,
 
                     // ✔ DOB (not available → null)
-                    DateOfBirth: selectedClient.dob || null,
+                    DateOfBirth: activeClient?.dob || null,
 
                     // ✔ Phone
-                    Phone: normalizeAuPhone(selectedClient.phone),
-                    // ✔ Address (auto split)
-                    Address1: selectedClient.address || "",
+                    Phone: normalizeAuPhone(activeClient?.phone),
+                    Address1: activeClient?.address || "",
                     Address2: "",
 
                     Suburb: "",
@@ -203,17 +275,17 @@ const RosterDetails = ({ setScreen, rosteringResponse, API_BASE, selectedClient,
                     PostCode: "",
 
                     // ✔ Skills
-                    prefSkillsDescription: selectedClient.prefSkillsDescription || [],
+                    prefSkillsDescription: activeClient?.prefSkillsDescription || [],
 
                     // ✔ Use selectedClient startTime + minutes
-                    startTime: selectedClient.startTime,
-                    minutes: parseInt(selectedClient.minutes) || request.minutes
+                    startTime: activeClient?.startTime,
+                    minutes: parseInt(activeClient?.minutes) || request.minutes,
                 },
 
                 staffList: selectedStaff.map(s => ({
                     staffId: s.id || s.staffId,
                     name: s.name,
-                    phone: normalizeAuPhone(s?.phone),
+                    phone: userEmail === "kris@curki.ai" ? normalizeAuPhone("419 015 351") : normalizeAuPhone(s?.phone),
                     email: s.email,
                     gender: s.gender || s.sex,
                     location: s.location,
@@ -223,7 +295,8 @@ const RosterDetails = ({ setScreen, rosteringResponse, API_BASE, selectedClient,
                     languages: s.languages,
                     role_description: s.role_description,
                     reason: s.reason,
-                    role: "SW"
+                    role: "SW",
+                    DateOfService: activeClient?.dateOfService
                 })),
 
                 rosteringManagers: [
@@ -256,7 +329,7 @@ const RosterDetails = ({ setScreen, rosteringResponse, API_BASE, selectedClient,
             return;
         }
 
-        const main = rosteringResponse?.rosteringMainResponse;
+        const main = effectiveResponse?.rosteringMainResponse;
         if (!main) {
             alert("No rostering main response found.");
             return;
@@ -306,23 +379,23 @@ const RosterDetails = ({ setScreen, rosteringResponse, API_BASE, selectedClient,
                 ? client.address
                 : `${client.address.street_number} ${client.address.street}, ${client.address.suburb}, ${client.address.state} ${client.address.postcode}, ${client.address.country}`;
         }
-        return selectedClient?.address || 'N/A';
+        return activeClient?.address || 'N/A';
     };
     // console.log(selectedClient)
     useEffect(() => {
         if (!isManualResponse) return;
 
-        let allRecords = rosteringResponse?.history || [];
+        let allRecords = effectiveResponse?.history || [];
         allRecords = allRecords
             .sort((a, b) => new Date(b.date_of_service) - new Date(a.date_of_service))
             .slice(0, 10);
 
         setTimesheetHistory(allRecords);
-    }, [isManualResponse, rosteringResponse]);
+    }, [isManualResponse, effectiveResponse]);
 
     useEffect(() => {
         const fetchTimesheetHistory = async () => {
-            if (!selectedClient || !visualCareCreds) return;
+            if (!activeClient || !visualCareCreds) return;
             if (isManualResponse) return;
             setLoadingHistory(true);
             try {
@@ -366,7 +439,10 @@ const RosterDetails = ({ setScreen, rosteringResponse, API_BASE, selectedClient,
         };
 
         fetchTimesheetHistory();
-    }, [selectedClient, visualCareCreds]);
+    }, [activeClient, visualCareCreds]);
+    useEffect(() => {
+        setSelected([]);
+    }, [activeTab]);
     console.log("rankedStaff length", rankedStaff?.length)
     const ClockIcon = () => (
         <div
@@ -405,21 +481,73 @@ const RosterDetails = ({ setScreen, rosteringResponse, API_BASE, selectedClient,
     );
     return (
         <div className="roster-page">
+            <div
+                className="roster-back-btn"
+                onClick={() => {
+                    if (typeof SetIsSmartRosteringDetails === "function") {
+                        SetIsSmartRosteringDetails(false);
+                    }
+
+                    setCurrentBulkResponse(null);
+                    setActiveTab(null);
+                    setBulkResults({});
+                    setSelected([]);
+
+                    setScreen(1);
+                }}
+            >
+                <GoArrowLeft size={22} color="#6C4CDC" />
+                <span>Back</span>
+            </div>
+            {bulkQueue?.length > 0 && (
+                <div style={{ marginBottom: "20px" }}>
+                    <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+                        {bulkQueue.map(q => {
+                            const status = bulkResults[q.id]?.status;
+                            const isProcessing = status === "processing";
+
+                            return (
+                                <div
+                                    key={q.id}
+                                    onClick={() => setActiveTab(q.id)}
+                                    className={`bulk-tab ${activeTab === q.id ? "active" : ""}`}
+                                >
+                                    <span>{q.client.name}</span>
+
+                                    {/* loader inside tab */}
+                                    {isProcessing && <span className="tab-loader" />}
+
+                                    {/* cross button */}
+                                    <span
+                                        className="tab-close"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+
+                                            setBulkQueue(prev => prev.filter(x => x.id !== q.id));
+                                            setBulkResults(prev => {
+                                                const copy = { ...prev };
+                                                delete copy[q.id];
+                                                return copy;
+                                            });
+
+                                            if (activeTab === q.id) {
+                                                const remaining = bulkQueue.filter(x => x.id !== q.id);
+                                                setActiveTab(remaining[0]?.id || null);
+                                            }
+                                        }}
+                                    >
+                                        ×
+                                    </span>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+
+
             {/* Layout wrapper */}
             <div className="roster-layout">
-                <div
-                    className="roster-back-btn"
-                    onClick={() => {
-                        if (typeof SetIsSmartRosteringDetails === "function") {
-                            SetIsSmartRosteringDetails(false);
-                        }
-                        setScreen(1);
-                    }}
-                    style={{ top: "-51px" }}
-                >
-                    <GoArrowLeft size={22} color="#6C4CDC" />
-                    <span>Back</span>
-                </div>
                 {/* Personal Information */}
                 <div className="roster-personal-info">
                     <div className="roster-peronal-img-h">
@@ -434,21 +562,21 @@ const RosterDetails = ({ setScreen, rosteringResponse, API_BASE, selectedClient,
                     <div className="roster-info-grid">
                         <div style={{ display: 'flex', paddingLeft: '54px', gap: '42px', paddingTop: '20px', paddingBottom: '20px', borderBottom: '1px solid #E4E4E4' }}>
                             <p>ID: <span style={{ color: 'black' }}>
-                                {client.ClientId || client.id || selectedClient?.clientId || request.client_id || 'N/A'}
+                                {client.ClientId || client.id || activeClient?.clientId || request.client_id || 'N/A'}
                             </span></p>
                             <p>Name: <span style={{ color: 'black' }}>
-                                {client.PreferredName || client.FirstName || client.client_name || selectedClient?.name || request.client_name || 'N/A'}
+                                {client.PreferredName || client.FirstName || client.client_name || activeClient?.name || request.client_name || 'N/A'}
                             </span></p>
                             <p>DOB: <span style={{ color: 'black' }}>
                                 {client.DateOfBirth || client.dob || 'N/A'}
                             </span></p>
                             <p>Gender: <span style={{ color: 'black' }}>
-                                {client.Gender || client.gender || selectedClient?.sex || 'N/A'}
+                                {client.Gender || client.gender || activeClient?.sex || 'N/A'}
                             </span></p>
                         </div>
                         <div style={{ display: 'flex', paddingLeft: '54px', gap: '42px', paddingTop: '20px', paddingBottom: '20px', borderBottom: '1px solid #E4E4E4' }}>
                             <p>Phone: <span style={{ color: 'black' }}>
-                                {client.Phone1 || client.phone || selectedClient?.phone || 'N/A'}
+                                {client.Phone1 || client.phone || activeClient?.phone || 'N/A'}
                             </span></p>
                             <p>Plan Start Date: <span style={{ color: 'black' }}>
                                 {client.ServiceStart || client.plan_start_date || request.shift_date || 'N/A'}
@@ -456,11 +584,14 @@ const RosterDetails = ({ setScreen, rosteringResponse, API_BASE, selectedClient,
 
                         </div>
                         <div style={{ display: 'flex', flexWrap: 'wrap', paddingLeft: '54px', gap: '42px', paddingTop: '20px', paddingBottom: '20px', borderBottom: '1px solid #E4E4E4' }}>
+                            <p>Shift Date: <span style={{ color: 'black' }}>
+                                {formatDateDMY(activeClient?.dateOfService)}
+                            </span></p>
                             <p>Start Time: <span style={{ color: 'black' }}>
-                                {selectedClient.startTime}
+                                {activeClient?.startTime}
                             </span></p>
                             <p>End Time: <span style={{ color: 'black' }}>
-                                {selectedClient.endTime}
+                                {activeClient?.endTime}
                             </span></p>
                         </div>
                         <div style={{ display: 'flex', flexWrap: 'wrap', paddingLeft: '54px', gap: '42px', paddingTop: '20px', paddingBottom: '20px', borderBottom: '1px solid #E4E4E4' }}>
@@ -470,7 +601,7 @@ const RosterDetails = ({ setScreen, rosteringResponse, API_BASE, selectedClient,
                         </div>
                         <div style={{ display: 'flex', flexWrap: 'wrap', paddingLeft: '54px', gap: '42px', paddingTop: '20px', paddingBottom: '20px', borderBottom: '1px solid #E4E4E4', textAlign: 'left' }}>
                             <p>Skills: <span style={{ color: 'black' }}>
-                                {selectedClient.prefSkillsDescription?.join(', ')}
+                                {activeClient?.prefSkillsDescription?.join(', ')}
                             </span></p>
                         </div>
                     </div>
@@ -528,169 +659,197 @@ const RosterDetails = ({ setScreen, rosteringResponse, API_BASE, selectedClient,
 
             {/* Available Staff */}
             <div className="roster-staff-section">
-                <h3 className="roster-section-title" style={{ textAlign: "left", marginBottom: "20px" }}>
+                <h3
+                    className="roster-section-title"
+                    style={{ textAlign: "left", marginBottom: "20px" }}
+                >
                     Available Staff
                 </h3>
 
-                <div className="roster-staff-cards">
-                    {rankedStaffState.length > 0 ? (
-                        rankedStaffState.map((staff, index) => {
-                            // if (!staff.eliminated_reason || staff.eliminated_reason.length === 0) {
-                            //     staff.eliminated_reason = [
-                            //         "Worked extra night shifts throughout the week due to a last-minute schedule change and staff shortage."
-                            //     ];
-                            // }
-                            // if (!staff.overtime_hours) staff.overtime_hours = 3;
-                            return (
+                {rankedStaffState.length > 0 ? (
+                    <div className="roster-staff-cards">
+                        {rankedStaffState.map((staff, index) => (
+                            <div
+                                key={index}
+                                className={`roster-staff-card ${selected.includes(index) ? "roster-selected" : ""
+                                    }`}
+                                onClick={() => handleSelect(index)}
+                            >
+                                {/* Header with Rank & Name */}
                                 <div
-                                    key={index}
-                                    className={`roster-staff-card ${selected.includes(index) ? "roster-selected" : ""}`}
-                                    onClick={() => handleSelect(index)}
+                                    style={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: "10px",
+                                        marginBottom: "16px",
+                                    }}
                                 >
-                                    {/* Header with Rank & Name */}
-                                    <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "16px", position: "relative" }}>
-                                        <div className="roster-staff-number">{index + 1}</div>
+                                    <div className="roster-staff-number">{index + 1}</div>
 
-                                        <div style={{ display: "flex", alignItems: "center", gap: "22px" }}>
-                                            <div style={{ fontSize: "15px", fontWeight: "600", color: "black" }}>
-                                                {staff.name || "Unknown"}
-                                            </div>
-
-                                            {staff.preferred === "true" && (
-                                                <img
-                                                    src={star_icon}
-                                                    alt="Preferred"
-                                                    style={{
-                                                        width: "18px",
-                                                        height: "18px",
-                                                        objectFit: "contain",
-                                                        marginLeft: "50px",
-                                                    }}
-                                                />
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    {/* Overtime and Elimination Info */}
-                                    {(staff.overtime_hours > 0 || staff.eliminated_reason?.[0]) && (
+                                    <div style={{ display: "flex", alignItems: "center", gap: "22px" }}>
                                         <div
-                                            style={{
-                                                marginTop: "10px",
-                                                padding: "8px",
-                                                background: "#f9f7ff",
-                                                borderRadius: "6px",
-                                                borderLeft: "3px solid #6C4CDC",
-                                            }}
+                                            style={{ fontSize: "15px", fontWeight: "600", color: "black" }}
                                         >
-                                            {staff.overtime_hours > 0 && (
-                                                <div style={{ display: "flex", alignItems: "center" }}>
-                                                    <ClockIcon />
-                                                    <p className="staff-details" style={{ fontSize: "13px", fontWeight: "500", margin: 0 }}>
-                                                        <strong>Overtime Hours:</strong>{" "}
-                                                        <span style={{ color: "black" }}>{staff.overtime_hours}</span>
-                                                    </p>
-                                                </div>
-                                            )}
-
-                                            {staff.eliminated_reason?.[0] && (
-                                                <p className="staff-details" style={{ fontSize: "13px", fontWeight: "500", color: "black" }}>
-                                                    <strong>Overtime Reason:</strong>{" "}
-                                                    <span>{staff.eliminated_reason[0]}</span>
-                                                </p>
-                                            )}
+                                            {staff.name || "Unknown"}
                                         </div>
-                                    )}
 
-                                    {/* Score */}
-                                    <p className="staff-details" style={{ fontWeight: "600", fontSize: "14px" }}>
-                                        Score: <span style={{ color: "#6C4CDC", fontWeight: "700" }}>{staff.score || "N/A"}</span>
-                                    </p>
+                                        {staff.preferred === "true" && (
+                                            <img
+                                                src={star_icon}
+                                                alt="Preferred"
+                                                style={{ width: "18px", height: "18px" }}
+                                            />
+                                        )}
+                                    </div>
+                                </div>
 
-                                    {/* Gender */}
-                                    <p className="staff-details" style={{ fontWeight: "400" }}>
-                                        Gender: <span style={{ color: "black" }}>{staff.sex || staff.gender || "N/A"}</span>
-                                    </p>
-
-                                    {/* Phone */}
-                                    <p className="staff-details" style={{ fontWeight: "400" }}>
-                                        Phone: <span style={{ color: "black" }}>{staff.phone || "N/A"}</span>
-                                    </p>
-
-                                    {/* Email */}
-                                    <p className="staff-details" style={{ fontWeight: "400" }}>
-                                        Email: <span style={{ color: "black" }}>{staff.email || "N/A"}</span>
-                                    </p>
-
-                                    {/* Languages */}
-                                    <p className="staff-details" style={{ fontWeight: "400" }}>
-                                        Languages: <span style={{ color: "black" }}>{staff.languages || "N/A"}</span>
-                                    </p>
-
-                                    {/* Experience Years */}
-                                    {isManualResponse && <p className="staff-details" style={{ fontWeight: "400" }}>
-                                        Experience: <span style={{ color: "black" }}>{staff.experience_years !== undefined && staff.experience_years !== null
-                                            ? `${staff.experience_years} years`
-                                            : "N/A"}</span>
-                                    </p>}
-
-                                    {/* Role Description */}
-                                    <p className="staff-details" style={{ fontWeight: "400" }}>
-                                        Role:{" "}
-                                        <span style={{ color: "black" }}>
-                                            {Array.isArray(staff.roles)
-                                                ? staff.roles.join(", ")
-                                                : staff.roles || staff.role || "N/A"}
-                                        </span>
-                                    </p>
-
-                                    {/* Award Description (if not null) */}
-                                    {staff.award_desc && (
-                                        <p className="staff-details" style={{ fontWeight: "400", fontSize: "13px" }}>
-                                            Award: <span style={{ color: "black" }}>{staff.award_desc}</span>
-                                        </p>
-                                    )}
-
-                                    {/* Location */}
-                                    {staff?.location?.address && <p className="staff-details" style={{ fontWeight: "400" }}>
-                                        Location: <span style={{ color: "black" }}>{staff?.location?.address || staff?.location || "N/A"}</span>
-                                    </p>}
-
-                                    {/* Skill Descriptions */}
-                                    {staff?.skills && staff?.skills.length > 0 && (
-                                        <div style={{ marginTop: "10px" }}>
-                                            <p className="staff-details" style={{ fontWeight: "600", marginBottom: "6px" }}>
-                                                Skills:
-                                            </p>
-                                            <ul style={{ paddingLeft: "20px", fontSize: "12px", color: "#555", margin: "0" }}>
-                                                {staff?.skills.map((skill, idx) => (
-                                                    <li key={idx} style={{ marginBottom: "4px" }}>{skill}</li>
-                                                ))}
-                                            </ul>
-                                        </div>
-                                    )}
-
-                                    {/* Reason (Highlighted at bottom) */}
-                                    {staff.reason && (
-                                        <p className="staff-details" style={{
-                                            fontWeight: "400",
-                                            fontSize: "13px",
-                                            marginTop: "12px",
+                                {/* Overtime / Elimination */}
+                                {(staff.overtime_hours > 0 || staff.eliminated_reason?.[0]) && (
+                                    <div
+                                        style={{
                                             padding: "8px",
                                             background: "#f9f7ff",
                                             borderRadius: "6px",
-                                            borderLeft: "3px solid #6C4CDC"
-                                        }}>
-                                            <strong>Why this staff?</strong> <span style={{ color: "black" }}>{staff.reason}</span>
+                                            borderLeft: "3px solid #6C4CDC",
+                                            marginBottom: "8px",
+                                        }}
+                                    >
+                                        {staff.overtime_hours > 0 && (
+                                            <div style={{ display: "flex", alignItems: "center" }}>
+                                                <ClockIcon />
+                                                <p
+                                                    className="staff-details"
+                                                    style={{ fontSize: "13px", margin: 0 }}
+                                                >
+                                                    <strong>Overtime Hours:</strong>{" "}
+                                                    <span style={{ color: "black" }}>
+                                                        {staff.overtime_hours}
+                                                    </span>
+                                                </p>
+                                            </div>
+                                        )}
+
+                                        {staff.eliminated_reason?.[0] && (
+                                            <p
+                                                className="staff-details"
+                                                style={{ fontSize: "13px", margin: 0 }}
+                                            >
+                                                <strong>Overtime Reason:</strong>{" "}
+                                                {staff.eliminated_reason[0]}
+                                            </p>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Details */}
+                                <p className="staff-details">
+                                    Score:{" "}
+                                    <span style={{ color: "#6C4CDC", fontWeight: 700 }}>
+                                        {staff.score || "N/A"}
+                                    </span>
+                                </p>
+
+                                <p className="staff-details">
+                                    Gender:{" "}
+                                    <span style={{ color: "black" }}>
+                                        {staff.sex || staff.gender || "N/A"}
+                                    </span>
+                                </p>
+
+                                <p className="staff-details">
+                                    Phone: <span style={{ color: "black" }}>{staff.phone || "N/A"}</span>
+                                </p>
+
+                                <p className="staff-details">
+                                    Email: <span style={{ color: "black" }}>{staff.email || "N/A"}</span>
+                                </p>
+
+                                <p className="staff-details">
+                                    Languages:{" "}
+                                    <span style={{ color: "black" }}>
+                                        {staff.languages || "N/A"}
+                                    </span>
+                                </p>
+
+                                {isManualResponse && (
+                                    <p className="staff-details">
+                                        Experience:{" "}
+                                        <span style={{ color: "black" }}>
+                                            {staff.experience_years != null
+                                                ? `${staff.experience_years} years`
+                                                : "N/A"}
+                                        </span>
+                                    </p>
+                                )}
+
+                                <p className="staff-details">
+                                    Role:{" "}
+                                    <span style={{ color: "black" }}>
+                                        {Array.isArray(staff.roles)
+                                            ? staff.roles.join(", ")
+                                            : staff.roles || staff.role || "N/A"}
+                                    </span>
+                                </p>
+
+                                {staff.award_desc && (
+                                    <p className="staff-details" style={{ fontSize: "13px" }}>
+                                        Award:{" "}
+                                        <span style={{ color: "black" }}>{staff.award_desc}</span>
+                                    </p>
+                                )}
+
+                                {staff?.location?.address && (
+                                    <p className="staff-details">
+                                        Location:{" "}
+                                        <span style={{ color: "black" }}>
+                                            {staff.location.address}
+                                        </span>
+                                    </p>
+                                )}
+
+                                {staff?.skills?.length > 0 && (
+                                    <div style={{ marginTop: "10px" }}>
+                                        <p className="staff-details" style={{ fontWeight: 600 }}>
+                                            Skills:
                                         </p>
-                                    )}
-                                </div>
-                            )
-                        })
-                    ) : (
-                        <p>No staff available for this shift.</p>
-                    )}
-                </div>
+                                        <ul style={{ paddingLeft: "20px", margin: 0 }}>
+                                            {staff.skills.map((skill, idx) => (
+                                                <li key={idx} style={{ fontSize: "12px", color: "#555" }}>
+                                                    {skill}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
+
+                                {staff.reason && (
+                                    <p
+                                        className="staff-details"
+                                        style={{
+                                            marginTop: "12px",
+                                            padding: "8px",
+                                            background: "#f9f7ff",
+                                            borderLeft: "3px solid #6C4CDC",
+                                            borderRadius: "6px",
+                                            fontSize: "13px",
+                                        }}
+                                    >
+                                        <strong>Why this staff?</strong>{" "}
+                                        <span style={{ color: "black" }}>{staff.reason}</span>
+                                    </p>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                ) : bulkResults[activeTab]?.status === "processing" ? (
+                    <div className="center-loader">
+                        <div className="big-loader" />
+                    </div>
+                ) : (
+                    <p>No staff available for this shift.</p>
+                )}
             </div>
+
             {/* Preferred Worker Clashing Roster */}
             {clashingList.length > 0 && (
                 <div className="clashing-container">
@@ -773,7 +932,13 @@ const RosterDetails = ({ setScreen, rosteringResponse, API_BASE, selectedClient,
                     <div className="success-card">
                         <img src={SuccessCheck} alt="success" className="success-img" />
                         <p>Messages sent successfully!</p>
-                        <button className="done-btn" onClick={() => setScreen(1)}>
+                        <button className="done-btn" onClick={() => {
+                            if (bulkQueue?.length > 0) {
+                                setShowSuccess(false);
+                            } else {
+                                setScreen(1);
+                            }
+                        }}>
                             <GoArrowLeft size={24} color="white" style={{ marginLeft: '6px' }} /> Done
                         </button>
                     </div>

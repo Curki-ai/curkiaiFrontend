@@ -183,4 +183,71 @@
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
+.roster-settings-btn {
+  padding: 10px 20px;
+  border-radius: 44px;
+  outline: none;
+  color: #707493;
+  font-size: 14px;
+  font-family: Inter;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid #EEEEEE;
+  background-color: white;
+  transition: background-color 0.2s ease;
+}
 
+.roster-settings-btn:hover {
+  background-color: #EAE8F2;
+}
+/* ===== Bulk Shortlist Button ===== */
+
+.bulk-shortlist-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  background: #6C4CDC;
+  color: #fff;
+  padding: 10px 20px 10px 20px;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  font-family: "Inter";
+  font-size: 16px;
+  font-weight: 600;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  width: 160px;
+  height: 44px;
+}
+
+.bulk-shortlist-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(108, 76, 220, 0.35);
+}
+
+/* White count circle */
+.bulk-count {
+  width: 19px;
+  height: 19px;
+
+  background: #ffffff;
+  color: #6C4CDC;
+
+  border-radius: 50%;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.bulk-checkbox {
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto;
+}

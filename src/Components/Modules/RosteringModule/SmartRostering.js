@@ -11,11 +11,15 @@ import { MdOutlineHistory } from "react-icons/md";
 import RosterHistory from "./RosterHistory";
 import { LuDownload } from "react-icons/lu";
 import incrementAnalysisCount from "../FinancialModule/TLcAnalysisCount";
+import OnboardingForm from "../../OnboardingForm";
+import { RiSettingsLine } from "react-icons/ri";
+import { FiCheck } from "react-icons/fi";
 
 const API_BASE = "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net";
 
 const SmartRostering = (props) => {
     const userEmail = props?.user?.email;
+    // const userEmail = "kris@curki.ai";
     const [screen, setScreen] = useState(1);
     const [query, setQuery] = useState("");
     const [selectedFile, setSelectedFile] = useState([]);
@@ -28,7 +32,39 @@ const SmartRostering = (props) => {
     const [promptLoading, setPromptLoading] = useState(false);
     const [manualMetrics, setManualMetrics] = useState(null);
     const [currentIndex, setCurrentIndex] = useState(1);
+    const [openRosterSetting, setOpenRosterSetting] = useState(false);
+    const [rosteringSettings, setRosteringSettings] = useState(null);
+    const [bulkMode, setBulkMode] = useState(false);
+    const [selectedShiftIds, setSelectedShiftIds] = useState([]);
+
+    // bulk processing
+    const [bulkQueue, setBulkQueue] = useState([]);
+    const [bulkResults, setBulkResults] = useState({});
+    const [activeTab, setActiveTab] = useState(null);
+    const [processingId, setProcessingId] = useState(null);
     // console.log("unallocatedClients", unallocatedClients)
+    useEffect(() => {
+        if (!userEmail) return;
+
+        const domain = userEmail.split("@")[1];
+
+        const fetchRosteringSettings = async () => {
+            try {
+                const res = await axios.get(
+                    `${API_BASE}/api/rosteringSettings/${domain}`
+                );
+
+                if (res.data?.data?.length) {
+                    setRosteringSettings(res.data.data[0]);
+                }
+            } catch (err) {
+                console.error("Failed to fetch rostering settings", err);
+            }
+        };
+
+        fetchRosteringSettings();
+    }, [userEmail]);
+    console.log("rostering settings in smart rostering main page", rosteringSettings)
     const handleScroll = () => {
         const container = document.getElementById("unallocated-scroll-container");
         if (!container) return;
@@ -45,10 +81,20 @@ const SmartRostering = (props) => {
 
     const [startIndex, setStartIndex] = useState(0);
     const visibleCount = 3;
-    const [visualCareCreds, setVisualCareCreds] = useState(null);
     const [unauthorized, setUnauthorized] = useState(false);
-    const uploadDisabled = !!visualCareCreds;  // true when creds exist
+    const visualCareCreds =
+        rosteringSettings?.integrations?.softwares?.visualcare?.creds || null;
+    console.log("visual care creds", visualCareCreds)
     // console.log("unallocatedClients.length", unallocatedClients.length)
+    const formatDateDMY = (dateStr) => {
+        if (!dateStr) return "";
+
+        // expect YYYY-MM-DD
+        const [year, month, day] = dateStr.split("-");
+        if (!year || !month || !day) return dateStr;
+
+        return `${day}-${month}-${year}`;
+    };
     const maskClientForKris = (client) => {
         if (!client) return client;
 
@@ -63,7 +109,7 @@ const SmartRostering = (props) => {
             sex: client.sex || "N/A",
         };
     };
-    console.log("selectedFile", selectedFile)
+    // console.log("selectedFile", selectedFile)
     const runManualMetrics = async () => {
         try {
             const form = new FormData();
@@ -74,7 +120,7 @@ const SmartRostering = (props) => {
                 form // ❌ NO custom headers
             );
 
-            console.log("res in runManualMetrics", res);
+            // console.log("res in runManualMetrics", res);
 
             const m = res.data;
 
@@ -91,40 +137,52 @@ const SmartRostering = (props) => {
         }
     };
 
-    console.log("manual metrics", manualMetrics)
-    console.log("rosteringMetrics", rosteringMetrics)
+    // console.log("manual metrics", manualMetrics)
+    // console.log("rosteringMetrics", rosteringMetrics)
+
+
+    // 🔹 rostering managers list
+    const rosteringManagers =
+        rosteringSettings?.rostering?.rostering_managers || [];
+    const isRosteringManager = rosteringManagers.some(
+        rm => rm.email?.toLowerCase() === userEmail?.toLowerCase()
+    );
+    const canUseVisualCare =
+        !!visualCareCreds && isRosteringManager;
+
+    const uploadDisabled = !!canUseVisualCare;  // true when creds exist
+    // useEffect(() => {
+    //     const fetchVisualCareCreds = async () => {
+    //         try {
+    //             const res = await axios.get(`${API_BASE}/get-visualcare-creds`);
+    //             // console.log("res", res)
+    //             if (res.data?.success && res.data?.data?.length > 0) {
+    //                 // Find the record where logged-in user's email is in rosteringManager.emails[]
+    //                 const matched = res.data.data.find((entry) =>
+    //                     entry.rosteringManager?.emails?.includes(userEmail)
+    //                 );
+
+    //                 if (!matched) {
+    //                     setUnauthorized(true);
+    //                 }
+
+    //                 setVisualCareCreds(matched.creds); // ✅ Save credentials for later API use
+    //                 // console.log("Authorized VisualCare credentials loaded:", matched.creds);
+    //             } else {
+    //                 alert("No VisualCare credentials found in the database.");
+    //             }
+    //         } catch (err) {
+    //             console.error("❌ Error fetching VisualCare creds:", err);
+    //             // alert("Failed to load VisualCare credentials.");
+    //         }
+    //     };
+
+    //     if (userEmail) fetchVisualCareCreds();
+    // }, [userEmail]);
 
     useEffect(() => {
-        const fetchVisualCareCreds = async () => {
-            try {
-                const res = await axios.get(`${API_BASE}/get-visualcare-creds`);
-                // console.log("res", res)
-                if (res.data?.success && res.data?.data?.length > 0) {
-                    // Find the record where logged-in user's email is in rosteringManager.emails[]
-                    const matched = res.data.data.find((entry) =>
-                        entry.rosteringManager?.emails?.includes(userEmail)
-                    );
+        if (!canUseVisualCare) return;
 
-                    if (!matched) {
-                        setUnauthorized(true);
-                    }
-
-                    setVisualCareCreds(matched.creds); // ✅ Save credentials for later API use
-                    // console.log("Authorized VisualCare credentials loaded:", matched.creds);
-                } else {
-                    alert("No VisualCare credentials found in the database.");
-                }
-            } catch (err) {
-                console.error("❌ Error fetching VisualCare creds:", err);
-                // alert("Failed to load VisualCare credentials.");
-            }
-        };
-
-        if (userEmail) fetchVisualCareCreds();
-    }, [userEmail]);
-
-    useEffect(() => {
-        if (!visualCareCreds) return;
 
         // If manual metrics exist → do NOT load VC metrics
         if (manualMetrics) {
@@ -166,15 +224,15 @@ const SmartRostering = (props) => {
                 const user = visualCareCreds?.user;
                 const key = visualCareCreds?.key;
                 const secret = visualCareCreds?.secret;
-                const days = 3;
+                const days = rosteringSettings?.rostering?.unallocated_shifts_visible_days;
                 const res = await axios.get(
                     `${API_BASE}/getUnallocatedShifts`,
                     {
-                        params: { user, key, secret, userEmail },
+                        params: { user, key, secret, userEmail, days },
                     }
                 );
 
-                console.log("res in fetchUnallocatedShifts", res)
+                // console.log("res in fetchUnallocatedShifts", res)
                 const grouped = res.data || {};
                 const allClients = grouped?.grouped.map((shift) => {
                     const start = shift.start_time;              // "10:00"
@@ -195,6 +253,7 @@ const SmartRostering = (props) => {
                     }
                     return {
                         dateOfService: shift.date_of_service || "-",
+                        shiftId: `${shift.client_id}_${shift.date_of_service}_${shift.start_time}`,
                         clientId: shift.client_id || "-",
                         name: shift.client_name || "Unknown",
                         sex: shift.sex || "-",
@@ -277,6 +336,26 @@ const SmartRostering = (props) => {
         }
     }, [screen]);
     // 🔹 Call backend rostering API (Controller 1)
+    const startBulkProcessing = () => {
+        const queue = unallocatedClients
+            .filter(c => selectedShiftIds.includes(c.shiftId))
+            .map(c => ({
+                id: c.shiftId,
+                client: c
+            }));
+
+        const results = {};
+        queue.forEach(q => {
+            results[q.id] = { status: "pending" };
+        });
+
+        setBulkQueue(queue);
+        setBulkResults(results);
+        setActiveTab(queue[0]?.id || null);
+        // setProcessingId(queue[0]?.id || null);
+        setScreen(2);
+    };
+
     const handleClientClick = async (client) => {
         setLoading(true);
         try {
@@ -307,7 +386,7 @@ const SmartRostering = (props) => {
                 { headers: { "Content-Type": "application/json" } }
             );
 
-            console.log("Smart Rostering Response:", response.data);
+            // console.log("Smart Rostering Response:", response.data);
             if (userEmail) {
                 await incrementAnalysisCount(userEmail, "smart-rostering", response?.data?.llm_cost?.total_usd);
             }
@@ -327,6 +406,26 @@ const SmartRostering = (props) => {
         }
     };
 
+    const handleClientClickBulk = async (client) => {
+        const user = visualCareCreds?.user;
+        const key = visualCareCreds?.key;
+        const secret = visualCareCreds?.secret;
+
+        const inputs = {
+            client_id: client.clientId,
+            shift_date: client.dateOfService,
+            shift_start: client.startTime,
+            shift_minutes: client.minutes?.replace(" min", "") || 0,
+        };
+
+        const res = await axios.post(
+            `${API_BASE}/run-smart-rostering?user=${user}&key=${key}&secret=${secret}`,
+            { inputs, userEmail },
+            { headers: { "Content-Type": "application/json" } }
+        );
+
+        return res.data;
+    };
 
 
     const handleSubmit = async () => {
@@ -351,7 +450,7 @@ const SmartRostering = (props) => {
                     form,
                     { headers: { "Content-Type": "multipart/form-data" } }
                 );
-                console.log("manualResponse", manualResponse);
+                // console.log("manualResponse", manualResponse);
                 if (userEmail) {
                     await incrementAnalysisCount(userEmail, "manual-smart-rostering", manualResponse?.data?.llm_cost?.total_usd);
                 }
@@ -395,7 +494,7 @@ const SmartRostering = (props) => {
                 { prompt: query, userEmail },
                 { headers: { "Content-Type": "application/json" } }
             );
-            console.log("response in prompt based rostering", response)
+            // console.log("response in prompt based rostering", response)
             const promptCost = response?.data?.filler?.llm_cost?.total_usd || 0;
             const rosteringCost = response?.data?.rostering_llm_cost?.total_usd || 0;
             const totalCost = promptCost + rosteringCost;
@@ -487,7 +586,19 @@ const SmartRostering = (props) => {
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '30px' }}>
                         <div className="rostering-date">{formattedDate}</div>
-                        <button style={{ padding: '10px 20px', backgroundColor: '#6c4cdc', border: 'none', borderRadius: '4px', outline: 'none', color: 'white', fontSize: '16px', fontFamily: 'Inter', fontWeight: '500', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }} onClick={() => setScreen(3)}>History <MdOutlineHistory size={18} color="white" /></button>
+                        <div style={{ display: 'flex', gap: '14px' }}>
+                            <button className="roster-settings-btn" onClick={() => setScreen(3)}><MdOutlineHistory size={18} color="#707493" /> History </button>
+                            <button className="roster-settings-btn" onClick={() => setOpenRosterSetting(true)}><RiSettingsLine size={18} color="#707493" />Rostering Settings</button>
+                            {/* {canUseVisualCare && (
+                                <button
+                                    className="roster-settings-btn"
+                                    onClick={() => setOpenRosterSetting(true)}
+                                >
+                                    <RiSettingsLine size={18} color="#707493" />
+                                    Rostering Settings
+                                </button>
+                            )} */}
+                        </div>
                     </div>
 
                     <div className="rostering-stats-row">
@@ -602,7 +713,7 @@ const SmartRostering = (props) => {
                         </div>
                     </div>
 
-                    {visualCareCreds && <div className="unallocated-shifts-section" style={{ marginTop: "40px" }}>
+                    {canUseVisualCare && <div className="unallocated-shifts-section" style={{ marginTop: "40px" }}>
                         <h3
                             style={{
                                 fontFamily: "Inter",
@@ -614,6 +725,60 @@ const SmartRostering = (props) => {
                         >
                             Unallocated Shifts
                         </h3>
+                        <div
+                            style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "10px",
+                                marginBottom: "16px",
+                                width: "184px",
+                                height: "44px",
+                                border: "1px solid #EEEEEE",
+                                borderRadius: "999px",
+                                marginLeft: "auto"
+                            }}
+                        >
+                            <span
+                                style={{
+                                    fontSize: "14px",
+                                    fontWeight: 500,
+                                    color: "#6B7280",
+                                    marginLeft: "16px"
+                                }}
+                            >
+                                Bulk Selection
+                            </span>
+
+                            <div
+                                onClick={() => {
+                                    setBulkMode(!bulkMode);
+                                    setSelectedShiftIds([]);
+                                }}
+                                style={{
+                                    width: "46px",
+                                    height: "24px",
+                                    borderRadius: "999px",
+                                    backgroundColor: bulkMode ? "#6C4CDC" : "#E5E7EB",
+                                    position: "relative",
+                                    cursor: "pointer",
+                                    transition: "background-color 0.25s ease"
+                                }}
+                            >
+                                <div
+                                    style={{
+                                        width: "20px",
+                                        height: "20px",
+                                        borderRadius: "50%",
+                                        backgroundColor: "#fff",
+                                        position: "absolute",
+                                        top: "2px",
+                                        left: bulkMode ? "24px" : "2px",
+                                        transition: "left 0.25s ease",
+                                        boxShadow: "0 1px 3px rgba(0,0,0,0.25)"
+                                    }}
+                                />
+                            </div>
+                        </div>
 
                         {loadingClients ? (
                             <p>Loading unallocated shifts...</p>
@@ -651,6 +816,7 @@ const SmartRostering = (props) => {
                                                 <div
                                                     key={index}
                                                     style={{
+                                                        position: "relative",
                                                         flex: "0 0 300px",
                                                         border: "1px solid #6c4cdc",
                                                         borderRadius: "10px",
@@ -673,10 +839,36 @@ const SmartRostering = (props) => {
                                                         e.currentTarget.style.boxShadow =
                                                             "0 2px 6px rgba(0,0,0,0.08)";
                                                     }}
-                                                    onClick={() => handleClientClick(client)}
+                                                    onClick={() => {
+                                                        if (bulkMode) return;
+                                                        handleClientClick(client);
+                                                    }}
+
 
                                                 >
-                                                    <p style={{ marginBottom: '12px' }}><strong>Date Of Service:</strong> {client.dateOfService}</p>
+                                                    {bulkMode && (
+                                                        <input
+                                                            type="checkbox"
+                                                            className="bulk-checkbox"
+                                                            checked={selectedShiftIds.includes(client.shiftId)}
+                                                            onClick={(e) => e.stopPropagation()}
+                                                            onChange={() => {
+                                                                setSelectedShiftIds(prev =>
+                                                                    prev.includes(client.shiftId)
+                                                                        ? prev.filter(id => id !== client.shiftId)
+                                                                        : [...prev, client.shiftId]
+                                                                );
+                                                            }}
+
+                                                            style={{
+                                                                position: "absolute",
+                                                                top: "10px",
+                                                                right: "10px"
+                                                            }}
+                                                        />
+                                                    )}
+
+                                                    <p style={{ marginBottom: '12px' }}><strong>Date Of Service:</strong> {formatDateDMY(client.dateOfService)}</p>
                                                     <p style={{ marginBottom: '12px' }}><strong>Client ID:</strong> {client.clientId}</p>
                                                     <p style={{ marginBottom: '12px' }}><strong>Client Name:</strong> {client.name}</p>
                                                     <p style={{ marginBottom: '12px' }}><strong>Sex:</strong> {client.sex}</p>
@@ -743,10 +935,25 @@ const SmartRostering = (props) => {
                                         ›
                                     </button>
                                 </div>
+                                {bulkMode && selectedShiftIds.length > 0 && (
+                                    <div style={{ display: "flex", justifyContent: "center", marginTop: "20px" }}>
+                                        <button
+                                            className="bulk-shortlist-btn"
+                                            onClick={startBulkProcessing}
+                                        >
+                                            <span style={{fontSize:"14px",fontWeight:"500"}}>Bulk Shortlist</span>
+                                            <span className="bulk-count">
+                                                {selectedShiftIds.length}
+                                            </span>
+                                        </button>
+                                    </div>
+                                )}
+
 
                             </>
                         )}
                     </div>}
+
 
 
 
@@ -783,13 +990,20 @@ const SmartRostering = (props) => {
                     visualCareCreds={visualCareCreds}
                     userEmail={userEmail}
                     SetIsSmartRosteringDetails={props.SetIsSmartRosteringDetails}
+                    bulkQueue={bulkQueue}
+                    setBulkQueue={setBulkQueue}
+                    bulkResults={bulkResults}
+                    setBulkResults={setBulkResults}
+                    activeTab={activeTab}
+                    setActiveTab={setActiveTab}
+                    handleClientClickBulk={handleClientClickBulk}
                 />
             )}
             {screen === 3 && (
                 <RosterHistory
                     setScreen={setScreen}
                     userEmail={userEmail}
-                    SetIsSmartRosteringHistory = {props.SetIsSmartRosteringHistory}
+                    SetIsSmartRosteringHistory={props.SetIsSmartRosteringHistory}
                 />
             )}
             {loading && (
@@ -797,6 +1011,9 @@ const SmartRostering = (props) => {
                     <div className="spinner"></div>
                     <p>Running Smart Rostering...</p>
                 </div>
+            )}
+            {openRosterSetting && (
+                <OnboardingForm onClose={() => setOpenRosterSetting(false)} userEmail={userEmail} />
             )}
         </>
     );

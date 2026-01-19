@@ -202,10 +202,15 @@ const JsonTableCard = ({ title, data }) => {
         style={{
           display: "flex",
           gap: 12,
-          marginBottom: 12,
+          marginBottom: "12px",
           alignItems: "center",
+          marginLeft:"10px"
         }}
       >
+        <span style={{ fontSize: 12, fontWeight: 500, color: "#374151" }}>
+          Region
+        </span>
+
         <select
           value={selectedRegion}
           onChange={(e) => setSelectedRegion(e.target.value)}
@@ -217,6 +222,9 @@ const JsonTableCard = ({ title, data }) => {
             </option>
           ))}
         </select>
+        <span style={{ fontSize: 12, fontWeight: 500, color: "#374151" }}>
+          Department
+        </span>
 
         <select
           value={selectedDepartment}

@@ -213,7 +213,7 @@
 .side-panel-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.35);
+  background: rgba(0, 0, 0, 0.35);
   z-index: 9999;
   display: flex;
   justify-content: flex-end;
@@ -229,8 +229,13 @@
 }
 
 @keyframes slideIn {
-  from { transform: translateX(100%); }
-  to { transform: translateX(0); }
+  from {
+    transform: translateX(100%);
+  }
+
+  to {
+    transform: translateX(0);
+  }
 }
 
 /* Header + Status colors */
@@ -268,9 +273,18 @@
   width: fit-content;
   background-color: white;
 }
-.chip-waiting { color: #FE9900; }
-.chip-accepted { color: #16B364; }
-.chip-rejected { color: #FA2D38; }
+
+.chip-waiting {
+  color: #FE9900;
+}
+
+.chip-accepted {
+  color: #16B364;
+}
+
+.chip-rejected {
+  color: #FA2D38;
+}
 
 .panel-date-time {
   display: flex;
@@ -304,20 +318,36 @@
 .messages-section {
   padding: 18px;
   flex: 1;
-  overflow-y: auto;        /* scroll only chat */
-  scrollbar-width: none;   /* optional: hide scrollbar */
+  overflow-y: auto;
+  /* scroll only chat */
+  scrollbar-width: none;
+  /* optional: hide scrollbar */
 }
+
 .msg {
   margin-bottom: 12px;
 }
+
 .msg-bubble {
   max-width: 75%;
   padding: 10px 14px;
   border-radius: 14px;
   font-size: 15px;
 }
-.left { background: #f1f5f9; border-radius: 12px 12px 12px 0;text-align: left;}
-.right { background: #6c4cdc; color: white; border-radius: 12px 12px 0 12px; margin-left: auto;text-align: left; }
+
+.left {
+  background: #f1f5f9;
+  border-radius: 12px 12px 12px 0;
+  text-align: left;
+}
+
+.right {
+  background: #6c4cdc;
+  color: white;
+  border-radius: 12px 12px 0 12px;
+  margin-left: auto;
+  text-align: left;
+}
 
 .msg-time {
   font-size: 11px;
@@ -325,11 +355,13 @@
   margin-top: 2px;
   text-align: left;
 }
-.leftss{
-text-align: left;
+
+.leftss {
+  text-align: left;
 }
-.rightss{
-text-align: right;
+
+.rightss {
+  text-align: right;
 }
 
 /* Chat input */
@@ -338,6 +370,7 @@ text-align: right;
   padding: 12px 12px;
   border-top: 1px solid #e5e7eb;
 }
+
 .msg-input {
   flex: 1;
   padding: 12px;
@@ -345,6 +378,7 @@ text-align: right;
   border-radius: 12px;
   outline: none;
 }
+
 .send-btn {
   margin-left: 10px;
   background: #6c4cdc;
@@ -364,4 +398,35 @@ text-align: right;
   font-size: 14px;
   font-weight: 600;
   color: #b91c1c;
+}
+
+/* ===== Top bar wrapper ===== */
+.history-top-bar {
+  display: flex;
+  align-items: center;
+  height: 56px;
+  padding-left: 24px;
+  border-bottom: 1px solid #E6EAF2;
+  background: #ffffff;
+}
+
+/* ===== Global back button near top header ===== */
+.roster-history-back-btn {
+    position: fixed;
+    top: 18px;
+    left: 340px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    color: #6C4CDC;
+    font-weight: 600;
+    font-size: 15px;
+    transition: color 0.2s ease, transform 0.2s ease;
+    height: auto;
+}
+
+.roster-history-back-btn:hover {
+  color: #4b2cc0;
+  transform: translateX(-2px);
 }

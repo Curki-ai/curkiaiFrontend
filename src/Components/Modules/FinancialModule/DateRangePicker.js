@@ -3,6 +3,10 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import TlcPayrollRoleDownArrowIcon from "../../../Images/TlcPayrollRoleDownArrow.png";
 import TlcPayrollDateFilterIcon from "../../../Images/TlcPayrollDateFilterIcon.png";
+import { registerLocale } from "react-datepicker";
+import enGB from "date-fns/locale/en-GB";
+
+registerLocale("en-GB", enGB);
 
 /* ---------- CUSTOM INPUT ---------- */
 const DateRangeInput = forwardRef(
@@ -54,9 +58,18 @@ const DateRangeInput = forwardRef(
           }}
         >
           {!hasStart && "Select Date Range"}
-          {hasStart && !hasEnd && startDate.toLocaleDateString()}
+          {hasStart && !hasEnd &&
+            `${String(startDate.getDate()).padStart(2, "0")}-${String(
+              startDate.getMonth() + 1
+            ).padStart(2, "0")}-${startDate.getFullYear()}`}
           {hasStart && hasEnd &&
-            `${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}`}
+            `${String(startDate.getDate()).padStart(2, "0")}-${String(
+              startDate.getMonth() + 1
+            ).padStart(2, "0")}-${startDate.getFullYear()}
+   - 
+   ${String(endDate.getDate()).padStart(2, "0")}-${String(
+              endDate.getMonth() + 1
+            ).padStart(2, "0")}-${endDate.getFullYear()}`}
         </span>
 
         {/* RIGHT ARROW */}
@@ -84,11 +97,12 @@ export default function DateRangePicker({ startDate, endDate, onChange }) {
 
   return (
     <DatePicker
+      locale="en-GB" 
       selectsRange
       startDate={startDate}
       endDate={endDate}
       onChange={onChange}
-      dateFormat="dd/MM/yy"
+      dateFormat="dd-MM-yy"
 
       /* Arrow sync only */
       onCalendarOpen={() => setIsOpen(true)}

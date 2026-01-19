@@ -7,6 +7,7 @@ import { AiFillClockCircle } from "react-icons/ai";
 import { LuBriefcaseBusiness } from "react-icons/lu";
 import { FaChevronDown, FaChevronUp } from "react-icons/fa";
 import axios from "axios";
+import BroadcastMessage from "./BroadCastMessage";
 
 const API_BASE = "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net";
 
@@ -29,7 +30,33 @@ const RosterHistory = (props) => {
     const [dummyClients, setDummyClients] = useState([]); // will hold clients in old shape
     const [assignmentsData, setAssignmentsData] = useState([]); // will hold assignment objects in old shape
     const [messages, setMessages] = useState([]); // chat messages in old shape
+    const [rosteringSettings, setRosteringSettings] = useState(null);
+    useEffect(() => {
+        if (!userEmail) return;
 
+        const domain = userEmail.split("@")[1];
+
+        const fetchRosteringSettings = async () => {
+            try {
+                const res = await axios.get(
+                    `${API_BASE}/api/rosteringSettings/${domain}`
+                );
+
+                if (res.data?.data?.length) {
+                    setRosteringSettings(res.data.data[0]);
+                }
+            } catch (err) {
+                console.error("Failed to fetch rostering settings", err);
+            }
+        };
+
+        fetchRosteringSettings();
+    }, [userEmail]);
+    const workflowFlags = rosteringSettings?.workflow_flags || {};
+
+    const requireManagerApproval =
+        workflowFlags.require_manager_approval ?? true;
+    // console.log("requireManagerApproval",requireManagerApproval)    
     // === Load clients from API and map to old structure (id, name, address, phone)
     const maskDetailsIfKris = (value, type) => {
         const isKris = userEmail?.toLowerCase() === "kris@curki.ai";
@@ -95,7 +122,7 @@ const RosterHistory = (props) => {
                     // keep original for future use
                     __raw: c
                 }));
-                console.log("mapped", mapped)
+                // console.log("mapped", mapped)
                 setDummyClients(mapped);
             } catch (err) {
                 console.error("Failed to fetch clients:", err);
@@ -148,33 +175,26 @@ const RosterHistory = (props) => {
             // Build assignments array in old shape
             const built = [];
             history.forEach(record => {
-                const baseDate = record.createdAt ? record.createdAt.split("T")[0] : new Date().toISOString().split("T")[0];
-                const timeStr = formatTimeRange(record);
 
                 (record.staffMembers || []).forEach(staff => {
-                    let status;
 
-                    //RM accepted
+                    const baseDate =
+                        staff.DateOfService ||
+                        record.createdAt?.split("T")[0] ||
+                        new Date().toISOString().split("T")[0];
+
+                    const timeStr = formatTimeRange(record);
+
+                    let status;
                     if (staff.status === "accepted" && staff.managerApproved === true) {
                         status = "accepted";
-                    }
-
-                    //RM rejected
-                    else if (staff.status === "rejected" && staff.rejectedByRM === true) {
+                    } else if (staff.status === "rejected" && staff.rejectedByRM === true) {
                         status = "rejected";
-                    }
-
-                    //Staff Y / Staff N / Pending → waiting
-                    else {
+                    } else {
                         status = "waiting";
                     }
 
-
-
-                    // compute day/dayName/monthName as old UI expects these to appear
                     const d = new Date(baseDate);
-                    const dayName = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][d.getDay()];
-                    const monthName = d.toLocaleString("default", { month: "long" });
 
                     built.push({
                         clientId: record.clientId,
@@ -182,16 +202,15 @@ const RosterHistory = (props) => {
                         carer: staff.name || "Unknown",
                         time: timeStr,
                         status,
-                        // preserve original for details
                         originalRecord: record,
                         originalStaffObject: staff,
-                        // old UI date pieces:
-                        dayName,
+                        dayName: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][d.getDay()],
                         day: d.getDate(),
-                        monthName
+                        monthName: d.toLocaleString("default", { month: "long" })
                     });
                 });
             });
+
 
             setAssignmentsData(built);
             // Also set messages empty for now — chat loads when user opens assignment
@@ -216,10 +235,22 @@ const RosterHistory = (props) => {
             // console.log("Raw messagesArr:", messagesArr);
             // Convert to UI format
             const msgs = messagesArr.map((m, index) => {
+                const msg = m.message?.toLowerCase() || "";
+
+                const isShiftConfirmed =
+                    msg.includes("shift confirmed") ||
+                    msg.includes("has been confirmed");
+
                 const isBroadcast =
                     m.fromRole === "RM" &&
                     m.toRole === "SW" &&
-                    m.message?.toLowerCase().includes("open shift");
+                    (
+                        msg.includes("open shift") ||
+                        msg.includes("vacant shift") ||
+                        msg.includes("shift is available") ||
+                        msg.includes("please review") ||
+                        isShiftConfirmed
+                    );
 
                 return {
                     id: `${conversationId}-${index}`,
@@ -232,9 +263,10 @@ const RosterHistory = (props) => {
                         : m.fromRole === "RM"
                             ? "me"
                             : "other",
-
+                    isBroadcast,
                     rawFromPhone: m.fromPhone,
-                    rawToPhone: m.toPhone
+                    rawToPhone: m.toPhone,
+                    fromRole: m.fromRole,
                 };
             });
 
@@ -295,7 +327,7 @@ const RosterHistory = (props) => {
             console.error("Failed to send RM message:", err);
         }
     };
-    console.log("selectedAssignment", selectedAssignment)
+    // console.log("selectedAssignment", selectedAssignment)
     // === approve/reject handlers (call API, update local assignmentsData)
     const approveStaff = async (recordId, staffPhone) => {
         try {
@@ -533,10 +565,10 @@ const RosterHistory = (props) => {
 
 
 
-    console.log("staffInfoList", staffInfoList)
+    // console.log("staffInfoList", staffInfoList)
     // input value for chat (kept like original)
     const [inputValue, setInputValue] = useState("");
-    console.log("selectedAssignment", selectedAssignment)
+    // console.log("selectedAssignment", selectedAssignment)
     const staffStatus = selectedAssignment?.originalStaffObject?.status;
 
     const isStaffAccepted = staffStatus === "accepted";
@@ -549,12 +581,12 @@ const RosterHistory = (props) => {
     return (
         <div className="rostering-history-container">
 
-            <div className="roster-back-btn" onClick={() => {
+            <div className="roster-history-back-btn" onClick={() => {
                 if (typeof props.setIsSmartRosteringHistory === "function") {
                     props.SetIsSmartRosteringHistory(false);
                 }
                 props.setScreen(1);
-            }} style={{ left: '30px', top: '-45px' }}>
+            }}>
                 <GoArrowLeft size={22} color="#6C4CDC" />
                 <span>Back</span>
             </div>
@@ -712,21 +744,28 @@ const RosterHistory = (props) => {
                                         }}
                                     >
                                         {/* ❌ RM already decided → NO buttons */}
-                                        {isRMDecided && (
-                                            <span style={{ fontWeight: 600, color: '#6B7280' }}>
+                                        {!requireManagerApproval && isStaffAccepted && (
+                                            <span style={{ fontWeight: 600, color: "#4CAF50" }}>
+                                                Auto-approved (Manager approval not required)
+                                            </span>
+                                        )}
+
+                                        {requireManagerApproval && isRMDecided && (
+                                            <span style={{ fontWeight: 600, color: "#6B7280" }}>
                                                 Decision already taken
                                             </span>
                                         )}
 
+
                                         {/* ❌ Staff has not replied */}
-                                        {!isRMDecided && isStaffPending && (
+                                        {/* {!isRMDecided && isStaffPending && (
                                             <span style={{ color: '#9CA3AF', fontWeight: 500 }}>
                                                 Waiting for staff response
                                             </span>
-                                        )}
+                                        )} */}
 
                                         {/* ✅ Staff said YES → show BOTH buttons */}
-                                        {!isRMDecided && isStaffAccepted && (
+                                        {!isRMDecided && requireManagerApproval && (
                                             <>
                                                 <button
                                                     style={{
@@ -771,7 +810,7 @@ const RosterHistory = (props) => {
                                         )}
 
                                         {/* ❌ Staff said NO → only Reject */}
-                                        {!isRMDecided && isStaffRejected && (
+                                        {/* {!isRMDecided && isStaffRejected && (
                                             <button
                                                 style={{
                                                     padding: '8px 16px',
@@ -791,7 +830,7 @@ const RosterHistory = (props) => {
                                             >
                                                 Reject
                                             </button>
-                                        )}
+                                        )} */}
                                     </div>
 
 
@@ -828,20 +867,47 @@ const RosterHistory = (props) => {
 
                                     {/* ===== CHAT SECTION ===== */}
                                     <div style={{ fontSize: '16px', fontWeight: '500', fontFamily: 'Inter', textAlign: 'left', margin: '8px 14px' }}>Messages</div>
-                                    <div className="messages-section">
+                                    {/* <div className="messages-section">
                                         {messages.map((m) => (
-                                            <div key={m.id} className={`msg ${m.sender === "me" ? "you" : ""}`}>
-                                                <div className={`msg-bubble ${m.sender === "me" ? "right" : "left"}`}>
-                                                    {m.text}
-                                                </div>
-                                                <div className={`msg-time ${m.sender === "me" ? "rightss" : "leftss"}`}>
-                                                    {m.time}
-                                                </div>
-                                            </div>
+                                            // <div key={m.id} className={`msg ${m.sender === "me" ? "you" : ""}`}>
+                                            //     <div className={`msg-bubble ${m.sender === "me" ? "right" : "left"}`}>
+                                            //         {m.text}
+                                            //     </div>
+                                            //     <div className={`msg-time ${m.sender === "me" ? "rightss" : "leftss"}`}>
+                                            //         {m.time}
+                                            //     </div>
+                                            // </div>
+                                            <BroadcastMessage key={m.id} message={m} />
                                         ))}
 
                                         <div ref={messageEndRef}></div>
+                                    </div> */}
+                                    <div className="messages-section">
+                                        {messages.map((m) => {
+
+                                            // 🟣 1. BROADCAST / TEMPLATE → LEFT
+                                            if (m.isBroadcast) {
+                                                return <BroadcastMessage key={m.id} message={m} />;
+                                            }
+
+                                            // 🟢 2. NORMAL MESSAGE → ROLE BASED
+                                            const isRight = m.fromRole === "RM";
+
+                                            return (
+                                                <div key={m.id} className={`msg ${isRight ? "you" : ""}`}>
+                                                    <div className={`msg-bubble ${isRight ? "right" : "left"}`}>
+                                                        {m.text}
+                                                    </div>
+                                                    <div className={`msg-time ${isRight ? "rightss" : "leftss"}`}>
+                                                        {m.time}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+
+                                        <div ref={messageEndRef}></div>
                                     </div>
+
 
 
                                     {/* input */}

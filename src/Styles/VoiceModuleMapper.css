@@ -1,0 +1,159 @@
+/* ===============================
+   MAPPER GRID WRAPPER
+================================ */
+.mapper-grid {
+  margin-top: 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #ffffff;
+  overflow: hidden;
+  font-size: 13px;
+}
+
+/* ===============================
+   COMMON GRID (HEADER + ROW)
+================================ */
+.mapper-grid-layout {
+  display: grid;
+  grid-template-columns:
+    2fr        /* Template Field */
+    3fr        /* Source */
+    120px      /* Type */
+    90px       /* Required */
+    40px;      /* Actions */
+  align-items: center;
+}
+
+/* ===============================
+   HEADER
+================================ */
+.mapper-header {
+  background: #f9fafb;
+  font-weight: 600;
+  color: #374151;
+  padding: 12px 16px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+/* ===============================
+   ROW
+================================ */
+.mapper-row {
+  padding: 12px 16px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+/* ===============================
+   CELL
+================================ */
+.cell {
+  display: flex;
+  align-items: center;
+}
+
+.cell.center {
+  justify-content: center;
+}
+
+/* ===============================
+   INPUT & SELECT
+================================ */
+.mapper-row input,
+.mapper-row select {
+  width: 100%;
+  height: 32px;
+  border: none;
+  background: transparent;
+  padding: 4px 6px;
+  font-size: 13px;
+  color: #111827;
+  box-sizing: border-box;
+}
+
+/* Focus state */
+.mapper-row input:focus,
+.mapper-row select:focus {
+  outline: none;
+  background: #f3f4f6;
+  border-radius: 4px;
+}
+
+/* ===============================
+   TYPE DROPDOWN (FIX ALIGNMENT)
+================================ */
+.mapper-row select {
+  text-align-last: center;          /* 🔥 center text */
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  cursor: pointer;
+}
+
+/* ===============================
+   CHECKBOX (PERFECT CENTER)
+================================ */
+.mapper-row input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  display: block;
+  cursor: pointer;
+}
+
+/* ===============================
+   ACTIONS (⋮)
+================================ */
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.dots {
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 4px;
+}
+
+/* ===============================
+   DROPDOWN MENU
+================================ */
+.row-menu {
+  position: absolute;
+  right: 0;
+  top: 26px;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  min-width: 150px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+}
+
+.row-menu div {
+  padding: 8px 12px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.row-menu div:hover {
+  background: #f3f4f6;
+}
+
+/* ===============================
+   ADD NEW ROW
+================================ */
+.add-last-row {
+  padding: 12px;
+  text-align: center;
+  cursor: pointer;
+  background: #f9fafb;
+  border-top: 1px dashed #d1d5db;
+  font-weight: 500;
+}
+
+.add-last-row:hover {
+  background: #f3f4f6;
+}

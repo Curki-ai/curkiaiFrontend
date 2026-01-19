@@ -66,7 +66,8 @@
 /* ===== Staff Section ===== */
 .roster-staff-section {
   margin: 40px 0 130px;
-  max-height: 650px; /* Adjust height if needed */
+  max-height: 650px;
+  /* Adjust height if needed */
   overflow-y: auto;
   padding-right: 10px;
   scrollbar-width: thin;
@@ -76,9 +77,11 @@
 .roster-staff-section::-webkit-scrollbar {
   width: 8px;
 }
+
 .roster-staff-section::-webkit-scrollbar-track {
   background: #f0eaff;
 }
+
 .roster-staff-section::-webkit-scrollbar-thumb {
   background: #c3b0ff;
   border-radius: 10px;
@@ -246,8 +249,8 @@
 }
 
 .roster-back-btn {
-  position: absolute;
-  top: -47px;
+  position: relative;
+  top: -51px;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -317,108 +320,183 @@
   font-size: 14px;
   color: #000;
 }
+
 /* Container for the refine section */
 .refine-container {
-    margin-top: -25px;
-    margin-bottom: 25px;
+  margin-top: -25px;
+  margin-bottom: 25px;
 }
 
 /* Label styling */
 .refine-label {
-    font-weight: 600;
-    font-size: 15px;
-    display: block;
-    margin-bottom: 10px;
+  font-weight: 600;
+  font-size: 15px;
+  display: block;
+  margin-bottom: 10px;
 }
 
 /* Textarea styling */
 .refine-textarea {
-    width: 100%;
-    min-height: 80px;
-    padding: 12px;
-    border-radius: 8px;
-    border: 1px solid #ccc;
-    font-size: 14px;
-    resize: vertical;
-    outline: none;
+  width: 100%;
+  min-height: 80px;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+  resize: vertical;
+  outline: none;
 }
 
 .refine-textarea:focus {
-    border-color: #6C4CDC;
-    box-shadow: 0 0 4px rgba(108, 76, 220, 0.3);
+  border-color: #6C4CDC;
+  box-shadow: 0 0 4px rgba(108, 76, 220, 0.3);
 }
 
 /* Button styling */
 .refine-btn {
-    margin-top: 12px;
-    padding: 10px 18px;
-    background-color: #6C4CDC;
-    color: white;
-    border-radius: 6px;
-    border: none;
-    cursor: pointer;
-    font-weight: 600;
-    font-size: 14px;
-    transition: 0.2s ease;
+  margin-top: 12px;
+  padding: 10px 18px;
+  background-color: #6C4CDC;
+  color: white;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  transition: 0.2s ease;
 }
 
 .refine-btn:hover:not([disabled]) {
-    background-color: #5a3cc7;
+  background-color: #5a3cc7;
 }
 
 .refine-btn[disabled] {
-    background-color: #9b87e5;
-    cursor: not-allowed;
+  background-color: #9b87e5;
+  cursor: not-allowed;
 }
+
 /* ===== Refined Results Styling ===== */
 
 .refined-results-wrapper {
-    margin-top: 40px;
+  margin-top: 40px;
 }
 
 .refined-results-title {
-    font-size: 22px;
-    font-weight: 700;
-    color: #6C4CDC;
-    margin-bottom: 16px;
+  font-size: 22px;
+  font-weight: 700;
+  color: #6C4CDC;
+  margin-bottom: 16px;
 }
 
 /* Use the exact same layout as roster-staff-cards */
 .refined-staff-cards {
-    display: grid;
-    grid-template-columns: 32% 32% 32%;
-    column-gap: 2%;
-    row-gap: 12px;
+  display: grid;
+  grid-template-columns: 32% 32% 32%;
+  column-gap: 2%;
+  row-gap: 12px;
 }
 
 /* Same design as original cards but unified height */
 .refined-staff-card {
-    background: #ffffff;
-    border: 1px solid #e2d9ff;
-    border-radius: 14px;
-    padding: 18px 20px;
-    min-height: 160px; /* 🔥 This fixes uneven card height */
-    box-shadow: 0 2px 8px rgba(108, 76, 220, 0.06);
-    transition: all 0.25s ease;
+  background: #ffffff;
+  border: 1px solid #e2d9ff;
+  border-radius: 14px;
+  padding: 18px 20px;
+  min-height: 160px;
+  /* 🔥 This fixes uneven card height */
+  box-shadow: 0 2px 8px rgba(108, 76, 220, 0.06);
+  transition: all 0.25s ease;
 }
 
 .refined-staff-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 4px 16px rgba(108, 76, 220, 0.18);
+  transform: translateY(-4px);
+  box-shadow: 0 4px 16px rgba(108, 76, 220, 0.18);
 }
 
 .refined-staff-card .staff-details {
-    font-size: 14px;
-    margin-bottom: 6px;
-    color: #555;
+  font-size: 14px;
+  margin-bottom: 6px;
+  color: #555;
 }
 
 .refined-reason-box {
-    background: #f9f7ff;
-    border-left: 3px solid #6C4CDC;
-    padding: 8px;
-    border-radius: 6px;
-    margin-top: 8px;
-    font-size: 13px;
+  background: #f9f7ff;
+  border-left: 3px solid #6C4CDC;
+  padding: 8px;
+  border-radius: 6px;
+  margin-top: 8px;
+  font-size: 13px;
 }
 
+/* Center wrapper */
+.center-loader {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 220px;
+  width: 100%;
+}
+
+/* Big spinner */
+.big-loader {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  border: 6px solid #e5e7eb;
+  /* light gray */
+  border-top: 6px solid #6c4cdc;
+  /* primary purple */
+  animation: spin 1s linear infinite;
+}
+
+/* Animation */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.bulk-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+
+  padding: 6px 12px;
+  border-radius: 6px;
+
+  background: #eee;
+  color: #000;
+  font-size: 13px;
+  font-weight: 500;
+
+  cursor: pointer;
+}
+
+.bulk-tab.active {
+  background: #6C4CDC;
+  color: #fff;
+}
+
+.tab-close {
+  font-size: 14px;
+  cursor: pointer;
+  opacity: 0.7;
+}
+
+.tab-close:hover {
+  opacity: 1;
+}
+
+/* small loader inside tab */
+.tab-loader {
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
