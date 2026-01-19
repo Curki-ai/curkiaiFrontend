@@ -75,17 +75,21 @@ const RosterDetails = ({ setScreen, rosteringResponse, API_BASE, selectedClient,
     const [refining, setRefining] = useState(false);
     const [refinedStaff, setRefinedStaff] = useState([]);
     const [rankedStaffState, setRankedStaffState] = useState([]);
+    const activeBulkResult = bulkResults?.[activeTab];
+
     const effectiveResponse =
         bulkQueue?.length
-            ? bulkResults[activeTab]?.data || {}
-            : rosteringResponse || {};
+            ? activeBulkResult?.status === "completed"
+                ? activeBulkResult.data
+                : null
+            : rosteringResponse || null;
+
 
     const activeClient =
         bulkQueue?.length && activeTab
             ? bulkQueue.find(q => q.id === activeTab)?.client ?? null
             : selectedClient ?? null;
     // ✅ BULK TAB LOADING STATE
-    const activeBulkResult = bulkResults?.[activeTab];
     const isBulkLoading =
         bulkQueue?.length > 0 &&
         activeTab &&
@@ -208,8 +212,10 @@ const RosterDetails = ({ setScreen, rosteringResponse, API_BASE, selectedClient,
     }
 
     // STAFF
-    let rankedStaff = [];
-    if (isFillerResponse) {
+    let rankedStaff = null;
+    if (!effectiveResponse) {
+        rankedStaff = null;
+    } else if (isFillerResponse) {
         rankedStaff = effectiveResponse?.rostering_summary?.final_ranked || [];
     } else if (isManualResponse) {
         rankedStaff = effectiveResponse?.final_ranked || [];
@@ -504,8 +510,9 @@ const RosterDetails = ({ setScreen, rosteringResponse, API_BASE, selectedClient,
                 <div style={{ marginBottom: "20px" }}>
                     <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
                         {bulkQueue.map(q => {
-                            const status = bulkResults[q.id]?.status;
-                            const isProcessing = status === "processing";
+                            // const status = bulkResults[q.id]?.status;
+                            // const isProcessing = bulkStatus !== "completed";
+                            const bulkStatus = bulkResults?.[q.id]?.status;
 
                             return (
                                 <div
@@ -516,7 +523,9 @@ const RosterDetails = ({ setScreen, rosteringResponse, API_BASE, selectedClient,
                                     <span>{q.client.name}</span>
 
                                     {/* loader inside tab */}
-                                    {isProcessing && <span className="tab-loader" />}
+                                    {bulkResults?.[q.id]?.status !== "completed" && (
+                                        <span className="tab-loader" />
+                                    )}
 
                                     {/* cross button */}
                                     <span
@@ -667,7 +676,7 @@ const RosterDetails = ({ setScreen, rosteringResponse, API_BASE, selectedClient,
                     Available Staff
                 </h3>
 
-                {isBulkLoading ? (
+                {isBulkLoading || rankedStaffState === null ? (
                     <div className="center-loader">
                         <div className="big-loader" />
                     </div>
