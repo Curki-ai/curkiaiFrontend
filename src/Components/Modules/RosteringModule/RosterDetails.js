@@ -266,7 +266,7 @@ const RosterDetails = ({ setScreen, rosteringResponse, API_BASE, selectedClient,
                     DateOfBirth: activeClient?.dob || null,
 
                     // ✔ Phone
-                    Phone: normalizeAuPhone("419 015 351"),
+                    Phone: userEmail === "kris@curki.ai" ? normalizeAuPhone("419 015 351") : normalizeAuPhone(activeClient?.phone),
                     Address1: activeClient?.address || "",
                     Address2: "",
 
@@ -285,7 +285,7 @@ const RosterDetails = ({ setScreen, rosteringResponse, API_BASE, selectedClient,
                 staffList: selectedStaff.map(s => ({
                     staffId: s.id || s.staffId,
                     name: s.name,
-                    phone: normalizeAuPhone("419 015 351"),
+                    phone: userEmail === "kris@curki.ai" ? normalizeAuPhone("419 015 351") : normalizeAuPhone(s?.phone),
                     email: s.email,
                     gender: s.gender || s.sex,
                     location: s.location,
