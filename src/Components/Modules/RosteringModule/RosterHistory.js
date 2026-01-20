@@ -8,6 +8,7 @@ import { LuBriefcaseBusiness } from "react-icons/lu";
 import { FaChevronDown, FaChevronUp } from "react-icons/fa";
 import axios from "axios";
 import BroadcastMessage from "./BroadCastMessage";
+import socket from "./WebSocketClient";
 
 const API_BASE = "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net";
 
@@ -313,16 +314,16 @@ const RosterHistory = (props) => {
                 staffPhone: selectedAssignment.originalStaffObject?.phone || selectedAssignment.staffPhone
             });
 
-            const newMsg = {
-                id: Date.now(),
-                text: inputValue,
-                time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-                sender: "me"
-            };
+            // const newMsg = {
+            //     id: Date.now(),
+            //     text: inputValue,
+            //     time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+            //     sender: "me"
+            // };
 
-            setMessages(prev => [...prev, newMsg]);
+            // setMessages(prev => [...prev, newMsg]);
             setInputValue("");
-            if (messageEndRef.current) messageEndRef.current.scrollIntoView({ behavior: "smooth" });
+            // if (messageEndRef.current) messageEndRef.current.scrollIntoView({ behavior: "smooth" });
         } catch (err) {
             console.error("Failed to send RM message:", err);
         }
@@ -577,6 +578,97 @@ const RosterHistory = (props) => {
     const isRMDecided =
         selectedAssignment?.originalStaffObject?.managerApproved === true ||
         selectedAssignment?.originalStaffObject?.rejectedByRM === true;
+    useEffect(() => {
+        if (!selectedAssignment) return;
+
+        const recordId = selectedAssignment.originalRecord?.id;
+        const staffPhone = selectedAssignment.originalStaffObject?.phone;
+
+        if (!recordId) return;
+
+        const conversationId = `${recordId}`;
+
+        // ✅ JOIN ROOM
+        socket.emit("join-conversation", conversationId);
+
+        // ✅ LISTEN FOR NEW MESSAGES
+        const handleNewMessage = ({ conversationId: cid, message }) => {
+            if (cid !== conversationId) return;
+
+            // Convert backend message → UI format
+            const msgText = (message.message || "").toLowerCase();
+
+            const isShiftConfirmed =
+                msgText.includes("shift confirmed") ||
+                msgText.includes("has been confirmed");
+
+            const isBroadcast =
+                message.fromRole === "RM" &&
+                message.toRole === "SW" &&
+                (
+                    msgText.includes("open shift") ||
+                    msgText.includes("vacant shift") ||
+                    msgText.includes("shift is available") ||
+                    msgText.includes("please review") ||
+                    isShiftConfirmed
+                );
+
+            // FILTER: show only messages relevant to this staff
+            const staffPhoneClean = (staffPhone || "").replace(/\D/g, "");
+            const fromClean = (message.fromPhone || "").replace(/\D/g, "");
+            const toClean = (message.toPhone || "").replace(/\D/g, "");
+
+            if (
+                fromClean !== staffPhoneClean &&
+                toClean !== staffPhoneClean
+            ) {
+                return;
+            }
+
+            const newMsg = {
+                id: `${conversationId}-${Date.now()}`,
+                text: message.message || "",
+                time: message.time
+                    ? new Date(message.time).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                    })
+                    : "",
+                sender: isBroadcast
+                    ? "other"
+                    : message.fromRole === "RM"
+                        ? "me"
+                        : "other",
+                isBroadcast,
+                rawFromPhone: message.fromPhone,
+                rawToPhone: message.toPhone,
+                fromRole: message.fromRole,
+            };
+
+            setMessages((prev) => {
+                const exists = prev.some(
+                    m =>
+                        m.text === newMsg.text &&
+                        m.time === newMsg.time &&
+                        m.fromRole === newMsg.fromRole
+                );
+
+                return exists ? prev : [...prev, newMsg];
+            });
+
+
+            if (messageEndRef.current) {
+                messageEndRef.current.scrollIntoView({ behavior: "smooth" });
+            }
+        };
+
+        socket.on("new-message", handleNewMessage);
+
+        return () => {
+            socket.off("new-message", handleNewMessage);
+        };
+    }, [selectedAssignment]);
+
     return (
         <div className="rostering-history-container">
 
