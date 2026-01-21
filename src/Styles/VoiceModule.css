@@ -41,7 +41,7 @@
   justify-content: center;
   gap: 60px;
   height: 188px;
-  width: 590px;
+  width: 100%;
   margin: auto;
 }
 
@@ -228,7 +228,7 @@
 /* ===== Voice Module File List ===== */
 .vm-file-list {
   margin-top: 10px;
-  background: #f8f9fc;
+  background: #fafaff;
   border-radius: 10px;
   padding: 10px;
 }
@@ -247,10 +247,12 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  text-align: left;
 }
 
 .vm-file-icon {
   font-size: 20px;
+  margin-bottom: 10px;
 }
 
 .vm-file-name {
@@ -271,6 +273,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  margin-bottom: 10px;
 }
 
 .vm-file-check {
@@ -395,10 +398,7 @@
 
 /* ================= ANALYSIS SECTION ================= */
 .analysis-review-container {
-  max-width: 800px;
   margin: 0 auto;
-  padding: 24px;
-  background: #f9f9fc;
   border-radius: 12px;
   animation: slideIn 0.5s ease-out;
 }
@@ -416,13 +416,31 @@
   border-radius: 8px;
   padding: 20px;
   margin-bottom: 24px;
-  max-height: 300px;
-  overflow-y: auto;
+
+  /* 🔥 IMPORTANT FIX */
+  max-height: none;     /* remove limit */
+  height: auto;         /* let it grow */
+  overflow: visible;    /* no internal scroll */
+
   font-size: 14px;
-  line-height: 1.6;
+  line-height: 1.7;
   color: #333;
   text-align: left;
 }
+.voice-explanation-content {
+  font-size: 14px;
+  line-height: 1.75;
+  color: #374151;
+
+  /* 🔥 FIX OVERFLOW */
+  white-space: pre-wrap;        /* keeps newlines but wraps text */
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+
+  /* spacing */
+  margin-top: 8px;
+}
+
 
 .analysis-feedback-section {
   margin-bottom: 24px;
@@ -635,6 +653,8 @@
   border-radius: 12px;
   padding: 16px;
   margin-bottom: 24px;
+  height: 244px;
+  width: 1034px;
 }
 
 .vm-template-list-title {
@@ -652,12 +672,18 @@
 
 .vm-template-card {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  /* 🔥 STACK VERTICALLY */
   justify-content: space-between;
+  gap: 12px;
   background: #ffffff;
   border-radius: 10px;
   padding: 14px 16px;
   border: 1px solid #ececf3;
+  width: 478px;
+  height: 154px;
+  position: relative;
+  cursor: pointer;
 }
 
 /* ===============================
@@ -667,7 +693,7 @@
 .vm-template-left {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 20px;
 }
 
 .vm-template-icon {
@@ -681,8 +707,8 @@
 }
 
 .vm-template-icon img {
-  width: 18px;
-  height: 18px;
+  width: 49px;
+  height: 49px;
 }
 
 .vm-template-info {
@@ -696,7 +722,7 @@
   color: #1f1f1f;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 
 .vm-template-edit-icon {
@@ -723,6 +749,7 @@
   align-items: center;
   gap: 12px;
   position: relative;
+  margin-left: auto;
 }
 
 .vm-template-share-btn {
@@ -926,7 +953,6 @@
   border-radius: 8px;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
   min-width: 200px;
-  z-index: 20;
 }
 
 /* Dropdown item */
@@ -993,9 +1019,11 @@
   /* 👈 Figma approx */
   height: auto;
 }
+
 .staff-wave-small {
   animation: waveMove 1.2s infinite linear;
 }
+
 .staff-wave-small {
   opacity: 0.6;
 }
@@ -1004,15 +1032,18 @@
   animation: waveMove 1.2s infinite ease-in-out;
   opacity: 1;
 }
+
 @keyframes waveMove {
   0% {
     transform: translateX(0);
     opacity: 0.6;
   }
+
   50% {
     transform: translateX(-6px);
     opacity: 1;
   }
+
   100% {
     transform: translateX(0);
     opacity: 0.6;
@@ -1079,6 +1110,7 @@
   text-align: left;
   width: 264px;
 }
+
 /* ===== STAFF TEMPLATE SELECTED STATE ===== */
 
 .staff-template-item.active {
@@ -1157,26 +1189,106 @@
 }
 
 /* ===============================
-   TEMPLATE SLIDER – FORCE 2 CARDS
+   TEMPLATE SLIDER (ADMIN)
 ================================ */
 
 .vm-template-slider-wrapper {
-  width: 856px;          /* (420 × 2) + 16px gap */
-  overflow: hidden;     /* 👈 hide extra cards */
-  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 103%;
+  margin-left: 14px;
 }
 
 .vm-template-slider {
-  display: flex;
-  gap: 16px;
-  scroll-behavior: smooth;
+  overflow: hidden;
+  width: calc(100% - 40px);
+  /* prevents 3rd card */
 }
 
-/* FIXED CARD WIDTH */
-.vm-template-card {
-  width: 420px;
-  min-width: 420px;
-  flex-shrink: 0;
+.vm-template-track {
+  display: flex;
+  transition: transform 0.35s ease;
+}
+
+.vm-template-slide {
+  flex: 0 0 50%;
+  /* EXACTLY 2 cards */
+  padding-right: 12px;
+  box-sizing: border-box;
+}
+
+/* Slider arrows */
+.vm-slider-arrow {
+  background: #edeaff;
+  border: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.vm-slider-arrow img {
+  width: 16px;
+  height: 16px;
+}
+
+.vm-slider-arrow:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.vm-template-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 7px;
+}
+
+.vm-template-header-arrows {
+  display: flex;
+  gap: 10px;
+
+}
+
+/* Uploaded file container */
+.vm-file-item-uploaded {
+  border: 1.5px dashed #c7bfff;
+  background: #fafaff;
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+
+/* File icon (Excel / doc look) */
+.vm-file-icon {
+  font-size: 22px;
+}
+
+/* File name */
+.vm-file-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1f2937;
+}
+
+/* Uploaded status */
+.vm-file-status {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 2px;
+}
+
+/* Delete icon */
+.vm-file-delete {
+  font-size: 18px;
+  color: #9ca3af;
+  cursor: pointer;
+}
+
+.vm-file-delete:hover {
+  color: #dc2626;
 }
 
 /* ================= RESPONSIVE ADJUSTMENTS ================= */

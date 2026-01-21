@@ -32,6 +32,37 @@ const RosterHistory = (props) => {
     const [assignmentsData, setAssignmentsData] = useState([]); // will hold assignment objects in old shape
     const [messages, setMessages] = useState([]); // chat messages in old shape
     const [rosteringSettings, setRosteringSettings] = useState(null);
+    const [clientUnreadCounts, setClientUnreadCounts] = useState({});
+    const [staffUnreadCounts, setStaffUnreadCounts] = useState({});
+    const openPanelRef = useRef(false);
+    useEffect(() => {
+        openPanelRef.current = openPanel;
+    }, [openPanel]);
+    useEffect(() => {
+        if (!dummyClients.length) return;
+
+        const fetchUnreadCounts = async () => {
+            try {
+                const updates = {};
+
+                await Promise.all(
+                    dummyClients.map(async (c) => {
+                        const res = await axios.get(
+                            `${API_BASE}/api/getClientUnreadCount/${c.id}`
+                        );
+                        updates[c.id] = res.data.unreadCount || 0;
+                    })
+                );
+
+                setClientUnreadCounts(updates);
+            } catch (err) {
+                console.error("Failed to fetch unread counts", err);
+            }
+        };
+
+        fetchUnreadCounts();
+    }, [dummyClients]);
+
     useEffect(() => {
         if (!userEmail) return;
 
@@ -472,6 +503,14 @@ const RosterHistory = (props) => {
     const onClientSelect = async (c) => {
         setSelected(c);
         await fetchClientHistory(c.id);
+        try {
+            const res = await axios.get(
+                `${API_BASE}/api/getStaffUnreadCountsForClient/${c.id}`
+            );
+            setStaffUnreadCounts(res.data.staffUnreadCounts || {});
+        } catch (err) {
+            console.error("Failed to fetch staff unread counts", err);
+        }
         // reset panel & messages
         setOpenPanel(false);
         setSelectedAssignment(null);
@@ -488,6 +527,23 @@ const RosterHistory = (props) => {
         const phone = a.originalStaffObject?.phone;
 
         await fetchChatMessages(recordId, staffId, phone);
+        await axios.post(`${API_BASE}/api/markAsread`, {
+            conversationId: recordId,
+            staffPhone: phone
+        });
+
+        const cleanPhone = phone.replace(/\D/g, "");
+
+        // ✅ local clear (NO refresh)
+        setStaffUnreadCounts(prev => ({
+            ...prev,
+            [`+${cleanPhone}`]: 0
+        }));
+
+        setClientUnreadCounts(prev => ({
+            ...prev,
+            [a.clientId]: 0
+        }));
     };
 
 
@@ -644,6 +700,24 @@ const RosterHistory = (props) => {
                 rawToPhone: message.toPhone,
                 fromRole: message.fromRole,
             };
+            // 🔔 increment unread ONLY if panel is not open
+            if (!openPanelRef.current && message.fromRole === "SW") {
+                const phone = message.fromPhone?.replace(/\D/g, "");
+                const clientId = message.clientId;
+
+                setStaffUnreadCounts(prev => ({
+                    ...prev,
+                    [`+${phone}`]: (prev[`+${phone}`] || 0) + 1
+                }));
+
+                if (clientId) {
+                    setClientUnreadCounts(prev => ({
+                        ...prev,
+                        [clientId]: (prev[clientId] || 0) + 1
+                    }));
+                }
+            }
+
 
             setMessages((prev) => {
                 const exists = prev.some(
@@ -695,11 +769,16 @@ const RosterHistory = (props) => {
                             className={`rostering-client-card ${selected?.id === c.id ? "rostering-active-client" : ""}`}
                             onClick={() => onClientSelect(c)}
                         >
+                            {clientUnreadCounts[c.id] > 0 && (
+                                <div className="client-unread-badge">
+                                    {clientUnreadCounts[c.id]}
+                                </div>
+                            )}
                             <div style={{ backgroundColor: '#F7FAFF', height: '34px', width: '34px', borderRadius: '6px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                                 <FiUser size={22} color='#6c4cdc' />
                             </div>
 
-                            <div style={{ display: 'flex', flexDirection: "column", gap: '8px', marginTop: '6px' }}>
+                            <div style={{ display: 'flex', flexDirection: "column", gap: '8px', marginTop: '6px',alignItems:"flex-start" }}>
                                 <div className="rostering-client-name">{c.name}</div>
                                 <div className="rostering-client-info"><FiMapPin /> {c.address}</div>
                                 <div className="rostering-client-info"><FiPhone /> {c.phone}</div>
@@ -768,21 +847,32 @@ const RosterHistory = (props) => {
                                             {d.assignments.length === 0 ? (
                                                 <div style={{ fontSize: 12, marginTop: 30, color: "#9CA3AF" }}>No Assignments</div>
                                             ) : (
-                                                d.assignments.map((a, i) => (
-                                                    <div
-                                                        key={i}
-                                                        className={`roster-status-card status-${a.status}`}
-                                                        onClick={() => onOpenAssignment(a)}
-                                                    >
+                                                d.assignments.map((a, i) => {
+                                                    const staffPhone = a.originalStaffObject?.phone;
+                                                    const cleanPhone = staffPhone?.replace(/\D/g, "");
+                                                    const unread = staffUnreadCounts[`+${cleanPhone}`] || 0;
 
-                                                        <div style={{ fontSize: '14px', fontWeight: '500', fontFamily: 'Inter', marginBottom: '8px', textAlign: 'left' }}>{a.carer}</div>
-                                                        <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'flex-start', gap: '4px', marginBottom: '4px' }}>
-                                                            <AiFillClockCircle color="white" />
-                                                            <div style={{ fontSize: '14px', textAlign: 'left' }}>{a.time}</div>
+                                                    return (
+                                                        <div
+                                                            key={i}
+                                                            className={`roster-status-card status-${a.status}`}
+                                                            onClick={() => onOpenAssignment(a)}
+                                                        >
+                                                            {unread > 0 && (
+                                                                <div className="staff-unread-badge">
+                                                                    {unread}
+                                                                </div>
+                                                            )}
+
+                                                            <div style={{ fontSize: '14px', fontWeight: '500', fontFamily: 'Inter', marginBottom: '8px', textAlign: 'left' }}>{a.carer}</div>
+                                                            <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'flex-start', gap: '4px', marginBottom: '4px' }}>
+                                                                <AiFillClockCircle color="white" />
+                                                                <div style={{ fontSize: '14px', textAlign: 'left' }}>{a.time}</div>
+                                                            </div>
+                                                            <div style={{ fontSize: '12px', marginTop: '10px', borderRadius: '70px', padding: '4px 10px', }} className={`text-${a.status}`}>{a.status}</div>
                                                         </div>
-                                                        <div style={{ fontSize: '12px', marginTop: '10px', borderRadius: '70px', padding: '4px 10px', }} className={`text-${a.status}`}>{a.status}</div>
-                                                    </div>
-                                                ))
+                                                    )
+                                                })
                                             )}
                                         </div>
                                     </div>

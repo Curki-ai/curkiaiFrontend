@@ -14,9 +14,18 @@ import careVoicePlay from "../../../Images/careVoicePlay.png"
 import careVoicePause from "../../../Images/careVoicePause.png"
 import careVoiceEndAndPreview from "../../../Images/careVoiceEndAndPreview.png"
 import careVoiceStaffTemplateIcon from "../../../Images/careVoiceStaffTemplateIcon.png"
+import careVoiceLeft from "../../../Images/careVoiceLeft.png"
+import careVoiceRight from "../../../Images/careVoiceRight.png"
 import { FiUploadCloud, FiX } from "react-icons/fi";
 import MapperGrid from "./VoiceModuleMapper";
-
+import { RiDeleteBin6Line } from "react-icons/ri";
+import PulsatingLoader from "../../PulsatingLoader";
+import FinancialAnalysisReportViewer from "../FinancialModule/FinancialAnalysisReportViewer";
+import { parseVoiceExplanation } from "./ParseVoiceExplanation";
+import TlcPayrollDownArrow from "../../../Images/tlc_payroll_down_button.png"
+import careVoiceDocIcon from "../../../Images/careVoiceDocIcon.png"
+import careVoicePdfIcon from "../../../Images/careVoicePdfIcon.png"
+import careVoiceTemplateViewDoc from "../../../Images/careVoiceTemplateViewDoc.png"
 const VoiceModule = (props) => {
     const userEmail = props?.user?.email;
     const domain = userEmail?.split("@")[1] || "";
@@ -75,6 +84,58 @@ const VoiceModule = (props) => {
     // RAW – AI source of truth (DB + Python)
     const [rawPrompt, setRawPrompt] = useState("");
     const [rawMapper, setRawMapper] = useState(null);
+    const [templateIndex, setTemplateIndex] = useState(0);
+    const [processingProgress, setProcessingProgress] = useState(0);
+    const [currentTask, setCurrentTask] = useState("");
+    const progressIntervalRef = useRef(null);
+    const [activeTemplate, setActiveTemplate] = useState(null);
+    const [templateAccordions, setTemplateAccordions] = useState({
+        aiResponse: true,
+        generatedTemplate: false,
+    });
+    const [mapperMode, setMapperMode] = useState("view");
+    // "view" | "edit"
+
+    const AccordionHeader = ({ title, subtitle, isOpen, onClick }) => (
+        <div
+            onClick={onClick}
+            style={{
+                padding: "14px 18px",
+                background:
+                    "linear-gradient(180deg, #6C4CDC -65.32%, #FFFFFF 157.07%, #FFFFFF 226.61%)",
+                borderRadius: "8px",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: "12px",
+                fontWeight: 600,
+                marginBottom: "12px",
+                color: "#000",
+            }}
+        >
+            <img
+                src={TlcPayrollDownArrow}
+                alt="toggle"
+                style={{
+                    width: "18px",
+                    height: "10px",
+                    transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
+                    transition: "transform 0.2s ease",
+                }}
+            />
+
+            <div style={{ display: "flex", flexDirection: "column" }}>
+                <span>{title}</span>
+                {subtitle && (
+                    <span style={{ fontSize: "12px", color: "#6B7280", fontWeight: 400 }}>
+                        {subtitle}
+                    </span>
+                )}
+            </div>
+        </div>
+    );
+
+
     useEffect(() => {
         let interval;
 
@@ -334,6 +395,7 @@ const VoiceModule = (props) => {
     };
 
     const handleEditTemplate = (template) => {
+        setMapperMode("edit");
         console.log("template", template);
         console.log("[UI][EDIT] Editing template", template.id);
 
@@ -343,7 +405,7 @@ const VoiceModule = (props) => {
 
         // 🎨 UI
         const cleanedText = cleanText(template.prompt || "");
-        setAnalysisText(cleanedText);
+        setAnalysisText(template.prompt);
 
         const parsedMappings =
             typeof template.mappings === "string"
@@ -439,46 +501,59 @@ const VoiceModule = (props) => {
 
 
     const pushEvent = (label, step) => {
-        setEventLogs(prev => {
-            const lastEvent = prev[prev.length - 1];
-            const now = new Date().toLocaleTimeString();
+        const now = new Date().toLocaleTimeString();
 
-            // ✅ SAME EVENT → UPDATE TIME ONLY
-            if (lastEvent && lastEvent.label === label) {
-                return prev.map((ev, idx) =>
-                    idx === prev.length - 1
-                        ? { ...ev, time: now }
-                        : ev
+        setCurrentTask(label); // 🔥 THIS DRIVES THE TIMELINE
+
+        setEventLogs(prev => {
+            const last = prev[prev.length - 1];
+
+            if (last && last.label === label) {
+                return prev.map((ev, i) =>
+                    i === prev.length - 1 ? { ...ev, time: now } : ev
                 );
             }
 
-            // ✅ NEW EVENT → PUSH
             return [
                 ...prev,
-                {
-                    label,
-                    time: now,
-                    step: step || currentStep
-                }
+                { label, time: now, step: step || currentStep }
             ];
         });
 
-        if (step) {
-            setCurrentStep(step);
-        }
+        if (step) setCurrentStep(step);
     };
 
 
+    const cleanPromptText = (text) => {
+        if (!text) return "";
+
+        return text
+            .replace(/\*\*/g, "")    // Remove bold **
+            .replace(/#{1,6}\s*/g, "") // Remove markdown headers
+            .replace(/`/g, "")       // Remove backticks
+            .replace(/_/g, "")       // Remove underscores
+            .replace(/~{1,2}/g, "")  // Remove strikethrough
+            .replace(/\n{3,}/g, "\n\n") // Normalize line breaks
+            .trim();
+    };
 
     // Clean unnecessary characters from text (keeping emojis)
     const cleanText = (text) => {
         if (!text) return "";
-        // Remove unnecessary characters like #, *, excessive punctuation
+
         return text
-            .replace(/[#*_~`]/g, '') // Remove markdown symbols
-            .replace(/\s+/g, ' ') // Normalize whitespace
+            .replace(/[*#`_~]/g, "")   // remove markdown junk
+            .replace(/[ \t]+/g, " ")   // normalize spaces
+            .replace(/\n{3,}/g, "\n\n") // avoid huge gaps
             .trim();
     };
+    const stopProgress = () => {
+        if (progressIntervalRef.current) {
+            clearInterval(progressIntervalRef.current);
+            progressIntervalRef.current = null;
+        }
+    };
+
     const startAnalysis = async () => {
         if (!templateFile) return;
 
@@ -493,6 +568,15 @@ const VoiceModule = (props) => {
         // UI updates
         setShowUploadSection(false);
         setStage("processing");
+        stopProgress();
+        setProcessingProgress(5);
+
+        let progress = 5;
+        progressIntervalRef.current = setInterval(() => {
+            progress += 0.3;
+            if (progress >= 90) progress = 70; // cap till backend finishes
+            setProcessingProgress(progress);
+        }, 80);
 
         // First step
         pushEvent("Analysis started", 2);
@@ -544,16 +628,33 @@ const VoiceModule = (props) => {
                 const data = await res.json();
                 console.log("[UI] Latest event:", data);
 
-                if (data.type === "processing" || data.type === "status") {
+                // ✅ PROCESSING STATES (INCLUDING FEEDBACK)
+                if (
+                    data.type === "processing" ||
+                    data.type === "status" ||
+                    data.type === "processing_feedback"
+                ) {
                     pushEvent("Processing document", 2);
+                    return;
+                }
+
+                // ✅ FEEDBACK ACKNOWLEDGEMENT
+                if (
+                    data.type === "feedback_received" ||
+                    data.type === "acknowledged"
+                ) {
+                    pushEvent("Feedback received, refining analysis", 2);
                     return;
                 }
 
                 if (data.type === "explanation" || data.type === "refined_explanation") {
                     pushEvent("AI explanation ready", 3);
-                    // Clean the text before displaying
+
                     const cleanedText = cleanText(data.payload?.content || "");
-                    setAnalysisText(cleanedText);
+                    setAnalysisText(data.payload?.content);
+
+                    setProcessingProgress(100);
+                    stopProgress();
                     setStage("review");
                     clearInterval(interval);
                 }
@@ -561,46 +662,45 @@ const VoiceModule = (props) => {
                 if (data.type === "final_result") {
                     pushEvent("Final document generated", 4);
 
-                    console.log("[UI][FINAL_RESULT] Raw prompt from AI:", data.prompt);
-                    console.log("[UI][FINAL_RESULT] Raw mapper from AI:", data.mapper);
-                    console.log("[UI][FINAL_RESULT] Raw mapper from AI 2:", data.mapper.mapper);
-
-                    // 🔐 RAW — SOURCE OF TRUTH
                     setRawPrompt(data.prompt || "");
                     setRawMapper(data?.mapper || data?.mapper?.mapper || null);
 
-                    // 🎨 UI ONLY — cleaned prompt
                     const cleanedText = cleanText(data.prompt || "");
-                    setAnalysisText(cleanedText);
+                    setAnalysisText(data.prompt);
 
-                    // 🎨 UI ONLY — normalized mapper for grid
                     const rowsArray = normalizeFieldMappings(
                         extractMapperFields(data?.mapper)
                     );
 
-                    console.log("[UI][FINAL_RESULT] Normalized mapper rows for UI:", rowsArray);
-
                     setMapperRows(rowsArray);
+                    setProcessingProgress(100);
+                    stopProgress();
                     setStage("completed");
                     clearInterval(interval);
                 }
-
-
 
             } catch (error) {
                 console.error("[UI] Polling error:", error);
             }
         }, 2000);
-
-        return () => clearInterval(interval);
     };
+
 
     /* ================= ACCEPT ================= */
     const acceptAnalysis = async () => {
         console.log("[UI] Accepting analysis");
 
+        stopProgress();
         setStage("processing");
-        setEventLogs([]);        // 🔥 RESET STEPS
+        setEventLogs([]);
+        setProcessingProgress(5);
+
+        let progress = 5;
+        progressIntervalRef.current = setInterval(() => {
+            progress += 0.3;
+            if (progress >= 90) progress = 70;
+            setProcessingProgress(progress);
+        }, 80);
         setCurrentStep(2);
 
         try {
@@ -625,9 +725,20 @@ const VoiceModule = (props) => {
 
         console.log("[UI] Sending feedback");
 
+        stopProgress();
+
+        // ✅ REQUIRED: switch UI to processing
         setStage("processing");
-        setEventLogs([]);        // 🔥 PURANE STEPS CLEAR
-        setCurrentStep(2);
+        setEventLogs([]);
+
+        setProcessingProgress(5);
+
+        let progress = 5;
+        progressIntervalRef.current = setInterval(() => {
+            progress += 0.3;
+            if (progress >= 90) progress = 70;
+            setProcessingProgress(progress);
+        }, 80);
 
         try {
             await fetch(`${API_BASE}/api/onboarding/respond`, {
@@ -647,7 +758,9 @@ const VoiceModule = (props) => {
             console.error("[UI] Feedback error:", error);
         }
     };
+
     const resetToTemplateList = () => {
+        stopProgress();
         setStage("idle");
         setShowUploadSection(true);
         setMapperRows([]);
@@ -802,7 +915,7 @@ const VoiceModule = (props) => {
 
         // 🎨 UI
         const cleanedText = cleanText(tpl.prompt || "");
-        setAnalysisText(cleanedText);
+        setAnalysisText(tpl.prompt);
 
         const rowsArray = normalizeFieldMappings(
             extractMapperFields(tpl.mapper)
@@ -914,7 +1027,19 @@ const VoiceModule = (props) => {
             setIsGenerating(false); // 🔥 STOP LOADING
         }
     };
+    const CARDS_PER_VIEW = 2;
 
+    const canGoPrev = templateIndex > 0;
+    const canGoNext = templateIndex + CARDS_PER_VIEW < templates.length;
+
+    const handlePrev = () => {
+        if (canGoPrev) setTemplateIndex(prev => prev - 1);
+    };
+
+    const handleNext = () => {
+        if (canGoNext) setTemplateIndex(prev => prev + 1);
+    };
+    const sections = parseVoiceExplanation(analysisText);
 
     return (
         <div className="voice-container">
@@ -982,12 +1107,154 @@ const VoiceModule = (props) => {
             {/* ================= ADMIN VIEW ================= */}
             {role === "Admin" && (
                 <>
-                    {/* ================= TEMPLATE LIST ================= */}
-                    {stage === "idle" && (
-                        <div className="vm-template-list">
-                            <div className="vm-template-list-title">
-                                Available Template
+                    {role === "Admin" && activeTemplate && (
+                        <div className="vm-template-details">
+
+                            {/* BACK */}
+                            <div
+                                className="vm-back"
+                                style={{cursor:"pointer"}}
+                                onClick={() => setActiveTemplate(null)}
+                            >
+                                ← Back
                             </div>
+
+                            {/* UPLOADED DOCUMENTS */}
+                            <div className="vm-uploaded-docs">
+                                <h4>Uploaded Documents</h4>
+
+                                <div className="vm-file-list" style={{ display: "flex", gap: "10px" }}>
+                                    <div className="vm-file-item" style={{ width: "435px", height: "78px" }}>
+                                        <div className="vm-file-left" style={{ flexDirection: "column", alignItems: "flex-start" }}>
+                                            {/* DOC ICON ADD HERE */}
+                                            <div style={{ display: "flex", gap: "10px" }}>
+                                                <img
+                                                    src={careVoiceDocIcon}
+                                                    alt="doc"
+                                                    style={{ width: "24px", height: "24px", marginBottom: "8px" }}
+                                                />
+                                                <div style={{display:"flex",flexDirection:"column"}}>
+                                                    <div className="vm-file-name">
+                                                        Template Structure
+                                                    </div>
+                                                    <div className="vm-file-status">
+                                                        {activeTemplate.templateOriginalName}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {activeTemplate.sampleBlobs?.map((file, i) => {
+                                        // Check file extension for icon
+                                        const fileExt = file.originalName?.split('.').pop()?.toLowerCase();
+                                        const isPDF = fileExt === 'pdf';
+
+                                        return (
+                                            <div key={i} className="vm-file-item" style={{ width: "435px", height: "78px" }}>
+                                                <div className="vm-file-left" style={{ flexDirection: "column", alignItems: "flex-start" }}>
+                                                    {/* PDF/DOC ICON BASED ON FILE TYPE */}
+                                                    <div style={{ display: "flex", gap: "10px" }}>
+                                                        <img
+                                                            src={isPDF ? careVoicePdfIcon : careVoiceDocIcon}
+                                                            alt={isPDF ? "pdf" : "doc"}
+                                                            style={{ width: "24px", height: "24px", marginBottom: "8px" }}
+                                                        />
+                                                        <div style={{display:"flex",flexDirection:"column"}}>
+                                                            <div className="vm-file-name">
+                                                                Sample Document
+                                                            </div>
+                                                            <div className="vm-file-status">
+                                                                {file.originalName}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            {/* AI RESPONSE ACCORDION */}
+                            <AccordionHeader
+                                title="AI Response"
+                                subtitle="You requested two changes"
+                                isOpen={templateAccordions.aiResponse}
+                                onClick={() =>
+                                    setTemplateAccordions(prev => ({
+                                        ...prev,
+                                        aiResponse: !prev.aiResponse
+                                    }))
+                                }
+                            />
+
+                            {templateAccordions.aiResponse && (
+                                <div className="analysis-box">
+                                    {parseVoiceExplanation(activeTemplate.prompt).map(section => (
+                                        <div key={section.id} className="voice-explanation-section">
+                                            <h4>{cleanPromptText(section.title)}</h4>
+                                            <div style={{
+                                                whiteSpace: 'pre-wrap',
+                                                fontFamily: 'monospace',
+                                                fontSize: '13px',
+                                                lineHeight: '1.5'
+                                            }}>
+                                                {cleanPromptText(section.content)}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            {/* GENERATED TEMPLATE ACCORDION */}
+                            <AccordionHeader
+                                title="Generated Template"
+                                subtitle={`${mapperRows.length} fields generated`}
+                                isOpen={templateAccordions.generatedTemplate}
+                                onClick={() =>
+                                    setTemplateAccordions(prev => ({
+                                        ...prev,
+                                        generatedTemplate: !prev.generatedTemplate
+                                    }))
+                                }
+                            />
+
+                            {templateAccordions.generatedTemplate && (
+                                <MapperGrid rows={mapperRows} readOnly={mapperMode === "view"} />
+                            )}
+                        </div>
+                    )}
+
+                    {/* ================= TEMPLATE LIST ================= */}
+                    {stage === "idle" && !activeTemplate && (
+                        <div className="vm-template-list">
+                            <div className="vm-template-header">
+                                <div className="vm-template-list-title">
+                                    Available Template
+                                </div>
+
+                                {templates.length > CARDS_PER_VIEW && (
+                                    <div className="vm-template-header-arrows">
+                                        <button
+                                            className="vm-slider-arrow"
+                                            onClick={handlePrev}
+                                            disabled={!canGoPrev}
+                                        >
+                                            <img src={careVoiceLeft} alt="prev" />
+                                        </button>
+
+                                        <button
+                                            className="vm-slider-arrow"
+                                            onClick={handleNext}
+                                            disabled={!canGoNext}
+                                        >
+                                            <img src={careVoiceRight} alt="next" />
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+
 
                             {/* ✅ EMPTY STATE */}
                             {templates.length === 0 && (
@@ -996,79 +1263,140 @@ const VoiceModule = (props) => {
                                 </div>
                             )}
 
-                            {/* ✅ TEMPLATE CARDS */}
-                            {templates.map((tpl, index) => (
-                                <div key={tpl.id} className="vm-template-card">
-                                    <div className="vm-template-left">
-                                        <div className="vm-template-icon">
-                                            <img src={templateIcon} alt="template" />
-                                        </div>
+                            <div className="vm-template-slider-wrapper">
 
-                                        <div className="vm-template-info">
-                                            <div className="vm-template-name">
-                                                {tpl.name || `Voice Template ${index + 1}`}
-                                                <span
-                                                    className="vm-template-edit-icon"
-                                                    onClick={() => handleEditTemplate(tpl)}
-                                                >
-                                                    ✎
-                                                </span>
-                                            </div>
+                                {/* SLIDER WINDOW */}
+                                <div className="vm-template-slider">
+                                    <div
+                                        className="vm-template-track"
+                                        style={{
+                                            transform: `translateX(-${templateIndex * (100 / CARDS_PER_VIEW)}%)`
+                                        }}
+                                    >
+                                        {templates.map((tpl, index) => (
+                                            <div key={tpl.id} className="vm-template-slide">
+                                                <div className="vm-template-card" onClick={() => {
+                                                    if (openMenuId) return;
+                                                    setActiveTemplate(tpl);
+                                                    setMapperMode("view");
+                                                    // 🔥 extract mappings from template
+                                                    const parsedMappings =
+                                                        typeof tpl.mappings === "string"
+                                                            ? JSON.parse(tpl.mappings)
+                                                            : tpl.mappings;
 
-                                            <div className="vm-template-date">
-                                                ⏱ {timeAgo(tpl.createdAt)}
-                                            </div>
-                                        </div>
-                                    </div>
+                                                    const rowsArray = normalizeFieldMappings(
+                                                        extractMapperFields(parsedMappings)
+                                                    );
 
-                                    <div className="vm-template-right">
-                                        {/* Share Button */}
-                                        <button className="vm-share-btn">
-                                            <img src={careVoiceShare} alt="share" />
-                                            Share Template
-                                        </button>
+                                                    setMapperRows(rowsArray);
+                                                }}>
+                                                    <div className="vm-template-left">
+                                                        <div className="vm-template-icon">
+                                                            <img src={templateIcon} alt="template" />
+                                                        </div>
 
-                                        {/* 3 dots */}
-                                        <span
-                                            className="vm-dots"
-                                            onClick={() =>
-                                                setOpenMenuId(openMenuId === tpl.id ? null : tpl.id)
-                                            }
-                                        >
-                                            ⋮
-                                        </span>
+                                                        <div className="vm-template-info">
+                                                            <div style={{ display: "flex", alignItems: "center", gap: "230px" }}>
+                                                                <div className="vm-template-name">
+                                                                    {tpl.name || `Voice Template ${index + 1}`}
+                                                                    <span
+                                                                        className="vm-template-edit-icon"
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            handleEditTemplate(tpl);
+                                                                        }}
+                                                                    >
+                                                                        ✎
+                                                                    </span>
 
-                                        {/* Dropdown */}
-                                        {openMenuId === tpl.id && (
-                                            <div className="vm-dropdown">
-                                                <div
-                                                    className="vm-dropdown-item"
-                                                    onClick={() => handleEditTemplate(tpl)}
-                                                >
-                                                    <img src={careVoiceEdit} alt="edit" />
-                                                    Edit Template Fields
+                                                                </div>
+                                                                <span
+                                                                    className="vm-dots"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setOpenMenuId(openMenuId === tpl.id ? null : tpl.id);
+                                                                    }}
+                                                                >
+                                                                    ⋮
+                                                                </span>
+
+                                                                {openMenuId === tpl.id && (
+                                                                    <div className="vm-dropdown">
+                                                                        <div
+                                                                            className="vm-dropdown-item"
+                                                                            onClick={() => handleEditTemplate(tpl)}
+                                                                        >
+                                                                            <img src={careVoiceEdit} alt="edit" />
+                                                                            Edit Template Fields
+                                                                        </div>
+
+                                                                        <div
+                                                                            className="vm-dropdown-item danger"
+                                                                            onClick={() => handleDeleteClick(tpl)}
+                                                                        >
+                                                                            <img src={careVoiceDelete} alt="delete" />
+                                                                            Delete Template
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                            <div className="vm-template-date">
+                                                                ⏱ {timeAgo(tpl.createdAt)}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="vm-template-right">
+                                                        <button className="vm-share-btn">
+                                                            <img src={careVoiceShare} alt="share" />
+                                                            Share Template
+                                                        </button>
+
+                                                        {/* <span
+                                                            className="vm-dots"
+                                                            onClick={() =>
+                                                                setOpenMenuId(openMenuId === tpl.id ? null : tpl.id)
+                                                            }
+                                                        >
+                                                            ⋮
+                                                        </span>
+
+                                                        {openMenuId === tpl.id && (
+                                                            <div className="vm-dropdown">
+                                                                <div
+                                                                    className="vm-dropdown-item"
+                                                                    onClick={() => handleEditTemplate(tpl)}
+                                                                >
+                                                                    <img src={careVoiceEdit} alt="edit" />
+                                                                    Edit Template Fields
+                                                                </div>
+
+                                                                <div
+                                                                    className="vm-dropdown-item danger"
+                                                                    onClick={() => handleDeleteClick(tpl)}
+                                                                >
+                                                                    <img src={careVoiceDelete} alt="delete" />
+                                                                    Delete Template
+                                                                </div>
+                                                            </div>
+                                                        )} */}
+                                                    </div>
                                                 </div>
-
-                                                <div
-                                                    className="vm-dropdown-item danger"
-                                                    onClick={() => handleDeleteClick(tpl)}
-                                                >
-                                                    <img src={careVoiceDelete} alt="delete" />
-                                                    Delete Template
-                                                </div>
                                             </div>
-                                        )}
+                                        ))}
                                     </div>
-
                                 </div>
-                            ))}
+
+                            </div>
+
                         </div>
                     )}
 
 
                     {/* Upload Section - Hidden when analyze clicked OR during processing */}
 
-                    {showUploadSection && stage !== "processing" && (
+                    {showUploadSection && stage !== "processing" && !activeTemplate && (
                         <>
                             <div className="voice-upload-row">
                                 {/* ================= TEMPLATE COLUMN ================= */}
@@ -1098,39 +1426,39 @@ const VoiceModule = (props) => {
                                             <div className="voice-text">Drop file or browse</div>
                                             <div className="voice-subtext">Format: .doc only</div>
 
-                                            <button className="voice-browse-btn">
+                                            {/* <button className="voice-browse-btn">
                                                 Browse Files
-                                            </button>
+                                            </button> */}
                                         </div>
                                     )}
 
 
                                     {templateFile && (
                                         <div className="vm-file-list">
-                                            <div className="vm-file-item">
+                                            <div className="vm-file-item vm-file-item-uploaded">
                                                 <div className="vm-file-left">
-                                                    <div className="vm-file-name">
-                                                        {templateFile.name}
-                                                    </div>
-                                                    <div className="vm-file-status">
-                                                        Uploaded • 100%
+                                                    <div className="vm-file-icon">📄</div>
+
+                                                    <div>
+                                                        <div className="vm-file-name">
+                                                            {templateFile.name}
+                                                        </div>
+                                                        <div className="vm-file-status">
+                                                            Uploaded • 100%
+                                                        </div>
                                                     </div>
                                                 </div>
 
                                                 <div className="vm-file-actions">
                                                     <span className="vm-file-check">✓</span>
-                                                    <span
-                                                        className="vm-file-remove"
-                                                        onClick={() => {
-                                                            console.log("[UI] Template removed");
-                                                            setTemplateFile(null);
-                                                        }}
-                                                    >
-                                                        <FiX />
-                                                    </span>
+                                                    <RiDeleteBin6Line
+                                                        className="vm-file-delete"
+                                                        onClick={() => setTemplateFile(null)}
+                                                    />
                                                 </div>
                                             </div>
                                         </div>
+
                                     )}
                                 </div>
 
@@ -1166,42 +1494,46 @@ const VoiceModule = (props) => {
                                                 Format: .doc or .pdf only
                                             </div>
 
-                                            <button className="voice-browse-btn">
+                                            {/* <button className="voice-browse-btn">
                                                 Browse Files
-                                            </button>
+                                            </button> */}
                                         </div>
                                     )}
 
                                     {sampleFiles.length > 0 && (
                                         <div className="vm-file-list">
                                             {sampleFiles.map((file, index) => (
-                                                <div key={index} className="vm-file-item">
+                                                <div key={index} className="vm-file-item vm-file-item-uploaded">
                                                     <div className="vm-file-left">
-                                                        <div className="vm-file-name">
-                                                            {file.name}
-                                                        </div>
-                                                        <div className="vm-file-status">
-                                                            Uploaded • 100%
+                                                        <div className="vm-file-icon">📄</div>
+
+                                                        <div>
+                                                            <div className="vm-file-name">
+                                                                {file.name}
+                                                            </div>
+                                                            <div className="vm-file-status">
+                                                                Uploaded • 100%
+                                                            </div>
                                                         </div>
                                                     </div>
 
                                                     <div className="vm-file-actions">
                                                         <span className="vm-file-check">✓</span>
-                                                        <span
-                                                            className="vm-file-remove"
+
+                                                        <RiDeleteBin6Line
+                                                            className="vm-file-delete"
                                                             onClick={() => {
                                                                 console.log("[UI] Sample removed:", file.name);
                                                                 setSampleFiles(prev =>
                                                                     prev.filter((_, i) => i !== index)
                                                                 );
                                                             }}
-                                                        >
-                                                            <FiX />
-                                                        </span>
+                                                        />
                                                     </div>
                                                 </div>
                                             ))}
                                         </div>
+
                                     )}
                                 </div>
                             </div>
@@ -1226,42 +1558,12 @@ const VoiceModule = (props) => {
                     {/* Processing Animation */}
                     {/* ================= PROCESSING ================= */}
                     {stage === "processing" && (
-                        <>
-                            {/* ✅ 1. PEHLE LOADER (jab eventLogs empty ho) */}
-                            {eventLogs.length === 0 && (
-                                <div className="analysis-processing">
-                                    <div className="loader-container">
-                                        <div className="spinner"></div>
-                                        <div className="loader-text">Processing document</div>
-                                        <div className="loader-subtext">
-                                            This may take a few moments
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* ✅ 2. EVENT AANE KE BAAD STEPPER */}
-                            {eventLogs.length > 0 && (
-                                <div className="vm-stepper-vertical">
-                                    {eventLogs.map((event, index) => (
-                                        <div key={index} className="vm-step-vertical">
-                                            <div className="vm-step-circle-vertical" />
-                                            <div className="vm-step-content">
-                                                <div className="vm-event-name">
-                                                    {event.label}
-                                                </div>
-                                                <div className="vm-event-time">
-                                                    {event.time}
-                                                </div>
-                                            </div>
-                                            {index < eventLogs.length - 1 && (
-                                                <div className="vm-step-line-vertical" />
-                                            )}
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </>
+                        <div style={{ display: "flex", justifyContent: "center", marginTop: "40px" }}>
+                            <PulsatingLoader
+                                currentTask={currentTask || "Processing document"}
+                                progress={processingProgress}
+                            />
+                        </div>
                     )}
 
 
@@ -1271,7 +1573,19 @@ const VoiceModule = (props) => {
                             <h3>AI Analysis Summary</h3>
 
                             <div className="analysis-box">
-                                {analysisText}
+
+                                {sections.map(section => (
+                                    <div key={section.id} className="voice-explanation-section">
+                                        <h4 className="voice-explanation-title">
+                                            {cleanText(section.title)}
+                                        </h4>
+
+                                        <div className="voice-explanation-content">
+                                            {cleanText(section.content)}
+                                        </div>
+                                    </div>
+                                ))}
+
                             </div>
 
                             {showFeedbackBox && (
@@ -1328,6 +1642,7 @@ const VoiceModule = (props) => {
                             <MapperGrid
                                 rows={mapperRows}
                                 setRows={setMapperRows}
+                                readOnly={mapperMode === "view"}
                             />
                             <div style={{ marginTop: "20px", textAlign: "right" }}>
                                 <button
@@ -1489,37 +1804,41 @@ const VoiceModule = (props) => {
                                 <FiUploadCloud className="voice-icon" />
                                 <div className="voice-text">Drop file or browse</div>
                                 <div className="voice-subtext">Format: .doc or .pdf only</div>
-                                <button className="voice-browse-btn">Browse Files</button>
+                                {/* <button className="voice-browse-btn">Browse Files</button> */}
                             </div>
                         )}
 
                         {/* FILE PREVIEW */}
                         {uploadedTranscriptFile && (
                             <div className="vm-file-list" style={{ marginTop: "12px" }}>
-                                <div className="vm-file-item">
+                                <div className="vm-file-item vm-file-item-uploaded">
                                     <div className="vm-file-left">
-                                        <div className="vm-file-name">
-                                            {uploadedTranscriptFile.name}
-                                        </div>
-                                        <div className="vm-file-status">
-                                            Uploaded • 100%
+                                        <div className="vm-file-icon">📄</div>
+
+                                        <div>
+                                            <div className="vm-file-name">
+                                                {uploadedTranscriptFile.name}
+                                            </div>
+                                            <div className="vm-file-status">
+                                                Uploaded • 100%
+                                            </div>
                                         </div>
                                     </div>
 
                                     <div className="vm-file-actions">
                                         <span className="vm-file-check">✓</span>
-                                        <span
-                                            className="vm-file-remove"
+
+                                        <RiDeleteBin6Line
+                                            className="vm-file-delete"
                                             onClick={() => {
                                                 setUploadedTranscriptFile(null);
                                                 setTranscriptSource(null);
                                             }}
-                                        >
-                                            <FiX />
-                                        </span>
+                                        />
                                     </div>
                                 </div>
                             </div>
+
                         )}
 
                         {/* Generate Document */}
