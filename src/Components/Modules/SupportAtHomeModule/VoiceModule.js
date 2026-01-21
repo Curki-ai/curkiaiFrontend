@@ -16,7 +16,7 @@ import careVoiceEndAndPreview from "../../../Images/careVoiceEndAndPreview.png"
 import careVoiceStaffTemplateIcon from "../../../Images/careVoiceStaffTemplateIcon.png"
 import careVoiceLeft from "../../../Images/careVoiceLeft.png"
 import careVoiceRight from "../../../Images/careVoiceRight.png"
-import { FiUploadCloud, FiX } from "react-icons/fi";
+import { FiUploadCloud } from "react-icons/fi";
 import MapperGrid from "./VoiceModuleMapper";
 import { RiDeleteBin6Line } from "react-icons/ri";
 import PulsatingLoader from "../../PulsatingLoader";
@@ -26,6 +26,13 @@ import TlcPayrollDownArrow from "../../../Images/tlc_payroll_down_button.png"
 import careVoiceDocIcon from "../../../Images/careVoiceDocIcon.png"
 import careVoicePdfIcon from "../../../Images/careVoicePdfIcon.png"
 import careVoiceTemplateViewDoc from "../../../Images/careVoiceTemplateViewDoc.png"
+import TlcPayrollInsightIcon from "../../../Images/TlcPayrollinsightIcon.png";
+import AdminTemplateViewIcon from "../../../Images/AdminTemplateViewTable.png"
+import careVoiceCross from "../../../Images/careVoiceCross.png"
+import { GoArrowLeft } from "react-icons/go";
+import { FiEdit } from "react-icons/fi";
+import { FiCheck, FiX } from "react-icons/fi";
+
 const VoiceModule = (props) => {
     const userEmail = props?.user?.email;
     const domain = userEmail?.split("@")[1] || "";
@@ -66,7 +73,7 @@ const VoiceModule = (props) => {
     const [recordMode, setRecordMode] = useState("idle");
 
     // STAFF TEMPLATE DRAWER
-    const [showTemplateDrawer, setShowTemplateDrawer] = useState(false);
+    // const [showTemplateDrawer, setShowTemplateDrawer] = useState(false);
     const mediaRecorderRef = useRef(null);
     const audioChunksRef = useRef([]);
     const audioRef = useRef(null);
@@ -90,13 +97,29 @@ const VoiceModule = (props) => {
     const progressIntervalRef = useRef(null);
     const [activeTemplate, setActiveTemplate] = useState(null);
     const [templateAccordions, setTemplateAccordions] = useState({
-        aiResponse: true,
+        aiResponse: false,
         generatedTemplate: false,
     });
+    const [editingNameId, setEditingNameId] = useState(null);
+    const [tempName, setTempName] = useState("");
+
     const [mapperMode, setMapperMode] = useState("view");
     // "view" | "edit"
+    const [staffStep, setStaffStep] = useState("landing");
+    useEffect(() => {
+        if (role === "Admin") {
+            setShowUploadSection(true);
+            setStage("idle");
+            setCurrentStep(1);
+        }
 
-    const AccordionHeader = ({ title, subtitle, isOpen, onClick }) => (
+        if (role === "Staff") {
+            setStaffStep("landing");   // 🔥 IMPORTANT
+            setSelectedTemplate(null);
+        }
+    }, [role]);
+
+    const AccordionHeader = ({ icon, title, subtitle, isOpen, onClick }) => (
         <div
             onClick={onClick}
             style={{
@@ -107,12 +130,33 @@ const VoiceModule = (props) => {
                 cursor: "pointer",
                 display: "flex",
                 alignItems: "center",
-                gap: "12px",
-                fontWeight: 600,
+                justifyContent: "space-between",
                 marginBottom: "12px",
-                color: "#000",
             }}
         >
+            {/* LEFT SIDE */}
+            <div style={{ display: "flex", alignItems: "flex-start", gap: "10px" }}>
+                {/* ICON */}
+                {icon && (
+                    <img
+                        src={icon}
+                        alt="accordion-icon"
+                        style={{ width: "20px", height: "20px" }}
+                    />
+                )}
+
+                {/* TITLE + SUBTITLE */}
+                <div style={{ display: "flex", flexDirection: "column", textAlign: "left" }}>
+                    <span style={{ fontSize: "16px", fontWeight: 600, color: "#000" }}>{title}</span>
+                    {subtitle && (
+                        <span style={{ fontSize: "Body/Size Medium", color: "#6B7280", fontWeight: 400 }}>
+                            {subtitle}
+                        </span>
+                    )}
+                </div>
+            </div>
+
+            {/* RIGHT ARROW */}
             <img
                 src={TlcPayrollDownArrow}
                 alt="toggle"
@@ -123,17 +167,9 @@ const VoiceModule = (props) => {
                     transition: "transform 0.2s ease",
                 }}
             />
-
-            <div style={{ display: "flex", flexDirection: "column" }}>
-                <span>{title}</span>
-                {subtitle && (
-                    <span style={{ fontSize: "12px", color: "#6B7280", fontWeight: 400 }}>
-                        {subtitle}
-                    </span>
-                )}
-            </div>
         </div>
     );
+
 
 
     useEffect(() => {
@@ -279,7 +315,11 @@ const VoiceModule = (props) => {
             if (data.status === "completed") {
                 clearInterval(interval);
                 setTranscriptData(data);
+                setIsGenerating(true);
                 console.log("FINAL TRANSCRIPT:", data);
+                if (selectedTemplate) {
+                    submitToDocumentFiller();   // 🚀 DIRECT CALL
+                }
             }
 
             if (data.status === "error") {
@@ -316,8 +356,6 @@ const VoiceModule = (props) => {
             pollTranscript(transcriptId);
         } catch (err) {
             console.error("AssemblyAI failed", err);
-        } finally {
-            setTranscribing(false);
         }
     };
     const getSpeakerTranscript = () => {
@@ -427,6 +465,29 @@ const VoiceModule = (props) => {
     };
 
 
+    const saveTemplateName = async (templateId) => {
+        if (!tempName.trim()) {
+            setEditingNameId(null);
+            return;
+        }
+
+        try {
+            await fetch(`${API_BASE}/api/voiceModuleTemplate/${templateId}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    organizationId,
+                    userEmail,
+                    templateName: tempName.trim(),
+                }),
+            });
+
+            setEditingNameId(null);
+            fetchTemplates(); // 🔥 refresh list
+        } catch (err) {
+            console.error("[UI] Rename failed", err);
+        }
+    };
 
 
     const getFieldMappings = (data) => {
@@ -1025,6 +1086,7 @@ const VoiceModule = (props) => {
             alert("Failed to generate document");
         } finally {
             setIsGenerating(false); // 🔥 STOP LOADING
+            setTranscribing(false);
         }
     };
     const CARDS_PER_VIEW = 2;
@@ -1063,6 +1125,8 @@ const VoiceModule = (props) => {
 
                 {role === "Staff" && (
                     <>
+
+
                         <div className="voice-field">
                             <img
                                 src={voiceNameIcon}
@@ -1092,7 +1156,7 @@ const VoiceModule = (props) => {
 
 
             <div className="voice-divider" />
-            {role === "Staff" && (
+            {/* {role === "Staff" && (
                 <div style={{ display: "flex", justifyContent: "flex-end", padding: "10px 20px 10px 20px", width: "161px", height: "41px", marginLeft: "auto" }}>
                     <button
                         className="staff-template-btn"
@@ -1100,6 +1164,23 @@ const VoiceModule = (props) => {
                     >
                         <img src={careVoiceStaffTemplateIcon} alt="templates" style={{ width: "24px", height: "24px" }} />
                         Templates
+                    </button>
+                </div>
+
+            )} */}
+            {role === "Staff" && staffStep === "landing" && (
+                <div style={{ textAlign: "center", marginTop: "80px" }}>
+                    <h2 style={{ fontWeight: 600 }}>
+                       Select A Template To Populate
+                    </h2>
+
+                    <button
+                        className="staff-primary"
+                        style={{ margin: "auto" }}
+                        onClick={() => setStaffStep("selectTemplate")}
+                    >
+                        <img src={careVoiceStaffTemplateIcon} width={16} style={{ filter: "brightness(0) invert(1)" }} />
+                        Select Template
                     </button>
                 </div>
             )}
@@ -1113,16 +1194,23 @@ const VoiceModule = (props) => {
                             {/* BACK */}
                             <div
                                 className="vm-back"
-                                style={{cursor:"pointer"}}
+                                style={{ cursor: "pointer", marginBottom: "35px", display: "flex", fontSize: "14px", color: "#6C4CDC", alignItems: "center", gap: "2px" }}
                                 onClick={() => setActiveTemplate(null)}
                             >
-                                ← Back
+                                <GoArrowLeft size={22} color="#6C4CDC" /> Back
                             </div>
 
                             {/* UPLOADED DOCUMENTS */}
                             <div className="vm-uploaded-docs">
-                                <h4>Uploaded Documents</h4>
+                                <div style={{ display: "flex", alignItems: "flex-start", gap: "10px" }}>
+                                    <img
+                                        src={careVoiceTemplateViewDoc}
+                                        alt="doc"
+                                        style={{ width: "24px", height: "24px", marginBottom: "8px" }}
+                                    />
+                                    <h4 style={{ marginTop: "2px" }}>Uploaded Documents</h4>
 
+                                </div>
                                 <div className="vm-file-list" style={{ display: "flex", gap: "10px" }}>
                                     <div className="vm-file-item" style={{ width: "435px", height: "78px" }}>
                                         <div className="vm-file-left" style={{ flexDirection: "column", alignItems: "flex-start" }}>
@@ -1133,7 +1221,7 @@ const VoiceModule = (props) => {
                                                     alt="doc"
                                                     style={{ width: "24px", height: "24px", marginBottom: "8px" }}
                                                 />
-                                                <div style={{display:"flex",flexDirection:"column"}}>
+                                                <div style={{ display: "flex", flexDirection: "column" }}>
                                                     <div className="vm-file-name">
                                                         Template Structure
                                                     </div>
@@ -1160,7 +1248,7 @@ const VoiceModule = (props) => {
                                                             alt={isPDF ? "pdf" : "doc"}
                                                             style={{ width: "24px", height: "24px", marginBottom: "8px" }}
                                                         />
-                                                        <div style={{display:"flex",flexDirection:"column"}}>
+                                                        <div style={{ display: "flex", flexDirection: "column" }}>
                                                             <div className="vm-file-name">
                                                                 Sample Document
                                                             </div>
@@ -1178,6 +1266,7 @@ const VoiceModule = (props) => {
 
                             {/* AI RESPONSE ACCORDION */}
                             <AccordionHeader
+                                icon={TlcPayrollInsightIcon}
                                 title="AI Response"
                                 subtitle="You requested two changes"
                                 isOpen={templateAccordions.aiResponse}
@@ -1209,6 +1298,7 @@ const VoiceModule = (props) => {
 
                             {/* GENERATED TEMPLATE ACCORDION */}
                             <AccordionHeader
+                                icon={AdminTemplateViewIcon}
                                 title="Generated Template"
                                 subtitle={`${mapperRows.length} fields generated`}
                                 isOpen={templateAccordions.generatedTemplate}
@@ -1297,53 +1387,105 @@ const VoiceModule = (props) => {
                                                         </div>
 
                                                         <div className="vm-template-info">
-                                                            <div style={{ display: "flex", alignItems: "center", gap: "230px" }}>
+                                                            {/* ===== TOP ROW (NAME + DOTS) ===== */}
+                                                            <div className="vm-template-top-row">
+                                                                {/* LEFT : NAME */}
                                                                 <div className="vm-template-name">
-                                                                    {tpl.name || `Voice Template ${index + 1}`}
+                                                                    {editingNameId === tpl.id ? (
+                                                                        <div className="vm-template-rename-row">
+                                                                            <input
+                                                                                className="vm-template-name-input"
+                                                                                value={tempName}
+                                                                                autoFocus
+                                                                                onChange={(e) => setTempName(e.target.value)}
+                                                                                onKeyDown={(e) => {
+                                                                                    if (e.key === "Escape") {
+                                                                                        setEditingNameId(null);
+                                                                                        setTempName(tpl.templateName || "");
+                                                                                    }
+                                                                                }}
+                                                                            />
+
+                                                                            <button
+                                                                                className="vm-rename-yes"
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    saveTemplateName(tpl.id);
+                                                                                }}
+                                                                            >
+                                                                                <FiCheck size={14} strokeWidth={3} />
+                                                                            </button>
+
+                                                                            <button
+                                                                                className="vm-rename-no"
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    setEditingNameId(null);
+                                                                                    setTempName(tpl.templateName || "");
+                                                                                }}
+                                                                            >
+                                                                                <FiX size={14} strokeWidth={3} />
+                                                                            </button>
+                                                                        </div>
+                                                                    ) : (
+                                                                        <>
+                                                                            <span className="vm-template-name-text">
+                                                                                {tpl.templateName || `Voice Template ${index + 1}`}
+                                                                            </span>
+
+                                                                            <span
+                                                                                className="vm-template-edit-icon"
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    setEditingNameId(tpl.id);
+                                                                                    setTempName(tpl.templateName || "");
+                                                                                }}
+                                                                            >
+                                                                                <FiEdit size={14} />
+                                                                            </span>
+                                                                        </>
+                                                                    )}
+                                                                </div>
+
+                                                                {/* RIGHT : DOTS */}
+                                                                <div className="vm-template-actions">
                                                                     <span
-                                                                        className="vm-template-edit-icon"
+                                                                        className="vm-dots"
                                                                         onClick={(e) => {
                                                                             e.stopPropagation();
-                                                                            handleEditTemplate(tpl);
+                                                                            setOpenMenuId(openMenuId === tpl.id ? null : tpl.id);
                                                                         }}
                                                                     >
-                                                                        ✎
+                                                                        ⋮
                                                                     </span>
 
+                                                                    {openMenuId === tpl.id && (
+                                                                        <div className="vm-dropdown">
+                                                                            <div
+                                                                                className="vm-dropdown-item"
+                                                                                onClick={() => handleEditTemplate(tpl)}
+                                                                            >
+                                                                                <img src={careVoiceEdit} alt="edit" />
+                                                                                Edit Template Fields
+                                                                            </div>
+
+                                                                            <div
+                                                                                className="vm-dropdown-item danger"
+                                                                                onClick={() => handleDeleteClick(tpl)}
+                                                                            >
+                                                                                <img src={careVoiceDelete} alt="delete" />
+                                                                                Delete Template
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
                                                                 </div>
-                                                                <span
-                                                                    className="vm-dots"
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation();
-                                                                        setOpenMenuId(openMenuId === tpl.id ? null : tpl.id);
-                                                                    }}
-                                                                >
-                                                                    ⋮
-                                                                </span>
-
-                                                                {openMenuId === tpl.id && (
-                                                                    <div className="vm-dropdown">
-                                                                        <div
-                                                                            className="vm-dropdown-item"
-                                                                            onClick={() => handleEditTemplate(tpl)}
-                                                                        >
-                                                                            <img src={careVoiceEdit} alt="edit" />
-                                                                            Edit Template Fields
-                                                                        </div>
-
-                                                                        <div
-                                                                            className="vm-dropdown-item danger"
-                                                                            onClick={() => handleDeleteClick(tpl)}
-                                                                        >
-                                                                            <img src={careVoiceDelete} alt="delete" />
-                                                                            Delete Template
-                                                                        </div>
-                                                                    </div>
-                                                                )}
                                                             </div>
+
+                                                            {/* DATE */}
                                                             <div className="vm-template-date">
                                                                 ⏱ {timeAgo(tpl.createdAt)}
                                                             </div>
+
                                                         </div>
                                                     </div>
 
@@ -1570,10 +1712,26 @@ const VoiceModule = (props) => {
                     {/* Review Section */}
                     {stage === "review" && (
                         <div className="analysis-review-container">
-                            <h3>AI Analysis Summary</h3>
 
+                            {/* ===== ACTION BUTTONS (TOP) ===== */}
+                            <div className="analysis-actions" style={{ marginBottom: "16px" }}>
+                                <button
+                                    onClick={acceptAnalysis}
+                                    className="analysis-accept-btn"
+                                >
+                                    Accept
+                                </button>
+
+                                <button
+                                    onClick={() => setShowFeedbackBox(true)}
+                                    className="analysis-feedback-btn"
+                                >
+                                    Request Changes
+                                </button>
+                            </div>
+
+                            {/* ===== ANALYSIS CONTENT ===== */}
                             <div className="analysis-box">
-
                                 {sections.map(section => (
                                     <div key={section.id} className="voice-explanation-section">
                                         <h4 className="voice-explanation-title">
@@ -1585,9 +1743,9 @@ const VoiceModule = (props) => {
                                         </div>
                                     </div>
                                 ))}
-
                             </div>
 
+                            {/* ===== FEEDBACK BOX ===== */}
                             {showFeedbackBox && (
                                 <div className="analysis-feedback-section">
                                     <div className="analysis-feedback-label">
@@ -1614,36 +1772,13 @@ const VoiceModule = (props) => {
                                 </div>
                             )}
 
-
-                            <div className="analysis-actions">
-                                <button
-                                    onClick={acceptAnalysis}
-                                    className="analysis-accept-btn"
-                                >
-                                    Accept
-                                </button>
-
-                                <button
-                                    onClick={() => setShowFeedbackBox(true)}
-                                    className="analysis-feedback-btn"
-                                >
-                                    Request Changes
-                                </button>
-                            </div>
-
                         </div>
                     )}
+
 
                     {/* Completed */}
                     {stage === "completed" && (
                         <div className="analysis-completed">
-                            <h3>Mapper Configuration</h3>
-
-                            <MapperGrid
-                                rows={mapperRows}
-                                setRows={setMapperRows}
-                                readOnly={mapperMode === "view"}
-                            />
                             <div style={{ marginTop: "20px", textAlign: "right" }}>
                                 <button
                                     className="analysis-accept-btn"
@@ -1654,14 +1789,115 @@ const VoiceModule = (props) => {
                                 </button>
 
                             </div>
+                            <MapperGrid
+                                rows={mapperRows}
+                                setRows={setMapperRows}
+                                readOnly={mapperMode === "view"}
+                            />
+
                         </div>
                     )}
                 </>
             )}
 
             {/* ================= STAFF VIEW ================= */}
-            {role === "Staff" && (
+            {role === "Staff" && staffStep === "working" && (
                 <>
+                    <div
+                        style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            padding: "24px 32px",
+                        }}
+                    >
+                        {/* LEFT */}
+                        <div style={{ marginLeft: "356px" }}>
+                            <h2 style={{ margin: 0, fontWeight: 600 }}>
+                                Record Conversation
+                            </h2>
+                            <p style={{ marginTop: "6px", color: "#6b7280" }}>
+                                Start recording to fill your selected template 
+                            </p>
+                        </div>
+
+                        {/* RIGHT */}
+                        {selectedTemplate && (
+                            <div
+                                style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "12px",
+                                    padding: "10px 16px",
+                                    borderRadius: "999px",
+                                    border: "1px solid #E5E7EB",
+                                    background: "#FFFFFF",
+                                }}
+                            >
+                                {/* LEFT DOC ICON */}
+                                <img
+                                    src={careVoiceStaffTemplateIcon}
+                                    alt="doc"
+                                    style={{ width: "20px", height: "20px" }}
+                                />
+
+                                {/* BLUE SELECTED PILL */}
+                                <div
+                                    style={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: "8px",
+                                        background: "#3B82F6",
+                                        color: "#FFFFFF",
+                                        padding: "6px 12px",
+                                        borderRadius: "999px",
+                                        fontSize: "14px",
+                                        fontWeight: 500,
+                                    }}
+                                >
+                                    {/* CHECK */}
+                                    <span
+                                        style={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            width: "18px",
+                                            height: "18px",
+                                            borderRadius: "50%",
+                                            background: "#FFFFFF",
+                                            color: "#3B82F6",
+                                            fontSize: "12px",
+                                            fontWeight: 700,
+                                        }}
+                                    >
+                                        ✓
+                                    </span>
+
+                                    Selected
+
+                                    {/* COUNT */}
+                                    <span
+                                        style={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            width: "22px",
+                                            height: "22px",
+                                            borderRadius: "50%",
+                                            background: "#FFFFFF",
+                                            color: "#3B82F6",
+                                            fontSize: "12px",
+                                            fontWeight: 600,
+                                        }}
+                                    >
+                                        1
+                                    </span>
+                                </div>
+                            </div>
+                        )}
+
+                    </div>
+
                     <div className="staff-recorder">
 
                         {/* ===== REAL AUDIO PLAYER ===== */}
@@ -1755,9 +1991,13 @@ const VoiceModule = (props) => {
                                     <button
                                         className="staff-primary"
                                         onClick={acceptRecording}
-                                        disabled={transcribing}
+                                        disabled={transcribing || isGenerating}
                                     >
-                                        {transcribing ? "Transcribing..." : "✓ Submit"}
+                                        {transcribing
+                                            ? "Transcribing..."
+                                            : isGenerating
+                                                ? "Generating..."
+                                                : "✓ Submit"}
                                     </button>
                                 </>
                             )}
@@ -1861,6 +2101,84 @@ const VoiceModule = (props) => {
 
                 </>
             )}
+            {role === "Staff" && staffStep === "selectTemplate" && (
+                <div className="vm-confirm-overlay">
+                    <div className="vm-select-confirm-modal template-select-modal">
+
+                        {/* HEADER */}
+                        <div className="template-select-header">
+                            <div style={{ display: "flex", alignItems: "center", gap: "529px", height: "56px", margin: "10px" }}>
+                                <div style={{ textAlign: "left", width: "294px", height: "56px" }}>
+                                    <h3>Available Templates</h3>
+                                    <p>Select a template organized by your admin</p>
+                                </div>
+                                <img src={careVoiceCross} style={{ width: "24px", height: "24px", cursor: "pointer" }} onClick={() => setStaffStep("landing")} />
+                            </div>
+                        </div>
+                        <div style={{ height: "1px", width: "860px", border: "1px solid #E6E6E6", color: "black", background: "black", marginBottom: "20px" }}></div>
+
+                        {templates?.length > 0 &&
+                            <button
+                                className="template-select-confirm"
+                                disabled={!selectedTemplate}
+                                onClick={() => setStaffStep("working")}
+                            >
+                                ✓ Choose Template
+                                {selectedTemplate && <span className="template-count">1</span>}
+                            </button>
+                        }
+
+                        {/* TEMPLATE LIST */}
+                        <div className="template-select-list">
+
+                            {templates.length === 0 ? (
+                                <div className="template-empty-center">
+                                    <img
+                                        src={careVoiceStaffTemplateIcon}
+                                        alt="no-templates"
+                                        className="template-empty-icon"
+                                    />
+
+                                    <div className="template-empty-text">
+                                        No Templates Found!
+                                    </div>
+                                </div>
+                            ) : (
+                                /* ================= TEMPLATE LIST ================= */
+                                templates.map((tpl) => {
+                                    console.log("tpl",tpl)
+                                    const isSelected = selectedTemplate?.id === tpl.id;
+
+                                    return (
+                                        <div
+                                            key={tpl.id}
+                                            className={`template-select-card ${isSelected ? "active" : ""}`}
+                                            onClick={() => handleStaffTemplateSelect(tpl)}
+                                        >
+                                            <input type="checkbox" checked={isSelected} readOnly />
+
+                                            <img src={templateIcon} className="template-select-icon" />
+
+                                            <div className="template-select-info">
+                                                <div className="template-select-name">
+                                                    {tpl.templateName || "Voice Template"}
+                                                </div>
+                                                <div className="template-select-date">
+                                                    ⏱ {timeAgo(tpl.createdAt)}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })
+                            )}
+
+                        </div>
+
+
+                    </div>
+                </div>
+            )}
+
 
             {/* ================= DELETE CONFIRM MODAL ================= */}
             {deleteTarget && (
@@ -1899,7 +2217,7 @@ const VoiceModule = (props) => {
                 </div>
             )}
             {/* ================= STAFF TEMPLATE DRAWER ================= */}
-            {role === "Staff" && showTemplateDrawer && (
+            {/* {role === "Staff" && showTemplateDrawer && (
                 <div className="staff-template-overlay">
                     <div className="staff-template-drawer">
                         <div className="staff-template-header">
@@ -1932,7 +2250,7 @@ const VoiceModule = (props) => {
                         </div>
                     </div>
                 </div>
-            )}
+            )} */}
 
         </div>
     );
