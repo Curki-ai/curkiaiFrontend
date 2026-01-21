@@ -38,6 +38,7 @@
 }
 
 .rostering-client-card {
+  position: relative;
   cursor: pointer;
   padding: 18px;
   border-radius: 14px;
@@ -152,6 +153,7 @@
 
 
 .roster-status-card {
+  position: relative;
   border-radius: 14px;
   padding: 14px 8px;
   margin-bottom: 8px;
@@ -428,4 +430,26 @@
 .roster-history-back-btn:hover {
   color: #4b2cc0;
   transform: translateX(-2px);
+}
+.client-unread-badge {
+  position: absolute;
+  top: 23px;
+  right: 24px;
+  background: #328DEE;
+  color: white;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 999px;
+}
+.staff-unread-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: #FFFFFF;
+  color: black;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 3px 6px;
+  border-radius: 999px;
 }

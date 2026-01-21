@@ -1,16 +1,19 @@
 import React, { useState } from "react";
 import "../../../Styles/VoiceModuleMapper.css";
 
-const MapperGrid = ({ rows, setRows }) => {
+const MapperGrid = ({ rows, setRows, readOnly = false }) => {
+  console.log("readOnly",readOnly)
   const [openMenuIndex, setOpenMenuIndex] = useState(null);
 
   const updateRow = (index, key, value) => {
+    if (readOnly || typeof setRows !== "function") return;
     const updated = [...rows];
     updated[index] = { ...updated[index], [key]: value };
     setRows(updated);
   };
 
   const addRowBelow = (index) => {
+    if (readOnly || typeof setRows !== "function") return;
     const newRow = {
       template_field: "",
       source: "",
@@ -24,6 +27,7 @@ const MapperGrid = ({ rows, setRows }) => {
   };
 
   const deleteRow = (index) => {
+    if (readOnly || typeof setRows !== "function") return;
     setRows(rows.filter((_, i) => i !== index));
     setOpenMenuIndex(null);
   };
@@ -86,7 +90,7 @@ const MapperGrid = ({ rows, setRows }) => {
             />
           </div>
 
-          <div className="cell center actions">
+          {!readOnly && <div className="cell center actions">
             <span
               className="dots"
               onClick={() =>
@@ -102,16 +106,16 @@ const MapperGrid = ({ rows, setRows }) => {
                 <div onClick={() => deleteRow(index)}>🗑 Delete row</div>
               </div>
             )}
-          </div>
+          </div>}
         </div>
       ))}
 
-      <div
+      {!readOnly && <div
         className="add-last-row"
         onClick={() => addRowBelow(rows.length - 1)}
       >
         ➕ Add new field
-      </div>
+      </div>}
     </div>
   );
 };
