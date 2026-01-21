@@ -1171,7 +1171,7 @@ const VoiceModule = (props) => {
             {role === "Staff" && staffStep === "landing" && (
                 <div style={{ textAlign: "center", marginTop: "80px" }}>
                     <h2 style={{ fontWeight: 600 }}>
-                       Select A Template To Populate
+                        Select A Template To Populate
                     </h2>
 
                     <button
@@ -1805,19 +1805,20 @@ const VoiceModule = (props) => {
                 <>
                     <div
                         style={{
+                            position: "relative",          // ✅ anchor for absolute child
                             display: "flex",
+                            justifyContent: "center",       // ✅ real centering
                             alignItems: "center",
-                            justifyContent: "space-between",
                             padding: "24px 32px",
                         }}
                     >
                         {/* LEFT */}
-                        <div style={{ marginLeft: "356px" }}>
+                        <div style={{ textAlign: "center" }}>
                             <h2 style={{ margin: 0, fontWeight: 600 }}>
                                 Record Conversation
                             </h2>
                             <p style={{ marginTop: "6px", color: "#6b7280" }}>
-                                Start recording to fill your selected template 
+                                Start recording to fill your selected template
                             </p>
                         </div>
 
@@ -1825,6 +1826,8 @@ const VoiceModule = (props) => {
                         {selectedTemplate && (
                             <div
                                 style={{
+                                    position: "absolute",
+                                    right: "32px",
                                     display: "flex",
                                     alignItems: "center",
                                     gap: "12px",
@@ -2146,7 +2149,7 @@ const VoiceModule = (props) => {
                             ) : (
                                 /* ================= TEMPLATE LIST ================= */
                                 templates.map((tpl) => {
-                                    console.log("tpl",tpl)
+                                    console.log("tpl", tpl)
                                     const isSelected = selectedTemplate?.id === tpl.id;
 
                                     return (
