@@ -653,17 +653,18 @@
   border-radius: 12px;
   padding: 16px;
   margin-bottom: 24px;
-  height: 244px;
-  width: 1034px;
+  height: 261px;
+  width: 100%;
 }
 
 .vm-template-list-title {
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 600;
   color: #1f1f1f;
-  margin-bottom: 12px;
   text-align: left;
-  margin-left: 8px;
+  margin-left: 21px;
+  height: 30px;
+  margin-top: 5px
 }
 
 /* ===============================
@@ -678,9 +679,9 @@
   gap: 12px;
   background: #ffffff;
   border-radius: 10px;
-  padding: 14px 16px;
+  padding: 20px 20px 20px 20px;
   border: 1px solid #ececf3;
-  width: 478px;
+  width: 520px;
   height: 154px;
   position: relative;
   cursor: pointer;
@@ -694,6 +695,7 @@
   display: flex;
   align-items: center;
   gap: 20px;
+  width: 100%;
 }
 
 .vm-template-icon {
@@ -714,6 +716,8 @@
 .vm-template-info {
   display: flex;
   flex-direction: column;
+  flex: 1;
+  min-width: 0;
 }
 
 /* ===== TOP ROW ===== */
@@ -721,7 +725,6 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  /* 🔥 KEY */
   width: 100%;
 }
 
@@ -756,36 +759,28 @@
   gap: 6px;
 }
 
-/* ===== RIGHT ACTIONS ===== */
 .vm-template-actions {
+  margin-left: auto;
   position: relative;
   flex-shrink: 0;
 }
 
-/* 3 dots */
-.vm-dots {
-  font-size: 18px;
-  cursor: pointer;
-  padding: 4px 6px;
-  border-radius: 6px;
-}
 
-.vm-dots:hover {
-  background: #f0f0f6;
-}
 
 /* Dropdown */
 .vm-dropdown {
   position: absolute;
-  top: 22px;
-  right: 0px;
-  left: -3px;
+  top: 23px;
+  /* below dots */
+  right: 0;
+  /* align to dots */
   background: #ffffff;
   border: 1px solid #e8e8f0;
   border-radius: 8px;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
   min-width: 200px;
-  z-index: 10;
+  z-index: 9999;
+  /* 🔥 above card */
 }
 
 
@@ -825,8 +820,16 @@
   font-size: 12px;
   cursor: pointer;
   color: #6b6b6b;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
 }
-
+.vm-template-edit-icon:hover{
+  background-color: #f0f0f6;
+}
 .vm-template-date {
   font-size: 12px;
   color: #7a7a7a;
@@ -898,6 +901,34 @@
 
 .vm-template-menu div:hover {
   background: #f4f4fb;
+}
+
+/* ===============================
+   FIGMA SLIDER INDICATOR (PILLS)
+================================ */
+
+.vm-slider-dots {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.vm-slider-dot {
+  width: 11px;
+  height: 3px;
+  background: #d9d7e6;
+  /* light grey */
+  border-radius: 999px;
+  /* transition: all 0.3s ease; */
+}
+
+.vm-slider-dot.active {
+  width: 30px;
+  height: 3px;
+  /* fixed width */
+  background: #9895AA;
+  opacity: 1;
 }
 
 /* ===============================
@@ -1023,11 +1054,14 @@
   gap: 6px;
   border: 1px solid #e0e0ea;
   background: #ffffff;
-  border-radius: 8px;
+  border-radius: 100px;
   padding: 6px 12px;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 500;
   cursor: pointer;
+  width: 165px;
+  height: 40px;
+  justify-content: center;
 }
 
 .vm-share-btn img {
@@ -1045,6 +1079,11 @@
   cursor: pointer;
   padding: 4px 6px;
   border-radius: 6px;
+  height: 30px;
+  width: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .vm-dots:hover {
@@ -1287,6 +1326,18 @@
 /* ===============================
    TEMPLATE SLIDER (ADMIN)
 ================================ */
+.vm-template-track.single-template {
+  transform: none !important;
+}
+
+.vm-template-track.single-template .vm-template-slide {
+  flex: 0 0 100%;
+  padding-right: 0;
+}
+
+.vm-template-track.single-template .vm-template-card {
+  width: 99%;
+}
 
 .vm-template-slider-wrapper {
   display: flex;
@@ -1308,7 +1359,7 @@
 }
 
 .vm-template-slide {
-  flex: 0 0 50%;
+  flex: 0 0 49%;
   /* EXACTLY 2 cards */
   padding-right: 12px;
   box-sizing: border-box;
@@ -1316,7 +1367,7 @@
 
 /* Slider arrows */
 .vm-slider-arrow {
-  background: #edeaff;
+  background: transparent;
   border: none;
   width: 36px;
   height: 36px;
@@ -1325,6 +1376,12 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
+}
+
+.vm-slider-arrow:hover:not(:disabled) {
+  background: #f0f0f6;
+  ;
+  /* 👈 hover background only */
 }
 
 .vm-slider-arrow img {
@@ -1492,6 +1549,23 @@
   font-size: 16px;
   font-weight: 600;
   color: #000;
+}
+
+.vm-admin-heading {
+  text-align: center;
+  margin: 40px 0 44px;
+}
+
+.vm-admin-title {
+  font-size: 22px;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 6px;
+}
+
+.vm-admin-subtitle {
+  font-size: 14px;
+  color: #6B7280;
 }
 
 /* ================= RESPONSIVE ADJUSTMENTS ================= */
