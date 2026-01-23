@@ -90,6 +90,17 @@ const RosterHistory = (props) => {
         workflowFlags.require_manager_approval ?? true;
     // console.log("requireManagerApproval",requireManagerApproval)    
     // === Load clients from API and map to old structure (id, name, address, phone)
+    const isAnotherStaffAcceptedInRecord = (record, currentStaffId) => {
+        if (!record?.staffMembers) return false;
+
+        return record.staffMembers.some(
+            s =>
+                s.staffId !== currentStaffId &&
+                s.status === "accepted" &&
+                s.managerApproved === true
+        );
+    };
+
     const maskDetailsIfKris = (value, type) => {
         const isKris = userEmail?.toLowerCase() === "kris@curki.ai";
         if (!isKris) return value;
@@ -370,20 +381,44 @@ const RosterHistory = (props) => {
             });
 
             setAssignmentsData(prev =>
-                prev.map(a =>
-                    a.originalStaffObject?.staffId === selectedAssignment.originalStaffObject.staffId
-                        ? {
+                prev.map(a => {
+                    // same record?
+                    if (a.originalRecord?.id === recordId) {
+                        return {
                             ...a,
-                            status: "accepted",
-                            originalStaffObject: {
-                                ...a.originalStaffObject,
-                                status: "accepted",
-                                managerApproved: true
+                            status:
+                                a.originalStaffObject?.staffId === selectedAssignment.originalStaffObject.staffId
+                                    ? "accepted"
+                                    : a.status,
+                            originalStaffObject:
+                                a.originalStaffObject?.staffId === selectedAssignment.originalStaffObject.staffId
+                                    ? {
+                                        ...a.originalStaffObject,
+                                        status: "accepted",
+                                        managerApproved: true
+                                    }
+                                    : a.originalStaffObject,
+
+                            // 🔥 THIS IS THE CRITICAL PART
+                            originalRecord: {
+                                ...a.originalRecord,
+                                staffMembers: (a.originalRecord.staffMembers || []).map(s =>
+                                    s.staffId === selectedAssignment.originalStaffObject.staffId
+                                        ? {
+                                            ...s,
+                                            status: "accepted",
+                                            managerApproved: true
+                                        }
+                                        : s
+                                )
                             }
-                        }
-                        : a
-                )
+                        };
+                    }
+
+                    return a;
+                })
             );
+
 
 
             // If the selectedAssignment matches, update it too
@@ -636,6 +671,71 @@ const RosterHistory = (props) => {
         selectedAssignment?.originalStaffObject?.managerApproved === true ||
         selectedAssignment?.originalStaffObject?.rejectedByRM === true;
     useEffect(() => {
+        if (requireManagerApproval) return;
+
+        // 👇 Ye effect messages state ko observe karega
+        if (!messages.length) return;
+
+        const lastMsg = messages[messages.length - 1];
+        const msgText = (lastMsg.text || "").toLowerCase();
+
+        const isShiftConfirmed =
+            msgText.includes("shift confirmed") ||
+            msgText.includes("has been confirmed") ||
+            msgText.includes("accept");
+
+        if (!isShiftConfirmed) return;
+
+        const recordId = selectedAssignment?.originalRecord?.id;
+        const acceptedStaffId = selectedAssignment?.originalStaffObject?.staffId;
+
+        if (!recordId || !acceptedStaffId) return;
+
+        // 🔥 UPDATE CALENDAR (GREEN / RED instantly)
+        setAssignmentsData(prev =>
+            prev.map(a => {
+                if (a.originalRecord?.id !== recordId) return a;
+
+                const isAccepted =
+                    a.originalStaffObject?.staffId === acceptedStaffId;
+
+                return {
+                    ...a,
+                    status: isAccepted ? "accepted" : "rejected",
+                    originalStaffObject: isAccepted
+                        ? {
+                            ...a.originalStaffObject,
+                            status: "accepted",
+                            managerApproved: true
+                        }
+                        : {
+                            ...a.originalStaffObject,
+                            status: "rejected",
+                            rejectedByRM: true
+                        },
+                    originalRecord: {
+                        ...a.originalRecord,
+                        staffMembers: (a.originalRecord.staffMembers || []).map(s =>
+                            s.staffId === acceptedStaffId
+                                ? {
+                                    ...s,
+                                    status: "accepted",
+                                    managerApproved: true
+                                }
+                                : {
+                                    ...s,
+                                    status: "rejected",
+                                    rejectedByRM: true
+                                }
+                        )
+                    }
+                };
+            })
+        );
+
+    }, [messages, requireManagerApproval]);
+
+    useEffect(() => {
         if (!selectedAssignment) return;
 
         const recordId = selectedAssignment.originalRecord?.id;
@@ -658,6 +758,88 @@ const RosterHistory = (props) => {
             const isShiftConfirmed =
                 msgText.includes("shift confirmed") ||
                 msgText.includes("has been confirmed");
+            if (isShiftConfirmed && !requireManagerApproval) {
+                const acceptedStaffId = message.staffId; // backend must send this
+                const recordId = selectedAssignment?.originalRecord?.id;
+
+                if (recordId && acceptedStaffId) {
+                    setAssignmentsData(prev =>
+                        prev.map(a => {
+                            if (a.originalRecord?.id !== recordId) return a;
+
+                            const isAcceptedStaff =
+                                a.originalStaffObject?.staffId === acceptedStaffId;
+
+                            return {
+                                ...a,
+
+                                // ✅ accepted = green, others = red
+                                status: isAcceptedStaff ? "accepted" : "rejected",
+
+                                originalStaffObject: isAcceptedStaff
+                                    ? {
+                                        ...a.originalStaffObject,
+                                        status: "accepted",
+                                        managerApproved: true
+                                    }
+                                    : {
+                                        ...a.originalStaffObject,
+                                        status: "rejected",
+                                        rejectedByRM: true
+                                    },
+
+                                // 🔥 THIS MAKES isAnotherStaffAcceptedInRecord WORK
+                                originalRecord: {
+                                    ...a.originalRecord,
+                                    staffMembers: (a.originalRecord.staffMembers || []).map(s =>
+                                        s.staffId === acceptedStaffId
+                                            ? {
+                                                ...s,
+                                                status: "accepted",
+                                                managerApproved: true
+                                            }
+                                            : {
+                                                ...s,
+                                                status: "rejected",
+                                                rejectedByRM: true
+                                            }
+                                    )
+                                }
+                            };
+                        })
+                    );
+
+
+                    // If panel is open for this staff, sync it too
+                    setSelectedAssignment(prev => {
+                        if (!prev) return prev;
+
+                        if (prev.originalStaffObject?.staffId === acceptedStaffId) {
+                            return {
+                                ...prev,
+                                status: "accepted",
+                                originalStaffObject: {
+                                    ...prev.originalStaffObject,
+                                    status: "accepted",
+                                    managerApproved: true
+                                }
+                            };
+                        }
+
+                        return {
+                            ...prev,
+                            status: "rejected",
+                            originalStaffObject: {
+                                ...prev.originalStaffObject,
+                                status: "rejected",
+                                rejectedByRM: true
+                            }
+                        };
+                    });
+
+
+                }
+            }
 
             const isBroadcast =
                 message.fromRole === "RM" &&
@@ -856,9 +1038,27 @@ const RosterHistory = (props) => {
                                                     return (
                                                         <div
                                                             key={i}
-                                                            className={`roster-status-card status-${a.status}`}
-                                                            onClick={() => onOpenAssignment(a)}
+                                                            className={`roster-status-card status-${isAnotherStaffAcceptedInRecord(
+                                                                a.originalRecord,
+                                                                a.originalStaffObject?.staffId
+                                                            ) && a.status !== "accepted"
+                                                                ? "rejected"
+                                                                : a.status
+                                                                }`}
+                                                            onClick={() =>
+                                                                onOpenAssignment({
+                                                                    ...a,
+                                                                    status:
+                                                                        isAnotherStaffAcceptedInRecord(
+                                                                            a.originalRecord,
+                                                                            a.originalStaffObject?.staffId
+                                                                        ) && a.status !== "accepted"
+                                                                            ? "rejected"
+                                                                            : a.status
+                                                                })
+                                                            }
                                                         >
+
                                                             {unread > 0 && (
                                                                 <div className="staff-unread-badge">
                                                                     {unread}
@@ -870,7 +1070,20 @@ const RosterHistory = (props) => {
                                                                 <AiFillClockCircle color="white" />
                                                                 <div style={{ fontSize: '14px', textAlign: 'left' }}>{a.time}</div>
                                                             </div>
-                                                            <div style={{ fontSize: '12px', marginTop: '10px', borderRadius: '70px', padding: '4px 10px', }} className={`text-${a.status}`}>{a.status}</div>
+                                                            <div style={{ fontSize: '12px', marginTop: '10px', borderRadius: '70px', padding: '4px 10px', }} className={`text-${isAnotherStaffAcceptedInRecord(
+                                                                a.originalRecord,
+                                                                a.originalStaffObject?.staffId
+                                                            ) && a.status !== "accepted"
+                                                                ? "rejected"
+                                                                : a.status
+                                                                }`}> {(
+                                                                    isAnotherStaffAcceptedInRecord(
+                                                                        a.originalRecord,
+                                                                        a.originalStaffObject?.staffId
+                                                                    ) && a.status !== "accepted"
+                                                                        ? "rejected"
+                                                                        : a.status
+                                                                )}</div>
                                                         </div>
                                                     )
                                                 })
@@ -886,7 +1099,13 @@ const RosterHistory = (props) => {
                                 <div className="side-panel" onClick={(e) => e.stopPropagation()}>
 
                                     {/* ===== Header ===== */}
-                                    <div className={`side-header status-${selectedAssignment.status}`}>
+                                    <div className={`side-header status-${isAnotherStaffAcceptedInRecord(
+                                        selectedAssignment.originalRecord,
+                                        selectedAssignment.originalStaffObject?.staffId
+                                    ) && selectedAssignment.status !== "accepted"
+                                        ? "rejected"
+                                        : selectedAssignment.status
+                                        }`}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                                             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px' }}>
                                                 <LuBriefcaseBusiness size={22} color="white" />
@@ -897,7 +1116,13 @@ const RosterHistory = (props) => {
                                         <div className="panel-top-block">
                                             <h3 className="panel-staff-name">{selectedAssignment.carer}</h3>
 
-                                            <div className={`status-chip chip-${selectedAssignment.status}`}>
+                                            <div className={`status-chip chip-${isAnotherStaffAcceptedInRecord(
+                                                selectedAssignment.originalRecord,
+                                                selectedAssignment.originalStaffObject?.staffId
+                                            ) && selectedAssignment.status !== "accepted"
+                                                ? "rejected"
+                                                : selectedAssignment.status
+                                                }`}>
                                                 {selectedAssignment.status.charAt(0).toUpperCase() + selectedAssignment.status.slice(1)}
                                             </div>
                                             <div style={{ textAlign: 'left', fontSize: '12px', fontFamily: 'Inter', fontWeight: '400', color: 'white', marginTop: '6px', marginBottom: '8px' }}>
@@ -1093,17 +1318,34 @@ const RosterHistory = (props) => {
 
 
                                     {/* input */}
-                                    {selectedAssignment.status !== "rejected" &&
-                                        <div className="msg-input-container">
-                                            <input placeholder="Message..." className="msg-input" value={inputValue} onChange={(e) => setInputValue(e.target.value)} />
-                                            <button className="send-btn" onClick={sendRMMessage}>➤</button>
-                                        </div>
-                                    }
+                                    {!(
+                                        isAnotherStaffAcceptedInRecord(
+                                            selectedAssignment.originalRecord,
+                                            selectedAssignment.originalStaffObject?.staffId
+                                        ) && selectedAssignment.status !== "accepted"
+                                    ) && (
+                                            <div className="msg-input-container">
+                                                <input
+                                                    placeholder="Message..."
+                                                    className="msg-input"
+                                                    value={inputValue}
+                                                    onChange={(e) => setInputValue(e.target.value)}
+                                                />
+                                                <button className="send-btn" onClick={sendRMMessage}>
+                                                    ➤
+                                                </button>
+                                            </div>
+                                        )}
 
                                     {/* If rejected show footer message */}
-                                    {selectedAssignment.status === "rejected" && (
-                                        <div className="closed-footer">Conversation marked closed</div>
-                                    )}
+                                    {(
+                                        isAnotherStaffAcceptedInRecord(
+                                            selectedAssignment.originalRecord,
+                                            selectedAssignment.originalStaffObject?.staffId
+                                        ) && selectedAssignment.status !== "accepted"
+                                    ) && (
+                                            <div className="closed-footer">Conversation marked closed</div>
+                                        )}
                                 </div>
                             </div>
                         )}
