@@ -110,6 +110,44 @@ const VoiceModule = (props) => {
     const [downloadingFileKey, setDownloadingFileKey] = useState(null);
     const [uploadedTranscriptFiles, setUploadedTranscriptFiles] = useState([]);
     const [currentTranscriptIndex, setCurrentTranscriptIndex] = useState(0);
+    const sliderRef = useRef(null);
+    const dropdownRef = useRef(null);
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (
+                dropdownRef.current &&
+                !dropdownRef.current.contains(e.target)
+            ) {
+                setOpenMenuId(null);
+            }
+        };
+
+        document.addEventListener("mousedown", handleClickOutside);
+
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, []);
+
+    useEffect(() => {
+        const slider = sliderRef.current;
+        if (!slider) return;
+
+        const handleScroll = () => {
+            const card = slider.querySelector(".vm-template-card");
+            if (!card) return;
+
+            const cardWidth = card.offsetWidth + 12; // same gap
+            const index = Math.round(slider.scrollLeft / cardWidth);
+
+            setTemplateIndex(index);
+        };
+
+        slider.addEventListener("scroll", handleScroll);
+
+        return () => slider.removeEventListener("scroll", handleScroll);
+    }, []);
+
     useEffect(() => {
         if (role === "Admin") {
             setShowUploadSection(true);
@@ -441,23 +479,59 @@ const VoiceModule = (props) => {
 
         // 🔐 RAW SOURCE (FROM DB)
         setRawPrompt(template.prompt || "");
-        setRawMapper(template.mappings || null);   // ✅ FIX
+        setRawMapper(template.mappings || null);
 
         // 🎨 UI
         const cleanedText = cleanText(template.prompt || "");
         setAnalysisText(template.prompt);
 
-        const parsedMappings =
-            typeof template.mappings === "string"
+        let parsedMappings;
+        try {
+            parsedMappings = typeof template.mappings === "string"
                 ? JSON.parse(template.mappings)
                 : template.mappings;
+        } catch (err) {
+            console.error("[UI] Failed to parse mappings:", err);
+            parsedMappings = null;
+        }
 
-        setRawMapper(parsedMappings); // source of truth
+        setRawMapper(parsedMappings);
 
-        const rowsArray = normalizeFieldMappings(
-            extractMapperFields(parsedMappings)
-        );
+        console.log("[DEBUG] Parsed mappings in edit:", parsedMappings);
 
+        let rowsArray = [];
+
+        if (parsedMappings?.mapper?.field_mappings) {
+            // ✅ THIS IS YOUR REAL STRUCTURE
+            rowsArray = Object.entries(parsedMappings.mapper.field_mappings).map(
+                ([key, value]) => ({
+                    template_field: key,
+                    source: Array.isArray(value?.source)
+                        ? value.source.join(", ")
+                        : value?.source || "",
+                    type: value?.type || "text",
+                    required: !!value?.required,
+                    validation: value?.validation || "",
+                    transform: value?.transform || ""
+                })
+            );
+        } else if (parsedMappings?.mapper?.mapper?.field_mappings) {
+            // (future-proof, just in case)
+            rowsArray = Object.entries(
+                parsedMappings.mapper.mapper.field_mappings
+            ).map(([key, value]) => ({
+                template_field: key,
+                source: Array.isArray(value?.source)
+                    ? value.source.join(", ")
+                    : value?.source || "",
+                type: value?.type || "text",
+                required: !!value?.required,
+                validation: value?.validation || "",
+                transform: value?.transform || ""
+            }));
+        }
+
+        console.log("[DEBUG] Final rows in edit:", rowsArray);
         setMapperRows(rowsArray);
 
         setEditingTemplateId(template.id);
@@ -506,7 +580,25 @@ const VoiceModule = (props) => {
     const extractMapperFields = (input) => {
         if (!input) return [];
 
-        // unwrap AI/python wrapper
+        console.log("[DEBUG] extractMapperFields input:", input);
+
+        // Handle the new structure: input.mapper.mapper
+        if (input.mapper && input.mapper.mapper && typeof input.mapper.mapper === "object") {
+            const mapperObj = input.mapper.mapper;
+
+            // Convert the object to array format
+            return Object.entries(mapperObj).map(([key, value]) => ({
+                template_field: key,
+                source: Array.isArray(value.source) ? value.source.join(", ") : value.source || "",
+                type: value.type || "text",
+                required: !!value.required,
+                // Include validation and transform if they exist
+                validation: value.validation || "",
+                transform: value.transform || ""
+            }));
+        }
+
+        // unwrap AI/python wrapper (old structure)
         if (input.mapper) {
             return extractMapperFields(input.mapper);
         }
@@ -530,30 +622,37 @@ const VoiceModule = (props) => {
     const normalizeFieldMappings = (fieldMappings) => {
         if (!fieldMappings) return [];
 
-        // ✅ ARRAY (AI / DB)
+        console.log("[DEBUG] normalizeFieldMappings input:", fieldMappings);
+
+        // ✅ ARRAY (from extractMapperFields)
         if (Array.isArray(fieldMappings)) {
             return fieldMappings.map((item) => ({
                 template_field: item.template_field || item.key || "",
                 source:
                     item.source ||
-                    item.transcript_source ||   // 🔥 FIX
+                    item.transcript_source ||
                     "",
                 type: item.type || "text",
-                required: !!item.required
+                required: !!item.required,
+                // Optional: include validation and transform
+                validation: item.validation || "",
+                transform: item.transform || ""
             }));
         }
 
         // ✅ OBJECT MAP (legacy / manual)
-        if (typeof fieldMappings === "object") {
+        if (typeof fieldMappings === "object" && !Array.isArray(fieldMappings)) {
             return Object.entries(fieldMappings).map(
                 ([key, value]) => ({
                     template_field: key,
                     source:
                         value?.source ||
-                        value?.transcript_source || // 🔥 FIX
+                        value?.transcript_source ||
                         "",
                     type: value?.type || "text",
-                    required: !!value?.required
+                    required: !!value?.required,
+                    validation: value?.validation || "",
+                    transform: value?.transform || ""
                 })
             );
         }
@@ -674,6 +773,7 @@ const VoiceModule = (props) => {
 
 
     /* ================= POLL LATEST ================= */
+    /* ================= POLL LATEST ================= */
     const pollLatest = (id) => {
         console.log("[UI] Polling latest event:", id);
 
@@ -722,18 +822,57 @@ const VoiceModule = (props) => {
                     clearInterval(interval);
                 }
 
+                // In pollLatest function (around line 393-395):
                 if (data.type === "final_result") {
                     pushEvent("Final document generated", 4);
 
                     setRawPrompt(data.prompt || "");
-                    setRawMapper(data?.mapper || data?.mapper?.mapper || null);
+                    setRawMapper(data?.mapper || null);
 
                     const cleanedText = cleanText(data.prompt || "");
                     setAnalysisText(data.prompt);
 
-                    const rowsArray = normalizeFieldMappings(
-                        extractMapperFields(data?.mapper)
-                    );
+                    // 🔥 UPDATED EXTRACTION LOGIC
+                    let rowsArray = [];
+
+                    if (data?.mapper?.mapper && typeof data.mapper.mapper === "object") {
+                        const mapperObj = data.mapper.mapper;
+
+                        // Check if field_mappings exists as a property
+                        if (mapperObj.field_mappings && typeof mapperObj.field_mappings === "object") {
+                            // Extract from field_mappings property
+                            rowsArray = Object.entries(mapperObj.field_mappings).map(([key, value]) => ({
+                                template_field: key,
+                                source: Array.isArray(value.source) ? value.source.join(", ") : value.source || "",
+                                type: value.type || "text",
+                                required: !!value.required,
+                                validation: value.validation || "",
+                                transform: value.transform || ""
+                            }));
+                        } else {
+                            // Extract directly from mapper object, but exclude non-field properties
+                            rowsArray = Object.entries(mapperObj)
+                                .filter(([key]) => !["template", "field_mappings", "fields", "fieldMappings"].includes(key))
+                                .map(([key, value]) => {
+                                    // Skip if value is not an object with field properties
+                                    if (!value || typeof value !== "object" || Array.isArray(value)) {
+                                        return null;
+                                    }
+
+                                    return {
+                                        template_field: key,
+                                        source: Array.isArray(value?.source) ? value.source.join(", ") : value?.source || "",
+                                        type: value?.type || "text",
+                                        required: !!value?.required,
+                                        validation: value?.validation || "",
+                                        transform: value?.transform || ""
+                                    };
+                                })
+                                .filter(Boolean); // Remove null entries
+                        }
+                    }
+
+                    console.log("[DEBUG] Extracted rows in pollLatest:", rowsArray);
 
                     setMapperRows(rowsArray);
                     setProcessingProgress(100);
@@ -970,21 +1109,74 @@ const VoiceModule = (props) => {
         console.log("[STAFF] Selected template:", tpl.id);
 
         // 🔐 RAW — Python ke liye
-        setSelectedTemplate({
-            ...tpl,
-            prompt: tpl.prompt,
-            mapper: tpl.mappings
+        setSelectedTemplate(prev => {
+            // first selection
+            if (!prev || !prev.isMulti) {
+                return {
+                    isMulti: true,
+                    templates: [tpl]
+                };
+            }
+
+            const exists = prev.templates.find(t => t.id === tpl.id);
+
+            return {
+                isMulti: true,
+                templates: exists
+                    ? prev.templates.filter(t => t.id !== tpl.id)
+                    : [...prev.templates, tpl]
+            };
         });
+
 
         // 🎨 UI
         const cleanedText = cleanText(tpl.prompt || "");
         setAnalysisText(tpl.prompt);
 
-        const rowsArray = normalizeFieldMappings(
-            extractMapperFields(tpl.mapper)
-        );
+        // Parse mappings
+        let parsedMappings;
+        try {
+            parsedMappings = typeof tpl.mappings === "string"
+                ? JSON.parse(tpl.mappings)
+                : tpl.mappings;
+        } catch (err) {
+            console.error("[STAFF] Failed to parse mappings:", err);
+            parsedMappings = null;
+        }
+
+        let rowsArray = [];
+
+        if (parsedMappings?.mapper?.field_mappings) {
+            rowsArray = Object.entries(parsedMappings.mapper.field_mappings).map(
+                ([key, value]) => ({
+                    template_field: key,
+                    source: Array.isArray(value?.source)
+                        ? value.source.join(", ")
+                        : value?.source || "",
+                    type: value?.type || "text",
+                    required: !!value?.required,
+                    validation: value?.validation || "",
+                    transform: value?.transform || ""
+                })
+            );
+        } else if (parsedMappings?.mapper?.mapper?.field_mappings) {
+            rowsArray = Object.entries(
+                parsedMappings.mapper.mapper.field_mappings
+            ).map(([key, value]) => ({
+                template_field: key,
+                source: Array.isArray(value?.source)
+                    ? value.source.join(", ")
+                    : value?.source || "",
+                type: value?.type || "text",
+                required: !!value?.required,
+                validation: value?.validation || "",
+                transform: value?.transform || ""
+            }));
+        }
 
         setMapperRows(rowsArray);
+
+
     };
 
     console.log("selectedTemplate?.mappings", selectedTemplate?.mappings)
@@ -1017,8 +1209,11 @@ const VoiceModule = (props) => {
     };
 
     const submitToDocumentFiller = async () => {
-        if (!selectedTemplate) {
-            alert("Please select a template");
+        if (
+            !selectedTemplate ||
+            (selectedTemplate.isMulti && selectedTemplate.templates.length === 0)
+        ) {
+            alert("please select atleast one template")
             return;
         }
 
@@ -1108,29 +1303,48 @@ const VoiceModule = (props) => {
         }
     };
     const sections = parseVoiceExplanation(analysisText);
-    const totalPages = Math.ceil(templates.length / CARDS_PER_VIEW);
-    const currentPage = Math.floor(templateIndex / CARDS_PER_VIEW);
+    const currentPage = templateIndex;
+    const totalPages = templates.length > 1 ? templates.length - 1 : templates.length;
+
     const isSingleView =
         templates.length === 1
-    const processSingleTranscript = async (file, index, total) => {
-        setCurrentTranscriptIndex(index);
-        setCurrentTask(`Processing transcript ${index + 1} of ${total}`);
-        setIsGenerating(true);
+    const scrollSlider = (dir) => {
+        if (!sliderRef.current) return;
 
+        const card = sliderRef.current.querySelector(".vm-template-card");
+        if (!card) return;
+
+        const cardWidth = card.offsetWidth;
+        const gap = 12; // same as padding-right / gap
+        const scrollAmount = (cardWidth + gap) * 0.6;
+
+        sliderRef.current.scrollBy({
+            left: dir === "left" ? -scrollAmount : scrollAmount,
+            behavior: "smooth",
+        });
+        setTemplateIndex(prev =>
+            dir === "left"
+                ? Math.max(prev - CARDS_PER_VIEW, 0)
+                : Math.min(prev + CARDS_PER_VIEW, (totalPages - 1) * CARDS_PER_VIEW)
+        );
+    };
+
+
+    const processSingleTranscriptWithTemplate = async (tpl, file) => {
         const formData = new FormData();
 
-        formData.append("templateBlobName", selectedTemplate.templateBlobName);
-        formData.append("templateMimeType", selectedTemplate.templateMimeType);
-        formData.append("templateOriginalName", selectedTemplate.templateOriginalName);
+        formData.append("templateBlobName", tpl.templateBlobName);
+        formData.append("templateMimeType", tpl.templateMimeType);
+        formData.append("templateOriginalName", tpl.templateOriginalName);
 
         formData.append(
             "sampleBlobs",
-            JSON.stringify(selectedTemplate.sampleBlobs || [])
+            JSON.stringify(tpl.sampleBlobs || [])
         );
 
-        formData.append("prompt", selectedTemplate.prompt);
+        formData.append("prompt", tpl.prompt);
 
-        const parsedJson = JSON.parse(selectedTemplate.mappings);
+        const parsedJson = JSON.parse(tpl.mappings);
         const normalizedMapper = {
             ...parsedJson,
             mapper: parsedJson?.mapper?.mapper ?? parsedJson?.mapper
@@ -1149,24 +1363,37 @@ const VoiceModule = (props) => {
         if (data.success && data.filled_document) {
             downloadBase64File(
                 data.filled_document,
-                `Generated_${index + 1}_${file.name}.docx`
+                `${tpl.templateName}_${file.name}.docx`
             );
         }
     };
-    const submitMultipleTranscripts = async () => {
-        if (!selectedTemplate || uploadedTranscriptFiles.length === 0) return;
 
-        for (let i = 0; i < uploadedTranscriptFiles.length; i++) {
-            await processSingleTranscript(
-                uploadedTranscriptFiles[i],
-                i,
-                uploadedTranscriptFiles.length
-            );
+
+    const submitMultipleTranscripts = async () => {
+        if (
+            !selectedTemplate ||
+            !selectedTemplate.isMulti ||
+            selectedTemplate.templates.length === 0 ||
+            uploadedTranscriptFiles.length === 0
+        ) return;
+
+        setIsGenerating(true);
+
+        const tasks = [];
+        const templates = selectedTemplate.templates;
+
+        for (const tpl of templates) {
+            for (const file of uploadedTranscriptFiles) {
+                tasks.push(processSingleTranscriptWithTemplate(tpl, file));
+            }
         }
+
+        await Promise.all(tasks);
 
         setIsGenerating(false);
         setCurrentTask("");
     };
+
 
     const handleDownloadBlob = async ({
         fileKey,
@@ -1466,25 +1693,24 @@ const VoiceModule = (props) => {
                                     Available Template
                                 </div>
 
-                                {templates.length > CARDS_PER_VIEW && (
+                                {templates.length > 1 && (
                                     <div className="vm-template-header-arrows">
                                         <button
                                             className="vm-slider-arrow"
-                                            onClick={handlePrev}
-                                            disabled={!canGoPrev}
+                                            onClick={() => scrollSlider("left")}
                                         >
                                             <img src={careVoiceLeft} alt="prev" />
                                         </button>
 
                                         <button
                                             className="vm-slider-arrow"
-                                            onClick={handleNext}
-                                            disabled={!canGoNext}
+                                            onClick={() => scrollSlider("right")}
                                         >
                                             <img src={careVoiceRight} alt="next" />
                                         </button>
                                     </div>
                                 )}
+
                             </div>
 
 
@@ -1498,32 +1724,67 @@ const VoiceModule = (props) => {
                             <div className="vm-template-slider-wrapper">
 
                                 {/* SLIDER WINDOW */}
-                                <div className="vm-template-slider">
-                                    <div
-                                        className={`vm-template-track ${isSingleView ? "single-template" : ""}`}
-                                        style={{
-                                            transform: isSingleView
-                                                ? "none"
-                                                : `translateX(-${templateIndex * (100 / CARDS_PER_VIEW)}%)`
-                                        }}
-                                    >
+                                <div
+                                    className={`vm-template-slider ${templates.length === 1 ? "single-template" : ""
+                                        }`}
+                                    ref={sliderRef}
+                                >
+
+                                    <div className="vm-template-track">
                                         {templates.map((tpl, index) => (
                                             <div key={tpl.id} className="vm-template-slide">
                                                 <div className="vm-template-card" onClick={() => {
                                                     if (openMenuId) return;
                                                     setActiveTemplate(tpl);
                                                     setMapperMode("view");
-                                                    // 🔥 extract mappings from template
-                                                    const parsedMappings =
-                                                        typeof tpl.mappings === "string"
+
+                                                    // Parse mappings
+                                                    let parsedMappings;
+                                                    try {
+                                                        parsedMappings = typeof tpl.mappings === "string"
                                                             ? JSON.parse(tpl.mappings)
                                                             : tpl.mappings;
+                                                    } catch (err) {
+                                                        console.error("[UI] Failed to parse mappings:", err);
+                                                        parsedMappings = null;
+                                                    }
 
-                                                    const rowsArray = normalizeFieldMappings(
-                                                        extractMapperFields(parsedMappings)
-                                                    );
+                                                    console.log("[DEBUG] Parsed mappings for template view:", parsedMappings);
 
+                                                    // 🔥 DIRECT EXTRACTION
+                                                    let rowsArray = [];
+
+                                                    if (parsedMappings?.mapper?.field_mappings) {
+                                                        rowsArray = Object.entries(parsedMappings.mapper.field_mappings).map(
+                                                            ([key, value]) => ({
+                                                                template_field: key,
+                                                                source: Array.isArray(value?.source)
+                                                                    ? value.source.join(", ")
+                                                                    : value?.source || "",
+                                                                type: value?.type || "text",
+                                                                required: !!value?.required,
+                                                                validation: value?.validation || "",
+                                                                transform: value?.transform || ""
+                                                            })
+                                                        );
+                                                    } else if (parsedMappings?.mapper?.mapper?.field_mappings) {
+                                                        rowsArray = Object.entries(
+                                                            parsedMappings.mapper.mapper.field_mappings
+                                                        ).map(([key, value]) => ({
+                                                            template_field: key,
+                                                            source: Array.isArray(value?.source)
+                                                                ? value.source.join(", ")
+                                                                : value?.source || "",
+                                                            type: value?.type || "text",
+                                                            required: !!value?.required,
+                                                            validation: value?.validation || "",
+                                                            transform: value?.transform || ""
+                                                        }));
+                                                    }
+
+                                                    console.log("[DEBUG] Rows for template view (FIXED):", rowsArray);
                                                     setMapperRows(rowsArray);
+
                                                 }}>
                                                     <div className="vm-template-left">
                                                         <div className="vm-template-icon">
@@ -1606,7 +1867,7 @@ const VoiceModule = (props) => {
                                                                     </span>
 
                                                                     {openMenuId === tpl.id && (
-                                                                        <div className="vm-dropdown">
+                                                                        <div className="vm-dropdown" ref={dropdownRef}>
                                                                             <div
                                                                                 className="vm-dropdown-item"
                                                                                 onClick={() => handleEditTemplate(tpl)}
@@ -1636,10 +1897,10 @@ const VoiceModule = (props) => {
                                                     </div>
 
                                                     <div className="vm-template-right">
-                                                        <button className="vm-share-btn">
+                                                        {/* <button className="vm-share-btn">
                                                             <img src={careVoiceShare} alt="share" />
                                                             Share Template
-                                                        </button>
+                                                        </button> */}
 
                                                         {/* <span
                                                             className="vm-dots"
@@ -1706,7 +1967,7 @@ const VoiceModule = (props) => {
                         <>
                             <div className="voice-upload-row">
                                 {/* ================= TEMPLATE COLUMN ================= */}
-                                <div className="voice-upload-col" style={{width:"35%"}}>
+                                <div className="voice-upload-col" style={{ width: "35%" }}>
                                     <TlcUploadBox
                                         id="admin-template-upload"
                                         title="Upload Templates*"
@@ -1722,7 +1983,7 @@ const VoiceModule = (props) => {
 
 
                                 {/* ================= SAMPLES COLUMN ================= */}
-                                <div className="voice-upload-col" style={{width:"35%"}}>
+                                <div className="voice-upload-col" style={{ width: "35%" }}>
                                     <TlcUploadBox
                                         id="admin-sample-upload"
                                         title="Upload Samples"
@@ -1739,7 +2000,11 @@ const VoiceModule = (props) => {
                             {/* Save & Analyze Button */}
                             <div className="voice-action">
                                 <button
-                                    disabled={!templateFile || stage === "processing"}
+                                    disabled={
+                                        stage === "processing" ||
+                                        !templateFile ||
+                                        sampleFiles.length === 0
+                                    }
                                     onClick={startAnalysis}
                                 >
                                     Save & Analyze
@@ -1949,7 +2214,9 @@ const VoiceModule = (props) => {
                                             fontWeight: 600,
                                         }}
                                     >
-                                        1
+                                        {selectedTemplate?.isMulti
+                                            ? selectedTemplate.templates.length
+                                            : 1}
                                     </span>
                                 </div>
                             </div>
@@ -2100,7 +2367,14 @@ const VoiceModule = (props) => {
                                 }
                                 disabled={
                                     isGenerating ||
+
+                                    // ❌ no template selected
                                     !selectedTemplate ||
+
+                                    // ❌ multi mode but nothing selected
+                                    (selectedTemplate?.isMulti && selectedTemplate.templates.length === 0) ||
+
+                                    // ❌ no transcript (neither file nor audio)
                                     (
                                         uploadedTranscriptFiles.length === 0 &&
                                         !transcriptData
@@ -2109,6 +2383,7 @@ const VoiceModule = (props) => {
                             >
                                 {isGenerating ? "Generating..." : "✓ Generate Document"}
                             </button>
+
                         </div>
                     </div>
 
@@ -2141,7 +2416,11 @@ const VoiceModule = (props) => {
                                 onClick={() => setStaffStep("working")}
                             >
                                 ✓ Choose Template
-                                {selectedTemplate && <span className="template-count">1</span>}
+                                {selectedTemplate?.isMulti && (
+                                    <span className="template-count">
+                                        {selectedTemplate.templates.length}
+                                    </span>
+                                )}
                             </button>
                         }
 
@@ -2164,7 +2443,10 @@ const VoiceModule = (props) => {
                                 /* ================= TEMPLATE LIST ================= */
                                 templates.map((tpl) => {
                                     console.log("tpl", tpl)
-                                    const isSelected = selectedTemplate?.id === tpl.id;
+                                    const isSelected =
+                                        selectedTemplate?.isMulti &&
+                                        selectedTemplate.templates.some(t => t.id === tpl.id);
+
 
                                     return (
                                         <div

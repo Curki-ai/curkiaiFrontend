@@ -1326,40 +1326,56 @@
 /* ===============================
    TEMPLATE SLIDER (ADMIN)
 ================================ */
-.vm-template-track.single-template {
-  transform: none !important;
+/* ===== SINGLE TEMPLATE FULL WIDTH ===== */
+.vm-template-slider.single-template {
+  overflow-x: hidden;          /* no scroll */
 }
 
-.vm-template-track.single-template .vm-template-slide {
-  flex: 0 0 100%;
-  padding-right: 0;
+/* Replace the existing single-template CSS with this: */
+.vm-template-slider.single-template {
+  overflow-x: hidden;          /* no scroll */
+  width: 100% !important;
 }
 
-.vm-template-track.single-template .vm-template-card {
-  width: 99%;
+.vm-template-slider.single-template .vm-template-track {
+  width: 100%;
+  justify-content: flex-start;
+}
+
+.vm-template-slider.single-template .vm-template-slide {
+  width: 100%;
+}
+
+.vm-template-slider.single-template .vm-template-card {
+  width: 100%;
+  margin: 0 auto;
 }
 
 .vm-template-slider-wrapper {
   display: flex;
   align-items: center;
   gap: 12px;
-  width: 103%;
+  width: 100%;
   margin-left: 14px;
 }
 
 .vm-template-slider {
-  overflow: hidden;
-  width: calc(100% - 40px);
-  /* prevents 3rd card */
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+}
+
+.vm-template-slider::-webkit-scrollbar {
+  display: none;
 }
 
 .vm-template-track {
   display: flex;
-  transition: transform 0.35s ease;
+  /* gap: 12px; */
 }
 
 .vm-template-slide {
-  flex: 0 0 49%;
+  /* flex: 0 0 49%; */
   /* EXACTLY 2 cards */
   padding-right: 12px;
   box-sizing: border-box;
@@ -1567,7 +1583,10 @@
   font-size: 14px;
   color: #6B7280;
 }
-
+.staff-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 /* ================= RESPONSIVE ADJUSTMENTS ================= */
 @media (max-width: 768px) {
   .voice-top-row {
