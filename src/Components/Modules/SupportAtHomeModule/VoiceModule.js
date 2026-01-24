@@ -40,8 +40,8 @@ import FieldMapperPro from "./CareVoiceJsonGrid";
 const VoiceModule = (props) => {
     const userEmail = props?.user?.email;
     const domain = userEmail?.split("@")[1] || "";
-    console.log("userEmail", userEmail)
-    console.log("domain", domain)
+    // console.log("userEmail", userEmail)
+    // console.log("domain", domain)
     const organizationId = domain;
     const API_BASE =
         "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net";
@@ -359,7 +359,7 @@ const VoiceModule = (props) => {
                 clearInterval(interval);
                 setTranscriptData(data);
                 setIsGenerating(true);
-                console.log("FINAL TRANSCRIPT:", data);
+                // console.log("FINAL TRANSCRIPT:", data);
                 if (selectedTemplate) {
                     submitToDocumentFiller();   // 🚀 DIRECT CALL
                 }
@@ -437,7 +437,7 @@ const VoiceModule = (props) => {
                 `${API_BASE}/api/voiceModuleTemplate?domain=${domain}`
             );
             const data = await res.json();
-            console.log("fetched templates", data?.data)
+            // console.log("fetched templates", data?.data)
             if (data.success) setTemplates(data?.data);
         } catch (err) {
             console.error("[UI] Fetch templates failed", err);
@@ -477,8 +477,8 @@ const VoiceModule = (props) => {
 
     const handleEditTemplate = (template) => {
         setMapperMode("edit");
-        console.log("template", template);
-        console.log("[UI][EDIT] Editing template", template.id);
+        // console.log("template", template);
+        // console.log("[UI][EDIT] Editing template", template.id);
 
         // 🔐 RAW SOURCE
         setRawPrompt(template.prompt || "");
@@ -537,7 +537,7 @@ const VoiceModule = (props) => {
     const extractMapperFields = (input) => {
         if (!input) return [];
 
-        console.log("[DEBUG] extractMapperFields input:", input);
+        // console.log("[DEBUG] extractMapperFields input:", input);
 
         // Handle the new structure: input.mapper.mapper
         if (input.mapper && input.mapper.mapper && typeof input.mapper.mapper === "object") {
@@ -579,7 +579,7 @@ const VoiceModule = (props) => {
     const normalizeFieldMappings = (fieldMappings) => {
         if (!fieldMappings) return [];
 
-        console.log("[DEBUG] normalizeFieldMappings input:", fieldMappings);
+        // console.log("[DEBUG] normalizeFieldMappings input:", fieldMappings);
 
         // ✅ ARRAY (from extractMapperFields)
         if (Array.isArray(fieldMappings)) {
@@ -676,7 +676,7 @@ const VoiceModule = (props) => {
     const startAnalysis = async () => {
         if (!templateFile) return;
 
-        console.log("[UI] Starting onboarding analysis");
+        // console.log("[UI] Starting onboarding analysis");
 
         // RESET PREVIOUS STATE (VERY IMPORTANT)
         setEventLogs([]);          // purane steps clear
@@ -714,7 +714,7 @@ const VoiceModule = (props) => {
 
             // Second step
             pushEvent("Session created", 2);
-            console.log("[UI] Session created:", data);
+            // console.log("[UI] Session created:", data);
 
             setSessionId(data.sessionId);
             pollLatest(data.sessionId);
@@ -731,7 +731,7 @@ const VoiceModule = (props) => {
 
 
     const pollLatest = (id) => {
-        console.log("[UI] Polling latest event:", id);
+        // console.log("[UI] Polling latest event:", id);
 
         const interval = setInterval(async () => {
             try {
@@ -745,7 +745,7 @@ const VoiceModule = (props) => {
                 });
 
                 const data = await res.json();
-                console.log("[UI] Latest event:", data);
+                // console.log("[UI] Latest event:", data);
 
                 // ✅ PROCESSING STATES (INCLUDING FEEDBACK)
                 if (
@@ -805,7 +805,7 @@ const VoiceModule = (props) => {
 
     /* ================= ACCEPT ================= */
     const acceptAnalysis = async () => {
-        console.log("[UI] Accepting analysis");
+        // console.log("[UI] Accepting analysis");
 
         stopProgress();
         setStage("processing");
@@ -840,7 +840,7 @@ const VoiceModule = (props) => {
     const sendFeedback = async () => {
         if (!feedbackText.trim()) return;
 
-        console.log("[UI] Sending feedback");
+        // console.log("[UI] Sending feedback");
 
         stopProgress();
 
@@ -1033,7 +1033,7 @@ const VoiceModule = (props) => {
         }
     }, [role]);
     const handleStaffTemplateSelect = (tpl) => {
-        console.log("[STAFF] Selected template:", tpl.id);
+        // console.log("[STAFF] Selected template:", tpl.id);
 
         // 🔐 RAW — selection logic unchanged
         setSelectedTemplate((prev) => {
@@ -1114,12 +1114,12 @@ const VoiceModule = (props) => {
                 "sampleBlobs",
                 JSON.stringify(selectedTemplate.sampleBlobs || [])
             );
-            console.log("[STAFF][DOC] Using RAW prompt:", selectedTemplate.prompt);
-            console.log("[STAFF][DOC] Using RAW mapper:", selectedTemplate.mappings);
+            // console.log("[STAFF][DOC] Using RAW prompt:", selectedTemplate.prompt);
+            // console.log("[STAFF][DOC] Using RAW mapper:", selectedTemplate.mappings);
 
             formData.append("prompt", selectedTemplate.prompt);
             const parsedJson = JSON.parse(selectedTemplate.mappings);
-            console.log("parsedJson (raw)", parsedJson);
+            // console.log("parsedJson (raw)", parsedJson);
 
             // 🔥 normalize mapper here
             const normalizedMapper = {
@@ -1127,7 +1127,7 @@ const VoiceModule = (props) => {
                 mapper: parsedJson?.mapper?.mapper ?? parsedJson?.mapper
             };
 
-            console.log("parsedJson (normalized)", normalizedMapper);
+            // console.log("parsedJson (normalized)", normalizedMapper);
 
             formData.append(
                 "mapper",
@@ -1152,7 +1152,7 @@ const VoiceModule = (props) => {
             });
 
             const data = await res.json();
-            console.log("data in submitToDocumentFiller", data)
+            // console.log("data in submitToDocumentFiller", data)
             if (data.success && data.filled_document) {
                 downloadBase64File(
                     data.filled_document,
@@ -1530,19 +1530,7 @@ const VoiceModule = (props) => {
 
                             {templateAccordions.aiResponse && (
                                 <div className="analysis-box">
-                                    {parseVoiceExplanation(activeTemplate.prompt).map(section => (
-                                        <div key={section.id} className="voice-explanation-section">
-                                            <h4>{cleanPromptText(section.title)}</h4>
-                                            <div style={{
-                                                whiteSpace: 'pre-wrap',
-                                                fontFamily: 'monospace',
-                                                fontSize: '13px',
-                                                lineHeight: '1.5'
-                                            }}>
-                                                {cleanPromptText(section.content)}
-                                            </div>
-                                        </div>
-                                    ))}
+                                   <CareVoiceExplainationMarkdown content={activeTemplate.prompt}/>
                                 </div>
                             )}
 
@@ -1954,7 +1942,7 @@ const VoiceModule = (props) => {
                                 mapperMode={mapperMode}
                                 onChangeConfig={(cfg) => {
                                     // ✅ OPTIONAL: agar tum chaho to cfg.mapper ko rows me sync kar sakte ho later
-                                    console.log("config updated", cfg);
+                                    console.log("config updated");
                                 }}
                             />
                         </div>

@@ -83,7 +83,7 @@ const getStartMapper = (mappings) => {
 export const mapperToRows = (mappings) => {
   const startMapper = getStartMapper(mappings);
 
-  console.log("[MAPPER] startMapper:", startMapper);
+//   console.log("[MAPPER] startMapper:", startMapper);
 
   if (!startMapper || typeof startMapper !== "object") return [];
 
@@ -113,7 +113,7 @@ export const mapperToRows = (mappings) => {
     };
   });
 
-  console.log("[MAPPER] grouped rows:", rows);
+//   console.log("[MAPPER] grouped rows:", rows);
 
   return rows;
 };
