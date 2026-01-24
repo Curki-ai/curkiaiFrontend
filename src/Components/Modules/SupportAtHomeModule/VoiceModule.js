@@ -1907,10 +1907,6 @@ const VoiceModule = (props) => {
                             <div className="analysis-box" style={{ padding: "26px" }}>
                                 {sections.map((section) => (
                                     <div key={section.id} className="voice-explanation-section">
-                                        <h4 className="voice-explanation-title">
-                                            {cleanPromptText(section.title)}
-                                        </h4>
-
                                         {/* ✅ Markdown parse properly (tables included) */}
                                         <CareVoiceExplainationMarkdown content={section.content} />
                                     </div>
