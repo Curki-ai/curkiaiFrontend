@@ -1172,7 +1172,7 @@ const VoiceModule = (props) => {
             setTemplateIndex(prev => prev + CARDS_PER_VIEW);
         }
     };
-    const sections = parseVoiceExplanation(analysisText);
+    // const sections = parseVoiceExplanation(analysisText);
     const currentPage = templateIndex;
     const totalPages = templates.length > 1 ? templates.length - 1 : templates.length;
 
@@ -1301,8 +1301,6 @@ const VoiceModule = (props) => {
         }
     };
     const transcriptInputRef = useRef(null);
-
-
     return (
         <div className="voice-container">
             {/* ================= TOP ROW ================= */}
@@ -1905,12 +1903,11 @@ const VoiceModule = (props) => {
                                 </div>
                             )}
                             <div className="analysis-box" style={{ padding: "2rem" }}>
-                                {sections.map((section) => (
-                                    <div key={section.id} className="voice-explanation-section">
-                                        {/* ✅ Markdown parse properly (tables included) */}
-                                        <CareVoiceExplainationMarkdown content={section.content} />
-                                    </div>
-                                ))}
+
+                                <div className="voice-explanation-section">
+                                    <CareVoiceExplainationMarkdown content={analysisText} />
+                                </div>
+
                             </div>
 
                             {/* ===== FEEDBACK BOX ===== */}
