@@ -18,6 +18,7 @@
   grid-template-columns:
     2fr        /* Template Field */
     3fr        /* Source */
+    2fr        /* Validation */
     120px      /* Type */
     90px       /* Required */
     40px;      /* Actions */

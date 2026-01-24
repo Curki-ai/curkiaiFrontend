@@ -2,7 +2,8 @@ import React, { useState } from "react";
 import "../../../Styles/VoiceModuleMapper.css";
 
 const MapperGrid = ({ rows, setRows, readOnly = false }) => {
-  console.log("readOnly",readOnly)
+  // console.log("readOnly", readOnly)
+  console.log("rows in mapper grid", rows)
   const [openMenuIndex, setOpenMenuIndex] = useState(null);
 
   const updateRow = (index, key, value) => {
@@ -18,7 +19,8 @@ const MapperGrid = ({ rows, setRows, readOnly = false }) => {
       template_field: "",
       source: "",
       type: "text",
-      required: false
+      required: false,
+      validation: ""
     };
     const updated = [...rows];
     updated.splice(index + 1, 0, newRow);
@@ -38,6 +40,7 @@ const MapperGrid = ({ rows, setRows, readOnly = false }) => {
       <div className="mapper-header mapper-grid-layout">
         <div className="cell">Template Field</div>
         <div className="cell">Source</div>
+        <div className="cell">Validation</div>
         <div className="cell center">Type</div>
         <div className="cell center">Required</div>
         <div className="cell center" />
@@ -67,7 +70,20 @@ const MapperGrid = ({ rows, setRows, readOnly = false }) => {
               placeholder="transcript.path"
             />
           </div>
+          <div className="cell">
+            <input
+              value={
+                typeof row.validation === "string"
+                  ? row.validation
+                  : row.validation
+                    ? JSON.stringify(row.validation)
+                    : ""
+              }
+              onChange={(e) => updateRow(index, "validation", e.target.value)}
+              placeholder='eg: {"regex":"^\\d+$"}'
+            />
 
+          </div>
           <div className="cell center">
             <select
               value={row.type}

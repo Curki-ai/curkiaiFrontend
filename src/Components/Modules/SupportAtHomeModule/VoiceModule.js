@@ -36,6 +36,7 @@ import { GoPencil } from "react-icons/go";
 import TlcUploadBox from "../FinancialModule/TlcUploadBox";
 import CareVoiceExplainationMarkdown from "./CareVoiceExplainationMarkdown";
 import { mapperToRows } from "./carevoiceMapperObject";
+import FieldMapperPro from "./CareVoiceJsonGrid";
 const VoiceModule = (props) => {
     const userEmail = props?.user?.email;
     const domain = userEmail?.split("@")[1] || "";
@@ -899,11 +900,23 @@ const VoiceModule = (props) => {
                 mapper: {
                     field_mappings: mapperRows.reduce((acc, row) => {
                         if (!row.template_field) return acc;
+                        let parsedValidation = {};
 
+                        try {
+                            if (row.validation) {
+                                parsedValidation =
+                                    typeof row.validation === "string"
+                                        ? JSON.parse(row.validation)
+                                        : row.validation;
+                            }
+                        } catch (e) {
+                            parsedValidation = {};
+                        }
                         acc[row.template_field] = {
                             source: row.source,
                             type: row.type,
-                            required: !!row.required
+                            required: !!row.required,
+                            validation: parsedValidation || {}
                         };
 
                         return acc;
@@ -1049,9 +1062,9 @@ const VoiceModule = (props) => {
     };
 
 
-    console.log("selectedTemplate?.mappings", selectedTemplate?.mappings)
+    // console.log("selectedTemplate?.mappings", selectedTemplate?.mappings)
     // console.log(analysisText)
-    console.log(mapperRows)
+    // console.log(mapperRows)
     const downloadBase64File = (base64, filename) => {
         const byteCharacters = atob(base64);
         const byteNumbers = new Array(byteCharacters.length);
@@ -1548,8 +1561,13 @@ const VoiceModule = (props) => {
                             />
 
                             {templateAccordions.generatedTemplate && (
-                                <MapperGrid rows={mapperRows} readOnly={mapperMode === "view"} />
+                                <FieldMapperPro
+                                    mapperRows={mapperRows}
+                                    setMapperRows={setMapperRows}
+                                    mapperMode={mapperMode}
+                                />
                             )}
+
                         </div>
                     )}
 
@@ -1928,16 +1946,20 @@ const VoiceModule = (props) => {
                                 >
                                     {isSaving ? "Saving..." : "Save Template"}
                                 </button>
-
                             </div>
-                            <MapperGrid
-                                rows={mapperRows}
-                                setRows={setMapperRows}
-                                readOnly={mapperMode === "view"}
-                            />
 
+                            <FieldMapperPro
+                                mapperRows={mapperRows}
+                                setMapperRows={setMapperRows}
+                                mapperMode={mapperMode}
+                                onChangeConfig={(cfg) => {
+                                    // ✅ OPTIONAL: agar tum chaho to cfg.mapper ko rows me sync kar sakte ho later
+                                    console.log("config updated", cfg);
+                                }}
+                            />
                         </div>
                     )}
+
                 </>
             )}
 
