@@ -103,6 +103,23 @@ const FieldMapperPro = ({
 
     // local state only for grid edits (visual view)
     const [gridMapper, setGridMapper] = useState(derivedConfig.mapper);
+    const updateValidation = (key, raw) => {
+        let parsed = {};
+
+        try {
+            parsed = raw?.trim() ? JSON.parse(raw) : {};
+        } catch (err) {
+            return; // ✅ if invalid JSON, ignore
+        }
+
+        setGridMapper((prev) => ({
+            ...(prev || {}),
+            [key]: {
+                ...(prev?.[key] || {}),
+                validation: parsed,
+            },
+        }));
+    };
 
     /**
      * 🔥 IMPORTANT:
@@ -111,8 +128,11 @@ const FieldMapperPro = ({
      * So safe to sync always.
      */
     useEffect(() => {
+        // ✅ If JSON editor is active, don't overwrite JSON changes
+        if (view === "json") return;
+
         setGridMapper(derivedConfig.mapper);
-    }, [derivedConfig.mapper]);
+    }, [derivedConfig.mapper, view]);
 
     // JSON Editor refs
     const jsonEditorRef = useRef(null);
@@ -186,19 +206,28 @@ const FieldMapperPro = ({
         const editor = new JSONEditor(jsonEditorRef.current, {
             mode: "tree",
             modes: ["tree", "code"],
+            onCreateMenu: (items) => {
+                // remove left menu options
+                return items.filter(
+                    (item) =>
+                        !["type", "sort", "transform", "extract"].includes(item.text?.toLowerCase())
+                );
+            },
+            onChange: () => {
+                try {
+                    const json = editor.get();   // ✅ always fetch latest full json
+                    const mapperObj = json || {};
 
-            // 🔥 This is fired frequently - keep it stable
-            onChangeJSON: (json) => {
-                const mapperObj = json || {};
+                    setGridMapper(mapperObj);
 
-                // update grid view
-                setGridMapper(mapperObj);
-
-                // update rows (table)
-                const updatedRows = mapperToRows(mapperObj);
-                pushRowsDebounced(updatedRows);
+                    const updatedRows = mapperToRows(mapperObj);
+                    pushRowsDebounced(updatedRows);
+                } catch (err) {
+                    // ✅ ignore invalid JSON while typing
+                }
             },
         });
+
 
         jsonEditorInstanceRef.current = editor;
 
@@ -402,6 +431,21 @@ const FieldMapperPro = ({
                                                 placeholder="Pattern 1, Pattern 2..."
                                             />
                                         </div>
+                                        <div className="fmp-block">
+                                            <label className="fmp-label">Validation (JSON)</label>
+
+                                            <textarea
+                                                className="fmp-validation-input"
+                                                rows={5}
+                                                spellCheck={false}
+                                                value={JSON.stringify(field.validation || {}, null, 2)}
+                                                onChange={(e) => updateValidation(key, e.target.value)}
+                                                placeholder={`{
+  "regex": "^...$"
+}`}
+                                            />
+
+                                        </div>
 
                                         <div className="fmp-controls">
                                             <div className="fmp-select-wrap">
@@ -472,22 +516,6 @@ const FieldMapperPro = ({
                     </div>
                 )}
             </main>
-
-            {/* ===== Footer ===== */}
-            <footer className="fmp-footer">
-                <div className="fmp-stats">
-                    <span>
-                        {count} {count === 1 ? "Field" : "Fields"} Active
-                    </span>
-                    <span className="fmp-divider" />
-                    <span>{lastUpdated}</span>
-                </div>
-
-                <div className="fmp-realtime">
-                    <span className="fmp-dot" />
-                    Real-time Sync
-                </div>
-            </footer>
         </div>
     );
 };

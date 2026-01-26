@@ -28,6 +28,8 @@ import careVoicePdfIcon from "../../../Images/careVoicePdfIcon.png"
 import careVoiceTemplateViewDoc from "../../../Images/careVoiceTemplateViewDoc.png"
 import TlcPayrollInsightIcon from "../../../Images/TlcPayrollinsightIcon.png";
 import AdminTemplateViewIcon from "../../../Images/AdminTemplateViewTable.png"
+import careVoiceTimeIcon from "../../../Images/careVoiceTimeIcon.svg";
+import careVoiceSelectTemplateIcon from "../../../Images/careVoiceSelectTemplateIcon.svg"
 import careVoiceCross from "../../../Images/careVoiceCross.png"
 import { GoArrowLeft } from "react-icons/go";
 import { FiEdit } from "react-icons/fi";
@@ -37,6 +39,7 @@ import TlcUploadBox from "../FinancialModule/TlcUploadBox";
 import CareVoiceExplainationMarkdown from "./CareVoiceExplainationMarkdown";
 import { mapperToRows } from "./carevoiceMapperObject";
 import FieldMapperPro from "./CareVoiceJsonGrid";
+import MultiSelectCustom from "../FinancialModule/MultiSelectCustom"
 const VoiceModule = (props) => {
     const userEmail = props?.user?.email;
     const domain = userEmail?.split("@")[1] || "";
@@ -113,23 +116,35 @@ const VoiceModule = (props) => {
     const [downloadingFileKey, setDownloadingFileKey] = useState(null);
     const [uploadedTranscriptFiles, setUploadedTranscriptFiles] = useState([]);
     const [currentTranscriptIndex, setCurrentTranscriptIndex] = useState(0);
+    const [dropdownPos, setDropdownPos] = useState(null);
     const sliderRef = useRef(null);
     const dropdownRef = useRef(null);
+    const openDropdown = (e, tplId) => {
+        e.stopPropagation();
+
+        const rect = e.currentTarget.getBoundingClientRect();
+        setDropdownPos({
+            top: rect.bottom + 8,
+            left: rect.left - 160, // adjust if needed
+        });
+
+        setOpenMenuId((prev) => (prev === tplId ? null : tplId));
+    };
+
     useEffect(() => {
         const handleClickOutside = (e) => {
-            if (
-                dropdownRef.current &&
-                !dropdownRef.current.contains(e.target)
-            ) {
-                setOpenMenuId(null);
-            }
+            // ✅ if click is inside dropdown, do nothing
+            if (dropdownRef.current && dropdownRef.current.contains(e.target)) return;
+
+            // ✅ if click is on dots, do nothing (because dots toggle already handles it)
+            if (e.target.closest(".vm-dots")) return;
+
+            // ✅ otherwise close dropdown
+            setOpenMenuId(null);
         };
 
         document.addEventListener("mousedown", handleClickOutside);
-
-        return () => {
-            document.removeEventListener("mousedown", handleClickOutside);
-        };
+        return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
     useEffect(() => {
@@ -1318,21 +1333,18 @@ const VoiceModule = (props) => {
         <div className="voice-container">
             {/* ================= TOP ROW ================= */}
             <div className="voice-top-row">
-                <div className="voice-field">
-                    <img
-                        src={voiceRoleIcon}
-                        alt="role"
-                        style={{ width: "17px", height: "15px" }}
+                    <MultiSelectCustom
+                        placeholder="Role"
+                        leftIcon={voiceRoleIcon}
+                        rightIcon={TlcPayrollDownArrow}  // optional arrow
+                        options={[
+                            { label: "Admin", value: "Admin" },
+                            { label: "Staff", value: "Staff" },
+                        ]}
+                        selected={[{ label: role, value: role }]}
+                        setSelected={(arr) => setRole(arr?.[0]?.value || "Admin")}
+                        isSingleSelect={true}
                     />
-                    <select
-                        className="voice-select"
-                        value={role}
-                        onChange={(e) => setRole(e.target.value)}
-                    >
-                        <option value="Admin">Admin</option>
-                        <option value="Staff">Staff</option>
-                    </select>
-                </div>
 
                 {role === "Staff" && (
                     <>
@@ -1380,8 +1392,8 @@ const VoiceModule = (props) => {
 
             )} */}
             {role === "Staff" && staffStep === "landing" && (
-                <div style={{ textAlign: "center", marginTop: "80px" }}>
-                    <h2 style={{ fontWeight: 600 }}>
+                <div style={{ textAlign: "center", marginTop: "40px" }}>
+                    <h2 style={{ fontWeight: 600, fontSize: "24px", color: "#0e0c16" }}>
                         Select A Template To Populate
                     </h2>
 
@@ -1390,7 +1402,9 @@ const VoiceModule = (props) => {
                         style={{ margin: "auto" }}
                         onClick={() => setStaffStep("selectTemplate")}
                     >
-                        <img src={careVoiceStaffTemplateIcon} width={16} style={{ filter: "brightness(0) invert(1)" }} />
+                        <div style={{ width: "24px", height: "24px" }}>
+                            <img src={careVoiceSelectTemplateIcon} style={{ filter: "brightness(0) invert(1)", height: "21px", width: "20px" }} />
+                        </div>
                         Select Template
                     </button>
                 </div>
@@ -1530,7 +1544,7 @@ const VoiceModule = (props) => {
 
                             {templateAccordions.aiResponse && (
                                 <div className="analysis-box">
-                                   <CareVoiceExplainationMarkdown content={activeTemplate.prompt}/>
+                                    <CareVoiceExplainationMarkdown content={activeTemplate.prompt} />
                                 </div>
                             )}
 
@@ -1689,40 +1703,26 @@ const VoiceModule = (props) => {
                                                                 <div className="vm-template-actions">
                                                                     <span
                                                                         className="vm-dots"
-                                                                        onClick={(e) => {
-                                                                            e.stopPropagation();
-                                                                            setOpenMenuId(openMenuId === tpl.id ? null : tpl.id);
-                                                                        }}
+                                                                        onClick={(e) => openDropdown(e, tpl.id)}
                                                                     >
                                                                         ...
                                                                     </span>
 
-                                                                    {openMenuId === tpl.id && (
-                                                                        <div className="vm-dropdown" ref={dropdownRef}>
-                                                                            <div
-                                                                                className="vm-dropdown-item"
-                                                                                onClick={() => handleEditTemplate(tpl)}
-                                                                            >
-                                                                                <img src={careVoiceEdit} alt="edit" />
-                                                                                Edit Template Fields
-                                                                            </div>
 
-                                                                            <div
-                                                                                className="vm-dropdown-item danger"
-                                                                                onClick={() => handleDeleteClick(tpl)}
-                                                                            >
-                                                                                <img src={careVoiceDelete} alt="delete" />
-                                                                                Delete Template
-                                                                            </div>
-                                                                        </div>
-                                                                    )}
                                                                 </div>
+
                                                             </div>
 
                                                             {/* DATE */}
                                                             <div className="vm-template-date">
-                                                                ⏱ {timeAgo(tpl.createdAt)}
+                                                                <img
+                                                                    src={careVoiceTimeIcon}
+                                                                    alt="time"
+                                                                    style={{ width: "20px", height: "20px" }}
+                                                                />
+                                                                {timeAgo(tpl.createdAt)}
                                                             </div>
+
 
                                                         </div>
                                                     </div>
@@ -1769,6 +1769,42 @@ const VoiceModule = (props) => {
                                 </div>
 
                             </div>
+                            {openMenuId && dropdownPos && (
+                                <div
+                                    className="vm-dropdown-fixed"
+                                    ref={dropdownRef}
+                                    style={{
+                                        position: "fixed",
+                                        top: dropdownPos.top,
+                                        left: dropdownPos.left,
+                                        zIndex: 999999,
+                                    }}
+                                >
+                                    <div
+                                        className="vm-dropdown-item"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleEditTemplate(templates.find((t) => t.id === openMenuId));
+                                            setOpenMenuId(null);
+                                        }}
+                                    >
+                                        <img src={careVoiceEdit} alt="edit" />
+                                        Edit Template Fields
+                                    </div>
+
+                                    <div
+                                        className="vm-dropdown-item danger"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleDeleteClick(templates.find((t) => t.id === openMenuId));
+                                            setOpenMenuId(null);
+                                        }}
+                                    >
+                                        <img src={careVoiceDelete} alt="delete" />
+                                        Delete Template
+                                    </div>
+                                </div>
+                            )}
                             {totalPages > 1 && (
                                 <div className="vm-slider-dots">
                                     {Array.from({ length: totalPages }).map((_, i) => (
@@ -1838,7 +1874,7 @@ const VoiceModule = (props) => {
                                     }
                                     onClick={startAnalysis}
                                 >
-                                    Save & Analyze
+                                    Analyze
                                     <img
                                         src={star}
                                         alt="star"
@@ -2228,30 +2264,66 @@ const VoiceModule = (props) => {
                     <div className="vm-select-confirm-modal template-select-modal">
 
                         {/* HEADER */}
-                        <div className="template-select-header">
-                            <div style={{ display: "flex", alignItems: "center", gap: "529px", height: "56px", margin: "10px" }}>
-                                <div style={{ textAlign: "left", width: "294px", height: "56px" }}>
-                                    <h3>Available Templates</h3>
-                                    <p>Select a template organized by your admin</p>
+                        <div className="template-select-header" style={{ height: "56px" }}>
+                            <div
+                                style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "space-between",
+                                    width: "100%",
+                                    height: "56px",
+                                    boxSizing: "border-box",
+                                    marginBottom: "24px"
+                                }}
+                            >
+                                {/* LEFT */}
+                                <div
+                                    style={{
+                                        textAlign: "left",
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        gap: "8px",
+                                    }}
+                                >
+                                    <h3 style={{ margin: 0 }}>Available Templates</h3>
+                                    <p style={{ margin: 0 }}>Select a template organized by your admin</p>
                                 </div>
-                                <img src={careVoiceCross} style={{ width: "24px", height: "24px", cursor: "pointer" }} onClick={() => setStaffStep("landing")} />
+
+                                {/* RIGHT */}
+                                <img
+                                    src={careVoiceCross}
+                                    style={{ width: "24px", height: "24px", cursor: "pointer" }}
+                                    onClick={() => setStaffStep("landing")}
+                                />
                             </div>
+
                         </div>
-                        <div style={{ height: "1px", width: "860px", border: "1px solid #E6E6E6", color: "black", background: "black", marginBottom: "20px" }}></div>
+                        <div
+                            style={{
+                                height: "1px",
+                                width: "100%",
+                                maxWidth: "823px",
+                                background: "#E6E6E6",
+                                marginBottom: "24px",
+                            }}
+                        />
 
                         {templates?.length > 0 &&
                             <button
-                                className="template-select-confirm"
+                                className={`template-select-confirm ${selectedTemplate ? "selected" : "not-selected"
+                                    }`}
                                 disabled={!selectedTemplate}
                                 onClick={() => setStaffStep("working")}
                             >
                                 ✓ Choose Template
+
                                 {selectedTemplate?.isMulti && (
                                     <span className="template-count">
                                         {selectedTemplate.templates.length}
                                     </span>
                                 )}
                             </button>
+
                         }
 
                         {/* TEMPLATE LIST */}
@@ -2284,18 +2356,30 @@ const VoiceModule = (props) => {
                                             className={`template-select-card ${isSelected ? "active" : ""}`}
                                             onClick={() => handleStaffTemplateSelect(tpl)}
                                         >
-                                            <input type="checkbox" checked={isSelected} readOnly />
+                                            <input
+                                                type="checkbox"
+                                                checked={isSelected}
+                                                readOnly
+                                                className="template-checkbox"
+                                            />
 
                                             <img src={templateIcon} className="template-select-icon" />
 
-                                            <div className="template-select-info">
-                                                <div className="template-select-name">
+                                            <div className="template-select-info" style={{ display: "flex", flexDirection: "column", textAlign: "left", gap: "4px" }}>
+                                                <div className="template-select-name" style={{ fontSize: "16px", fontWeight: "600", color: "#0e0c16" }}>
                                                     {(tpl.templateName || "Voice Template").length > 30
-                                                        ? (tpl.templateName || "Voice Template").slice(0, 30) + "..."
+                                                        ? (tpl.templateName || "Voice Template").slice(0, 25) + "..."
                                                         : (tpl.templateName || "Voice Template")}
                                                 </div>
                                                 <div className="template-select-date">
-                                                    ⏱ {timeAgo(tpl.createdAt)}
+                                                    <div className="vm-template-date">
+                                                        <img
+                                                            src={careVoiceTimeIcon}
+                                                            alt="time"
+                                                            style={{ width: "20px", height: "20px" }}
+                                                        />
+                                                        {timeAgo(tpl.createdAt)}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>

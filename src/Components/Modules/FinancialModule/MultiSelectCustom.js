@@ -9,11 +9,17 @@ const MultiSelectCustom = ({
   rightIcon,
   height = 38,
   minWidth = 220,
+  isSingleSelect = false,
 }) => {
   const [open, setOpen] = useState(false);
   const ref = useRef();
 
   const toggleOption = (option) => {
+    if (isSingleSelect) {
+      setSelected([option]);      // ✅ only one allowed
+      setOpen(false);             // ✅ auto close dropdown
+      return;
+    }
     if (selected.some((o) => o.value === option.value)) {
       setSelected(selected.filter((o) => o.value !== option.value));
     } else {
@@ -80,15 +86,15 @@ const MultiSelectCustom = ({
           {selected.length === 0
             ? placeholder
             : selected.length === 1
-            ? selected[0].label
-            : (
-              <>
-                {selected[0].label}{" "}
-                <span style={{ color: "#6C4CDC", fontSize: "12px" }}>
-                  +{selected.length - 1}
-                </span>
-              </>
-            )}
+              ? selected[0].label
+              : (
+                <>
+                  {selected[0].label}{" "}
+                  <span style={{ color: "#6C4CDC", fontSize: "12px" }}>
+                    +{selected.length - 1}
+                  </span>
+                </>
+              )}
         </span>
 
         {/* RIGHT ICON */}
@@ -123,7 +129,7 @@ const MultiSelectCustom = ({
                 onClick={() => toggleOption(option)}
               >
                 <input
-                  type="checkbox"
+                  type={isSingleSelect ? "radio" : "checkbox"}   // ✅
                   checked={isSelected}
                   readOnly
                   className="custom-checkbox"

@@ -108,12 +108,13 @@
 .voice-action {
   display: flex;
   justify-content: center;
-  margin-top: 40px;
+  /* margin-top: 40px; */
 }
 
 .voice-action button {
   display: flex;
   align-items: center;
+  justify-content: end;
   gap: 8px;
   background: var(--New-Hex-Code-Curki, #6C4CDC);
   color: #ffffff;
@@ -121,15 +122,19 @@
   padding: 13px 23px 13px 23px;
   border-radius: 999px;
   font-size: 15px;
-  font-weight: 400;
+  font-weight: 500;
   cursor: pointer;
-  width: 182px;
+  width: 132px;
   height: 47px;
 }
 
 .voice-star {
   width: 16px;
   height: 16px;
+}
+
+.voice-action button:disabled .voice-star {
+  filter: brightness(0) saturate(100%) invert(65%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(95%) contrast(90%);
 }
 
 /* ================= STAFF ================= */
@@ -581,8 +586,9 @@
 
 /* ================= BUTTON STATES ================= */
 .voice-action button:disabled {
-  opacity: 0.5;
   cursor: not-allowed;
+  background: #e8e8e8;
+  color: #8a898c;
 }
 
 .voice-browse-btn:hover {
@@ -649,11 +655,11 @@
 ================================ */
 
 .vm-template-list {
-  background: #B4ABEC;
+  background: linear-gradient(180deg, #F4F2FF 0%, #B4ABEC 100%);
   border-radius: 12px;
-  padding: 16px;
-  margin-bottom: 24px;
-  height: 261px;
+  padding: 24px;
+  /* margin-bottom: 24px; */
+  height: 199px;
   width: 100%;
 }
 
@@ -662,7 +668,7 @@
   font-weight: 600;
   color: #1f1f1f;
   text-align: left;
-  margin-left: 21px;
+  margin-left: 6px;
   height: 30px;
   margin-top: 5px
 }
@@ -674,15 +680,14 @@
 .vm-template-card {
   display: flex;
   flex-direction: column;
-  /* 🔥 STACK VERTICALLY */
   justify-content: space-between;
   gap: 12px;
   background: #ffffff;
   border-radius: 10px;
   padding: 20px 20px 20px 20px;
   border: 1px solid #ececf3;
-  width: 520px;
-  height: 154px;
+  width: 500px;
+  height: 98px;
   position: relative;
   cursor: pointer;
 }
@@ -699,18 +704,19 @@
 }
 
 .vm-template-icon {
-  width: 36px;
-  height: 36px;
+  width: 58px;
+  height: 58px;
   background: #edeaff;
   border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 20px 20px 20px 20px;
 }
 
 .vm-template-icon img {
-  width: 49px;
-  height: 49px;
+  width: 58px;
+  height: 58px;
 }
 
 .vm-template-info {
@@ -780,7 +786,15 @@
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
   min-width: 200px;
   z-index: 9999;
-  /* 🔥 above card */
+}
+.vm-dropdown-fixed {
+  background: #ffffff;
+  border: 1px solid #e8e8f0;
+  border-radius: 10px;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
+  min-width: 220px;
+  overflow: hidden;
+  padding: 10px;
 }
 
 
@@ -827,16 +841,19 @@
   justify-content: center;
   border-radius: 6px;
 }
-.vm-template-edit-icon:hover{
+
+.vm-template-edit-icon:hover {
   background-color: #f0f0f6;
 }
+
 .vm-template-date {
-  font-size: 12px;
+  font-size: 14px;
   color: #7a7a7a;
   display: flex;
   align-items: center;
   gap: 4px;
   margin-top: 2px;
+  font-weight: 500;
 }
 
 /* ===============================
@@ -917,7 +934,7 @@
 .vm-slider-dot {
   width: 11px;
   height: 3px;
-  background: #d9d7e6;
+  background: #9B94C6;
   /* light grey */
   border-radius: 999px;
   /* transition: all 0.3s ease; */
@@ -927,7 +944,7 @@
   width: 30px;
   height: 3px;
   /* fixed width */
-  background: #9895AA;
+  background: #ffffff;
   opacity: 1;
 }
 
@@ -960,12 +977,16 @@
 .vm-select-confirm-modal {
   background: #ffffff;
   border-radius: 12px;
-  padding: 20px 24px;
+  padding: 40px 40px;
   width: 911px;
   height: 601px;
   text-align: center;
   animation: vmModalFade 0.2s ease-out;
   margin-left: 240px;
+    display: flex;              /* ✅ IMPORTANT */
+  flex-direction: column;     /* ✅ IMPORTANT */
+  box-sizing: border-box;
+  overflow: hidden;     
 }
 
 /* Title */
@@ -1098,7 +1119,7 @@
   padding: 10px 14px;
   font-size: 13px;
   cursor: pointer;
-  color: #1f1f1f;
+  color: #3c3b42;
 }
 
 .vm-dropdown-item img {
@@ -1111,7 +1132,7 @@
 }
 
 .vm-dropdown-item.danger {
-  color: #d32f2f;
+  color: #3c3b42;
 }
 
 /* ===== STAFF RECORDER ===== */
@@ -1194,12 +1215,13 @@
 .staff-outline {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 13px 42px 13px 42px;
+  gap: 6px;
+  padding: 13px 20px 13px 20px;
   border-radius: 999px;
   font-size: 14px;
+  font-weight: 500;
   width: auto;
-  height: 46px;
+  height: 44px;
 }
 
 .staff-primary {
@@ -1328,12 +1350,14 @@
 ================================ */
 /* ===== SINGLE TEMPLATE FULL WIDTH ===== */
 .vm-template-slider.single-template {
-  overflow-x: hidden;          /* no scroll */
+  overflow-x: hidden;
+  /* no scroll */
 }
 
 /* Replace the existing single-template CSS with this: */
 .vm-template-slider.single-template {
-  overflow-x: hidden;          /* no scroll */
+  overflow-x: hidden;
+  /* no scroll */
   width: 100% !important;
 }
 
@@ -1354,9 +1378,8 @@
 .vm-template-slider-wrapper {
   display: flex;
   align-items: center;
-  gap: 12px;
+  /* gap: 12px; */
   width: 100%;
-  margin-left: 14px;
 }
 
 .vm-template-slider {
@@ -1371,13 +1394,13 @@
 
 .vm-template-track {
   display: flex;
-  /* gap: 12px; */
+  gap: 8px;
 }
 
 .vm-template-slide {
   /* flex: 0 0 49%; */
   /* EXACTLY 2 cards */
-  padding-right: 12px;
+  /* padding-right: 12px; */
   box-sizing: border-box;
 }
 
@@ -1414,6 +1437,7 @@
   display: flex;
   justify-content: space-between;
   margin-bottom: 7px;
+  height: 30px;
 }
 
 .vm-template-header-arrows {
@@ -1469,14 +1493,16 @@
 
 .template-select-header h3 {
   margin: 0;
-  font-size: 18px;
+  font-size: 24px;
   font-weight: 600;
+  color: #0e0c16;
+  height: 24px;
 }
 
 .template-select-header p {
-  margin: 4px 0 0;
-  font-size: 13px;
-  color: #6b7280;
+  font-size: 14px;
+  font-weight: 500;
+  color: #8b8b8b;
 }
 
 /* ===== LIST GRID (2 PER ROW) ===== */
@@ -1485,10 +1511,19 @@
   grid-template-columns: repeat(2, 1fr);
   gap: 16px;
   margin-top: 24px;
+
+  overflow-y: auto;
+  padding-right: 8px;
+  box-sizing: border-box;
+
+  /* ✅ 3 rows visible = 6 cards */
+  grid-auto-rows: 86px;
+  max-height: calc(86px * 3 + 16px * 2); /* 3 rows + 2 gaps */
 }
 
 /* ===== CARD ===== */
 .template-select-card {
+  height: 86px; /* ✅ IMPORTANT so exactly 2 rows visible */
   border: 1px solid #e5e7eb;
   border-radius: 10px;
   padding: 16px;
@@ -1497,6 +1532,7 @@
   align-items: center;
   cursor: pointer;
   transition: all 0.2s ease;
+  box-sizing: border-box;
 }
 
 .template-select-card.active {
@@ -1514,17 +1550,38 @@
   color: white;
   border: none;
   border-radius: 999px;
-  padding: 8px 16px;
-  display: flex;
+  padding: 10px 16px;
+
+  display: inline-flex;   /* ✅ important */
   align-items: center;
   justify-content: center;
   gap: 8px;
+
   font-weight: 500;
-  width: 208px;
   height: 44px;
   margin-left: auto;
+
+  width: fit-content;   /* ✅ auto width */
+  min-width: 140px;     /* ✅ default small width */
+  transition: all 0.2s ease;
+}
+.template-select-confirm.not-selected {
+  min-width: 150px;   /* 👈 smaller */
+  opacity: 0.6;
 }
 
+.template-select-confirm.selected {
+  min-width: 181px;
+  max-width: 208px;
+  opacity: 1;
+}
+.template-checkbox {
+  width: 18px;
+  height: 18px;
+  accent-color: #6c4cdc;
+  transform: scale(1); 
+  cursor: pointer;
+}
 .template-count {
   background: white;
   color: #6c4cdc;
@@ -1569,7 +1626,7 @@
 
 .vm-admin-heading {
   text-align: center;
-  margin: 40px 0 44px;
+  margin: 52px 0 32px;
 }
 
 .vm-admin-title {
@@ -1580,13 +1637,16 @@
 }
 
 .vm-admin-subtitle {
-  font-size: 14px;
-  color: #6B7280;
+  font-size: 16px;
+  color: #3c3b42;
+  font-weight: 500;
 }
+
 .staff-primary:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
+
 /* ================= RESPONSIVE ADJUSTMENTS ================= */
 @media (max-width: 768px) {
   .voice-top-row {
