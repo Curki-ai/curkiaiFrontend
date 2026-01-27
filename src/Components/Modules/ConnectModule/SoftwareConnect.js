@@ -37,6 +37,7 @@ const SoftwareConnect = (props) => {
   const [sharePointURL, setSharePointURL] = useState("");
   const [googleConnected, setGoogleConnected] = useState(false);
   const [shareConnected, setShareConnected] = useState(false);
+  const [visualCareUser, setVisualCareUser] = useState("");
 
   // ✅ 1️⃣ Fetch already connected softwares + creds
   useEffect(() => {
@@ -59,9 +60,13 @@ const SoftwareConnect = (props) => {
         if (current) {
           setClientId(current.client_id || "");
           setSecretId(current.secret_id || "");
+          if (selectedSoftware === "VisualCare") {
+            setVisualCareUser(current.User || "");
+          }
         } else {
           setClientId("");
           setSecretId("");
+          setVisualCareUser("");
         }
       } catch (err) {
         console.error("Error fetching connected softwares:", err.message);
@@ -77,6 +82,11 @@ const SoftwareConnect = (props) => {
     const current = integrations.find((i) => i.software === software);
     setClientId(current?.client_id || "");
     setSecretId(current?.secret_id || "");
+    if (software === "VisualCare") {
+      setVisualCareUser(current?.User || "");
+    } else {
+      setVisualCareUser("");
+    }
   };
 
   // ✅ 3️⃣ Handle register/deregister
@@ -136,6 +146,7 @@ const SoftwareConnect = (props) => {
           client_id: clientId,
           secret_id: secretId,
           status: isConnected ? "deregister" : "register",
+          ...(selectedSoftware === "VisualCare" ? { User: visualCareUser } : {}),
         };
 
         console.log("selected software in non Xero", payload);
@@ -152,13 +163,21 @@ const SoftwareConnect = (props) => {
           setIntegrations((prev) => prev.filter((i) => i.software !== selectedSoftware));
           setClientId("");
           setSecretId("");
+          if (selectedSoftware === "VisualCare") setVisualCareUser("");
+
           toast.success(`${selectedSoftware} disconnected successfully!`);
         } else {
           // 🟢 Register
           setIntegrations((prev) => [
             ...prev,
-            { software: selectedSoftware, client_id: clientId, secret_id: secretId },
+            {
+              software: selectedSoftware,
+              client_id: clientId,
+              secret_id: secretId,
+              ...(selectedSoftware === "VisualCare" ? { User: visualCareUser } : {}),
+            },
           ]);
+
           toast.success(`${selectedSoftware} connected successfully!`);
         }
       }
@@ -191,7 +210,7 @@ const SoftwareConnect = (props) => {
       } catch (err) {
         console.error("❌ Error refreshing Xero token:", err.message);
       }
-    }, 1800*1000); // every 30 mins
+    }, 1800 * 1000); // every 30 mins
 
     return () => clearInterval(interval);
   }, [props.user?.email, integrations]);
@@ -213,17 +232,16 @@ const SoftwareConnect = (props) => {
             <img
               src={software.logo}
               alt={software.name}
-              className={`software-logo ${
-                software.name === "EmploymentHero"
-                  ? "employment-hero-logo"
-                  : software.name === "QuickBooks"
+              className={`software-logo ${software.name === "EmploymentHero"
+                ? "employment-hero-logo"
+                : software.name === "QuickBooks"
                   ? "quickbooks-logo"
                   : software.name === "Xero"
-                  ? "xero-logo"
-                  : software.name === "MYOB"
-                  ? "myob-logo"
-                  : ""
-              }`}
+                    ? "xero-logo"
+                    : software.name === "MYOB"
+                      ? "myob-logo"
+                      : ""
+                }`}
             />
             {integrations.some((i) => i.software === software.name) && (
               <div className="connected-badge">Connected</div>
@@ -234,6 +252,18 @@ const SoftwareConnect = (props) => {
 
       {/* Input Fields + Button */}
       <div className="software-form">
+        {selectedSoftware === "VisualCare" && (
+          <div className="forms-group">
+            <label className="connect-label">User</label>
+            <input
+              type="text"
+              value={visualCareUser}
+              onChange={(e) => setVisualCareUser(e.target.value)}
+              placeholder="Enter User Value"
+              className="connect-input"
+            />
+          </div>
+        )}
         <div className="forms-group">
           <label className="connect-label">Client ID</label>
           <input
