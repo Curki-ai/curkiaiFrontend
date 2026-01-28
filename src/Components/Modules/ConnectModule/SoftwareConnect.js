@@ -89,8 +89,6 @@ const SoftwareConnect = (props) => {
     }
   };
 
-  // ✅ 3️⃣ Handle register/deregister
-  console.log(selectedSoftware)
   const handleRegister = async () => {
     if (!selectedSoftware) {
       toast.warn("⚠️ Please select a software");
@@ -106,7 +104,7 @@ const SoftwareConnect = (props) => {
 
     try {
       const isConnected = integrations.some((i) => i.software === selectedSoftware);
-      console.log("selected software", selectedSoftware);
+      // console.log("selected software", selectedSoftware);
 
       // 🟦 CASE 1: Xero integration (handled via your ngrok backend)
       if (selectedSoftware === "Xero") {
@@ -117,7 +115,7 @@ const SoftwareConnect = (props) => {
           status: isConnected ? "deregister" : "register",
         };
 
-        console.log("payload in selected software Xero", payload);
+        // console.log("payload in selected software Xero", payload);
 
         const response = await axios.post(`${XERO_URL}/xero/connect`, payload);
         const data = response.data;
@@ -149,7 +147,7 @@ const SoftwareConnect = (props) => {
           ...(selectedSoftware === "VisualCare" ? { User: visualCareUser } : {}),
         };
 
-        console.log("selected software in non Xero", payload);
+        // console.log("selected software in non Xero", payload);
 
         const response = await axios.post(
           "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/integrationCredsCheck",
@@ -200,10 +198,10 @@ const SoftwareConnect = (props) => {
           params: { userEmail: props.user.email },
         });
 
-        console.log("data in refresh token", response.data);
+        // console.log("data in refresh token", response.data);
 
         if (response.status === 200) {
-          console.log("♻️ Xero token refreshed:", response.data);
+          console.log("Xero token refreshed");
         } else {
           console.warn("⚠️ Failed to refresh Xero token:", response.data.error);
         }
@@ -254,7 +252,7 @@ const SoftwareConnect = (props) => {
       <div className="software-form">
         {selectedSoftware === "VisualCare" && (
           <div className="forms-group">
-            <label className="connect-label">User</label>
+            <label className="connect-label">User ID</label>
             <input
               type="text"
               value={visualCareUser}
