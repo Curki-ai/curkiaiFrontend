@@ -26,7 +26,7 @@ const TASK_QUEUE = [
 
 
 const IncidentAuditing = (props) => {
-    console.log("IncidentAuditing props:", props);
+    // console.log("IncidentAuditing props:", props);
     const [incidentAuditingFiles, setIncidentAuditingFiles] = useState([]);
     const [isIncidentAuditingProcessing, setIsIncidentAuditingProcessing] = useState(false);
     const [incidentAuditingProgress, setIncidentAuditingProgress] = useState(0);
@@ -43,11 +43,19 @@ const IncidentAuditing = (props) => {
     const [searchTerm, setSearchTerm] = useState("");
     const [filterReportable, setFilterReportable] = useState("ALL");
     const [filterType, setFilterType] = useState("ALL");
+    const [startYear, setStartYear] = useState("");
+    const [endYear, setEndYear] = useState("");
 
     const handleAnalyse = async () => {
-        console.log("Analyse clicked");
+        // console.log("Analyse clicked");
+        // console.log("startDay:", startDay);
+        // console.log("startMonth:", startMonth);
+        // console.log("endDay:", endDay);
+        // console.log("endMonth:", endMonth);
+        // console.log("syncEnabled:", syncEnabled);
         if (syncEnabled) {
-            if (!startDay || !startMonth || !endDay || !endMonth) {
+            if (!startDay || !startMonth || !startYear || !endDay || !endMonth || !endYear) {
+
                 alert("Please select a start and end date.");
                 return;
             }
@@ -87,9 +95,10 @@ const IncidentAuditing = (props) => {
                 formData.append("sync", true);
 
                 const year = new Date().getFullYear();
-
-                formData.append("fromDate", `${year}-${startMonth}-${startDay}`);
-                formData.append("toDate", `${year}-${endMonth}-${endDay}`);
+                // console.log("fromDate:", `${startYear}-${startMonth}-${startDay}`);
+                // console.log("toDate:", `${endYear}-${endMonth}-${endDay}`);
+                formData.append("fromDate", `${startYear}-${startMonth}-${startDay}`);
+                formData.append("toDate", `${endYear}-${endMonth}-${endDay}`);
                 formData.append("userEmail", props.user.email);
             }
 
@@ -410,11 +419,12 @@ const IncidentAuditing = (props) => {
                                     if (!syncEnabled) {
                                         setIncidentAuditingFiles([]);
                                     } else {
-                                        // sync turning OFF
                                         setStartDay("");
                                         setStartMonth("");
+                                        setStartYear("");
                                         setEndDay("");
                                         setEndMonth("");
+                                        setEndYear("");
                                     }
                                 }}
 
@@ -473,6 +483,7 @@ const IncidentAuditing = (props) => {
                                         );
                                     })}
                                 </select>
+
                                 <select value={startMonth} onChange={(e) => setStartMonth(e.target.value)}>
                                     <option value="">MM</option>
                                     {Array.from({ length: 12 }, (_, i) => {
@@ -485,7 +496,20 @@ const IncidentAuditing = (props) => {
                                         );
                                     })}
                                 </select>
+
+                                <select value={startYear} onChange={(e) => setStartYear(e.target.value)}>
+                                    <option value="">YYYY</option>
+                                    {Array.from({ length: 20 }, (_, i) => {
+                                        const year = (new Date().getFullYear() - i).toString();
+                                        return (
+                                            <option key={year} value={year}>
+                                                {year}
+                                            </option>
+                                        );
+                                    })}
+                                </select>
                             </div>
+
                         </div>
 
                         {/* End */}
@@ -505,6 +529,7 @@ const IncidentAuditing = (props) => {
                                         );
                                     })}
                                 </select>
+
                                 <select value={endMonth} onChange={(e) => setEndMonth(e.target.value)}>
                                     <option value="">MM</option>
                                     {Array.from({ length: 12 }, (_, i) => {
@@ -513,6 +538,18 @@ const IncidentAuditing = (props) => {
                                         return (
                                             <option key={monthValue} value={monthValue}>
                                                 {monthName}
+                                            </option>
+                                        );
+                                    })}
+                                </select>
+
+                                <select value={endYear} onChange={(e) => setEndYear(e.target.value)}>
+                                    <option value="">YYYY</option>
+                                    {Array.from({ length: 20 }, (_, i) => {
+                                        const year = (new Date().getFullYear() - i).toString();
+                                        return (
+                                            <option key={year} value={year}>
+                                                {year}
                                             </option>
                                         );
                                     })}
