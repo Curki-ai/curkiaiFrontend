@@ -132,6 +132,7 @@ const TlcNewClientProfitability = (props) => {
         { label: "New South Wales", value: "New South Wales" },
         { label: "Queensland", value: "Queensland" },
         { label: "Victoria", value: "Victoria" },
+        { label: "South Australia", value: "South Australia" },
     ];
 
     const optionsDepartment = [
