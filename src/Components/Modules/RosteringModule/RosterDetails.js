@@ -241,15 +241,12 @@ const RosterDetails = ({ setScreen, rosteringResponse, API_BASE, selectedClient,
     }
     const handleSelect = (id) => {
         if (selected.includes(id)) {
-            setSelected(selected.filter((s) => s !== id));
+            setSelected((prev) => prev.filter((s) => s !== id));
         } else {
-            if (selected.length < 5) {
-                setSelected([...selected, id]);
-            } else {
-                alert("You can select up to 5 staff only.");
-            }
+            setSelected((prev) => [...prev, id]); 
         }
     };
+
     const handleBroadcast = async () => {
         if (selected.length === 0) {
             alert("Please select at least one staff to broadcast.");

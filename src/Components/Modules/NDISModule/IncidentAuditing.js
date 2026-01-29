@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import '../../../Styles/IncidentAuditing.css';
 import UploadFiles from "../../UploadFiles";
 import ReactMarkdown from "react-markdown";
@@ -13,6 +13,8 @@ import 'tippy.js/dist/tippy.css';
 import { IoMdInformationCircleOutline } from "react-icons/io";
 import PulsatingLoader from "../../PulsatingLoader";
 import { IoIosArrowUp, IoIosArrowDown } from "react-icons/io";
+import { RiDeleteBin6Line } from "react-icons/ri";
+import { GoArrowLeft } from "react-icons/go";
 
 const TASK_QUEUE = [
     "Analysing data",
@@ -45,6 +47,367 @@ const IncidentAuditing = (props) => {
     const [filterType, setFilterType] = useState("ALL");
     const [startYear, setStartYear] = useState("");
     const [endYear, setEndYear] = useState("");
+    const [historyList, setHistoryList] = useState([]);
+    const [loadingHistory, setLoadingHistory] = useState(false);
+
+    const [savingHistory, setSavingHistory] = useState(false);
+
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [selectedHistoryId, setSelectedHistoryId] = useState(null);
+    const [deleting, setDeleting] = useState(false);
+
+    const [isFromHistory, setIsFromHistory] = useState(false);
+    const formatIncidentHistoryDateRange = (filters) => {
+        const from = filters?.fromDate;
+        const to = filters?.toDate;
+
+        if (!from || !to) return "–";
+
+        const format = (d) =>
+            new Date(d).toLocaleDateString("en-GB", {
+                day: "2-digit",
+                month: "short",
+                year: "2-digit",
+            });
+
+        return `${format(from)} – ${format(to)}`;
+    };
+    useEffect(() => {
+        const fetchIncidentHistory = async () => {
+            try {
+                setLoadingHistory(true);
+
+                const res = await fetch(
+                    `https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/incidentAuditingHistory?email=${props?.user?.email || ""}`
+                );
+
+                if (!res.ok) {
+                    throw new Error("Failed to fetch incident auditing history");
+                }
+
+                const json = await res.json();
+                setHistoryList(json.data || []);
+            } catch (err) {
+                console.error("Failed to load incident auditing history", err);
+            } finally {
+                setLoadingHistory(false);
+            }
+        };
+
+        fetchIncidentHistory();
+    }, [props.user]);
+    const handleSaveIncidentHistory = async () => {
+        // guard: already saving OR no response
+        if (savingHistory || !responseData) return;
+
+        try {
+            setSavingHistory(true);
+
+            // Build fromDate/toDate only when sync enabled
+            const fromDate =
+                syncEnabled && startYear && startMonth && startDay
+                    ? `${startYear}-${startMonth}-${startDay}`
+                    : null;
+
+            const toDate =
+                syncEnabled && endYear && endMonth && endDay
+                    ? `${endYear}-${endMonth}-${endDay}`
+                    : null;
+
+            const payload = {
+                email: props?.user?.email || "",
+
+                // 🔴 CORE RESULT
+                responseData,
+
+                // 🔴 FILTERS (store what user used)
+                filters: {
+                    syncEnabled,
+                    fromDate,
+                    toDate,
+                },
+            };
+
+            const res = await fetch(
+                "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/incidentAuditingHistory/save",
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify(payload),
+                }
+            );
+
+            if (!res.ok) throw new Error("Failed to save history");
+
+            alert("Saved successfully");
+
+            // ✅ Refresh history list immediately (same feel)
+            const historyRes = await fetch(
+                `https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/incidentAuditingHistory?email${props?.user?.email || ""}`
+            );
+            const historyJson = await historyRes.json();
+            setHistoryList(historyJson.data || []);
+
+        } catch (error) {
+            console.error("Save incident auditing history failed:", error);
+            alert("Failed to save history");
+        } finally {
+            setSavingHistory(false);
+        }
+    };
+    const handleIncidentHistoryClick = async (item) => {
+        try {
+            const res = await fetch(
+                `https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/incidentAuditingHistory/${item.id}`
+            );
+
+            if (!res.ok) throw new Error("Failed to fetch history item");
+
+            const json = await res.json();
+            const data = json.data;
+
+            // ✅ Restore report response
+            setResponseData(data.responseData);
+
+            // ✅ Restore sync + date inputs
+            const filters = data.filters || {};
+            setSyncEnabled(!!filters.syncEnabled);
+
+            if (filters.fromDate) {
+                const [y, m, d] = filters.fromDate.split("-");
+                setStartYear(y || "");
+                setStartMonth(m || "");
+                setStartDay(d || "");
+            } else {
+                setStartYear("");
+                setStartMonth("");
+                setStartDay("");
+            }
+
+            if (filters.toDate) {
+                const [y, m, d] = filters.toDate.split("-");
+                setEndYear(y || "");
+                setEndMonth(m || "");
+                setEndDay(d || "");
+            } else {
+                setEndYear("");
+                setEndMonth("");
+                setEndDay("");
+            }
+
+            // ✅ When viewing from history disable upload effect
+            setIncidentAuditingFiles([]);
+
+            // ✅ mark mode
+            setIsFromHistory(true);
+
+        } catch (err) {
+            console.error("Failed to load incident auditing history item", err);
+        }
+    };
+    const handleDeleteIncidentHistory = async () => {
+        if (!selectedHistoryId) return;
+
+        try {
+            setDeleting(true);
+
+            const res = await fetch(
+                `https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/incidentAuditingHistory`,
+                {
+                    method: "DELETE",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        id: selectedHistoryId,
+                    }),
+                }
+            );
+
+            if (!res.ok) throw new Error("Failed to delete history");
+
+            // ✅ remove from UI immediately
+            setHistoryList((prev) =>
+                prev.filter((item) => item.id !== selectedHistoryId)
+            );
+
+            setShowDeleteModal(false);
+            setSelectedHistoryId(null);
+
+            alert("History deleted successfully");
+        } catch (error) {
+            console.error("Delete incident auditing history failed:", error);
+            alert("Failed to delete history");
+        } finally {
+            setDeleting(false);
+        }
+    };
+    const renderHistorySection = () => (
+        <section className="history-container">
+
+            {/* HEADER */}
+            <div style={{ display: "flex", gap: "8px" }}>
+                <img
+                    src={require("../../../Images/TlcPayrollHistory.png")}
+                    alt="icon"
+                    style={{ width: "22px", height: "21px", pointerEvents: "none" }}
+                />
+                <div className="history-title">History</div>
+            </div>
+
+            {/* BODY */}
+            {loadingHistory && (
+                <p style={{ textAlign: "center", color: "#555", marginTop: "20px" }}>
+                    Loading history...
+                </p>
+            )}
+
+            {!loadingHistory && historyList.length === 0 && (
+                <p style={{ textAlign: "center", color: "#777", marginTop: "20px" }}>
+                    No saved history found.
+                </p>
+            )}
+
+            {!loadingHistory && historyList.length > 0 && (
+                <div className="history-list">
+                    {historyList.map((item) => (
+                        <div
+                            key={item.id}
+                            className="history-card-modern"
+                            onClick={() => handleIncidentHistoryClick(item)}
+                            style={{ position: "relative" }}
+                        >
+                            {/* delete */}
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedHistoryId(item.id);
+                                    setShowDeleteModal(true);
+                                }}
+                                style={{
+                                    position: "absolute",
+                                    top: "10px",
+                                    right: "10px",
+                                    background: "transparent",
+                                    border: "none",
+                                    cursor: "pointer",
+                                    color: "#6C4CDC",
+                                }}
+                                title="Delete"
+                            >
+                                <RiDeleteBin6Line size={18} />
+                            </button>
+
+                            {/* TOP ROW */}
+                            {item?.filters?.syncEnabled && (
+                                <div className="history-top">
+                                    <div className="history-date-range">
+                                        <span className="label">Date Range: </span>
+                                        <span className="value">
+                                            {formatIncidentHistoryDateRange(item.filters)}
+                                        </span>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* SAVED ON */}
+                            <div className="saved-on">
+                                <span className="saved-label">Saved on: </span>
+                                <span style={{ color: "#000" }}>
+                                    {new Date(item.createdAt).toLocaleString()}
+                                </span>
+                            </div>
+
+                            {/* FILTER SUMMARY */}
+                            {item.filters && (
+                                <div className="history-filters">
+                                    {item.filters.syncEnabled != null && (
+                                        <div className="filter-item">
+                                            <strong>Sync Enabled:</strong>{" "}
+                                            {item.filters.syncEnabled ? "Yes" : "No"}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {/* DELETE MODAL */}
+            {showDeleteModal && (
+                <div
+                    style={{
+                        position: "fixed",
+                        inset: 0,
+                        background: "rgba(0,0,0,0.35)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        zIndex: 9999,
+                    }}
+                >
+                    <div
+                        style={{
+                            background: "#fff",
+                            borderRadius: "12px",
+                            padding: "20px 24px",
+                            minWidth: "360px",
+                            textAlign: "center",
+                        }}
+                    >
+                        <div
+                            style={{
+                                fontSize: "16px",
+                                fontWeight: 600,
+                                color: "#1f2937",
+                                marginBottom: "20px",
+                            }}
+                        >
+                            Are you sure you want to delete history?
+                        </div>
+
+                        <div style={{ display: "flex", justifyContent: "center", gap: "12px" }}>
+                            <button
+                                onClick={() => {
+                                    setShowDeleteModal(false);
+                                    setSelectedHistoryId(null);
+                                }}
+                                style={{
+                                    padding: "8px 22px",
+                                    borderRadius: "6px",
+                                    border: "none",
+                                    background: "#e5e7eb",
+                                    cursor: "pointer",
+                                    fontWeight: "500",
+                                }}
+                            >
+                                No
+                            </button>
+
+                            <button
+                                onClick={handleDeleteIncidentHistory}
+                                disabled={deleting}
+                                style={{
+                                    padding: "8px 22px",
+                                    borderRadius: "6px",
+                                    border: "none",
+                                    background: "#6C4CDC",
+                                    color: "#fff",
+                                    cursor: "pointer",
+                                    fontWeight: "500",
+                                }}
+                            >
+                                {deleting ? "..." : "Yes"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </section>
+    );
 
     const handleAnalyse = async () => {
         // console.log("Analyse clicked");
@@ -211,6 +574,40 @@ const IncidentAuditing = (props) => {
             ) : responseData ? (
                 /* ✅ Show response reports after processing finishes */
                 <>
+                    {isFromHistory && (
+                        <div
+                            className="financial-health-history-back-btn"
+                            onClick={() => {
+                                setIsFromHistory(false);
+
+                                // clear report view
+                                setResponseData(null);
+
+                                // reset filters
+                                setSearchTerm("");
+                                setFilterReportable("ALL");
+                                setFilterType("ALL");
+
+                                // clear expanded sources
+                                setExpandedSources([]);
+
+                                // reset sync + date fields (optional)
+                                setSyncEnabled(false);
+                                setStartDay("");
+                                setStartMonth("");
+                                setStartYear("");
+                                setEndDay("");
+                                setEndMonth("");
+                                setEndYear("");
+
+                                // clear upload files
+                                setIncidentAuditingFiles([]);
+                            }}
+                        >
+                            <GoArrowLeft size={22} color="#6C4CDC" />
+                            Back
+                        </div>
+                    )}
                     {/* Header */}
                     <div className="incident-dashboard-header">
                         <div className="incident-h">Incident Audit Dashboard</div>
@@ -245,6 +642,23 @@ const IncidentAuditing = (props) => {
                                 <option value="near_miss">Near Miss</option>
                                 <option value="other">Other</option>
                             </select>
+                            {!isFromHistory && (
+                                <button
+                                    onClick={handleSaveIncidentHistory}
+                                    style={{
+                                        background: "#6C4CDC",
+                                        color: "#fff",
+                                        border: "none",
+                                        padding: "8px 16px",
+                                        borderRadius: "8px",
+                                        fontSize: "14px",
+                                        fontWeight: 400,
+                                        cursor: "pointer",
+                                    }}
+                                >
+                                    {savingHistory ? "Saving..." : "Save"}
+                                </button>
+                            )}
                         </div>
 
                     </div>
@@ -368,6 +782,7 @@ const IncidentAuditing = (props) => {
                             </div>
                         ))}
                     </div>
+
                 </>
             ) : (
                 /* 📁 Default: show upload + info UI */
@@ -434,6 +849,7 @@ const IncidentAuditing = (props) => {
                             />
                         </div>
                     </div>
+
 
                     {/* Info Table */}
                     <div className="info-table">
@@ -599,6 +1015,7 @@ const IncidentAuditing = (props) => {
                     </button>
                 </>
             )}
+            {renderHistorySection()}
         </>
     );
 
