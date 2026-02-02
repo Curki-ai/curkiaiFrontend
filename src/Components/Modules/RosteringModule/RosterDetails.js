@@ -107,6 +107,21 @@ const RosterDetails = ({ setScreen, rosteringResponse, API_BASE, selectedClient,
             }
         };
     }, []);
+    const maskName = (name, index) => {
+        if (!name) return `Worker_${index + 1}`;
+
+        // create stable numeric mask based on original name
+        // example: any name -> Worker_123
+        let sum = 0;
+        const str = String(name);
+
+        for (let i = 0; i < str.length; i++) {
+            sum += str.charCodeAt(i);
+        }
+
+        const maskedNumber = (sum % 900) + 100; // ensures 100-999
+        return `Worker_${maskedNumber}`;
+    };
     const formatDateDMY = (dateStr) => {
         if (!dateStr) return "";
 
@@ -243,7 +258,7 @@ const RosterDetails = ({ setScreen, rosteringResponse, API_BASE, selectedClient,
         if (selected.includes(id)) {
             setSelected((prev) => prev.filter((s) => s !== id));
         } else {
-            setSelected((prev) => [...prev, id]); 
+            setSelected((prev) => [...prev, id]);
         }
     };
 
@@ -639,8 +654,10 @@ const RosterDetails = ({ setScreen, rosteringResponse, API_BASE, selectedClient,
                                         </p>
                                         <p className="staff-details">
                                             <strong>Worker Name:</strong>{' '}
-                                            <span style={{ color: 'black' }}>
-                                                {item.WorkerName || item?.worker_name || 'N/A'}
+                                            <span style={{ color: "black" }}>
+                                                {userEmail === "kris@curki.ai"
+                                                    ? maskName(item.WorkerName || item?.worker_name)
+                                                    : (item.WorkerName || item?.worker_name || "N/A")}
                                             </span>
                                         </p>
                                         <p className="staff-details">

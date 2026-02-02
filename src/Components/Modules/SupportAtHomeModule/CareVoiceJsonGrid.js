@@ -482,12 +482,12 @@ const FieldMapperPro = ({
 
 
                             <div className="fmp-add-row">
-                                {mapperMode === "edit" && (
-                                    <button className="fmp-add-btn" onClick={addNewField} type="button">
-                                        <Plus size={16} />
-                                        Add New Placeholder
-                                    </button>
-                                )}
+
+                                <button className="fmp-add-btn" onClick={addNewField} type="button">
+                                    <Plus size={16} />
+                                    Add New Placeholder
+                                </button>
+
                             </div>
                         </div>
                     </div>
