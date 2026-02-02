@@ -510,7 +510,7 @@ const FieldMapperPro = ({
                                     // ✅ NO config state updates here (prevents flicker)
                                     pushRowsDebounced(updatedRows);
                                 }}
-                                readOnly={mapperMode === "view"}
+                                readOnly={false}
                             />
                         </div>
                     </div>
