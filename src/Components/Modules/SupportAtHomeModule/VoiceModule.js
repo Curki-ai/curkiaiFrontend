@@ -966,7 +966,7 @@ const VoiceModule = (props) => {
 
             const data = await res.json();
             if (!data.success) throw new Error("Save failed");
-
+            alert(editingTemplateId ? "Template updated successfully" : "Template saved successfully");
             resetToTemplateList();
             fetchTemplates();
 
@@ -1333,23 +1333,21 @@ const VoiceModule = (props) => {
         <div className="voice-container">
             {/* ================= TOP ROW ================= */}
             <div className="voice-top-row">
-                    <MultiSelectCustom
-                        placeholder="Role"
-                        leftIcon={voiceRoleIcon}
-                        rightIcon={TlcPayrollDownArrow}  // optional arrow
-                        options={[
-                            { label: "Admin", value: "Admin" },
-                            { label: "Staff", value: "Staff" },
-                        ]}
-                        selected={[{ label: role, value: role }]}
-                        setSelected={(arr) => setRole(arr?.[0]?.value || "Admin")}
-                        isSingleSelect={true}
-                    />
+                <MultiSelectCustom
+                    placeholder="Role"
+                    leftIcon={voiceRoleIcon}
+                    rightIcon={TlcPayrollDownArrow}  // optional arrow
+                    options={[
+                        { label: "Admin", value: "Admin" },
+                        { label: "Staff", value: "Staff" },
+                    ]}
+                    selected={[{ label: role, value: role }]}
+                    setSelected={(arr) => setRole(arr?.[0]?.value || "Admin")}
+                    isSingleSelect={true}
+                />
 
                 {role === "Staff" && (
                     <>
-
-
                         <div className="voice-field">
                             <img
                                 src={voiceNameIcon}
@@ -1417,13 +1415,48 @@ const VoiceModule = (props) => {
                         <div className="vm-template-details">
 
                             {/* BACK */}
+                            {/* BACK + SAVE */}
                             <div
-                                className="vm-back"
-                                style={{ cursor: "pointer", marginBottom: "35px", display: "flex", fontSize: "14px", color: "#6C4CDC", alignItems: "center", gap: "2px" }}
-                                onClick={() => setActiveTemplate(null)}
+                                style={{
+                                    display: "flex",
+                                    justifyContent: "space-between",
+                                    alignItems: "center",
+                                    marginBottom: "35px"
+                                }}
                             >
-                                <GoArrowLeft size={22} color="#6C4CDC" /> Back
+                                <div
+                                    className="vm-back"
+                                    style={{
+                                        cursor: "pointer",
+                                        display: "flex",
+                                        fontSize: "14px",
+                                        color: "#6C4CDC",
+                                        alignItems: "center",
+                                        gap: "2px"
+                                    }}
+                                    onClick={() => setActiveTemplate(null)}
+                                >
+                                    <GoArrowLeft size={22} color="#6C4CDC" /> Back
+                                </div>
+
+                                <button
+                                    className="analysis-accept-btn"
+                                    onClick={() => {
+                                        // ✅ important: this tells saveTemplate() that we are updating existing template
+                                        setEditingTemplateId(activeTemplate.id);
+
+                                        // ✅ ensure prompt + mapper are set
+                                        setRawPrompt(activeTemplate.prompt || "");
+                                        setRawMapper(activeTemplate.mappings || null);
+
+                                        saveTemplate();
+                                    }}
+                                    disabled={isSaving}
+                                >
+                                    {isSaving ? "Saving..." : "Save Template"}
+                                </button>
                             </div>
+
 
                             {/* UPLOADED DOCUMENTS */}
                             <div className="vm-uploaded-docs">
@@ -1625,9 +1658,13 @@ const VoiceModule = (props) => {
                                                     if (openMenuId) return;
 
                                                     setActiveTemplate(tpl);
-                                                    setMapperMode("view");
+                                                    setMapperMode("edit");
 
-                                                    // ✅ show only mapper.mapper.* flattened in table
+                                                    // ✅ Needed for save API
+                                                    setEditingTemplateId(tpl.id);
+                                                    setRawPrompt(tpl.prompt || "");
+                                                    setRawMapper(tpl.mappings || null);
+
                                                     setMapperRows(mapperToRows(tpl.mappings));
                                                 }}
                                                 >
