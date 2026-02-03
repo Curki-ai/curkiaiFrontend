@@ -1,0 +1,212 @@
+.pbe-root {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.pbe-empty {
+    padding: 16px;
+    border: 1px dashed #ddd;
+    border-radius: 12px;
+    background: #fafafa;
+    font-size: 13px;
+    color: #666;
+}
+
+/* --- VIEW BLOCK --- */
+.pbe-block-view {
+    position: relative;
+    cursor: text;
+    padding: 18px;
+    border-radius: 16px;
+    transition: background 0.2s ease, border 0.2s ease;
+    border: 1px solid transparent;
+}
+
+.pbe-block-view:hover {
+    background: rgba(0, 0, 0, 0.02);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.pbe-markdown {
+    font-size: 14px;
+    color: #111;
+    line-height: 1.7;
+}
+
+/* hover info */
+.pbe-hover {
+    position: absolute;
+    right: 12px;
+    top: 12px;
+    font-size: 10px;
+    color: rgba(0, 0, 0, 0.35);
+    font-weight: 700;
+    text-transform: uppercase;
+    opacity: 0;
+    transform: translateY(6px);
+    transition: 0.2s ease;
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    pointer-events: none;
+}
+
+.pbe-block-view:hover .pbe-hover {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* --- EDIT BLOCK --- */
+.pbe-block-edit {
+    padding: 18px;
+    background: #fff;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 18px;
+    box-shadow: 0 32px 64px -16px rgba(0, 0, 0, 0.08);
+    animation: pbeSlideUp 0.25s ease forwards;
+}
+
+@keyframes pbeSlideUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.pbe-textarea {
+    width: 100%;
+    min-height: 80px;
+    resize: none;
+    border: none;
+    outline: none;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    font-size: 13px;
+    line-height: 1.7;
+    color: #111;
+    background: transparent;
+}
+
+.pbe-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.pbe-btn {
+    border: none;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 12px;
+    cursor: pointer;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.pbe-btn.save {
+    background: #6c4cdc;
+    color: #fff;
+}
+
+.pbe-btn.cancel {
+    background: transparent;
+    color: rgba(0, 0, 0, 0.4);
+}
+
+.pbe-btn.cancel:hover {
+    color: #000;
+}
+
+.pbe-live {
+    margin-left: auto;
+    font-size: 10px;
+    font-weight: 800;
+    color: rgba(0, 0, 0, 0.55);
+    background: rgba(0, 0, 0, 0.04);
+    padding: 6px 10px;
+    border-radius: 999px;
+    text-transform: uppercase;
+}
+
+/* ===== Tabs (Visual / Source) ===== */
+.pbe-tabs {
+    display: flex;
+    gap: 6px;
+    background: #f1f5f9;
+    padding: 4px;
+    border-radius: 14px;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    /* width: 31%; */
+    margin: auto;
+}
+
+.pbe-tab {
+    flex: 1;
+    padding: 10px 16px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    border: none;
+    cursor: pointer;
+    background: transparent;
+    color: #64748b;
+    transition: all 0.25s ease;
+}
+
+.pbe-tab:hover {
+    color: #334155;
+}
+
+.pbe-tab.active {
+    background: #fff;
+    color: #6c4cdc;
+    box-shadow: 0px 10px 26px rgba(0, 0, 0, 0.06);
+}
+
+/* ===== Source textarea ===== */
+.pbe-source {
+    border-radius: 18px;
+    overflow: hidden;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    background: #fff;
+}
+
+.pbe-source-textarea {
+    width: 100%;
+    min-height: 380px;
+    padding: 18px;
+    outline: none;
+    border: none;
+    resize: vertical;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+        "Liberation Mono", "Courier New", monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    color: #000;
+}
+.pbe-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.pbe-right {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+}
