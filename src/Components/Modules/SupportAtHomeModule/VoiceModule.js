@@ -40,6 +40,7 @@ import CareVoiceExplainationMarkdown from "./CareVoiceExplainationMarkdown";
 import { mapperToRows } from "./carevoiceMapperObject";
 import FieldMapperPro from "./CareVoiceJsonGrid";
 import MultiSelectCustom from "../FinancialModule/MultiSelectCustom"
+import PromptBlockEditor from "./PromptBlockEditor";
 const VoiceModule = (props) => {
     const userEmail = props?.user?.email;
     const domain = userEmail?.split("@")[1] || "";
@@ -117,6 +118,10 @@ const VoiceModule = (props) => {
     const [uploadedTranscriptFiles, setUploadedTranscriptFiles] = useState([]);
     const [currentTranscriptIndex, setCurrentTranscriptIndex] = useState(0);
     const [dropdownPos, setDropdownPos] = useState(null);
+    const [isPromptEditing, setIsPromptEditing] = useState(false);
+    const [editedPrompt, setEditedPrompt] = useState("");
+    const [savingPrompt, setSavingPrompt] = useState(false);
+    const [promptSavedToast, setPromptSavedToast] = useState(false);
     const sliderRef = useRef(null);
     const dropdownRef = useRef(null);
     const openDropdown = (e, tplId) => {
@@ -178,6 +183,57 @@ const VoiceModule = (props) => {
             setSelectedTemplate(null);
         }
     }, [role]);
+    const savePromptDirectly = async () => {
+        if (!activeTemplate?.id) return;
+
+        // ✅ fallback so prompt doesn't become empty by mistake
+        const promptToSave =
+            editedPrompt?.trim() ? editedPrompt : activeTemplate?.prompt || "";
+
+        if (!promptToSave.trim()) {
+            alert("Prompt cannot be empty");
+            return;
+        }
+
+        try {
+            setSavingPrompt(true);
+
+            const res = await fetch(
+                `${API_BASE}/api/voiceModuleTemplate/${activeTemplate.id}`,
+                {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        organizationId,
+                        userEmail,
+                        prompt: promptToSave,
+                    }),
+                }
+            );
+
+            const data = await res.json();
+            if (!data?.success) throw new Error("Prompt update failed");
+
+            // ✅ update UI
+            setActiveTemplate((prev) => ({ ...prev, prompt: promptToSave }));
+
+            // ✅ update RAW prompt too (important for saveTemplate)
+            setRawPrompt(promptToSave);
+
+            // ✅ refresh template list
+            fetchTemplates();
+
+            // ✅ show toast / success msg
+            setPromptSavedToast(true);
+            setTimeout(() => setPromptSavedToast(false), 1500);
+        } catch (err) {
+            console.error("Save prompt failed", err);
+            alert("Failed to save prompt");
+        } finally {
+            setSavingPrompt(false);
+        }
+    };
+
 
     const AccordionHeader = ({ icon, title, subtitle, isOpen, onClick }) => (
         <div
@@ -903,7 +959,7 @@ const VoiceModule = (props) => {
     const saveTemplate = async () => {
         if (isSaving) return;
         setIsSaving(true);
-
+        console.log("rawPrompt during save", rawPrompt)
         try {
             const formData = new FormData();
 
@@ -1577,9 +1633,42 @@ const VoiceModule = (props) => {
 
                             {templateAccordions.aiResponse && (
                                 <div className="analysis-box">
-                                    <CareVoiceExplainationMarkdown content={activeTemplate.prompt} />
+
+                                    <PromptBlockEditor
+                                        value={editedPrompt || activeTemplate?.prompt || ""}
+                                        onChange={(val) => setEditedPrompt(val)}
+                                        rightSlot={
+                                            <button
+                                                style={{
+                                                    background: "#6C4CDC",
+                                                    color: "#fff",
+                                                    border: "none",
+                                                    padding: "10px 24px",
+                                                    borderRadius: "10px",
+                                                    fontWeight: 600,
+                                                    cursor: savingPrompt ? "not-allowed" : "pointer",
+                                                    opacity: savingPrompt ? 0.7 : 1,
+                                                }}
+                                                disabled={savingPrompt}
+                                                onClick={savePromptDirectly}
+                                            >
+                                                {savingPrompt ? "Saving..." : "Save"}
+                                            </button>
+                                        }
+                                    />
+
+
+                                    {promptSavedToast && (
+                                        <div style={{ marginTop: "12px", color: "#16a34a", fontWeight: 600 }}>
+                                            ✅ Saved
+                                        </div>
+                                    )}
                                 </div>
                             )}
+
+
+
+
 
                             {/* GENERATED TEMPLATE ACCORDION */}
                             <AccordionHeader
