@@ -959,7 +959,7 @@ const VoiceModule = (props) => {
     const saveTemplate = async () => {
         if (isSaving) return;
         setIsSaving(true);
-        console.log("rawPrompt during save", rawPrompt)
+        // console.log("rawPrompt during save", rawPrompt)
         try {
             const formData = new FormData();
 
