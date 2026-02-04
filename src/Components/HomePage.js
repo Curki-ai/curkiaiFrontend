@@ -96,8 +96,8 @@ const HomePage = () => {
   const handleLeftModalOpen = () => setLeftModalVisible(true);
   const handleLeftModalClose = () => setLeftModalVisible(false);
   // console.log("user?.email",user?.email)
-  // const userEmail = user?.email
-  const userEmail = "kris@curki.ai";
+  const userEmail = user?.email
+  // const userEmail = "kris@curki.ai";
   const moduleSuggestions = {
     tlc: [
       "Which 10 employees in NDIS Department have the highest overtime hours and overtime $ ?",
