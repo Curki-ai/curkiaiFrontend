@@ -73,6 +73,7 @@ const TlcNewClientProfitability = (props) => {
         "kbrennen@tenderlovingcaredisability.com.au": "New South Wales",
     };
     const userEmail = user?.email;
+    // const userEmail = "kris@curki.ai"
     const userState = EMAIL_STATE_MAP[userEmail];
     const [tabs, setTabs] = useState([
         {
@@ -401,7 +402,6 @@ const TlcNewClientProfitability = (props) => {
     }, [activeTab]);
 
     useEffect(() => {
-        const userEmail = user?.email?.toLowerCase().trim();
         if (!userEmail) {
             setIsAllowed(false);
             return;
@@ -511,7 +511,13 @@ const TlcNewClientProfitability = (props) => {
                 formData.append("files", file);
             });
 
-            // ✅ 3. Send request
+            // ✅ 3. Append env only for kris sandbox user
+            console.log("userEmail?.trim().toLowerCase()",userEmail?.trim().toLowerCase())
+            if (userEmail?.trim().toLowerCase() === "kris@curki.ai") {
+                formData.append("env", "sandbox");
+            }
+
+            // ✅ 4. Send request
             const res = await fetch(
                 `${BASE_URL}/header_modules/clients_profitability/analyze`,
                 {
@@ -519,8 +525,10 @@ const TlcNewClientProfitability = (props) => {
                     body: formData,
                 }
             );
+
             const finalReponse = await res.json();
-            console.log("final response", finalReponse)
+            console.log("final response", finalReponse);
+
             return finalReponse;
         } catch (err) {
             console.error("Upload failed:", err);
@@ -608,14 +616,19 @@ const TlcNewClientProfitability = (props) => {
                 setAiProgressDisplay(aiProgressRef.current[activeTab]);
             }, 600);
 
+            const bodyPayload = {
+                table_data: activeTabData.responseData.table,
+                ...(userEmail?.trim().toLowerCase() === "kris@curki.ai"
+                    ? { env: "sandbox" }
+                    : {}),
+            };
+
             const res = await fetch(
                 `${BASE_URL}/header_modules/clients_profitability/ai_analysis`,
                 {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        table_data: activeTabData.responseData.table,
-                    }),
+                    body: JSON.stringify(bodyPayload),
                 }
             );
 
@@ -637,7 +650,7 @@ const TlcNewClientProfitability = (props) => {
             updateTab({ saving: true });
 
             const payload = {
-                email: user?.email,
+                email: userEmail,
                 responseData: activeTabData.responseData,
                 filters: {
                     start: startDate ? startDate.toISOString() : null,
@@ -1287,7 +1300,7 @@ const TlcNewClientProfitability = (props) => {
 
     useEffect(() => {
         const fetchHistory = async () => {
-            const email = props.user?.email?.trim().toLowerCase();
+            const email = userEmail
             if (!email) return;
 
             try {
