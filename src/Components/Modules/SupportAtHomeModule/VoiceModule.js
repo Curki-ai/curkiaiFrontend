@@ -41,6 +41,7 @@ import { mapperToRows } from "./carevoiceMapperObject";
 import FieldMapperPro from "./CareVoiceJsonGrid";
 import MultiSelectCustom from "../FinancialModule/MultiSelectCustom"
 import PromptBlockEditor from "./PromptBlockEditor";
+import incrementAnalysisCount from "../FinancialModule/TLcAnalysisCount";
 const VoiceModule = (props) => {
     const userEmail = props?.user?.email;
     const domain = userEmail?.split("@")[1] || "";
@@ -848,7 +849,7 @@ const VoiceModule = (props) => {
                     setStage("review");
                     clearInterval(interval);
                 }
-
+                // console.log("data in poll latest", data);
                 if (data.type === "final_result") {
                     pushEvent("Final document generated", 4);
 
@@ -859,7 +860,13 @@ const VoiceModule = (props) => {
 
                     // ✅ ONLY mapper.mapper flatten
                     setMapperRows(mapperToRows(data?.mapper));
-
+                    if (userEmail) {
+                        await incrementAnalysisCount(
+                            userEmail,
+                            "care-voice-onboarding",
+                            data?.llm_cost?.total_usd
+                        );
+                    }
                     setProcessingProgress(100);
                     stopProgress();
                     setStage("completed");
@@ -1223,13 +1230,20 @@ const VoiceModule = (props) => {
             });
 
             const data = await res.json();
-            // console.log("data in submitToDocumentFiller", data)
+            if (userEmail) {
+                await incrementAnalysisCount(
+                    userEmail,
+                    "care-voice-document-generation",
+                    data?.llm_cost?.total_usd
+                )
+            }
             if (data.success && data.filled_document) {
                 downloadBase64File(
                     data.filled_document,
                     "Generated_Document.docx"
                 );
             }
+
             // window.open(data.filled_document, "_blank");
 
         } catch (err) {
@@ -1320,6 +1334,14 @@ const VoiceModule = (props) => {
                 `${tpl.templateName}_${file.name}.docx`
             );
         }
+        if (userEmail) {
+            await incrementAnalysisCount(
+                userEmail,
+                "care-voice-document-generation",
+                data?.llm_cost?.total_usd
+            )
+        }
+
     };
 
 
@@ -2470,7 +2492,7 @@ const VoiceModule = (props) => {
                             ) : (
                                 /* ================= TEMPLATE LIST ================= */
                                 templates.map((tpl) => {
-                                    console.log("tpl", tpl)
+                                    // console.log("tpl", tpl)
                                     const isSelected =
                                         selectedTemplate?.isMulti &&
                                         selectedTemplate.templates.some(t => t.id === tpl.id);
