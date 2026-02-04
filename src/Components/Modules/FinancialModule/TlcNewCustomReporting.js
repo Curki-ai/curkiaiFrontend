@@ -99,7 +99,8 @@ export default function TlcNewCustomerReporting(props) {
         "laurente@tenderlovingcaredisability.com.au": "Victoria",
         "kbrennen@tenderlovingcaredisability.com.au": "New South Wales",
     };
-    const userEmail = props?.user?.email;
+    const userEmail = props?.user?.email?.trim()?.toLowerCase();
+    // const userEmail = "kris@curki.ai";
     const userState = EMAIL_STATE_MAP[userEmail];
     const handleNewTab = () => {
         const newId = tabs.length ? Math.max(...tabs.map((t) => t.id)) + 1 : 1;
@@ -590,10 +591,12 @@ export default function TlcNewCustomerReporting(props) {
             if (selectedRole.length)
                 query.append("role", selectedRole.map((r) => r.value).join(","));
 
-            const userEmail = props?.user?.email?.trim()?.toLowerCase();
-            // const userEmail = "kris@curki.ai"
-            const url = `https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/payroll/filter?${query.toString()}&${userEmail}`;
+            query.append("userEmail", userEmail);
 
+            const url = `https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/payroll/filter?${query.toString()}`;
+
+            console.log("userEmail", userEmail)
+            console.log("Analysis API URL:", url);
             let analyzeData;
 
             if (USE_DUMMY_DATA) {
@@ -605,9 +608,10 @@ export default function TlcNewCustomerReporting(props) {
             } else {
                 const analyzeRes = await fetch(url);
                 analyzeData = await analyzeRes.json();
+                console.log("Analysis API response:", analyzeData);
             }
 
-
+            console.log("analyzeData.payload", analyzeData.payload)
             updateTab({ tlcAskAiPayload: analyzeData.payload });
             if (tabs.find(t => t.id === activeTab)) {
                 props.setTlcAskAiPayload(analyzeData.payload);
@@ -645,7 +649,6 @@ export default function TlcNewCustomerReporting(props) {
 
             });
             try {
-                const userEmail = props?.user?.email?.trim()?.toLowerCase();
                 if (userEmail) {
                     await incrementAnalysisCount(userEmail, "tlc-report-analysis");
                 } else {
@@ -713,7 +716,6 @@ export default function TlcNewCustomerReporting(props) {
         activeTabData?.selectedEmploymentType,
     ]);
     useEffect(() => {
-        const userEmail = props?.user?.email?.trim()?.toLowerCase();
 
         if (!userEmail) {
             setIsAllowed(false);
@@ -749,7 +751,7 @@ export default function TlcNewCustomerReporting(props) {
             return;
         }
 
-        const email = props.user.email.trim().toLowerCase();
+        const email = userEmail
         if (!email) {
             alert("Email is missing — cannot save data.");
             return;
@@ -840,11 +842,10 @@ export default function TlcNewCustomerReporting(props) {
     // -------------------- HISTORY FETCH --------------------
     useEffect(() => {
         const fetchHistory = async () => {
-            const email = props.user?.email?.trim().toLowerCase();
-            if (!email) return;
+            if (!userEmail) return;
             try {
                 setLoadingHistory(true);
-                const res = await fetch(`https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/payroll/history?email=${email}`);
+                const res = await fetch(`https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/payroll/history?email=${userEmail}`);
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error || "Failed to fetch history");
                 const filteredHistory = userState
@@ -907,8 +908,6 @@ export default function TlcNewCustomerReporting(props) {
                 updateTab({ aiProgress: Math.floor(progress) });
             }, 600);
             console.log("Sending full payload to AI Analysis API...");
-            const userEmail = props?.user?.email?.trim()?.toLowerCase();
-            // const userEmail = "kris@curki.ai"
             if (userEmail === "kris@curki.ai") {
                 aiPayload.env = "sandbox";   // exactly payload = { ..., env: "sandbox" }
             }
@@ -939,7 +938,6 @@ export default function TlcNewCustomerReporting(props) {
                 aiProgress: 100,   // ✅ COMPLETE
             });
             try {
-                const userEmail = props?.user?.email?.trim()?.toLowerCase();
                 if (userEmail) {
                     await incrementAnalysisCount(userEmail, "tlc-ai-analysis", data?.ai_analysis_cost);
                 }
