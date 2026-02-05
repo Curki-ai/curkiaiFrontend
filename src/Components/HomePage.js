@@ -99,7 +99,7 @@ const HomePage = () => {
   const handleLeftModalOpen = () => setLeftModalVisible(true);
   const handleLeftModalClose = () => setLeftModalVisible(false);
   // console.log("user?.email",user?.email)
-  const userEmail = user?.email
+  const userEmail = user?.email;
   // const userEmail = "kris@curki.ai";
   const moduleSuggestions = {
     tlc: [
@@ -641,6 +641,26 @@ const HomePage = () => {
                           <IoMdInformationCircleOutline size={20} color="#5B36E1" />
                           Our AI will instantly give.....
                         </div>
+                        {
+                          !isMobileOrTablet && (
+                            <>
+                              {userEmail === "kris@curki.ai" && (
+                              <p
+                                style={{
+                                  fontSize: "16px",
+                                  color: "red", 
+                                  marginTop: "4px",
+                                  fontWeight: 700, 
+                                  letterSpacing: "0.2px",
+                                  textTransform:"uppercase"
+                                }}
+                              >
+                                Product Demo with Dummy Data
+                              </p>
+                              )}
+                            </>
+                          )
+                        }
                       </div>
                       <div
                         style={{
@@ -696,80 +716,67 @@ const HomePage = () => {
                 </div>
                 {isMobileOrTablet && showMobileMenu && (
                   <>
-                    {userEmail === "kris@curki.ai" && (
-                      <p
-                        style={{
-                          fontSize: "16px",
-                          color: "#374151", // darker gray for better visibility
-                          marginTop: "4px",
-                          fontWeight: 700, // bold
-                          letterSpacing: "0.2px",
-                        }}
-                      >
-                        Product Demo with Dummy Data
-                      </p>
-                    )}
-                  {/* RIGHT */}
-                  <div
-                    onClick={() => setShowMobileMenu(false)}
-                    style={{
-                      position: "fixed",
-                      inset: 0,
-                      backgroundColor: "rgba(0,0,0,0.3)",
-                      zIndex: 1000,
-                    }}
-                  >
+                    {/* RIGHT */}
                     <div
-                      onClick={(e) => e.stopPropagation()}
+                      onClick={() => setShowMobileMenu(false)}
                       style={{
-                        position: "absolute",
-                        top: 0,
-                        right: 0,
-                        width: "260px",
-                        height: "100%",
-                        backgroundColor: "#fff",
-                        padding: "20px",
-                        boxShadow: "-4px 0 12px rgba(0,0,0,0.15)",
+                        position: "fixed",
+                        inset: 0,
+                        backgroundColor: "rgba(0,0,0,0.3)",
+                        zIndex: 1000,
                       }}
                     >
                       <div
+                        onClick={(e) => e.stopPropagation()}
                         style={{
-                          fontWeight: 600,
-                          marginBottom: "10px",
-                          fontSize: "14px",
+                          position: "absolute",
+                          top: 0,
+                          right: 0,
+                          width: "260px",
+                          height: "100%",
+                          backgroundColor: "#fff",
+                          padding: "20px",
+                          boxShadow: "-4px 0 12px rgba(0,0,0,0.15)",
                         }}
                       >
-                        Account
+                        <div
+                          style={{
+                            fontWeight: 600,
+                            marginBottom: "10px",
+                            fontSize: "14px",
+                          }}
+                        >
+                          Account
+                        </div>
+
+                        <div
+                          style={{
+                            fontSize: "13px",
+                            color: "#555",
+                            wordBreak: "break-all",
+                          }}
+                        >
+                          {user?.email}
+                        </div>
+
+                        <hr style={{ margin: "16px 0" }} />
+
+                        <button
+                          onClick={handleLogout}
+                          style={{
+                            background: "#6C4CDC",
+                            color: "#fff",
+                            border: "none",
+                            padding: "10px 14px",
+                            borderRadius: "8px",
+                            cursor: "pointer",
+                            width: "100%",
+                          }}
+                        >
+                          Logout
+                        </button>
                       </div>
-
-                      <div
-                        style={{
-                          fontSize: "13px",
-                          color: "#555",
-                          wordBreak: "break-all",
-                        }}
-                      >
-                        {user?.email}
-                      </div>
-
-                      <hr style={{ margin: "16px 0" }} />
-
-                      <button
-                        onClick={handleLogout}
-                        style={{
-                          background: "#6C4CDC",
-                          color: "#fff",
-                          border: "none",
-                          padding: "10px 14px",
-                          borderRadius: "8px",
-                          cursor: "pointer",
-                          width: "100%",
-                        }}
-                      >
-                        Logout
-                      </button>
                     </div>
-                  </div>
                   </>
                 )}
 
@@ -833,7 +840,7 @@ const HomePage = () => {
                     <HRAnalysis handleClick={handleClick} selectedRole="Smart Onboarding (Staff)" setShowFeedbackPopup={setShowFeedbackPopup} user={user} setManualResumeZip={setManualResumeZip} />
                   </div>
                   <div style={{ display: selectedRole === "Care Voice" ? "block" : "none" }}>
-                    <VoiceModule user={user} isMobileOrTablet={isMobileOrTablet}/>
+                    <VoiceModule user={user} isMobileOrTablet={isMobileOrTablet} />
                   </div>
                   <div style={{ display: selectedRole === "Client Profitability & Service" ? "block" : "none" }}>
                     <CareServicesEligibility selectedRole="Client Profitability & Service" handleClick={handleClick} setShowFeedbackPopup={setShowFeedbackPopup} />

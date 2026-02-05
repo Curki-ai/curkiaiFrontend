@@ -181,7 +181,7 @@ const PricingPlansModal = ({ onClose, email: userEmail, firstName: firstName, se
 
                 {/* Enterprise */}
                 <div className="enterprise">
-                    <div style={{ display: "flex", gap: "60px" }}>
+                    <div className="enterprise-content">
                         <h3 className="enterprise-title">Custom Enterprise</h3>
 
                         <div className="enterprise-features">
