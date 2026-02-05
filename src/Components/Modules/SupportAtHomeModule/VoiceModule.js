@@ -42,6 +42,7 @@ import FieldMapperPro from "./CareVoiceJsonGrid";
 import MultiSelectCustom from "../FinancialModule/MultiSelectCustom"
 import PromptBlockEditor from "./PromptBlockEditor";
 import incrementAnalysisCount from "../FinancialModule/TLcAnalysisCount";
+import { FiMic } from "react-icons/fi";
 const VoiceModule = (props) => {
     const userEmail = props?.user?.email;
     const domain = userEmail?.split("@")[1] || "";
@@ -429,12 +430,10 @@ const VoiceModule = (props) => {
 
             if (data.status === "completed") {
                 clearInterval(interval);
+
                 setTranscriptData(data);
-                setIsGenerating(true);
-                // console.log("FINAL TRANSCRIPT:", data);
-                if (selectedTemplate) {
-                    submitToDocumentFiller();   // 🚀 DIRECT CALL
-                }
+                setTranscribing(false);
+                await submitMultipleTemplatesWithAudio();
             }
 
             if (data.status === "error") {
@@ -1041,65 +1040,73 @@ const VoiceModule = (props) => {
         }
     };
 
+    const processSingleTranscriptWithTemplateText = async (tpl, transcriptText) => {
+        const formData = new FormData();
 
-    // const saveTemplate = async () => {
-    //     if (isSaving) return;
+        formData.append("templateBlobName", tpl.templateBlobName);
+        formData.append("templateMimeType", tpl.templateMimeType);
+        formData.append("templateOriginalName", tpl.templateOriginalName);
 
-    //     console.log("[UI][SAVE] Saving template");
-    //     console.log("[UI][SAVE] RAW PROMPT:", rawPrompt);
-    //     console.log("[UI][SAVE] RAW MAPPER:", rawMapper);
+        formData.append(
+            "sampleBlobs",
+            JSON.stringify(tpl.sampleBlobs || [])
+        );
 
-    //     setIsSaving(true);
+        formData.append("prompt", tpl.prompt);
 
-    //     const payload = {
-    //         organizationId: organizationId,
-    //         domain: domain,
-    //         userEmail: userEmail,
+        const parsedJson = JSON.parse(tpl.mappings);
+        const normalizedMapper = {
+            ...parsedJson,
+            mapper: parsedJson?.mapper?.mapper ?? parsedJson?.mapper,
+        };
 
-    //         // 🔐 SOURCE OF TRUTH
-    //         prompt: rawPrompt,
-    //         mappings: rawMapper,
+        formData.append("mapper", JSON.stringify(normalizedMapper));
 
-    //         // UI helpers (optional, future use)
-    //         uiPromptPreview: analysisText,
-    //         uiMappings: mapperRows,
+        // 🔥 KEY DIFFERENCE: TEXT, NOT FILE
+        formData.append("transcript_data", transcriptText);
 
-    //         sessionId
-    //     };
+        const res = await fetch(`${API_BASE}/api/document-filler`, {
+            method: "POST",
+            body: formData,
+        });
 
-    //     try {
-    //         const url = editingTemplateId
-    //             ? `${API_BASE}/api/voiceModuleTemplate/${editingTemplateId}`
-    //             : `${API_BASE}/api/voiceModuleTemplate`;
+        const data = await res.json();
 
-    //         const method = editingTemplateId ? "PUT" : "POST";
+        if (data.success && data.filled_document) {
+            downloadBase64File(
+                data.filled_document,
+                `${tpl.templateName || "Generated"}_Audio.docx`
+            );
+        }
 
-    //         const res = await fetch(url, {
-    //             method,
-    //             headers: { "Content-Type": "application/json" },
-    //             body: JSON.stringify(payload)
-    //         });
+        if (userEmail) {
+            await incrementAnalysisCount(
+                userEmail,
+                "care-voice-document-generation",
+                data?.llm_cost?.total_usd
+            );
+        }
+    };
+    const submitMultipleTemplatesWithAudio = async () => {
+        if (
+            !selectedTemplate ||
+            !selectedTemplate.isMulti ||
+            selectedTemplate.templates.length === 0 ||
+            !transcriptData?.text
+        ) return;
 
-    //         const data = await res.json();
+        setIsGenerating(true);
+        setCurrentTask("Generating documents from audio");
 
-    //         console.log("[UI][SAVE] Response:", data);
+        const tasks = selectedTemplate.templates.map((tpl) =>
+            processSingleTranscriptWithTemplateText(tpl, transcriptData.text)
+        );
 
-    //         if (!data.success) {
-    //             setIsSaving(false);
-    //             return;
-    //         }
+        await Promise.all(tasks);
 
-    //         setEditingTemplateId(null);
-    //         resetToTemplateList();
-    //         fetchTemplates();
-
-    //     } catch (err) {
-    //         console.error("[UI][SAVE] Save failed", err);
-    //     } finally {
-    //         setIsSaving(false);
-    //     }
-    // };
-
+        setIsGenerating(false);
+        setCurrentTask("");
+    };
 
 
     // Reset view when role changes
@@ -1406,15 +1413,28 @@ const VoiceModule = (props) => {
             setDownloadingFileKey(null);
         }
     };
+
+    useEffect(() => {
+        if (props.isMobileOrTablet) {
+            setRole("Staff");
+        }
+    }, [props.isMobileOrTablet]);
+
     const transcriptInputRef = useRef(null);
     return (
         <div className="voice-container">
             {/* ================= TOP ROW ================= */}
+            {props.isMobileOrTablet && 
+            <div style={{display:'flex',justifyContent:'center',alignItems:'center',marginBottom:'16px',gap:'2px'}}>
+            <FiMic size={22}/> 
+            <div style={{textAlign:'center',fontSize:'20px',fontWeight:'500',}}>Care Voice</div>
+            </div>
+            }
             <div className="voice-top-row">
                 <MultiSelectCustom
                     placeholder="Role"
                     leftIcon={voiceRoleIcon}
-                    rightIcon={TlcPayrollDownArrow}  // optional arrow
+                    rightIcon={props.isMobileOrTablet ? null : TlcPayrollDownArrow}  // optional arrow
                     options={[
                         { label: "Admin", value: "Admin" },
                         { label: "Staff", value: "Staff" },
@@ -1422,6 +1442,7 @@ const VoiceModule = (props) => {
                     selected={[{ label: role, value: role }]}
                     setSelected={(arr) => setRole(arr?.[0]?.value || "Admin")}
                     isSingleSelect={true}
+                    disabled={props.isMobileOrTablet} 
                 />
 
                 {role === "Staff" && (
@@ -2138,15 +2159,7 @@ const VoiceModule = (props) => {
             {/* ================= STAFF VIEW ================= */}
             {role === "Staff" && staffStep === "working" && (
                 <>
-                    <div
-                        style={{
-                            position: "relative",          // ✅ anchor for absolute child
-                            display: "flex",
-                            justifyContent: "center",       // ✅ real centering
-                            alignItems: "center",
-                            padding: "24px 32px",
-                        }}
-                    >
+                    <div className="record-conversation">
                         {/* LEFT */}
                         <div style={{ textAlign: "center" }}>
                             <h2 style={{ margin: 0, fontWeight: 600 }}>
@@ -2159,19 +2172,7 @@ const VoiceModule = (props) => {
 
                         {/* RIGHT */}
                         {selectedTemplate && (
-                            <div
-                                style={{
-                                    position: "absolute",
-                                    right: "32px",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: "12px",
-                                    padding: "10px 16px",
-                                    borderRadius: "999px",
-                                    border: "1px solid #E5E7EB",
-                                    background: "#FFFFFF",
-                                }}
-                            >
+                            <div className="selectedtemplatebtn">
                                 {/* LEFT DOC ICON */}
                                 <img
                                     src={careVoiceStaffTemplateIcon}
@@ -2371,7 +2372,7 @@ const VoiceModule = (props) => {
                         />
 
                         {/* ✅ GENERATE DOCUMENT BUTTON (PUT BACK) */}
-                        <div style={{ textAlign: "right", marginTop: "24px" }}>
+                        <div style={{ textAlign: "right", marginTop: "24px",marginBottom:'64px'}}>
                             <button
                                 className="staff-primary"
                                 onClick={

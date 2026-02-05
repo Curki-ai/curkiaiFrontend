@@ -8,6 +8,7 @@ import Modal from "./Modal";
 import SignIn from "./SignIn";
 import MarkdownParser from "./MarkdownParser";
 import { auth, getCount, incrementCount, signOut } from "../firebase";
+import black_logo from "../../src/Images/Black_logo.png";
 import FeedbackModal from "./FeedbackModal";
 import PricingModal from "./PricingModal";
 import SubscriptionStatus from "./SubscriptionStatus";
@@ -91,6 +92,8 @@ const HomePage = () => {
   const [IsSmartRosteringDetails, SetIsSmartRosteringDetails] = useState(false);
   const [subscriptionInfo, setSubscriptionInfo] = useState(null);
   const [trialCountdown, setTrialCountdown] = useState("");
+  const [isMobileOrTablet, setIsMobileOrTablet] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
   const handleModalOpen = () => setModalVisible(true);
   const handleModalClose = () => setModalVisible(false);
   const handleLeftModalOpen = () => setLeftModalVisible(true);
@@ -163,6 +166,18 @@ const HomePage = () => {
 
     return () => clearInterval(interval);
   }, [subscriptionInfo]);
+
+
+  useEffect(() => {
+    const checkScreen = () => {
+      setIsMobileOrTablet(window.innerWidth <= 820); // mobile + tablet
+    };
+
+    checkScreen(); // run on mount
+    window.addEventListener("resize", checkScreen);
+
+    return () => window.removeEventListener("resize", checkScreen);
+  }, []);
 
 
 
@@ -530,6 +545,14 @@ const HomePage = () => {
     setShowDropdown(false);
   };
 
+  // Force Care Voice on mobile/tablet
+  useEffect(() => {
+    if (isMobileOrTablet) {
+      setSelectedRole("Care Voice");
+    }
+  }, [isMobileOrTablet]);
+
+
   // SubscriptionStatus(user, setShowPricingModal);
   NewSubscriptionStatus(user, setShowPricingModal, setSubscriptionInfo);
 
@@ -545,7 +568,7 @@ const HomePage = () => {
             <PricingPlansModal onClose={() => setShowPricingModal(false)} email={user?.email} firstName={user?.displayName} setSubscriptionInfo={setSubscriptionInfo} />
           ) : (
             <div className="page-container">
-              {sidebarVisible ? (
+              {!isMobileOrTablet && sidebarVisible && (
                 <Sidebar
                   onCollapse={toggleSidebar}
                   selectedRole={selectedRole}
@@ -566,10 +589,6 @@ const HomePage = () => {
                   showUploadedReport={showUploadedReport}
                   setShowUploadReport={setShowUploadReport}
                 />
-              ) : (
-                <div className="collapsed-button" onClick={toggleSidebar}>
-                  <img src={BlackExpandIcon} height={27} width={28} alt="blackexpand" />
-                </div>
               )}
 
               <div style={{ flex: 1, height: "100vh", overflowY: "auto" }}>
@@ -586,40 +605,97 @@ const HomePage = () => {
                     boxShadow: "0px 12px 40px -12px rgba(0, 0, 0, 0.06)",
                   }}
                 >
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "20px",
-                    }}
-                  >
-                    {(isTlcPage || isTlcClientProfitabilityPage) && (
-                      <img
-                        src={userEmail === "kris@curki.ai" ? dummyLogo : newTlcLogo}
-                        alt="TLC"
+
+                  {!isMobileOrTablet && (
+                    <>
+                      <div
                         style={{
-                          height: "42px",
-                          width: "auto",
-                          marginBottom:"5px"
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "20px",
                         }}
-                      />
-                    )}
-                    <div
-                      className="page-title-btn"
-                      onClick={handleLeftModalOpen}
-                      style={
-                        selectedRole === "Smart Rostering"
-                          ? IsSmartRosteringDetails
-                            ? { marginLeft: "120px" }
-                            : IsSmartRosteringHistory
-                              ? { marginLeft: "84px" }
+                      >
+                        {(isTlcPage || isTlcClientProfitabilityPage) && (
+                          <img
+                            src={userEmail === "kris@curki.ai" ? dummyLogo : newTlcLogo}
+                            alt="TLC"
+                            style={{
+                              height: "32px",
+                              width: "auto",
+                            }}
+                          />
+                        )}
+                        <div
+                          className="page-title-btn"
+                          onClick={handleLeftModalOpen}
+                          style={
+                            selectedRole === "Smart Rostering"
+                              ? IsSmartRosteringDetails
+                                ? { marginLeft: "120px" }
+                                : IsSmartRosteringHistory
+                                  ? { marginLeft: "84px" }
+                                  : {}
                               : {}
-                          : {}
-                      }
+                          }
+                        >
+                          <IoMdInformationCircleOutline size={20} color="#5B36E1" />
+                          Our AI will instantly give.....
+                        </div>
+                      </div>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "12px",
+                        }}
+                      >
+                        <div className="page-title-btn" onClick={handleModalOpen}>
+                          <IoMdInformationCircleOutline size={20} color="#5B36E1" /> Accepted Types Of Reports
+                        </div>
+
+                        {trialCountdown && (
+                          <div
+                            style={{
+                              fontSize: "13px",
+                              fontWeight: 500,
+                              color: "#6C4CDC",
+                              background: "#F4F1FF",
+                              padding: "6px 10px",
+                              borderRadius: "8px",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {trialCountdown}
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
+                  {isMobileOrTablet && (
+                    <div
+                      style={{
+                        width: "100%",
+                        display: "flex",
+                        justifyContent: "space-between",
+                      }}
                     >
-                      <IoMdInformationCircleOutline size={20} color="#5B36E1" />
-                      Our AI will instantly give.....
+                      <img src={black_logo} style={{ width: "36%", height: "auto" }} alt="curkiLogo" />
+                      <button
+                        onClick={() => setShowMobileMenu(true)}
+                        style={{
+                          background: "none",
+                          border: "none",
+                          fontSize: "26px",
+                          cursor: "pointer",
+                        }}
+                      >
+                        ☰
+                      </button>
                     </div>
+                  )}
+                </div>
+                {isMobileOrTablet && showMobileMenu && (
+                  <>
                     {userEmail === "kris@curki.ai" && (
                       <p
                         style={{
@@ -633,41 +709,71 @@ const HomePage = () => {
                         Product Demo with Dummy Data
                       </p>
                     )}
-                  </div>
-
-
-
-
                   {/* RIGHT */}
                   <div
+                    onClick={() => setShowMobileMenu(false)}
                     style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "12px",
+                      position: "fixed",
+                      inset: 0,
+                      backgroundColor: "rgba(0,0,0,0.3)",
+                      zIndex: 1000,
                     }}
                   >
-                    <div className="page-title-btn" onClick={handleModalOpen}>
-                      <IoMdInformationCircleOutline size={20} color="#5B36E1" /> Accepted Types Of Reports
-                    </div>
+                    <div
+                      onClick={(e) => e.stopPropagation()}
+                      style={{
+                        position: "absolute",
+                        top: 0,
+                        right: 0,
+                        width: "260px",
+                        height: "100%",
+                        backgroundColor: "#fff",
+                        padding: "20px",
+                        boxShadow: "-4px 0 12px rgba(0,0,0,0.15)",
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontWeight: 600,
+                          marginBottom: "10px",
+                          fontSize: "14px",
+                        }}
+                      >
+                        Account
+                      </div>
 
-                    {trialCountdown && (
                       <div
                         style={{
                           fontSize: "13px",
-                          fontWeight: 500,
-                          color: "#6C4CDC",
-                          background: "#F4F1FF",
-                          padding: "6px 10px",
-                          borderRadius: "8px",
-                          whiteSpace: "nowrap",
+                          color: "#555",
+                          wordBreak: "break-all",
                         }}
                       >
-                        {trialCountdown}
+                        {user?.email}
                       </div>
-                    )}
-                  </div>
 
-                </div>
+                      <hr style={{ margin: "16px 0" }} />
+
+                      <button
+                        onClick={handleLogout}
+                        style={{
+                          background: "#6C4CDC",
+                          color: "#fff",
+                          border: "none",
+                          padding: "10px 14px",
+                          borderRadius: "8px",
+                          cursor: "pointer",
+                          width: "100%",
+                        }}
+                      >
+                        Logout
+                      </button>
+                    </div>
+                  </div>
+                  </>
+                )}
+
+
 
 
                 <div className={isTlcPage ? "tlc-custom-main-content" : isSmartRosteringPage ? "smart-rostering-main-content" : "main-content"} style={{
@@ -727,7 +833,7 @@ const HomePage = () => {
                     <HRAnalysis handleClick={handleClick} selectedRole="Smart Onboarding (Staff)" setShowFeedbackPopup={setShowFeedbackPopup} user={user} setManualResumeZip={setManualResumeZip} />
                   </div>
                   <div style={{ display: selectedRole === "Care Voice" ? "block" : "none" }}>
-                    <VoiceModule user={user} />
+                    <VoiceModule user={user} isMobileOrTablet={isMobileOrTablet}/>
                   </div>
                   <div style={{ display: selectedRole === "Client Profitability & Service" ? "block" : "none" }}>
                     <CareServicesEligibility selectedRole="Client Profitability & Service" handleClick={handleClick} setShowFeedbackPopup={setShowFeedbackPopup} />

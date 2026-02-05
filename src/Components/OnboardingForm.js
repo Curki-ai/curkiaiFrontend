@@ -18,6 +18,7 @@ const OnboardingForm = ({ onClose, userEmail }) => {
     const [overtimeCriteria, setOvertimeCriteria] = useState("");
     const [roleElimination, setRoleElimination] = useState([]);
     const [roleEliminationInput, setRoleEliminationInput] = useState("");
+    const [unallocatedWorkerType,setUnallocatedWorkerType]=useState("");
     const [workflowFlags, setWorkflowFlags] = useState({
         notifyClient: false,
         reminderSms: false,
@@ -426,9 +427,31 @@ const OnboardingForm = ({ onClose, userEmail }) => {
                             </Tippy>
                         </div>
                         <input
-                            placeholder="Search for roles you want to exclude"
+                            placeholder="Mention roles you want to exclude"
                             value={roleEliminationInput}
                             onChange={(e) => setRoleEliminationInput(e.target.value)}
+                        />
+
+                    </div>
+                    <div className="onboarding-field">
+                        <div style={{ display: 'flex', gap: '4px', alignItems: 'center', marginBottom: '4px' }}>
+                            <label>Unallocated Worker Type</label>
+                            <Tippy
+                                content={'Mention your Unallocated Worker type as Unallocated shift indicator '}
+                                trigger="mouseenter focus click"
+                                interactive={true}
+                                placement="bottom"
+                                theme="onboarding"
+                            >
+                                <div style={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+                                    <IoMdInformationCircleOutline size={20} color="#8B8B8B" />
+                                </div>
+                            </Tippy>
+                        </div>
+                        <input
+                            placeholder="Mention your Unallocated Worker type as Unallocated shift indicator"
+                            value={unallocatedWorkerType}
+                            onChange={(e) => setUnallocatedWorkerType(e.target.value)}
                         />
 
                     </div>
