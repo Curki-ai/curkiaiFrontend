@@ -908,17 +908,25 @@ export default function TlcNewCustomerReporting(props) {
                 updateTab({ aiProgress: Math.floor(progress) });
             }, 600);
             console.log("Sending full payload to AI Analysis API...");
+            const requestPayload = {
+                ...(Array.isArray(aiPayload)
+                    ? { objects: aiPayload }
+                    : aiPayload),
+            };
+
+            // ✅ sandbox only for kris
             if (userEmail === "kris@curki.ai") {
-                aiPayload.env = "sandbox";   // exactly payload = { ..., env: "sandbox" }
+                requestPayload.env = "sandbox";
             }
-            console.log("ai payload", aiPayload)
-            // ✅ Step 3: Send directly (no re-wrapping or redeclaration)
+
+            console.log("✅ Final AI request payload", requestPayload);
+
             const res = await fetch(
                 "https://curki-backend-api-container.yellowflower-c21bea82.australiaeast.azurecontainerapps.io/tlc/payroll/ai-analysis-report",
                 {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(aiPayload), // ✅ Send as-is
+                    body: JSON.stringify(requestPayload),
                 }
             );
 
