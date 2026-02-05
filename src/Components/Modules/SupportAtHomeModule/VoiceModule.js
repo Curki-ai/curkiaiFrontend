@@ -430,12 +430,10 @@ const VoiceModule = (props) => {
 
             if (data.status === "completed") {
                 clearInterval(interval);
+
                 setTranscriptData(data);
-                setIsGenerating(true);
-                // console.log("FINAL TRANSCRIPT:", data);
-                if (selectedTemplate) {
-                    submitToDocumentFiller();   // 🚀 DIRECT CALL
-                }
+                setTranscribing(false);
+                await submitMultipleTemplatesWithAudio();
             }
 
             if (data.status === "error") {
@@ -1042,65 +1040,73 @@ const VoiceModule = (props) => {
         }
     };
 
+    const processSingleTranscriptWithTemplateText = async (tpl, transcriptText) => {
+        const formData = new FormData();
 
-    // const saveTemplate = async () => {
-    //     if (isSaving) return;
+        formData.append("templateBlobName", tpl.templateBlobName);
+        formData.append("templateMimeType", tpl.templateMimeType);
+        formData.append("templateOriginalName", tpl.templateOriginalName);
 
-    //     console.log("[UI][SAVE] Saving template");
-    //     console.log("[UI][SAVE] RAW PROMPT:", rawPrompt);
-    //     console.log("[UI][SAVE] RAW MAPPER:", rawMapper);
+        formData.append(
+            "sampleBlobs",
+            JSON.stringify(tpl.sampleBlobs || [])
+        );
 
-    //     setIsSaving(true);
+        formData.append("prompt", tpl.prompt);
 
-    //     const payload = {
-    //         organizationId: organizationId,
-    //         domain: domain,
-    //         userEmail: userEmail,
+        const parsedJson = JSON.parse(tpl.mappings);
+        const normalizedMapper = {
+            ...parsedJson,
+            mapper: parsedJson?.mapper?.mapper ?? parsedJson?.mapper,
+        };
 
-    //         // 🔐 SOURCE OF TRUTH
-    //         prompt: rawPrompt,
-    //         mappings: rawMapper,
+        formData.append("mapper", JSON.stringify(normalizedMapper));
 
-    //         // UI helpers (optional, future use)
-    //         uiPromptPreview: analysisText,
-    //         uiMappings: mapperRows,
+        // 🔥 KEY DIFFERENCE: TEXT, NOT FILE
+        formData.append("transcript_data", transcriptText);
 
-    //         sessionId
-    //     };
+        const res = await fetch(`${API_BASE}/api/document-filler`, {
+            method: "POST",
+            body: formData,
+        });
 
-    //     try {
-    //         const url = editingTemplateId
-    //             ? `${API_BASE}/api/voiceModuleTemplate/${editingTemplateId}`
-    //             : `${API_BASE}/api/voiceModuleTemplate`;
+        const data = await res.json();
 
-    //         const method = editingTemplateId ? "PUT" : "POST";
+        if (data.success && data.filled_document) {
+            downloadBase64File(
+                data.filled_document,
+                `${tpl.templateName || "Generated"}_Audio.docx`
+            );
+        }
 
-    //         const res = await fetch(url, {
-    //             method,
-    //             headers: { "Content-Type": "application/json" },
-    //             body: JSON.stringify(payload)
-    //         });
+        if (userEmail) {
+            await incrementAnalysisCount(
+                userEmail,
+                "care-voice-document-generation",
+                data?.llm_cost?.total_usd
+            );
+        }
+    };
+    const submitMultipleTemplatesWithAudio = async () => {
+        if (
+            !selectedTemplate ||
+            !selectedTemplate.isMulti ||
+            selectedTemplate.templates.length === 0 ||
+            !transcriptData?.text
+        ) return;
 
-    //         const data = await res.json();
+        setIsGenerating(true);
+        setCurrentTask("Generating documents from audio");
 
-    //         console.log("[UI][SAVE] Response:", data);
+        const tasks = selectedTemplate.templates.map((tpl) =>
+            processSingleTranscriptWithTemplateText(tpl, transcriptData.text)
+        );
 
-    //         if (!data.success) {
-    //             setIsSaving(false);
-    //             return;
-    //         }
+        await Promise.all(tasks);
 
-    //         setEditingTemplateId(null);
-    //         resetToTemplateList();
-    //         fetchTemplates();
-
-    //     } catch (err) {
-    //         console.error("[UI][SAVE] Save failed", err);
-    //     } finally {
-    //         setIsSaving(false);
-    //     }
-    // };
-
+        setIsGenerating(false);
+        setCurrentTask("");
+    };
 
 
     // Reset view when role changes
