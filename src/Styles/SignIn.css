@@ -184,3 +184,85 @@ input::placeholder {
   transform: scale(1.3);   /* adjust size */
   cursor: pointer;
 }
+
+@media (max-width: 480px) {
+  .popup-sign {
+    padding: 24px 20px;
+    border-radius: 20px;
+    width: 85%;
+  }
+
+  .signheader {
+    font-size: 20px;
+  }
+
+  h2 {
+    font-size: 20px;
+    margin-bottom: 20px;
+  }
+
+  .social-btn,
+  .signin-btn {
+    height: 46px;
+    font-size: 13px;
+  }
+
+  input {
+    padding: 10px;
+    font-size: 13px;
+  }
+
+  .register-text,
+  .register-link,
+  .forgot-link {
+    font-size: 12px;
+  }
+
+  .dividerss span {
+    font-size: 12px;
+  }
+
+  .close-btn {
+    font-size: 1.2rem;
+  }
+}
+
+@media (min-width: 481px) and (max-width: 768px) {
+  .popup-sign {
+    padding: 32px 40px;
+    max-width: 500px;
+  }
+
+  .signheader {
+    font-size: 22px;
+  }
+
+  h2 {
+    font-size: 22px;
+  }
+
+  .social-btn,
+  .signin-btn {
+    height: 48px;
+    font-size: 14px;
+  }
+
+  input {
+    font-size: 14px;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  .popup-sign {
+    padding: 36px 60px;
+    max-width: 550px;
+  }
+
+  .signheader {
+    font-size: 24px;
+  }
+
+  h2 {
+    font-size: 23px;
+  }
+}
