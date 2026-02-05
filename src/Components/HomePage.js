@@ -385,67 +385,86 @@ const HomePage = () => {
 
       // 🟢 TLC PAYROLL MODE (existing code)
       if (isTlcPage) {
-        let payload = {};
+        try {
+          let objectsPayload = [];
 
-        if (tlcAskAiPayload && tlcAskAiPayload.length > 0) {
-          payload = {
-            objects: Array.isArray(tlcAskAiPayload) ? tlcAskAiPayload : [tlcAskAiPayload],
+          // ✅ Case 1: Direct Ask AI payload
+          if (tlcAskAiPayload && tlcAskAiPayload.length > 0) {
+            objectsPayload = Array.isArray(tlcAskAiPayload)
+              ? tlcAskAiPayload
+              : [tlcAskAiPayload];
+          }
+
+          // ✅ Case 2: History-based payload (filter API)
+          else if (tlcAskAiHistoryPayload) {
+            const { start, end } = tlcAskAiHistoryPayload.filters;
+
+            const queryParams = new URLSearchParams({
+              start: new Date(start).toISOString().split("T")[0],
+              end: new Date(end).toISOString().split("T")[0],
+            });
+
+            const userEmail = user?.email;
+
+            const filterApiResponse = await axios.get(
+              `https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/payroll/filter?${queryParams}&${userEmail}`
+            );
+
+            objectsPayload = filterApiResponse.data?.payload || [];
+          }
+
+          // ❌ No payload guard
+          if (!objectsPayload || objectsPayload.length === 0) {
+            console.warn("⚠️ No valid TLC AskAI payload found");
+            return;
+          }
+
+          // ✅ Final payload (same pattern as AI Analysis)
+          const requestPayload = {
+            objects: objectsPayload,
             query: finalQuery,
           };
-        } else if (tlcAskAiHistoryPayload) {
-          const { start, end } = tlcAskAiHistoryPayload.filters;
 
-          const query = new URLSearchParams({
-            start: new Date(start).toISOString().split("T")[0],
-            end: new Date(end).toISOString().split("T")[0],
-          });
-          const userEmail = user?.email
-          const filterApiResponse = await axios.get(
-            `https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/payroll/filter?${query}&${userEmail}`
+          // ✅ sandbox only for kris
+          const userEmail = user?.email?.trim().toLowerCase();
+          if (userEmail === "kris@curki.ai") {
+            requestPayload.env = "sandbox";
+          }
+
+          const apiURL =
+            "https://curki-backend-api-container.yellowflower-c21bea82.australiaeast.azurecontainerapps.io/tlc/payroll/payroll_askai";
+
+          console.log("✅ Final TLC AskAI payload:", requestPayload);
+
+          const response = await axios.post(apiURL, requestPayload);
+
+          const botReply = response.data?.answer || "No response";
+
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.temp ? { sender: "bot", text: botReply } : msg
+            )
           );
 
-          // console.log("filter api response in ask ai", filterApiResponse);
-
-          const filteredPayload = filterApiResponse.data?.payload || [];
-
-          payload = {
-            objects: filteredPayload,
-            query: finalQuery,
-          };
-        }
-
-        // console.log("🟡 TLC Payroll Payload:", payload);
-
-        const baseURL = "https://curki-backend-api-container.yellowflower-c21bea82.australiaeast.azurecontainerapps.io";
-        const apiURL = `${baseURL}/tlc/payroll/payroll_askai`;
-
-        console.log("Payload sending to TLC Payroll API:", apiURL, payload);
-        const userEmail = user?.email
-        // const userEmail = "kris@curki.ai" 
-        if (userEmail === "kris@curki.ai") {
-          payload.env = "sandbox";
-        }
-        const response = await axios.post(apiURL, payload);
-
-        console.log("response from TLC Payroll ask ai", response);
-
-        const botReply = response.data?.answer || "No response";
-
-        setMessages((prev) =>
-          prev.map((msg) => (msg.temp ? { sender: "bot", text: botReply } : msg))
-        );
-
-        // count usage for TLC Payroll
-        if (user?.email) {
-          try {
-            const email = user.email.trim().toLowerCase();
-            await incrementAnalysisCount(email, "tlc-askai", response?.data?.ai_analysis_cost);
-          } catch (err) {
-            console.error("❌ Failed to increment TLC AskAI count:", err.message);
+          // ✅ Usage count
+          if (userEmail) {
+            try {
+              await incrementAnalysisCount(
+                userEmail,
+                "tlc-askai",
+                response?.data?.ai_analysis_cost
+              );
+            } catch (err) {
+              console.error("❌ Failed to increment TLC AskAI count:", err.message);
+            }
           }
+        } catch (err) {
+          console.error("❌ TLC AskAI Error:", err);
         }
+
         return;
       }
+
 
       // 🟢 DEFAULT ASK AI MODE (for all other modules)
       let payload = { query: finalQuery };
@@ -645,18 +664,18 @@ const HomePage = () => {
                           !isMobileOrTablet && (
                             <>
                               {userEmail === "kris@curki.ai" && (
-                              <p
-                                style={{
-                                  fontSize: "16px",
-                                  color: "red", 
-                                  marginTop: "4px",
-                                  fontWeight: 700, 
-                                  letterSpacing: "0.2px",
-                                  textTransform:"uppercase"
-                                }}
-                              >
-                                Product Demo with Dummy Data
-                              </p>
+                                <p
+                                  style={{
+                                    fontSize: "16px",
+                                    color: "red",
+                                    marginTop: "4px",
+                                    fontWeight: 700,
+                                    letterSpacing: "0.2px",
+                                    textTransform: "uppercase"
+                                  }}
+                                >
+                                  Product Demo with Dummy Data
+                                </p>
                               )}
                             </>
                           )
