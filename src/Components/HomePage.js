@@ -383,87 +383,31 @@ const HomePage = () => {
         return;
       }
 
-      // 🟢 TLC PAYROLL MODE (existing code)
       if (isTlcPage) {
         try {
-          let objectsPayload = [];
-
-          // ✅ Case 1: Direct Ask AI payload
-          if (tlcAskAiPayload && tlcAskAiPayload.length > 0) {
-            objectsPayload = Array.isArray(tlcAskAiPayload)
-              ? tlcAskAiPayload
-              : [tlcAskAiPayload];
-          }
-
-          // ✅ Case 2: History-based payload (filter API)
-          else if (tlcAskAiHistoryPayload) {
-            const { start, end } = tlcAskAiHistoryPayload.filters;
-
-            const queryParams = new URLSearchParams({
-              start: new Date(start).toISOString().split("T")[0],
-              end: new Date(end).toISOString().split("T")[0],
-            });
-
-            const userEmail = user?.email;
-
-            const filterApiResponse = await axios.get(
-              `https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/payroll/filter?${queryParams}&${userEmail}`
-            );
-
-            objectsPayload = filterApiResponse.data?.payload || [];
-          }
-
-          // ❌ No payload guard
-          if (!objectsPayload || objectsPayload.length === 0) {
-            console.warn("⚠️ No valid TLC AskAI payload found");
-            return;
-          }
-
-          // ✅ Final payload (same pattern as AI Analysis)
-          const requestPayload = {
-            objects: objectsPayload,
-            query: finalQuery,
-          };
-
-          // ✅ sandbox only for kris
-          const userEmail = user?.email?.trim().toLowerCase();
-          if (userEmail === "kris@curki.ai") {
-            requestPayload.env = "sandbox";
-          }
-
-          const apiURL =
-            "https://curki-backend-api-container.yellowflower-c21bea82.australiaeast.azurecontainerapps.io/tlc/payroll/payroll_askai";
-
-          console.log("✅ Final TLC AskAI payload:", requestPayload);
-
-          const response = await axios.post(apiURL, requestPayload);
+          const response = await axios.post(
+            "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/payroll-askai",
+            {
+              tlcAskAiPayload,
+              tlcAskAiHistoryPayload,
+              question: finalQuery,
+              userEmail: userEmail,
+            }
+          );
 
           const botReply = response.data?.answer || "No response";
 
-          setMessages((prev) =>
-            prev.map((msg) =>
-              msg.temp ? { sender: "bot", text: botReply } : msg
-            )
+          setMessages(prev =>
+            prev.map(msg => (msg.temp ? { sender: "bot", text: botReply } : msg))
           );
-
-          // ✅ Usage count
-          if (userEmail) {
-            try {
-              await incrementAnalysisCount(
-                userEmail,
-                "tlc-askai",
-                response?.data?.ai_analysis_cost
-              );
-            } catch (err) {
-              console.error("❌ Failed to increment TLC AskAI count:", err.message);
-            }
-          }
         } catch (err) {
-          console.error("❌ TLC AskAI Error:", err);
+          console.error("TLC AskAI Error:", err);
         }
 
         return;
       }
+
+
 
 
       // 🟢 DEFAULT ASK AI MODE (for all other modules)
