@@ -10,11 +10,13 @@ const MultiSelectCustom = ({
   height = 38,
   minWidth = 220,
   isSingleSelect = false,
+  disabled = false,
 }) => {
   const [open, setOpen] = useState(false);
   const ref = useRef();
 
   const toggleOption = (option) => {
+    if (disabled) return;
     if (isSingleSelect) {
       setSelected([option]);      // ✅ only one allowed
       setOpen(false);             // ✅ auto close dropdown
@@ -34,6 +36,11 @@ const MultiSelectCustom = ({
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+  useEffect(() => {
+    if (disabled) {
+      setOpen(false);
+    }
+  }, [disabled]);
 
   return (
     <div
@@ -44,7 +51,11 @@ const MultiSelectCustom = ({
       {/* INPUT */}
       <div
         className="custom-input"
-        onClick={() => setOpen(!open)}
+        onClick={() => {
+          if (!disabled) {
+            setOpen(!open);
+          }
+        }}
         style={{
           height: placeholder === "Role" ? "31px" : height,
           display: "flex",
@@ -53,8 +64,8 @@ const MultiSelectCustom = ({
           borderRadius: "8px",
           paddingLeft: leftIcon ? "36px" : "12px",
           paddingRight: rightIcon ? "36px" : "12px",
-          cursor: "pointer",
-          background: "#fff",
+          cursor: disabled ? "not-allowed" : "pointer",
+          background: disabled ? "#F9FAFB" : "#fff",
           fontFamily: "Inter",
         }}
       >

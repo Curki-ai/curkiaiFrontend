@@ -1406,15 +1406,23 @@ const VoiceModule = (props) => {
             setDownloadingFileKey(null);
         }
     };
+
+    useEffect(() => {
+        if (props.isMobileOrTablet) {
+            setRole("Staff");
+        }
+    }, [props.isMobileOrTablet]);
+
     const transcriptInputRef = useRef(null);
     return (
         <div className="voice-container">
             {/* ================= TOP ROW ================= */}
+            {props.isMobileOrTablet && <div style={{textAlign:'center',fontSize:'20px',fontWeight:'500',marginBottom:'16px'}}>Care Voice</div>}
             <div className="voice-top-row">
                 <MultiSelectCustom
                     placeholder="Role"
                     leftIcon={voiceRoleIcon}
-                    rightIcon={TlcPayrollDownArrow}  // optional arrow
+                    rightIcon={props.isMobileOrTablet ? null : TlcPayrollDownArrow}  // optional arrow
                     options={[
                         { label: "Admin", value: "Admin" },
                         { label: "Staff", value: "Staff" },
@@ -1422,6 +1430,7 @@ const VoiceModule = (props) => {
                     selected={[{ label: role, value: role }]}
                     setSelected={(arr) => setRole(arr?.[0]?.value || "Admin")}
                     isSingleSelect={true}
+                    disabled={props.isMobileOrTablet} 
                 />
 
                 {role === "Staff" && (
@@ -2138,15 +2147,7 @@ const VoiceModule = (props) => {
             {/* ================= STAFF VIEW ================= */}
             {role === "Staff" && staffStep === "working" && (
                 <>
-                    <div
-                        style={{
-                            position: "relative",          // ✅ anchor for absolute child
-                            display: "flex",
-                            justifyContent: "center",       // ✅ real centering
-                            alignItems: "center",
-                            padding: "24px 32px",
-                        }}
-                    >
+                    <div className="record-conversation">
                         {/* LEFT */}
                         <div style={{ textAlign: "center" }}>
                             <h2 style={{ margin: 0, fontWeight: 600 }}>
@@ -2159,19 +2160,7 @@ const VoiceModule = (props) => {
 
                         {/* RIGHT */}
                         {selectedTemplate && (
-                            <div
-                                style={{
-                                    position: "absolute",
-                                    right: "32px",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: "12px",
-                                    padding: "10px 16px",
-                                    borderRadius: "999px",
-                                    border: "1px solid #E5E7EB",
-                                    background: "#FFFFFF",
-                                }}
-                            >
+                            <div className="selectedtemplatebtn">
                                 {/* LEFT DOC ICON */}
                                 <img
                                     src={careVoiceStaffTemplateIcon}
@@ -2371,7 +2360,7 @@ const VoiceModule = (props) => {
                         />
 
                         {/* ✅ GENERATE DOCUMENT BUTTON (PUT BACK) */}
-                        <div style={{ textAlign: "right", marginTop: "24px" }}>
+                        <div style={{ textAlign: "right", marginTop: "24px",marginBottom:'64px'}}>
                             <button
                                 className="staff-primary"
                                 onClick={

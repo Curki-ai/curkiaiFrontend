@@ -1043,6 +1043,14 @@
   cursor: not-allowed;
 }
 
+@media screen and (max-width:820px){
+  .vm-select-confirm-modal{
+    margin-left: 0px;
+    margin: 14px;
+    padding: 20px;
+  }
+}
+
 /* ===============================
    ANIMATION
 ================================ */
@@ -1515,10 +1523,6 @@
   overflow-y: auto;
   padding-right: 8px;
   box-sizing: border-box;
-
-  /* ✅ 3 rows visible = 6 cards */
-  grid-auto-rows: 86px;
-  max-height: calc(86px * 3 + 16px * 2); /* 3 rows + 2 gaps */
 }
 
 /* ===== CARD ===== */
@@ -1581,6 +1585,24 @@
   accent-color: #6c4cdc;
   transform: scale(1); 
   cursor: pointer;
+}
+.selectedtemplatebtn {
+  position: absolute;
+  right: 32px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-radius: 999px;
+  border: 1px solid #E5E7EB;
+  background-color: #ffffff;
+}
+.record-conversation{
+  position: relative;      
+  display: flex;
+  justify-content:center;
+  align-items:center;
+  padding: 24px 32px;
 }
 .template-count {
   background: white;
@@ -1645,6 +1667,34 @@
 .staff-primary:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+@media screen and (max-width:820px){
+  .template-select-confirm {
+    display: flex;
+    justify-content: center;
+    margin: 0px;
+    align-self: center;
+  }
+  .template-select-list {
+    display: grid;
+    grid-template-columns: repeat(1,1fr);
+    padding-right: 2px;
+  }
+  .template-select-card{
+    padding: 12px;
+  }
+  .template-select-icon{
+    width: 40px;
+    height: 40px;
+  }
+  .selectedtemplatebtn{
+    right: 0px;
+    top:-6px;
+  }
+  .record-conversation{
+    padding: 60px 30px 24px 30px;
+  }
 }
 
 /* ================= RESPONSIVE ADJUSTMENTS ================= */
