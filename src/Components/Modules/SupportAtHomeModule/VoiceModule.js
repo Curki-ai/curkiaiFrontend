@@ -42,6 +42,7 @@ import FieldMapperPro from "./CareVoiceJsonGrid";
 import MultiSelectCustom from "../FinancialModule/MultiSelectCustom"
 import PromptBlockEditor from "./PromptBlockEditor";
 import incrementAnalysisCount from "../FinancialModule/TLcAnalysisCount";
+import { FiMic } from "react-icons/fi";
 const VoiceModule = (props) => {
     const userEmail = props?.user?.email;
     const domain = userEmail?.split("@")[1] || "";
@@ -1417,7 +1418,12 @@ const VoiceModule = (props) => {
     return (
         <div className="voice-container">
             {/* ================= TOP ROW ================= */}
-            {props.isMobileOrTablet && <div style={{textAlign:'center',fontSize:'20px',fontWeight:'500',marginBottom:'16px'}}>Care Voice</div>}
+            {props.isMobileOrTablet && 
+            <div style={{display:'flex',justifyContent:'center',alignItems:'center',marginBottom:'16px',gap:'2px'}}>
+            <FiMic size={22}/> 
+            <div style={{textAlign:'center',fontSize:'20px',fontWeight:'500',}}>Care Voice</div>
+            </div>
+            }
             <div className="voice-top-row">
                 <MultiSelectCustom
                     placeholder="Role"
