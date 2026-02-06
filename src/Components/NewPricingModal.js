@@ -243,20 +243,20 @@ const Plan = ({ title, planKey, monthly, yearly, billing, features, popular, onC
             const data = await res.json();
             console.log("Trial started:", data);
             // Update Mailchimp tag
-            // await fetch(
-            //     "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/mailchimp/contact",
-            //     {
-            //         method: "POST",
-            //         headers: { "Content-Type": "application/json" },
-            //         body: JSON.stringify({
-            //             email: userEmail,
-            //             first_name: firstName || "",
-            //             last_name: " ",
-            //             tag: "trial_started",
-            //         }),
-            //     }
-            // );
-
+           const mailChimpRes =  await fetch(
+                "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/mailchimp/contact",
+                {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        email: userEmail,
+                        first_name: firstName || "",
+                        last_name: "",
+                        tag: "trial_started",
+                    }),
+                }
+            );
+           console.log("Mailchimp updated:", await mailChimpRes.json());
             setSubscriptionInfo({
                 subscription_type: "trial",
                 trial_end: data?.trial?.trial_end,

@@ -43,6 +43,7 @@ import MultiSelectCustom from "../FinancialModule/MultiSelectCustom"
 import PromptBlockEditor from "./PromptBlockEditor";
 import incrementAnalysisCount from "../FinancialModule/TLcAnalysisCount";
 import { FiMic } from "react-icons/fi";
+import { extractAudioFromVideo, getTranscriptTextFromAudioBlob } from "./CareVoiceAudioVideoExtract";
 const VoiceModule = (props) => {
     const userEmail = props?.user?.email;
     const domain = userEmail?.split("@")[1] || "";
@@ -126,6 +127,17 @@ const VoiceModule = (props) => {
     const [promptSavedToast, setPromptSavedToast] = useState(false);
     const sliderRef = useRef(null);
     const dropdownRef = useRef(null);
+    const [generatedDocs, setGeneratedDocs] = useState([]);
+    const emailSentRef = useRef(false);
+
+    const [staffName, setStaffName] = useState("");
+    const [staffEmail, setStaffEmail] = useState("");
+    const isVideoFile = (file) =>
+        file.type.startsWith("video/");
+
+    const isAudioFile = (file) =>
+        file.type.startsWith("audio/");
+
     const openDropdown = (e, tplId) => {
         e.stopPropagation();
 
@@ -1073,10 +1085,13 @@ const VoiceModule = (props) => {
         const data = await res.json();
 
         if (data.success && data.filled_document) {
-            downloadBase64File(
-                data.filled_document,
-                `${tpl.templateName || "Generated"}_Audio.docx`
-            );
+            const filename = `${tpl.templateName || "Generated"}_Audio.docx`;
+
+            const doc = { filename, base64: data.filled_document };
+
+            downloadBase64File(data.filled_document, filename);
+
+            return doc;
         }
 
         if (userEmail) {
@@ -1098,12 +1113,23 @@ const VoiceModule = (props) => {
         setIsGenerating(true);
         setCurrentTask("Generating documents from audio");
 
-        const tasks = selectedTemplate.templates.map((tpl) =>
-            processSingleTranscriptWithTemplateText(tpl, transcriptData.text)
-        );
+        const docsToSend = [];
+
+        const tasks = selectedTemplate.templates.map(async (tpl) => {
+            const doc = await processSingleTranscriptWithTemplateText(
+                tpl,
+                transcriptData.text
+            );
+
+            if (doc) docsToSend.push(doc);
+        });
 
         await Promise.all(tasks);
 
+        await sendGeneratedDocsEmail(docsToSend);
+
+        setGeneratedDocs([]);
+        emailSentRef.current = false;
         setIsGenerating(false);
         setCurrentTask("");
     };
@@ -1206,7 +1232,7 @@ const VoiceModule = (props) => {
             const parsedJson = JSON.parse(selectedTemplate.mappings);
             // console.log("parsedJson (raw)", parsedJson);
 
-            // 🔥 normalize mapper here
+            // normalize mapper here
             const normalizedMapper = {
                 ...parsedJson,
                 mapper: parsedJson?.mapper?.mapper ?? parsedJson?.mapper
@@ -1245,22 +1271,66 @@ const VoiceModule = (props) => {
                 )
             }
             if (data.success && data.filled_document) {
-                downloadBase64File(
-                    data.filled_document,
-                    "Generated_Document.docx"
-                );
+                const filename = "Generated_Document.docx";
+
+                const docs = [{ filename, base64: data.filled_document }];
+
+                setGeneratedDocs(docs);
+                downloadBase64File(data.filled_document, filename);
+
+                await sendGeneratedDocsEmail(docs);
             }
 
-            // window.open(data.filled_document, "_blank");
+            setGeneratedDocs([]);
+            emailSentRef.current = false;
 
         } catch (err) {
             console.error("Document generation failed", err);
             alert("Failed to generate document");
         } finally {
-            setIsGenerating(false); // 🔥 STOP LOADING
+            setIsGenerating(false);
             setTranscribing(false);
         }
     };
+    const sendGeneratedDocsEmail = async (docs) => {
+        if (
+            emailSentRef.current ||
+            !docs?.length ||
+            !userEmail
+        ) {
+            console.log("emailSentRef.current", emailSentRef.current)
+            console.log("docs", docs)
+            console.log("sendGeneratedDocsEmail says returned", userEmail)
+            return;
+        }
+
+        emailSentRef.current = true;
+
+        try {
+            const res = await fetch(`${API_BASE}/api/send-email`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    documents: docs,
+                    userEmail,
+                    staffEmail: staffEmail?.trim() || undefined,
+                    staffName: staffName?.trim() || undefined,
+                }),
+            });
+
+            const data = await res.json();
+            // console.log("data", data)
+            if (!res.ok) {
+                throw new Error(data.error || "Email API failed");
+            }
+
+            // console.log("📧 Email sent:", docs.length);
+        } catch (err) {
+            console.error("❌ Email send failed", err.message);
+        }
+    };
+
+
     const CARDS_PER_VIEW = 2;
 
     const canGoPrev = templateIndex > 0;
@@ -1336,10 +1406,13 @@ const VoiceModule = (props) => {
         const data = await res.json();
 
         if (data.success && data.filled_document) {
-            downloadBase64File(
-                data.filled_document,
-                `${tpl.templateName}_${file.name}.docx`
-            );
+            const filename = `${tpl.templateName}_${file.name}.docx`;
+
+            const doc = { filename, base64: data.filled_document };
+
+            downloadBase64File(data.filled_document, filename);
+
+            return doc;
         }
         if (userEmail) {
             await incrementAnalysisCount(
@@ -1362,20 +1435,49 @@ const VoiceModule = (props) => {
 
         setIsGenerating(true);
 
-        const tasks = [];
-        const templates = selectedTemplate.templates;
+        const docsToSend = [];
 
-        for (const tpl of templates) {
+        const tasks = [];
+
+        for (const tpl of selectedTemplate.templates) {
             for (const file of uploadedTranscriptFiles) {
-                tasks.push(processSingleTranscriptWithTemplate(tpl, file));
+                tasks.push(
+                    (async () => {
+                        let transcriptText = null;
+
+                        if (isVideoFile(file)) {
+                            const audioBlob = await extractAudioFromVideo(file);
+                            transcriptText = await getTranscriptTextFromAudioBlob(audioBlob);
+                        }
+                        else if (isAudioFile(file)) {
+                            transcriptText = await getTranscriptTextFromAudioBlob(file);
+                        }
+
+                        if (transcriptText) {
+                            const doc = await processSingleTranscriptWithTemplateText(
+                                tpl,
+                                transcriptText
+                            );
+                            if (doc) docsToSend.push(doc);
+                        } else {
+                            // fallback: existing doc/pdf/txt flow
+                            const doc = await processSingleTranscriptWithTemplate(tpl, file);
+                            if (doc) docsToSend.push(doc);
+                        }
+                    })()
+                );
             }
         }
 
         await Promise.all(tasks);
 
+        await sendGeneratedDocsEmail(docsToSend);
+
+        emailSentRef.current = false;
         setIsGenerating(false);
         setCurrentTask("");
     };
+
 
 
     const handleDownloadBlob = async ({
@@ -1424,11 +1526,11 @@ const VoiceModule = (props) => {
     return (
         <div className="voice-container">
             {/* ================= TOP ROW ================= */}
-            {props.isMobileOrTablet && 
-            <div style={{display:'flex',justifyContent:'center',alignItems:'center',marginBottom:'16px',gap:'2px'}}>
-            <FiMic size={22}/> 
-            <div style={{textAlign:'center',fontSize:'20px',fontWeight:'500',}}>Care Voice</div>
-            </div>
+            {props.isMobileOrTablet &&
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: '16px', gap: '2px' }}>
+                    <FiMic size={22} />
+                    <div style={{ textAlign: 'center', fontSize: '20px', fontWeight: '500', }}>Care Voice</div>
+                </div>
             }
             <div className="voice-top-row">
                 <MultiSelectCustom
@@ -1442,7 +1544,7 @@ const VoiceModule = (props) => {
                     selected={[{ label: role, value: role }]}
                     setSelected={(arr) => setRole(arr?.[0]?.value || "Admin")}
                     isSingleSelect={true}
-                    disabled={props.isMobileOrTablet} 
+                    disabled={props.isMobileOrTablet}
                 />
 
                 {role === "Staff" && (
@@ -1456,6 +1558,8 @@ const VoiceModule = (props) => {
                             <input
                                 className="voice-input"
                                 placeholder="Name"
+                                value={staffName}
+                                onChange={(e) => setStaffName(e.target.value)}
                             />
                         </div>
 
@@ -1468,6 +1572,8 @@ const VoiceModule = (props) => {
                             <input
                                 className="voice-input"
                                 placeholder="Email Address"
+                                value={staffEmail}
+                                onChange={(e) => setStaffEmail(e.target.value)}
                             />
                         </div>
                     </>
@@ -2360,8 +2466,8 @@ const VoiceModule = (props) => {
                         <TlcUploadBox
                             id="staff-transcript-upload"
                             title="Upload Transcript"
-                            subtitle=".DOC, .PDF, .TXT"
-                            accept=".doc,.docx,.pdf,.txt"
+                            subtitle=".DOC, .PDF, .TXT, .MP3, .WAV, .WEBM ,.MP4, .MOV"
+                            accept=".doc,.docx,.pdf,.txt,.mp3,.wav,.webm,.mp4,.mov"
                             files={uploadedTranscriptFiles}
                             multiple
                             setFiles={(files) => {
@@ -2372,7 +2478,7 @@ const VoiceModule = (props) => {
                         />
 
                         {/* ✅ GENERATE DOCUMENT BUTTON (PUT BACK) */}
-                        <div style={{ textAlign: "right", marginTop: "24px",marginBottom:'64px'}}>
+                        <div style={{ textAlign: "right", marginTop: "24px", marginBottom: '64px' }}>
                             <button
                                 className="staff-primary"
                                 onClick={

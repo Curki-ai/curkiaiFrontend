@@ -194,7 +194,7 @@ const SignIn = ({ show, onClose }) => {
       // Mailchimp Welcome flow
       try {
         const mailchimpRes = await fetch(
-          "https://curki-backend-api-container.yellowflower-c21bea82.australiaeast.azurecontainerapps.io/mailchimp/contact",
+          "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/mailchimp/contact",
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -202,7 +202,7 @@ const SignIn = ({ show, onClose }) => {
               email: email,
               first_name: name,
               last_name: " ",
-              tag: "Welcome Flow",
+              tag: "Welcome flow 2026",
             }),
           }
         );
