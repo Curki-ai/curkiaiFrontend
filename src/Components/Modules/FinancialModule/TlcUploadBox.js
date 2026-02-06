@@ -18,24 +18,53 @@ const TlcUploadBox = ({
     const ext = fileName.split(".").pop().toLowerCase();
 
     switch (ext) {
+      // ===== DOCUMENTS =====
       case "pdf":
         return "https://cdn-icons-png.flaticon.com/512/337/337946.png";
 
       case "doc":
       case "docx":
-        return "https://cdn-icons-png.flaticon.com/512/281/281760.png"; // ✅ WORD icon
+        return "https://cdn-icons-png.flaticon.com/512/281/281760.png";
 
       case "xls":
       case "xlsx":
-        return "https://cdn-icons-png.flaticon.com/512/732/732220.png"; // ✅ EXCEL icon
+        return "https://cdn-icons-png.flaticon.com/512/732/732220.png";
 
       case "ppt":
       case "pptx":
-        return "https://cdn-icons-png.flaticon.com/512/732/732224.png"; // PPT only
+        return "https://cdn-icons-png.flaticon.com/512/732/732224.png";
 
+      case "txt":
+        return "https://cdn-icons-png.flaticon.com/512/3022/3022251.png";
+
+      // ===== AUDIO =====
+      case "mp3":
+      case "wav":
+      case "ogg":
+      case "aac":
+      case "m4a":
+      case "webm":
+        return "https://cdn-icons-png.flaticon.com/512/716/716784.png"; 
+
+      // ===== VIDEO =====
+      case "mp4":
+      case "mov":
+      case "avi":
+      case "mkv":
+      case "webm":
+        return "https://cdn-icons-png.flaticon.com/512/716/716784.png"; 
+
+      // ===== ARCHIVES =====
+      case "zip":
+      case "rar":
+      case "7z":
+        return "https://cdn-icons-png.flaticon.com/512/2306/2306172.png";
+
+      // ===== FALLBACK =====
       default:
-        return "https://cdn-icons-png.flaticon.com/512/732/732220.png"; // ✅ NICE generic file icon
+        return "https://cdn-icons-png.flaticon.com/512/732/732220.png";
     }
+
   };
 
 
