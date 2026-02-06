@@ -1,10 +1,12 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import axios from "axios";
 import "../../../Styles/ClientEvent.css";
 import UploadFiles from "../../UploadFiles";
 import star from '../../../Images/star.png';
 import Toggle from "react-toggle";
-
+import historyIcon from "../../../Images/TlcPayrollHistory.png"
+import { GoArrowLeft } from "react-icons/go";
+import { RiDeleteBin6Line } from "react-icons/ri";
 const BASE_URL =
   "https://curki-backend-api-container.yellowflower-c21bea82.australiaeast.azurecontainerapps.io";
 
@@ -22,6 +24,179 @@ const Client_Event_Reporting = (props) => {
   const [startMonth, setStartMonth] = useState("");
   const [endDay, setEndDay] = useState("");
   const [endMonth, setEndMonth] = useState("");
+  const [historyList, setHistoryList] = useState([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+
+  const [savingHistory, setSavingHistory] = useState(false);
+
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedHistoryId, setSelectedHistoryId] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const [isFromHistory, setIsFromHistory] = useState(false);
+  const formatClientEventDateRange = (dateRange) => {
+    if (!dateRange?.startDate || !dateRange?.endDate) return "–";
+
+    const format = (d) =>
+      new Date(d).toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "2-digit",
+      });
+
+    return `${format(dateRange.startDate)} – ${format(dateRange.endDate)}`;
+  };
+
+  useEffect(() => {
+    const fetchHistory = async () => {
+      try {
+        setLoadingHistory(true);
+
+        const res = await fetch(
+          `https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/clientEventIncidentMgmt?email=${props.user.email}`
+        );
+
+        const json = await res.json();
+        setHistoryList(json.data || []);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoadingHistory(false);
+      }
+    };
+
+    fetchHistory();
+  }, [props.user]);
+  const handleSaveClientEventHistory = async () => {
+    if (savingHistory || !stage3Data) return;
+
+    try {
+      setSavingHistory(true);
+
+      // build date range only if selected
+      const currentYear = new Date().getFullYear();
+
+      const dateRange = {
+        startDate: startDay && startMonth
+          ? `${currentYear}-${startMonth}-${startDay}`
+          : null,
+        endDate: endDay && endMonth
+          ? `${currentYear}-${endMonth}-${endDay}`
+          : null,
+      };
+      console.log("Saving with date range:", dateRange);
+
+      const payload = {
+        email: props.user.email,
+        stage3Data,
+        dateRange: {
+          startDate: dateRange.startDate,
+          endDate: dateRange.endDate,
+        },
+      };
+
+      const res = await fetch(
+        "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/clientEventIncidentMgmt/save",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      if (!res.ok) throw new Error("Save failed");
+
+      alert("Saved successfully");
+
+      // 🔁 refresh history list immediately
+      const historyRes = await fetch(
+        `https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/clientEventIncidentMgmt?email=${props.user.email}`
+      );
+      const historyJson = await historyRes.json();
+      setHistoryList(historyJson.data || []);
+    } catch (err) {
+      console.error("Save history failed", err);
+      alert("Failed to save history");
+    } finally {
+      setSavingHistory(false);
+    }
+  };
+
+  const handleClientEventHistoryClick = async (item) => {
+    try {
+      const res = await fetch(
+        `https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/clientEventIncidentMgmt/${item.id}`
+      );
+
+      if (!res.ok) throw new Error("Failed to fetch history item");
+
+      const json = await res.json();
+      const data = json.data;
+
+      // Restore events
+      setStage3Data(data.stage3Data || []);
+
+      // Restore date range (if exists)
+      if (data.dateRange) {
+        const { startDate, endDate } = data.dateRange;
+
+        if (startDate) {
+          const d = new Date(startDate);
+          setStartDay(String(d.getDate()).padStart(2, "0"));
+          setStartMonth(String(d.getMonth() + 1).padStart(2, "0"));
+        }
+
+        if (endDate) {
+          const d = new Date(endDate);
+          setEndDay(String(d.getDate()).padStart(2, "0"));
+          setEndMonth(String(d.getMonth() + 1).padStart(2, "0"));
+        }
+      }
+
+      // Disable upload state
+      setSelectedFiles([]);
+
+      // Mark history mode
+      setIsFromHistory(true);
+    } catch (err) {
+      console.error("Failed to load client event history item", err);
+    }
+  };
+  const handleDeleteClientEventHistory = async () => {
+    if (!selectedHistoryId) return;
+
+    try {
+      setDeleting(true);
+
+      const res = await fetch(
+        "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/clientEventIncidentMgmt/delete",
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            id: selectedHistoryId,
+          }),
+        }
+      );
+
+      if (!res.ok) throw new Error("Delete failed");
+
+      // ✅ remove from UI immediately
+      setHistoryList((prev) =>
+        prev.filter((item) => item.id !== selectedHistoryId)
+      );
+
+      setShowDeleteModal(false);
+      setSelectedHistoryId(null);
+    } catch (err) {
+      console.error("Delete history failed", err);
+      alert("Failed to delete history");
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const handleFileChange = (e) => {
     const filesArray = Array.from(e.target.files);
@@ -161,52 +336,167 @@ const Client_Event_Reporting = (props) => {
     { date: "12 Aug", type: "SE", format: "Txt", link: "#" },
     { date: "12 Aug", type: "SE", format: "Txt", link: "#" },
   ];
+  const renderHistorySection = () => (
+    <section className="history-container">
+
+      {/* HEADER */}
+      <div style={{ display: "flex", gap: "8px" }}>
+        <img
+          src={historyIcon}
+          alt="icon"
+          style={{ width: "22px", height: "21px", pointerEvents: "none" }}
+        />
+        <div className="history-title">History</div>
+      </div>
+
+      {/* BODY */}
+      {loadingHistory && (
+        <p style={{ textAlign: "center", color: "#555", marginTop: "20px" }}>
+          Loading history...
+        </p>
+      )}
+
+      {!loadingHistory && historyList.length === 0 && (
+        <p style={{ textAlign: "center", color: "#777", marginTop: "20px" }}>
+          No saved history found.
+        </p>
+      )}
+
+      {!loadingHistory && historyList.length > 0 && (
+        <div className="history-list">
+          {historyList.map((item) => (
+            <div
+              key={item.id}
+              className="history-card-modern"
+              onClick={() => handleClientEventHistoryClick(item)}
+              style={{ position: "relative", cursor: "pointer" }}
+            >
+              {/* DELETE ICON */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedHistoryId(item.id);
+                  setShowDeleteModal(true);
+                }}
+                style={{
+                  position: "absolute",
+                  top: "10px",
+                  right: "10px",
+                  background: "transparent",
+                  border: "none",
+                  cursor: "pointer",
+                  color: "#6C4CDC",
+                }}
+                title="Delete"
+              >
+                <RiDeleteBin6Line size={18} />
+              </button>
+
+              {/* DATE RANGE */}
+              {item.dateRange && (
+                <div className="history-top">
+                  <div className="history-date-range">
+                    <span className="label">Date Range: </span>
+                    <span className="value">
+                      {formatClientEventDateRange(item.dateRange)}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* SAVED ON */}
+              <div className="saved-on">
+                <span className="saved-label">Saved on: </span>
+                <span style={{ color: "#000" }}>
+                  {new Date(item.createdAt).toLocaleString()}
+                </span>
+              </div>
+            </div>
+          ))}
+
+        </div>
+      )}
+      {/* DELETE MODAL */}
+      {showDeleteModal && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.35)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 9999,
+          }}
+        >
+          <div
+            style={{
+              background: "#fff",
+              borderRadius: "12px",
+              padding: "20px 24px",
+              minWidth: "360px",
+              textAlign: "center",
+            }}
+          >
+            <div
+              style={{
+                fontSize: "16px",
+                fontWeight: 600,
+                color: "#1f2937",
+                marginBottom: "20px",
+              }}
+            >
+              Are you sure you want to delete history?
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "center", gap: "12px" }}>
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setSelectedHistoryId(null);
+                }}
+                style={{
+                  padding: "8px 22px",
+                  borderRadius: "6px",
+                  border: "none",
+                  background: "#e5e7eb",
+                  cursor: "pointer",
+                  fontWeight: "500",
+                }}
+              >
+                No
+              </button>
+
+              <button
+                onClick={handleDeleteClientEventHistory}
+                disabled={deleting}
+                style={{
+                  padding: "8px 22px",
+                  borderRadius: "6px",
+                  border: "none",
+                  background: "#6C4CDC",
+                  color: "#fff",
+                  cursor: "pointer",
+                  fontWeight: "500",
+                }}
+              >
+                {deleting ? "..." : "Yes"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+    </section>
+  );
 
   return (
     <div className="upload-page">
       {/* Toggle */}
       <div className="financial-header">
-        <div className="role-toggle-container">
-          <div
-            style={{
-              backgroundColor:
-              reportMode === "one-time" ? "#6C4CDC" : "#FFFFFF",
-              color: reportMode === "one-time" ? "white" : "#6C4CDC",
-              borderTopLeftRadius: "4px",
-              borderBottomLeftRadius: "4px",
-              cursor: "pointer",
-              padding: "6px 12px",
-              fontSize: "14px",
-              fontFamily: "Inter",
-              fontWeight: "500",
-            }}
-            className="role-toggle"
-            onClick={() => setReportMode("one-time")}
-          >
-            One Time
-          </div>
-          <div
-            onClick={() => setReportMode("history")}
-            style={{
-              backgroundColor:
-              reportMode === "history" ? "#6C4CDC" : "#FFFFFF",
-              color:  reportMode === "history" ? "white" : "#6C4CDC",
-              borderTopRightRadius: "4px",
-              borderBottomRightRadius: "4px",
-              cursor: "pointer",
-              padding: "6px 12px",
-              fontSize: "14px",
-              fontFamily: "Inter",
-              fontWeight: "500",
-            }}
-            className="role-toggle"
-          >
-            History
-          </div>
-        </div>
 
-        <h1 className="titless">PARTICIPANT EVENTS & INCIDENT MANAGEMENT</h1>
-        <div className="sync-toggle">
+        {!stage3Data && <h1 className="titless">PARTICIPANT EVENTS & INCIDENT MANAGEMENT</h1>}
+        <div className="sync-toggle" style={{ marginLeft: stage3Data ? "auto" : "0px"}}>
           <div
             style={{
               fontSize: "14px",
@@ -224,7 +514,7 @@ const Client_Event_Reporting = (props) => {
           />
         </div>
       </div>
-      <div className="info-table">
+      {!stage3Data && <div className="info-table">
         <div className="table-headerss">
           <span>If You Upload This...</span>
           <span>Our AI Will Instantly...</span>
@@ -250,9 +540,9 @@ const Client_Event_Reporting = (props) => {
             <li>Tracks quality-of-support indicators from shift notes and progress notes.</li>
           </ul>
         </div>
-      </div>
+      </div>}
       {/* Date DropDown */}
-      <div className="date-section">
+      {!stage3Data && <div className="date-section">
         {/* Report Start Date */}
         <div className="date-picker">
           <label
@@ -344,64 +634,115 @@ const Client_Event_Reporting = (props) => {
             </select>
           </div>
         </div>
-      </div>
+      </div>}
       {/* One Time Mode */}
-      {reportMode === "one-time" && (
-        <>
-          <>
-            <div
-              className="uploader-grid"
-              style={{ display: 'flex', justifyContent: 'center' }}
+      <>
+        {!stage3Data && <>
+          <div
+            className="uploader-grid"
+            style={{ display: 'flex', justifyContent: 'center' }}
+          >
+            <div style={{ width: '50%' }}>
+              <UploadFiles
+                files={selectedFiles}
+                setFiles={setSelectedFiles}
+                title={props.selectedRole}
+                subtitle="Upload multiple .docx, .xlsx, .xls, .csv, .pdf file"
+                fileformat=".xlsx,.csv,.xls,.docx,.pdf"
+                removeFile={(index) => {
+                  setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+                }}
+                multiple={true}
+                isProcessing={loading}
+              />
+            </div>
+          </div>
+
+          <button
+            className="analyse-btn"
+            disabled={loading}
+            style={{ backgroundColor: '#000', marginTop: '20px' }}
+            onClick={handleAnalyse}
+          >
+            {loading
+              ? `Analysing...${uploadProgress}%`
+              : <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>Analyse<img src={star} alt='img' style={{ width: '20px', height: '20px' }} /></div>}
+          </button>
+        </>}
+
+        {stage3Data && !isFromHistory && (
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "flex-end",
+              marginBottom: "12px",
+              marginTop: "12px",
+            }}
+          >
+            <button
+              onClick={handleSaveClientEventHistory}
+              disabled={savingHistory}
+              style={{
+                background: "#6C4CDC",
+                color: "#fff",
+                border: "none",
+                padding: "8px 16px",
+                borderRadius: "8px",
+                fontSize: "14px",
+                cursor: "pointer",
+              }}
             >
-              <div style={{ width: '50%' }}>
-                <UploadFiles
-                  files={selectedFiles}
-                  setFiles={setSelectedFiles}
-                  title={props.selectedRole}
-                  subtitle="Upload multiple .docx, .xlsx, .xls, .csv, .pdf file"
-                  fileformat=".xlsx,.csv,.xls,.docx,.pdf"
-                  removeFile={(index) => {
-                    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+              {savingHistory ? "Saving..." : "Save"}
+            </button>
+          </div>
+        )}
+
+        {/* BACK BUTTON (only when opened from history) */}
+        {isFromHistory && stage3Data && (
+          <div
+            className="financial-health-history-back-btn"
+            onClick={() => {
+              setIsFromHistory(false);
+              setStage3Data(null);
+
+              // reset dates
+              setStartDay("");
+              setStartMonth("");
+              setEndDay("");
+              setEndMonth("");
+
+              // clear uploads
+              setSelectedFiles([]);
+            }}
+          >
+            <GoArrowLeft size={22} color="#6C4CDC" />
+            Back
+          </div>
+        )}
+
+
+        {/* Stage 3 Events */}
+        {stage3Data && (
+          <div className="events-grid">
+            {stage3Data.map((content, idx) => (
+              <div key={idx} className="event-card">
+                <h4>Event {idx + 1}</h4>
+                <div
+                  className="event-content"
+                  dangerouslySetInnerHTML={{
+                    __html: content
+                      .replace(/^###\s*/gm, "")
+                      .replace(/\n/g, "<br/>"),
                   }}
-                  multiple={true}
-                  isProcessing={loading}
                 />
               </div>
-            </div>
+            ))}
+          </div>
+        )}
 
-            <button
-              className="analyse-btn"
-              disabled={loading}
-              style={{ backgroundColor: '#000', marginTop: '20px' }}
-              onClick={handleAnalyse}
-            >
-              {loading
-                ? `Analysing...${uploadProgress}%`
-                : <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>Analyse<img src={star} alt='img' style={{ width: '20px', height: '20px' }} /></div>}
-            </button>
-          </>
 
-          {/* Stage 3 Events */}
-          {stage3Data && (
-            <div className="events-grid">
-              {stage3Data.map((content, idx) => (
-                <div key={idx} className="event-card">
-                  <h4>Event {idx + 1}</h4>
-                  <div
-                    className="event-content"
-                    dangerouslySetInnerHTML={{
-                      __html: content
-                        .replace(/^###\s*/gm, "")
-                        .replace(/\n/g, "<br/>"),
-                    }}
-                  />
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Ask AI Section */}
-          {/* {stage3Data && (
+        {/* Ask AI Section */}
+        {/* {stage3Data && (
             <div className="ask-ai-container">
               <label style={{ marginLeft: "8px" }}>Ask AI a Question:</label>
               <div className="ask-ai-input-wrapper">
@@ -424,40 +765,8 @@ const Client_Event_Reporting = (props) => {
               )}
             </div>
           )} */}
-        </>
-      )}
-
-      {/* Monthly Report Mode */}
-      {reportMode === "history" && (
-        <>
-          <h1 className="page-title">History</h1>
-          <table className="report-table">
-            <thead>
-              <tr>
-                <th>Report Date</th>
-                <th>Type Of Report</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {monthlyReports.map((report, idx) => (
-                <tr key={idx}>
-                  <td>{report.date}</td>
-                  <td>
-                    <span className="report-type-badge">{report.type}</span>{" "}
-                    {report.format}
-                  </td>
-                  <td>
-                    <a href={report.link} target="_blank" rel="noreferrer">
-                      <span className="link-icon">↗</span>
-                    </a>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </>
-      )}
+      </>
+      {renderHistorySection()}
     </div>
   );
 };
