@@ -3,8 +3,8 @@ import "../Styles/NewPricingModal.css";
 import { IoClose } from "react-icons/io5";
 import pricingTick from "../Images/pricingmodaltick.png"
 import ComparePlans from "./ComparePlans";
-import emailjs from "@emailjs/browser";
-
+import pricingExampleIcon from "../Images/PricingExampleIcon.svg"
+import pricingTooltip from "../Images/pricingTooltipIcon.svg"
 const PricingPlansModal = ({ onClose, email: userEmail, firstName: firstName, setSubscriptionInfo }) => {
     console.log("User Email:", userEmail); // For debugging
     const [billing, setBilling] = useState("monthly");
@@ -55,12 +55,12 @@ const PricingPlansModal = ({ onClose, email: userEmail, firstName: firstName, se
         <div className="pricing-overlay">
             <div className="pricing-container">
                 {/* Top bar */}
-                <div className="pricing-top">
+                {/* <div className="pricing-top">
                     <div></div>
                     <button className="pricing-close" onClick={onClose}>
                         <IoClose size={22} />
                     </button>
-                </div>
+                </div> */}
 
                 {/* Header */}
                 <div className="pricing-header">
@@ -89,19 +89,20 @@ const PricingPlansModal = ({ onClose, email: userEmail, firstName: firstName, se
                 {/* Plans */}
                 <div className="plans-wrapper">
                     <Plan
-                        title="Profit Lift Starter"
+                        title="Start"
+                        subtitle="For teams up to 50 staff"
                         planKey="profit_lift_starter"
-                        monthly={199}
-                        yearly={1910.40}
+                        monthly={99}
+                        yearly={999}
+                        yearlyMonthly={89}
                         billing={billing}
                         features={[
-                            "CFO-grade dashboard",
-                            "Margin drivers & cash impact",
-                            "Actions to stop leaks",
-                            "Financial health",
-                            "Client profitability",
-                            "15 AI clicks included",
+                            "4M AI tokens",
+                            "100 SMS",
+                            "~25 clicks",
+                            "$50 auto top-up when tokens or SMS run out",
                         ]}
+                        saving="$100K+ / year"
                         onCompare={() => setShowCompare(true)}
                         onCheckout={handleCheckout}
                         userEmail={userEmail}
@@ -111,20 +112,21 @@ const PricingPlansModal = ({ onClose, email: userEmail, firstName: firstName, se
                     />
 
                     <Plan
-                        title="Margin Starter"
+                        title="Grow"
+                        subtitle="For teams with 50–100 staff"
                         planKey="margin_starter"
                         monthly={399}
-                        yearly={3830.40}
+                        yearly={9999}
+                        yearlyMonthly={299}
                         billing={billing}
                         popular
                         features={[
-                            "Lift EBITDA",
-                            "Reduce OT & vacancy drag",
-                            "Financial health",
-                            "Client profitability",
-                            "Smart rostering (1000 SMS Included)",
-                            "50 AI clicks included",
+                            "15M AI tokens",
+                            "1,000 SMS",
+                            "~100 clicks",
+                            "$50 auto top-up when tokens or SMS run out",
                         ]}
+                        saving="$100,000+ / year"
                         onCompare={() => setShowCompare(true)}
                         onCheckout={handleCheckout}
                         userEmail={userEmail}
@@ -134,19 +136,20 @@ const PricingPlansModal = ({ onClose, email: userEmail, firstName: firstName, se
                     />
 
                     <Plan
-                        title="Margin Pilot – Growth"
+                        title="Thrive"
+                        subtitle="For teams with 100+ staff"
                         planKey="margin_pilot_growth"
-                        monthly={699}
-                        yearly={6710.40}
+                        monthly={999}
+                        yearly={9999}
+                        yearlyMonthly={799}
                         billing={billing}
                         features={[
-                            "Lift EBITDA",
-                            "Reduce OT & vacancy drag",
-                            "Event & incident management",
-                            "Incident auditing",
-                            "Smart rostering (1000 SMS)",
-                            "150 AI clicks included",
+                            "50M AI tokens",
+                            "3,000 SMS",
+                            "~300 clicks",
+                            "$50 auto top-up when tokens or SMS run out",
                         ]}
+                        saving="$200,000+ / year"
                         onCompare={() => setShowCompare(true)}
                         onCheckout={handleCheckout}
                         userEmail={userEmail}
@@ -156,33 +159,75 @@ const PricingPlansModal = ({ onClose, email: userEmail, firstName: firstName, se
                     />
 
                     <Plan
-                        title="Profit with Compliance – Pro"
-                        planKey="profit_compliance_pro"
-                        monthly={999}
-                        yearly={9590.40}
-                        billing={billing}
+                        title="Command"
+                        subtitle="For teams with 200+ staff"
+                        planKey="command"
+                        payg
                         features={[
-                            "CFO-grade finance",
-                            "Al ops + compliance pack",
-                            "Quality & risk reporting",
-                            "SIRS analysis",
-                            "Smart rostering (2000 SMS)",
-                            "Incident reports",
-                            "300 AI clicks included",
+                            "Unlimited tokens",
+                            "Unlimited SMS",
+                            "Unlimited actions",
+                            "NA",
                         ]}
+                        saving="$1.2M+ / year"
                         onCompare={() => setShowCompare(true)}
-                        onCheckout={handleCheckout}
-                        userEmail={userEmail}
-                        onClose={onClose}
-                        firstName={firstName}
-                        setSubscriptionInfo={setSubscriptionInfo}
                     />
+
+                </div>
+                {/* Standard Features */}
+                <div className="standard-features">
+                    <div className="standard-left">
+                        <h3>
+                            <p>Standard Features Across</p>
+                            <p>All Plans</p>
+                        </h3>
+                    </div>
+
+                    <div className="standard-right">
+                        <div className="standard-column">
+                            <h4>Aged Care / NDIS</h4>
+                            <ul>
+                                <li><img src={pricingTick} /> Financial Health</li>
+                                <li><img src={pricingTick} /> Client Profitability</li>
+                                <li><img src={pricingTick} /> Payroll Analysis</li>
+                            </ul>
+                        </div>
+
+                        <div className="standard-column">
+                            <h4>Automation</h4>
+                            <ul>
+                                <li><img src={pricingTick} /> Smart Rostering</li>
+                                <li><img src={pricingTick} /> Smart Onboarding</li>
+                                <li><img src={pricingTick} /> CareVoice (Voice → Document)</li>
+                            </ul>
+                        </div>
+
+                        <div className="standard-column">
+                            <h4>NDIS</h4>
+                            <ul>
+                                <li><img src={pricingTick} /> Incident Auditing</li>
+                                <li><img src={pricingTick} /> Event & Incident Management</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                {/* Example usage */}
+                <div className="pricing-example">
+                    <img src={pricingExampleIcon} alt="example" />
+                    <span>
+                        <strong>Example:</strong> One Rostering / Voice To Document / Onboarding Click ≈
+                        150k tokens
+                    </span>
                 </div>
 
                 {/* Enterprise */}
-                <div className="enterprise">
+                {/* <div className="enterprise">
                     <div className="enterprise-content">
-                        <h3 className="enterprise-title">Custom Enterprise</h3>
+                        <h3 className="enterprise-title">
+                            Standard Features Across
+                            <br />
+                            All Plans
+                        </h3>
 
                         <div className="enterprise-features">
                             <ul className="feature-list">
@@ -206,23 +251,42 @@ const PricingPlansModal = ({ onClose, email: userEmail, firstName: firstName, se
                                     <span>Custom integrations</span>
                                 </li>
                             </ul>
+
+
+
                         </div>
                     </div>
 
 
 
                     <button className="outline-btn">Contact Sales</button>
-                </div>
-                {showCompare && (
+                </div> */}
+                {/* {showCompare && (
                     <ComparePlans />
-                )}
+                )} */}
 
             </div>
         </div>
     );
 };
 
-const Plan = ({ title, planKey, monthly, yearly, billing, features, popular, onCompare, onCheckout, userEmail, onClose, firstName, setSubscriptionInfo }) => {
+const Plan = ({ title,
+    subtitle,
+    planKey,
+    monthly,
+    yearly,
+    yearlyMonthly,
+    billing,
+    features,
+    popular,
+    saving,
+    payg,
+    onCompare,
+    onCheckout,
+    userEmail,
+    onClose,
+    firstName,
+    setSubscriptionInfo }) => {
     const price = billing === "monthly" ? monthly : yearly;
     const startTrial = async () => {
         try {
@@ -243,7 +307,7 @@ const Plan = ({ title, planKey, monthly, yearly, billing, features, popular, onC
             const data = await res.json();
             console.log("Trial started:", data);
             // Update Mailchimp tag
-           const mailChimpRes =  await fetch(
+            const mailChimpRes = await fetch(
                 "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/mailchimp/contact",
                 {
                     method: "POST",
@@ -251,12 +315,12 @@ const Plan = ({ title, planKey, monthly, yearly, billing, features, popular, onC
                     body: JSON.stringify({
                         email: userEmail,
                         first_name: firstName || "",
-                        last_name: "",
+                        // last_name: "",
                         tag: "trial_started",
                     }),
                 }
             );
-           console.log("Mailchimp updated:", await mailChimpRes.json());
+            console.log("Mailchimp updated:", await mailChimpRes.json());
             setSubscriptionInfo({
                 subscription_type: "trial",
                 trial_end: data?.trial?.trial_end,
@@ -275,18 +339,56 @@ const Plan = ({ title, planKey, monthly, yearly, billing, features, popular, onC
             style={{ cursor: "pointer" }}
             onClick={() => onCheckout({ planKey })}
         >
-            <div className="plan-header">
-                <h4>{title}</h4>
-                {popular && <span className="popular-badge">Popular</span>}
+            {popular && <span className="popular-badge">Popular</span>}
+            <div style={{ height: "100px", display: "flex", flexDirection: "column", gap: "16px", marginBottom: billing === "yearly" ? "24px" : "0px" }}>
+                <div className="plan-header">
+                    <div>
+                        <h4>{title}</h4>
+                        {subtitle && (
+                            <p style={{ fontSize: "14px", color: "#707493", lineHeight: "24px" }}>{subtitle}</p>
+                        )}
+                    </div>
+                </div>
+
+
+                <div className="price">
+                    {payg ? (
+                        <>
+                            <span className="price-amount">PAYG</span>
+                            <span className="price-duration">(Pay As You Go)</span>
+                        </>
+                    ) : billing === "yearly" ? (
+                        <div style={{ textAlign: "left" }}>
+                            <div>
+                                <span className="price-currency">$</span>
+                                <span className="price-amount">{yearlyMonthly}</span>
+                                <span className="price-duration">/month</span>
+                            </div>
+
+                            {/* small yearly price under */}
+                            <div
+                                style={{
+                                    fontSize: "12px",
+                                    color: "#707493",
+                                    marginBottom:"4px"
+                                }}
+                            >
+                                ${yearly}/year
+                            </div>
+                        </div>
+                    ) : (
+                        <>
+                            <span className="price-currency">$</span>
+                            <span className="price-amount">{monthly}</span>
+                            <span className="price-duration">/month</span>
+                        </>
+                    )}
+                </div>
             </div>
 
-            <div className="price">
-                <span className="price-currency">$</span>
-                <span className="price-amount">{price}</span>
-                <span className="price-duration">
-                    {billing === "monthly" ? "/month" : "/year"}
-                </span>
-            </div>
+
+
+
 
 
 
@@ -307,6 +409,23 @@ const Plan = ({ title, planKey, monthly, yearly, billing, features, popular, onC
                         </li>
                     );
                 })}
+                {saving && (
+                    <div className="saving-badge-container" >
+                        <div className="saving-badge">
+                            Indicative provider saving {saving}
+                        </div>
+
+                        <div className="example-usage">
+                            Example of usage 
+                            <div style={{width:"20px",height:"20px",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                                <img src={pricingTooltip}></img>
+                            </div>
+                            <div className="tooltip">
+                                Covers 5 Report + 10 Rostering / Voice To Text Documents / Onboarding
+                            </div>
+                        </div>
+                    </div>
+                )}
             </ul>
 
 
@@ -326,12 +445,12 @@ const Plan = ({ title, planKey, monthly, yearly, billing, features, popular, onC
                     Start 15-day free trial
                 </button>
 
-                <div className="compare" onClick={(e) => {
+                {/* <div className="compare" onClick={(e) => {
                     e.stopPropagation(); // CRITICAL
                     onCompare();
                 }}>
                     Compare plans
-                </div>
+                </div> */}
 
             </div>
 

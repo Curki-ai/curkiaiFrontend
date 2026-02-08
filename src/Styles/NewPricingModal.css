@@ -28,7 +28,7 @@
     padding: 24px;
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: 32px;
 }
 
 /* Top */
@@ -59,6 +59,7 @@
     font-size: 32px;
     font-weight: 700;
     line-height: 44px;
+    color: #0e0c16;
 }
 
 .pricing-header span {
@@ -104,14 +105,15 @@
 
 /* Card */
 .plan-card {
+    position: relative;
     border: 1px solid #e5e7eb;
     border-radius: 16px;
     padding: 32px;
     width: 289px;
-    height: 483px;
+    height: 488px;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 20px;
     text-align: left;
     font-size: 16px;
     font-weight: 500;
@@ -128,7 +130,7 @@
     display: flex;
     flex-direction: column;
     gap: 6px;
-    margin-bottom: 14px;
+    /* margin-bottom: 14px; */
     min-height: 204px;
 }
 
@@ -150,18 +152,25 @@
 }
 
 .plan-header h4 {
-    font-size: 16px;
+    font-size: 22px;
     font-weight: 500;
     line-height: 24px;
 }
 
 .popular-badge {
+    position: absolute;
+    top: 16px;
+    right: 16px;
     background: linear-gradient(101.4deg, #9B88FF 9.25%, #3D2B99 88.44%);
     color: white;
     font-size: 12px;
     padding: 4px 10px;
     border-radius: 999px;
     font-weight: 600;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 
@@ -209,7 +218,6 @@
     /* clean spacing like Figma */
     margin-top: auto;
     /* pushes actions to bottom */
-    margin-bottom: 24px;
 }
 
 .compare {
@@ -334,8 +342,6 @@
     align-items: baseline;
     gap: 2px;
     height: 32px;
-    margin-top: -10px;
-    margin-bottom: 18px;
 }
 
 /* Dollar sign (small) */
@@ -362,10 +368,83 @@
     color: #6b7280;
     margin-left: 2px;
 }
-.enterprise-content{
+
+.enterprise-content {
     display: flex;
     gap: 60px;
 }
+
+.saving-badge {
+    background: linear-gradient(90deg, rgba(21, 200, 168, 0.3) 0%, rgba(21, 200, 168, 0) 100%);
+    color: #026654;
+    font-size: 14px;
+    font-weight: 500;
+    padding: 6px 10px;
+    border-radius: 6px;
+    width: fit-content;
+}
+
+.example-usage {
+    position: relative;
+    font-size: 12px;
+    color: #6B7280;
+    cursor: pointer;
+    display: flex;
+    gap: 6px;
+}
+.example-usage img{
+    width: 16px;
+    height: 16px;
+}
+/* Tooltip box */
+.tooltip {
+    position: absolute;
+    bottom: 150%;
+    left: 50%;
+    transform: translateX(-50%);
+
+    background: #6f6aa8;
+    color: #fff;
+    padding: 8px 12px;
+    border-radius: 8px;
+
+    font-size: 13px;
+    line-height: 18px;
+    white-space: normal;
+    width: 240px;
+    text-align: center;
+
+    opacity: 0;
+    visibility: hidden;
+}
+
+/* Arrow */
+.tooltip::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 73%;
+    transform: translateX(-50%);
+    border-width: 6px;
+    border-style: solid;
+    border-color: #6f6aa8 transparent transparent transparent;
+}
+
+/* Show on hover */
+.example-usage:hover .tooltip {
+    opacity: 1;
+    visibility: visible;
+}
+
+.saving-badge-container {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    margin-top: 21px;
+    gap: 10px;
+}
+
+
 @media (max-width: 1200px) {
     .enterprise-content {
         gap: 40px;
@@ -375,6 +454,97 @@
         font-size: 28px;
     }
 }
+
+/* Standard Features Section */
+.standard-features {
+    display: flex;
+    justify-content: space-between;
+    gap: 40px;
+    padding: 32px 40px;
+    border: 1px solid #e5e7eb;
+    border-radius: 20px;
+    align-items: flex-start;
+}
+
+/* Left title */
+.standard-left h3 {
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 36px;
+    color: #111827;
+    white-space: nowrap;
+    text-align: left;
+}
+
+/* Right columns */
+.standard-right {
+    display: flex;
+    gap: 48px;
+    flex-wrap: wrap;
+}
+
+.standard-column {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+/* Each column */
+.standard-column h4 {
+    font-size: 14px;
+    font-weight: 600;
+    color: #6B7280;
+    margin-bottom: 12px;
+}
+
+.standard-column ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.standard-column li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #111827;
+}
+
+.standard-column img {
+    width: 16px;
+    height: 16px;
+}
+
+/* Example usage row */
+.pricing-example {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+    padding-left: 8px;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: 600;
+    color: #3c3b42;
+}
+
+.pricing-example img {
+    width: 61px;
+    height: 61px;
+    flex-shrink: 0;
+}
+
+.pricing-example strong {
+    color: #15c8A8;
+    font-weight: 600;
+}
+
 @media (max-width: 1024px) {
     .enterprise {
         height: auto;
@@ -394,6 +564,7 @@
         gap: 20px;
     }
 }
+
 @media (max-width: 900px) {
     .enterprise {
         flex-direction: column;
@@ -414,6 +585,7 @@
         align-items: center;
     }
 }
+
 @media (max-width: 600px) {
     .enterprise {
         padding: 16px;
@@ -445,5 +617,96 @@
     .enterprise-features {
         gap: 20px;
         align-items: center;
+    }
+}
+
+/* ========================= */
+/* Standard Features Responsive */
+/* ========================= */
+
+@media (max-width: 1200px) {
+    .standard-right {
+        gap: 36px;
+    }
+}
+
+@media (max-width: 1024px) {
+    .standard-right {
+        gap: 28px;
+    }
+
+    .standard-left h3 {
+        font-size: 26px;
+        white-space: normal;
+    }
+}
+
+@media (max-width: 900px) {
+    .standard-features {
+        flex-direction: column;
+        gap: 24px;
+    }
+
+    .standard-right {
+        justify-content: space-between;
+        gap: 32px;
+    }
+}
+
+@media (max-width: 600px) {
+    .standard-features {
+        padding: 20px;
+        gap: 20px;
+    }
+
+    .standard-left h3 {
+        text-align: left;
+        font-size: 22px;
+    }
+
+    .standard-right {
+        flex-direction: column;
+        gap: 24px;
+        align-items: flex-start;
+    }
+}
+
+/* Fix Standard Features heading wasted space on very small screens */
+@media (max-width: 480px) {
+
+    .standard-left h3 {
+        font-size: 20px;
+        line-height: 28px;
+        white-space: normal;
+        max-width: 100%;
+    }
+}
+
+/* ========================= */
+/* Pricing Example Responsive */
+/* ========================= */
+
+@media (max-width: 768px) {
+    .pricing-example {
+        font-size: 14px;
+    }
+
+    .pricing-example img {
+        width: 36px;
+        height: 36px;
+    }
+}
+
+@media (max-width: 600px) {
+    .pricing-example {
+        flex-direction: column;
+        gap: 6px;
+        text-align: center;
+        font-size: 13px;
+    }
+
+    .pricing-example img {
+        width: 28px;
+        height: 28px;
     }
 }
