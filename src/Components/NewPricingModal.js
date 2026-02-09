@@ -9,12 +9,8 @@ const PricingPlansModal = ({ onClose, email: userEmail, firstName: firstName, se
     console.log("User Email:", userEmail); // For debugging
     const [billing, setBilling] = useState("monthly");
     const [showCompare, setShowCompare] = useState(false);
-    const PLAN_KEY_MAP = {
-        "Profit Lift Starter": "profit_lift_starter",
-        "Margin Starter": "margin_starter",
-        "Margin Pilot – Growth": "margin_pilot_growth",
-        "Profit with Compliance – Pro": "profit_compliance_pro",
-    };
+
+
     const handleCheckout = async ({ planKey }) => {
         try {
             if (!userEmail) {
@@ -91,9 +87,9 @@ const PricingPlansModal = ({ onClose, email: userEmail, firstName: firstName, se
                     <Plan
                         title="Start"
                         subtitle="For teams up to 50 staff"
-                        planKey="profit_lift_starter"
+                        planKey="start"
                         monthly={99}
-                        yearly={999}
+                        yearly={950}
                         yearlyMonthly={89}
                         billing={billing}
                         features={[
@@ -113,13 +109,13 @@ const PricingPlansModal = ({ onClose, email: userEmail, firstName: firstName, se
 
                     <Plan
                         title="Grow"
+                        badge="Popular"
                         subtitle="For teams with 50–100 staff"
-                        planKey="margin_starter"
+                        planKey="grow"
                         monthly={399}
-                        yearly={9999}
+                        yearly={3830}
                         yearlyMonthly={299}
                         billing={billing}
-                        popular
                         features={[
                             "15M AI tokens",
                             "1,000 SMS",
@@ -137,12 +133,15 @@ const PricingPlansModal = ({ onClose, email: userEmail, firstName: firstName, se
 
                     <Plan
                         title="Thrive"
+                        badge="Value"
+                        highlighted
                         subtitle="For teams with 100+ staff"
-                        planKey="margin_pilot_growth"
+                        planKey="growth"
                         monthly={999}
-                        yearly={9999}
+                        yearly={9590}
                         yearlyMonthly={799}
                         billing={billing}
+                        popular
                         features={[
                             "50M AI tokens",
                             "3,000 SMS",
@@ -286,8 +285,12 @@ const Plan = ({ title,
     userEmail,
     onClose,
     firstName,
-    setSubscriptionInfo }) => {
+    setSubscriptionInfo, highlighted, badge }) => {
     const price = billing === "monthly" ? monthly : yearly;
+    const formatPrice = (value) => {
+        if (!value) return value;
+        return value.toLocaleString("en-US");
+    };
     const startTrial = async () => {
         try {
             // 1️⃣ Start trial in your system
@@ -296,7 +299,7 @@ const Plan = ({ title,
                 {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ email: userEmail }),
+                    body: JSON.stringify({ email: userEmail, firstName: firstName }),
                 }
             );
 
@@ -306,21 +309,6 @@ const Plan = ({ title,
             }
             const data = await res.json();
             console.log("Trial started:", data);
-            // Update Mailchimp tag
-            const mailChimpRes = await fetch(
-                "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/mailchimp/contact",
-                {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        email: userEmail,
-                        first_name: firstName || "",
-                        // last_name: "",
-                        tag: "trial_started",
-                    }),
-                }
-            );
-            console.log("Mailchimp updated:", await mailChimpRes.json());
             setSubscriptionInfo({
                 subscription_type: "trial",
                 trial_end: data?.trial?.trial_end,
@@ -335,11 +323,18 @@ const Plan = ({ title,
 
     return (
         <div
-            className={`plan-card ${popular ? "popular" : ""}`}
+            className={`plan-card ${highlighted ? "popular" : ""}`}
             style={{ cursor: "pointer" }}
             onClick={() => onCheckout({ planKey })}
         >
-            {popular && <span className="popular-badge">Popular</span>}
+            {badge && (
+                <span
+                    className={`plan-badge ${badge === "Value" ? "value-badge" : "popular-badge"
+                        }`}
+                >
+                    {badge}
+                </span>
+            )}
             <div style={{ height: "100px", display: "flex", flexDirection: "column", gap: "16px", marginBottom: billing === "yearly" ? "24px" : "0px" }}>
                 <div className="plan-header">
                     <div>
@@ -370,10 +365,10 @@ const Plan = ({ title,
                                 style={{
                                     fontSize: "12px",
                                     color: "#707493",
-                                    marginBottom:"4px"
+                                    marginBottom: "4px"
                                 }}
                             >
-                                ${yearly}/year
+                                ${formatPrice(yearly)}/year
                             </div>
                         </div>
                     ) : (
@@ -416,8 +411,8 @@ const Plan = ({ title,
                         </div>
 
                         <div className="example-usage">
-                            Example of usage 
-                            <div style={{width:"20px",height:"20px",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                            Example of usage
+                            <div style={{ width: "20px", height: "20px", display: "flex", alignItems: "center", justifyContent: "center" }}>
                                 <img src={pricingTooltip}></img>
                             </div>
                             <div className="tooltip">
