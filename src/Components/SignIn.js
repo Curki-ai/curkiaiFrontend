@@ -102,6 +102,33 @@ const SignIn = ({ show, onClose }) => {
 
   if (!show) return null;
 
+  const saveUserToDB = async ({ uid, userEmail, name, organization, provider }) => {
+    try {
+      const response = await fetch("https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/user/create", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          uid,
+          userEmail,
+          name,
+          organization,
+          provider,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        console.error("DB Save Error:", data);
+      } else {
+        console.log("User saved in DB:", data);
+      }
+    } catch (error) {
+      console.error("Failed to save user in DB:", error);
+    }
+  };
 
 
   const handleContinueWithEmail = async () => {
@@ -124,7 +151,7 @@ const SignIn = ({ show, onClose }) => {
       } else {
         // 🔵 Google / Facebook user
         setError(
-          "This email is already linked with Google or Facebook. Please continue using that option."
+          "This email is already linked with Google. Please continue using that option."
         );
       }
 
@@ -172,24 +199,30 @@ const SignIn = ({ show, onClose }) => {
       //   lastSignInTime: user.metadata.lastSignInTime,
       // });
       const user = userCredential.user;
-
+      await saveUserToDB({
+        uid: user.uid,
+        userEmail: user.email,
+        name,
+        organization,
+        provider: user.providerData[0]?.providerId,
+      });
       // EmailJS notification
       const templateParams = {
         message: "A new user just signed up!",
         email: email,
       };
 
-      try {
-        await emailjs.send(
-          "service_6otxz7o",
-          "template_fxslvkj",
-          templateParams,
-          "hp6wyNEGYtFRXcOSs"
-        );
-        console.log("Email sent successfully");
-      } catch (emailError) {
-        console.error("Failed to send email:", emailError);
-      }
+      // try {
+      //   await emailjs.send(
+      //     "service_6otxz7o",
+      //     "template_fxslvkj",
+      //     templateParams,
+      //     "hp6wyNEGYtFRXcOSs"
+      //   );
+      //   console.log("Email sent successfully");
+      // } catch (emailError) {
+      //   console.error("Failed to send email:", emailError);
+      // }
 
       // Mailchimp Welcome flow
       try {
@@ -282,29 +315,35 @@ const SignIn = ({ show, onClose }) => {
         const newEmail = result?.user?.email;
         const newName = result?.user?.displayName;
 
-
+        await saveUserToDB({
+          uid: result.user.uid,
+          userEmail: result.user.email,
+          name: result.user.displayName,
+          organization: "",
+          provider: result.user.providerData[0]?.providerId,
+        });
         // EmailJS notification
         const templateParams = {
           message: "A new user just signed up!",
           email: newEmail,
         };
 
-        try {
-          await emailjs.send(
-            "service_6otxz7o",
-            "template_fxslvkj",
-            templateParams,
-            "hp6wyNEGYtFRXcOSs"
-          );
-          console.log("Email sent successfully");
-        } catch (emailError) {
-          console.error("Failed to send email:", emailError);
-        }
+        // try {
+        //   await emailjs.send(
+        //     "service_6otxz7o",
+        //     "template_fxslvkj",
+        //     templateParams,
+        //     "hp6wyNEGYtFRXcOSs"
+        //   );
+        //   console.log("Email sent successfully");
+        // } catch (emailError) {
+        //   console.error("Failed to send email:", emailError);
+        // }
 
         // Mailchimp Welcome flow
         try {
           const mailchimpRes = await fetch(
-            "https://curki-backend-api-container.yellowflower-c21bea82.australiaeast.azurecontainerapps.io/mailchimp/contact",
+            "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/mailchimp/contact",
             {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -312,7 +351,7 @@ const SignIn = ({ show, onClose }) => {
                 email: newEmail,
                 first_name: newName,
                 last_name: " ",
-                tag: "Welcome Flow",
+                tag: "Welcome flow 2026",
               }),
             }
           );
@@ -400,7 +439,24 @@ const SignIn = ({ show, onClose }) => {
                   }}
                 />
               </div>
-              {error && <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', color: 'red', fontWeight: '400', marginBottom: '6px', textAlign: 'left' }}><CiWarning size={20} />{error}</div>}
+              {error && (
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "flex-start",   // 🔥 important change
+                    gap: "8px",
+                    fontSize: "14px",
+                    color: "red",
+                    fontWeight: "400",
+                    marginBottom: "8px",
+                    lineHeight: "20px",
+                  }}
+                >
+                  <CiWarning size={22} style={{ marginTop: "2px", flexShrink: 0 }} />
+                  <span style={{ textAlign: "left" }}>{error}</span>
+                </div>
+              )}
+
             </div>
             {loading ? (
               <div
