@@ -73,6 +73,7 @@ const TlcNewClientProfitability = (props) => {
         "kbrennen@tenderlovingcaredisability.com.au": "New South Wales",
     };
     const userEmail = user?.email;
+    // const userEmail = "gjavier@tenderlovingcaredisability.com.au"
     // const userEmail = "kris@curki.ai"
     const userState = EMAIL_STATE_MAP[userEmail];
     const [tabs, setTabs] = useState([

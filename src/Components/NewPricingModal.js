@@ -324,8 +324,6 @@ const Plan = ({ title,
     return (
         <div
             className={`plan-card ${highlighted ? "popular" : ""}`}
-            style={{ cursor: "pointer" }}
-            onClick={() => onCheckout({ planKey })}
         >
             {badge && (
                 <span
@@ -426,28 +424,50 @@ const Plan = ({ title,
 
 
             <div className="plan-actions">
-                <button
-                    className={
-                        popular
-                            ? "primary-btn popular-btn"
-                            : "primary-btn outline-plan-btn"
-                    }
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        startTrial();
-                    }}
-                >
-                    Start 15-day free trial
-                </button>
 
-                {/* <div className="compare" onClick={(e) => {
-                    e.stopPropagation(); // CRITICAL
-                    onCompare();
-                }}>
-                    Compare plans
-                </div> */}
+                {title === "Command" ? (
+                    /* Only Contact Sales */
+                    <button
+                        className="contact-sales-btn"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            window.location.href = "mailto:sarah@curki.ai";
+                        }}
+                    >
+                        Contact Sales
+                    </button>
+                ) : (
+                    <>
+                        {/* Buy Now */}
+                        <button
+                            className={
+                                popular
+                                    ? "primary-btn popular-btn"
+                                    : "primary-btn outline-plan-btn"
+                            }
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onCheckout({ planKey });
+                            }}
+                        >
+                            Buy Now
+                        </button>
+
+                        {/* Trial */}
+                        <button
+                            className="trial-btn"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                startTrial();
+                            }}
+                        >
+                            Start 15-day free trial
+                        </button>
+                    </>
+                )}
 
             </div>
+
 
         </div>
     );

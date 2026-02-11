@@ -100,6 +100,7 @@ export default function TlcNewCustomerReporting(props) {
         "kbrennen@tenderlovingcaredisability.com.au": "New South Wales",
     };
     const userEmail = props?.user?.email?.trim()?.toLowerCase();
+    // const userEmail = "bastruc@tenderlovingcaredisability.com.au"
     // const userEmail = "kris@curki.ai";
     const userState = EMAIL_STATE_MAP[userEmail];
     const handleNewTab = () => {
@@ -645,8 +646,11 @@ export default function TlcNewCustomerReporting(props) {
                 uploading: false,
                 progressStage: "idle",
                 // name: formatDateRange()
-                name: `${startDate.getDate()}-${startDate.getMonth() + 1}-${startDate.getFullYear()} - ${endDate.getDate()}-${endDate.getMonth() + 1}-${endDate.getFullYear()}`
-
+                name: `${startDate.getDate()}-${startDate.getMonth() + 1}-${startDate.getFullYear()} - ${endDate.getDate()}-${endDate.getMonth() + 1}-${endDate.getFullYear()}`,
+                aiReport: null,
+                aiLoading: false,
+                showReport: false,
+                aiProgress: 0,
             });
             try {
                 if (userEmail) {
