@@ -445,8 +445,11 @@ const VoiceModule = (props) => {
 
                 setTranscriptData(data);
                 setTranscribing(false);
-                await submitMultipleTemplatesWithAudio();
+
+                // PASS transcript text directly
+                await submitMultipleTemplatesWithAudio(data.text);
             }
+
 
             if (data.status === "error") {
                 clearInterval(interval);
@@ -1102,12 +1105,12 @@ const VoiceModule = (props) => {
             );
         }
     };
-    const submitMultipleTemplatesWithAudio = async () => {
+    const submitMultipleTemplatesWithAudio = async (transcriptTextParam) => {
         if (
             !selectedTemplate ||
             !selectedTemplate.isMulti ||
             selectedTemplate.templates.length === 0 ||
-            !transcriptData?.text
+            !transcriptTextParam
         ) return;
 
         setIsGenerating(true);
@@ -1118,7 +1121,7 @@ const VoiceModule = (props) => {
         const tasks = selectedTemplate.templates.map(async (tpl) => {
             const doc = await processSingleTranscriptWithTemplateText(
                 tpl,
-                transcriptData.text
+                transcriptTextParam
             );
 
             if (doc) docsToSend.push(doc);
