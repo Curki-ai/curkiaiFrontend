@@ -408,9 +408,7 @@ const HomePage = () => {
       }
 
 
-
-
-      // 🟢 DEFAULT ASK AI MODE (for all other modules)
+      // DEFAULT ASK AI MODE (for all other modules)
       let payload = { query: finalQuery };
       if (documentString) payload.document = documentString;
 
@@ -878,14 +876,11 @@ const HomePage = () => {
                     </div>
                     {messages.length === 0 &&
                       <div>
-                        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: '20px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: '20px',gap:'20px' }}>
                           <img src={purpleStar} alt='blue-star' style={{ width: '36px', height: 'auto' }} />
+                          <div style={{ textAlign: 'center', fontSize: '24px', fontFamily: 'Inter', fontWeight: '500' }}>
+                          Ask AI.
                         </div>
-                        <div style={{ textAlign: 'center', fontSize: '24px', fontFamily: 'Inter', fontWeight: '500' }}>
-                          Got a question? Just ask AI.
-                        </div>
-                        <div style={{ textAlign: 'center', fontSize: '16px', fontWeight: '400', marginTop: '10px' }}>
-                          Your Aged Care & NDIS helper.<br></br>Ask a question get simple, trusted guidance.
                         </div>
                       </div>
                     }
@@ -992,7 +987,6 @@ const HomePage = () => {
                           <div
                             style={{
                               width: "60%",
-                              maxHeight: "150px",
                               overflowY: "auto",
                               boxSizing: "border-box",
                               paddingTop: "10px",       // ✅ ADD
