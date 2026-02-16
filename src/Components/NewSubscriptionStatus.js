@@ -9,18 +9,22 @@ import { checkSubscriptionStatus } from "./getSubscription";
 const NewSubscriptionStatus = (
   user,
   setShowPricingModal,
-  setSubscriptionInfo // ✅ NEW
+  setSubscriptionInfo 
 ) => {
   useEffect(() => {
     if (!user?.email) return;
 
-    // ✅ internal / admin bypass
+    // internal / admin bypass
     const bypassEmails = [
       "noah@caringways.com.au",
       "utkarsh@curki.ai",
       "kris@curki.ai",
       "gjavier@tenderlovingcaredisability.com.au",
       "kaylyn@allaboutcaring.com.au",
+      "mtalukder@tenderlovingcaredisability.com.au",
+      "bastruc@tenderlovingcare.com.au",
+      "mfarag@tenderlovingcare.com.au",
+      "yzaki@tenderlovingcare.com.au"
     ];
 
     if (bypassEmails.includes(user.email)) {

@@ -408,9 +408,7 @@ const HomePage = () => {
       }
 
 
-
-
-      // 🟢 DEFAULT ASK AI MODE (for all other modules)
+      // DEFAULT ASK AI MODE (for all other modules)
       let payload = { query: finalQuery };
       if (documentString) payload.document = documentString;
 
