@@ -65,6 +65,7 @@ const Sidebar = ({
   setShowSignIn,
   setShowDropdown,
   showDropdown,
+  openSettings
 }) => {
   // console.log(activeReportType);
   const [showRoles, setShowRoles] = useState(true);
@@ -73,7 +74,7 @@ const Sidebar = ({
   const [showProfilePanel, setShowProfilePanel] = useState(false);
   const [usageOpen, setUsageOpen] = useState(false);
   const [modulesOpen, setModulesOpen] = useState(false);
-
+  console.log("user",user)
   const toggleRoles = () => {
     // setShowRoles(!showRoles);
     setShowUploadReport(false);
@@ -445,17 +446,17 @@ const Sidebar = ({
               />
 
               <div className="profile-header-info">
+                <div className="profile-badge">Admin</div>
                 <div className="profile-header-name">{user?.displayName}</div>
                 <div className="profile-header-email">{user?.email}</div>
               </div>
 
-              <div className="profile-badge">Admin</div>
 
             </div>
 
 
             {/* Usage */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+            <div style={{ display: "flex", flexDirection: "column" }}>
               <div className="usage-overview-wrapper">
 
                 <div className="usage-overview-card">
@@ -528,11 +529,7 @@ const Sidebar = ({
 
                 <div className="profile-card">
 
-                  <ProfileItem
-                    icon={adminProfileUpgrade}
-                    text="Upgrade"
-                    highlight
-                  />
+
 
                   <ProfileItem
                     icon={adminProfilePlanAndBill}
@@ -546,11 +543,13 @@ const Sidebar = ({
                     arrow
                   />
 
-                  <ProfileItem
-                    icon={adminProfileSettings}
-                    text="Settings"
-                    arrow
-                  />
+                  <div onClick={openSettings}>
+                    <ProfileItem
+                      icon={adminProfileSettings}
+                      text="Settings"
+                      arrow
+                    />
+                  </div>
                   <div
                     className="profile-item logout-item"
                     onClick={handleLogout}
