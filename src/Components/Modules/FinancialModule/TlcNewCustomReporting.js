@@ -417,16 +417,16 @@ export default function TlcNewCustomerReporting(props) {
 
         // ✅ Validate file names
         const validFiles = files.filter((file) => {
-            const name = file.name.toLowerCase();
-            if (
-                name.includes("pay journal") ||
-                name.includes("people - team members") ||
-                name.includes("employeeupdate")
-            ) {
-                return true;
-            }
+            const name = file.name
+                .toLowerCase()
+                .replace(/[_-]/g, " ")     
+                .replace(/\s+/g, " ");     
 
-            return false;
+            return (
+                name.includes("pay journal") ||
+                name.includes("people team members") ||
+                name.includes("employeeupdate")
+            );
         });
 
         if (validFiles.length === 0) {
