@@ -1,0 +1,168 @@
+.settings-container {
+  padding: 32px 40px;
+  background: #F9FAFB;
+  height: 100%;
+  font-family: Inter;
+  width: 100%;
+}
+
+/* back */
+.settings-back {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  color: #6B7280;
+  margin-bottom: 25px;
+}
+
+/* header */
+.settings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.settings-user-info {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.settings-avatar {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+}
+
+.settings-admin-badge {
+  background: #E9F7EF;
+  color: #22C55E;
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  margin-bottom: 4px;
+  width: 70px;
+  height: 21px;
+}
+
+.settings-name {
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.settings-save-btn {
+  border: 1px solid #6C4CDC;
+  color: #6C4CDC;
+  padding: 10px 22px;
+  border-radius: 20px;
+  background: white;
+  cursor: pointer;
+}
+
+/* form */
+.settings-form {
+  display: flex;
+  gap: 24px;
+  margin-top: 40px;
+  width: 100%;              /* full available width */
+}
+
+.settings-input-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  flex: 1;                  /* KEY: each takes equal space */
+  min-width: 0;
+}
+
+.settings-input-group input {
+  width: 100%;              /* KEY: fill parent */
+  padding: 12px;
+  border-radius: 20px;
+  border: 1px solid #D1D5DB;
+  outline: none;
+}
+
+.settings-input-group label {
+  font-size: 14px;
+  margin-bottom: 6px;
+  color: #6B7280;
+  margin-left: 11px;
+}
+
+
+
+/* actions */
+.settings-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 30px;
+}
+
+.delete-account-btn {
+  border: 1px solid #EF4444;
+  color: #EF4444;
+  padding: 10px 20px;
+  border-radius: 20px;
+  background: white;
+  cursor: pointer;
+}
+
+.reset-password-btn {
+  border: none;
+  background: #E5E7EB;
+  color: #6B7280;
+  padding: 10px 20px;
+  border-radius: 20px;
+}
+.settings-input-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.settings-input-wrapper input {
+  width: 100%;
+  padding: 12px 40px 12px 12px; /* space for icon */
+  border-radius: 20px;
+  border: 1px solid #D1D5DB;
+  outline: none;
+}
+
+.settings-edit-icon {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6B7280;
+  cursor: pointer;
+}
+.settings-name-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.settings-name {
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.settings-name-edit-icon {
+  color: #6B7280;
+  cursor: pointer;
+  margin-top: 2px;
+}
+.settings-disabled-input {
+  background-color: #F3F4F6;
+  cursor: not-allowed;
+  color: #6B7280;
+}
+.settings-header-input {
+  font-size: 20px;
+  font-weight: 600;
+  border: 1px solid #D1D5DB;
+  border-radius: 6px;
+  padding: 4px 8px;
+}
+
