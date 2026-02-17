@@ -1917,5 +1917,4 @@ const TlcNewClientProfitability = (props) => {
         </div>
     );
 };
-
 export default TlcNewClientProfitability;
