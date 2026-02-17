@@ -31,9 +31,18 @@ import purpleIncidentAuditing from '../Images/puple_incident_Auditing.png';
 import whiteIncidentAuditing from '../Images/white_incident_Auditing.png';
 import voiceModuleIcon from '../Images/voiceModuleIcon.png';
 import voiceModuleIconWhite from '../Images/voiceModuleWhiteIcon.png';
-
+import adminProfileDown from "../Images/adminProfileDownArrow.svg";
+import adminProfileRight from "../Images/adminProfilerightArrow.svg";
+import adminProfileUpgrade from "../Images/adminProfileUpgrade.svg";
+import adminProfilePlanAndBill from "../Images/adminProfilePlansAndBill.svg";
+import adminProfileTeamMembers from "../Images/adminProfileTeamMembers.svg";
+import adminProfileSettings from "../Images/adminProfileSettings.svg";
+import AiSideBarIcon from "../Images/AiSideBarIcon.svg"
+import AiSmsSideBarIcon from "../Images/SmsSideBarIcon.svg"
 import lock from "../Images/lock.png";
 import { IoIosContact, IoIosLogOut } from "react-icons/io";
+import sideBarLogout from "../Images/sideBarLogout.svg"
+import viewDetailsSideBarRight from "../Images/viewDetailsRightArrow.svg"
 import { FaChevronUp } from "react-icons/fa";
 
 const Sidebar = ({
@@ -61,6 +70,9 @@ const Sidebar = ({
   const [showRoles, setShowRoles] = useState(true);
   // const [activeItem, setActiveItem] = useState("Care Services & elgibility Analysis"); careplan
   const [activeItem, setActiveItem] = useState("Financial Health");
+  const [showProfilePanel, setShowProfilePanel] = useState(false);
+  const [usageOpen, setUsageOpen] = useState(false);
+  const [modulesOpen, setModulesOpen] = useState(false);
 
   const toggleRoles = () => {
     // setShowRoles(!showRoles);
@@ -110,10 +122,28 @@ const Sidebar = ({
     "Incident Auditing": { white: whiteIncidentAuditing, purple: purpleIncidentAuditing },
     "Connect Your Systems": { white: whiteConnectSystem, purple: purpleConnectSystem },
     "Care Voice": {
-      white: voiceModuleIconWhite,        
-      purple: voiceModuleIcon,  
+      white: voiceModuleIconWhite,
+      purple: voiceModuleIcon,
     },
   };
+  const ProfileItem = ({ icon, text, arrow, highlight }) => (
+    <div className={`profile-item ${highlight ? "highlight" : ""}`}>
+
+      <div className="profile-item-left">
+        <img src={icon} className="profile-item-icon" />
+        <span>{text}</span>
+      </div>
+
+      {arrow && (
+        <div style={{ width: "24px", height: "24px" }}>
+          <img src={adminProfileRight} className="profile-item-arrow" />
+        </div>
+      )}
+
+    </div>
+  );
+
+
 
   return (
     <div className="sidebar">
@@ -376,7 +406,182 @@ const Sidebar = ({
             })}
         </div>
       </div>
-      <>
+      <div className="profile-wrapper">
+
+        {/* USER BUTTON */}
+        <div
+          className="profile-button"
+          onClick={() => {
+            if (!user) setShowSignIn(true);
+            else setShowProfilePanel(prev => !prev);
+          }}
+        >
+          <div className="profile-button-left">
+
+            <IoIosContact color="white" size={36} />
+
+            <div>
+              <div className="profile-name">{user?.displayName}</div>
+              <div className="profile-email">{user?.email}</div>
+            </div>
+
+          </div>
+
+          <img src={adminProfileRight} className="profile-arrow" />
+
+        </div>
+
+
+        {/* PROFILE PANEL */}
+        {showProfilePanel && (
+          <div className="profile-panel">
+
+            {/* HEADER */}
+            <div className="profile-header">
+
+              <img
+                src={user?.photoURL || `https://ui-avatars.com/api/?name=${user?.displayName}`}
+                className="profile-avatar"
+              />
+
+              <div className="profile-header-info">
+                <div className="profile-header-name">{user?.displayName}</div>
+                <div className="profile-header-email">{user?.email}</div>
+              </div>
+
+              <div className="profile-badge">Admin</div>
+
+            </div>
+
+
+            {/* Usage */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+              <div className="usage-overview-wrapper">
+
+                <div className="usage-overview-card">
+
+                  <div className="usage-title">
+                    Plan Usage Overview
+                  </div>
+
+                  <div className="usage-subtitle">
+                    Combined usage across all modules
+                  </div>
+
+                  {/* AI TOKENS */}
+                  <div className="usage-row">
+                    <div className="usage-left">
+                      <img src={AiSideBarIcon} className="usage-icon-img" />
+                      <div className="usage-label">
+                        AI tokens used
+                      </div>
+
+                    </div>
+
+                    <div className="usage-percent">52%</div>
+
+                  </div>
+
+                  <div className="usage-bar">
+                    <div className="usage-bar-fill" style={{ width: "52%" }} />
+                  </div>
+
+
+                  {/* SMS */}
+                  <div className="usage-row">
+
+                    <div className="usage-left">
+
+
+                      <img src={AiSmsSideBarIcon} className="usage-icon-img" />
+
+
+                      <div className="usage-label">
+                        Sms used
+                      </div>
+
+                    </div>
+
+                    <div className="usage-percent">14%</div>
+
+                  </div>
+
+                  <div className="usage-bar">
+                    <div className="usage-bar-fill" style={{ width: "14%" }} />
+                  </div>
+
+
+                  <div className="usage-details">
+                    <p>View Details</p>
+                    <img src={viewDetailsSideBarRight} className="profile-item-arrow" />
+                  </div>
+
+                </div>
+
+              </div>
+
+
+
+
+              {/* CENTERED CARD */}
+              <div className="profile-card-wrapper">
+
+                <div className="profile-card">
+
+                  <ProfileItem
+                    icon={adminProfileUpgrade}
+                    text="Upgrade"
+                    highlight
+                  />
+
+                  <ProfileItem
+                    icon={adminProfilePlanAndBill}
+                    text="Plans & Billing"
+                    arrow
+                  />
+
+                  <ProfileItem
+                    icon={adminProfileTeamMembers}
+                    text="Team Members"
+                    arrow
+                  />
+
+                  <ProfileItem
+                    icon={adminProfileSettings}
+                    text="Settings"
+                    arrow
+                  />
+                  <div
+                    className="profile-item logout-item"
+                    onClick={handleLogout}
+                  >
+
+                    <div className="profile-item-left">
+
+                      <img
+                        src={sideBarLogout}
+                        className="profile-item-icon"
+                      />
+
+                      <span>Logout</span>
+
+                    </div>
+
+                  </div>
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+        )}
+
+      </div>
+
+
+
+      {/* <>
         <div style={{ display: "flex", justifyContent: "center" }}>
           {showDropdown && (
             <button onClick={handleLogout} className="logout-button">
@@ -434,7 +639,7 @@ const Sidebar = ({
           </div>
           <FaChevronUp color="white" size={16} />
         </div>
-      </>
+      </> */}
     </div>
   );
 };
