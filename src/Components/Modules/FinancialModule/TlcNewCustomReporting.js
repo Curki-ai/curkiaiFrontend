@@ -36,7 +36,6 @@ import enGB from "date-fns/locale/en-GB";
 
 registerLocale("en-GB", enGB);
 export default function TlcNewCustomerReporting(props) {
-    // -------------------- MULTI TAB SUPPORT --------------------
     const USE_DUMMY_DATA = false;
     const [tabs, setTabs] = useState([
         {
