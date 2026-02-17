@@ -68,13 +68,12 @@ const TlcNewClientProfitability = (props) => {
     const aiProgressRef = useRef({});
     const reportRef = useRef(null);
     const EMAIL_STATE_MAP = {
-        "molley@tenderlovingcaredisability.com.au": "Queensland",
+        "molley@tenderlovingcaredisability.com.au": "South Australia",
         "laurente@tenderlovingcaredisability.com.au": "Victoria",
         "kbrennen@tenderlovingcaredisability.com.au": "New South Wales",
     };
     const userEmail = user?.email;
-    // const userEmail = "gjavier@tenderlovingcaredisability.com.au"
-    // const userEmail = "kris@curki.ai"
+
     const userState = EMAIL_STATE_MAP[userEmail];
     const [tabs, setTabs] = useState([
         {
@@ -132,9 +131,11 @@ const TlcNewClientProfitability = (props) => {
     // 🔹 MOCK FILTER OPTIONS (SHOWCASE ONLY)
     const optionsState = [
         { label: "New South Wales", value: "New South Wales" },
-        { label: "Queensland", value: "Queensland" },
         { label: "Victoria", value: "Victoria" },
+        { label: "Queensland", value: "Queensland" },
+        { label: "Western Australia", value: "Western Australia" },
         { label: "South Australia", value: "South Australia" },
+        { label: "Tasmania", value: "Tasmania" },
     ];
 
     const optionsDepartment = [
@@ -513,7 +514,7 @@ const TlcNewClientProfitability = (props) => {
             });
 
             // ✅ 3. Append env only for kris sandbox user
-            console.log("userEmail?.trim().toLowerCase()",userEmail?.trim().toLowerCase())
+            console.log("userEmail?.trim().toLowerCase()", userEmail?.trim().toLowerCase())
             if (userEmail?.trim().toLowerCase() === "kris@curki.ai") {
                 formData.append("env", "sandbox");
             }
@@ -1916,5 +1917,4 @@ const TlcNewClientProfitability = (props) => {
         </div>
     );
 };
-
 export default TlcNewClientProfitability;
