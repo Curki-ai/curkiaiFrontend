@@ -2446,7 +2446,7 @@ const VoiceModule = (props) => {
                                         {transcribing
                                             ? "Transcribing..."
                                             : isGenerating
-                                                ? "Generating..."
+                                                ? "Generating Document..."
                                                 : "✓ Submit"}
                                     </button>
                                 </>
