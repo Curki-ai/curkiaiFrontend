@@ -57,6 +57,7 @@ import PricingPlansModal from "./NewPricingModal";
 import NewSubscriptionStatus from "./NewSubscriptionStatus";
 import VoiceModule from "./Modules/SupportAtHomeModule/VoiceModule";
 import dummyLogo from "../Images/tlcDummyLogo.svg";
+import SettingsPage from "./Settings";
 const HomePage = () => {
   const [sidebarVisible, setSidebarVisible] = useState(true);
   const [documentString, setDocumentString] = useState("");
@@ -94,6 +95,7 @@ const HomePage = () => {
   const [trialCountdown, setTrialCountdown] = useState("");
   const [isMobileOrTablet, setIsMobileOrTablet] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const handleModalOpen = () => setModalVisible(true);
   const handleModalClose = () => setModalVisible(false);
   const handleLeftModalOpen = () => setLeftModalVisible(true);
@@ -549,6 +551,7 @@ const HomePage = () => {
                   setShowFinalZipReport={setShowFinalZipReport}
                   showUploadedReport={showUploadedReport}
                   setShowUploadReport={setShowUploadReport}
+                  openSettings={() => setShowSettings(true)}
                 />
               )}
 
@@ -740,89 +743,101 @@ const HomePage = () => {
                     </div>
                   </>
                 )}
+                {showSettings ? (
+                  <SettingsPage
+                    user={user}
+                    onBack={() => setShowSettings(false)}
+                  />
+                ) :
+                  (
+                    <div className={isTlcPage ? "tlc-custom-main-content" : isSmartRosteringPage ? "smart-rostering-main-content" : "main-content"} style={{
+                      display: showAIChat ? "none" : "block",
+                    }}>
+                      {showFeedbackPopup && <FeedbackModal userEmail={user?.email} />}
+                      {!loadingUser && selectedRole === "Connect Your Systems" && user && (
+                        <SoftwareConnect user={user} />
+                      )}
+                      <div style={{ display: selectedRole === "Financial Health" ? "block" : "none" }}>
+                        {/* <FinancialHealth selectedRole="Financial Health" handleClick={handleClick} setShowFeedbackPopup={setShowFeedbackPopup} user={user} /> */}
+                        <NewFinancialHealth selectedRole="Financial Health" handleClick={handleClick} setShowFeedbackPopup={setShowFeedbackPopup} user={user} />
+                      </div>
 
+                      <div style={{ display: selectedRole === "SIRS Analysis" ? "block" : "none" }}>
+                        <SirsAnalysis selectedRole="SIRS Analysis" handleClick={handleClick} setShowFeedbackPopup={setShowFeedbackPopup} />
+                      </div>
 
+                      <div style={{ display: selectedRole === "Participant Events & Incident Management" ? "block" : "none" }}>
+                        <Client_Event_Reporting selectedRole='Participant Events & Incident Management' user={user} />
+                      </div>
+                      <div style={{ display: selectedRole === "Incident Auditing" ? "block" : "none" }}>
+                        <IncidentAuditing selectedRole='Incident Auditing' user={user} />
+                      </div>
 
+                      <div style={{ display: selectedRole === "Quarterly Financial Reporting" ? "block" : "none" }}>
+                        <Qfr selectedRole="Quarterly Financial Reporting" handleClick={handleClick} setShowFeedbackPopup={setShowFeedbackPopup} />
+                      </div>
 
-                <div className={isTlcPage ? "tlc-custom-main-content" : isSmartRosteringPage ? "smart-rostering-main-content" : "main-content"} style={{
-                  display: showAIChat ? "none" : "block",
-                }}>
-                  {showFeedbackPopup && <FeedbackModal userEmail={user?.email} />}
-                  {!loadingUser && selectedRole === "Connect Your Systems" && user && (
-                    <SoftwareConnect user={user} />
-                  )}
-                  <div style={{ display: selectedRole === "Financial Health" ? "block" : "none" }}>
-                    {/* <FinancialHealth selectedRole="Financial Health" handleClick={handleClick} setShowFeedbackPopup={setShowFeedbackPopup} user={user} /> */}
-                    <NewFinancialHealth selectedRole="Financial Health" handleClick={handleClick} setShowFeedbackPopup={setShowFeedbackPopup} user={user} />
-                  </div>
+                      <div style={{ display: selectedRole === "Annual Financial Reporting" ? "block" : "none" }}>
+                        <Afr selectedRole="Annual Financial Reporting" handleClick={handleClick} setShowFeedbackPopup={setShowFeedbackPopup} />
+                      </div>
 
-                  <div style={{ display: selectedRole === "SIRS Analysis" ? "block" : "none" }}>
-                    <SirsAnalysis selectedRole="SIRS Analysis" handleClick={handleClick} setShowFeedbackPopup={setShowFeedbackPopup} />
-                  </div>
+                      <div style={{ display: selectedRole === "Custom Incident Management" ? "block" : "none" }}>
+                        <IncidentManagement selectedRole="Custom Incident Management" handleClick={handleClick} setShowFeedbackPopup={setShowFeedbackPopup} />
+                      </div>
 
-                  <div style={{ display: selectedRole === "Participant Events & Incident Management" ? "block" : "none" }}>
-                    <Client_Event_Reporting selectedRole='Participant Events & Incident Management' user={user} />
-                  </div>
-                  <div style={{ display: selectedRole === "Incident Auditing" ? "block" : "none" }}>
-                    <IncidentAuditing selectedRole='Incident Auditing' user={user} />
-                  </div>
+                      <div style={{ display: selectedRole === "Payroll Analysis" ? "block" : "none" }}>
+                        {/* <CustomReporting selectedRole="Custom Reporting" handleClick={handleClick} setShowFeedbackPopup={setShowFeedbackPopup} /> */}
+                        <TlcNewCustomerReporting user={user} setTlcAskAiPayload={setTlcAskAiPayload} tlcAskAiPayload={tlcAskAiPayload} setTlcAskAiHistoryPayload={setTlcAskAiHistoryPayload} tlcAskAiHistoryPayload={tlcAskAiHistoryPayload} />
+                      </div>
 
-                  <div style={{ display: selectedRole === "Quarterly Financial Reporting" ? "block" : "none" }}>
-                    <Qfr selectedRole="Quarterly Financial Reporting" handleClick={handleClick} setShowFeedbackPopup={setShowFeedbackPopup} />
-                  </div>
-
-                  <div style={{ display: selectedRole === "Annual Financial Reporting" ? "block" : "none" }}>
-                    <Afr selectedRole="Annual Financial Reporting" handleClick={handleClick} setShowFeedbackPopup={setShowFeedbackPopup} />
-                  </div>
-
-                  <div style={{ display: selectedRole === "Custom Incident Management" ? "block" : "none" }}>
-                    <IncidentManagement selectedRole="Custom Incident Management" handleClick={handleClick} setShowFeedbackPopup={setShowFeedbackPopup} />
-                  </div>
-
-                  <div style={{ display: selectedRole === "Payroll Analysis" ? "block" : "none" }}>
-                    {/* <CustomReporting selectedRole="Custom Reporting" handleClick={handleClick} setShowFeedbackPopup={setShowFeedbackPopup} /> */}
-                    <TlcNewCustomerReporting user={user} setTlcAskAiPayload={setTlcAskAiPayload} tlcAskAiPayload={tlcAskAiPayload} setTlcAskAiHistoryPayload={setTlcAskAiHistoryPayload} tlcAskAiHistoryPayload={tlcAskAiHistoryPayload} />
-                  </div>
-
-                  <div style={{ display: selectedRole === 'Clients Profitability' ? "block" : "none" }}>
-                    {/* <TlcClientProfitability
+                      <div style={{ display: selectedRole === 'Clients Profitability' ? "block" : "none" }}>
+                        {/* <TlcClientProfitability
                     onPrepareAiPayload={(payload) => setTlcClientProfitabilityPayload(payload)}
                     tlcClientProfitabilityPayload={tlcClientProfitabilityPayload}
                     user={user}
                   /> */}
-                    <TlcNewClientProfitability
-                      onPrepareAiPayload={(payload) => setTlcClientProfitabilityPayload(payload)}
-                      tlcClientProfitabilityPayload={tlcClientProfitabilityPayload}
-                      user={user}
-                    />
-                  </div>
+                        <TlcNewClientProfitability
+                          onPrepareAiPayload={(payload) => setTlcClientProfitabilityPayload(payload)}
+                          tlcClientProfitabilityPayload={tlcClientProfitabilityPayload}
+                          user={user}
+                        />
+                      </div>
 
-                  <div style={{ display: selectedRole === "Smart Onboarding (Staff)" ? "block" : "none" }}>
-                    <HRAnalysis handleClick={handleClick} selectedRole="Smart Onboarding (Staff)" setShowFeedbackPopup={setShowFeedbackPopup} user={user} setManualResumeZip={setManualResumeZip} />
-                  </div>
-                  <div style={{ display: selectedRole === "Care Voice" ? "block" : "none" }}>
-                    <VoiceModule user={user} isMobileOrTablet={isMobileOrTablet} />
-                  </div>
-                  <div style={{ display: selectedRole === "Client Profitability & Service" ? "block" : "none" }}>
-                    <CareServicesEligibility selectedRole="Client Profitability & Service" handleClick={handleClick} setShowFeedbackPopup={setShowFeedbackPopup} />
-                  </div>
+                      <div style={{ display: selectedRole === "Smart Onboarding (Staff)" ? "block" : "none" }}>
+                        <HRAnalysis handleClick={handleClick} selectedRole="Smart Onboarding (Staff)" setShowFeedbackPopup={setShowFeedbackPopup} user={user} setManualResumeZip={setManualResumeZip} />
+                      </div>
+                      <div style={{ display: selectedRole === "Care Voice" ? "block" : "none" }}>
+                        <VoiceModule user={user} isMobileOrTablet={isMobileOrTablet} />
+                      </div>
+                      <div style={{ display: selectedRole === "Client Profitability & Service" ? "block" : "none" }}>
+                        <CareServicesEligibility selectedRole="Client Profitability & Service" handleClick={handleClick} setShowFeedbackPopup={setShowFeedbackPopup} />
+                      </div>
 
-                  <div style={{ display: selectedRole === "Incident Report" ? "block" : "none" }}>
-                    <IncidentReport selectedRole="Incident Report" handleClick={handleClick} setShowFeedbackPopup={setShowFeedbackPopup} />
-                  </div>
+                      <div style={{ display: selectedRole === "Incident Report" ? "block" : "none" }}>
+                        <IncidentReport selectedRole="Incident Report" handleClick={handleClick} setShowFeedbackPopup={setShowFeedbackPopup} />
+                      </div>
 
-                  <div style={{ display: selectedRole === "Quality and Risk Reporting" ? "block" : "none" }}>
-                    <QualityandRisk selectedRole="Quality and Risk Reporting" handleClick={handleClick} setShowFeedbackPopup={setShowFeedbackPopup} />
-                  </div>
+                      <div style={{ display: selectedRole === "Quality and Risk Reporting" ? "block" : "none" }}>
+                        <QualityandRisk selectedRole="Quality and Risk Reporting" handleClick={handleClick} setShowFeedbackPopup={setShowFeedbackPopup} />
+                      </div>
 
-                  <div style={{ display: selectedRole === "Smart Rostering" ? "block" : "none" }}>
-                    <RosteringDashboard user={user} SetIsSmartRosteringHistory={SetIsSmartRosteringHistory} SetIsSmartRosteringDetails={SetIsSmartRosteringDetails} setManualAskAiFile={setManualAskAiFile} />
-                  </div>
-                </div>
+                      <div style={{ display: selectedRole === "Smart Rostering" ? "block" : "none" }}>
+                        <RosteringDashboard user={user} SetIsSmartRosteringHistory={SetIsSmartRosteringHistory} SetIsSmartRosteringDetails={SetIsSmartRosteringDetails} setManualAskAiFile={setManualAskAiFile} />
+                      </div>
+                    </div>
 
+                  )}
 
-                <Modal isVisible={isModalVisible} onClose={handleModalClose}></Modal>
-                <PopupModalLeft isVisible={isModalLeftVisible} onClose={handleLeftModalClose} module={selectedRole}></PopupModalLeft>
+                <Modal
+                  isVisible={isModalVisible}
+                  onClose={handleModalClose}
+                />
+
+                <PopupModalLeft
+                  isVisible={isModalLeftVisible}
+                  onClose={handleLeftModalClose}
+                  module={selectedRole}
+                />
 
                 <div className="ask-ai-button" onClick={() => setShowAIChat(!showAIChat)}>
                   <img src={askAiStar} alt="askAiStar" style={{ width: "22px", height: "22px" }} />
@@ -876,11 +891,11 @@ const HomePage = () => {
                     </div>
                     {messages.length === 0 &&
                       <div>
-                        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: '20px',gap:'20px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: '20px', gap: '20px' }}>
                           <img src={purpleStar} alt='blue-star' style={{ width: '36px', height: 'auto' }} />
                           <div style={{ textAlign: 'center', fontSize: '24px', fontFamily: 'Inter', fontWeight: '500' }}>
-                          Ask AI.
-                        </div>
+                            Ask AI.
+                          </div>
                         </div>
                       </div>
                     }
