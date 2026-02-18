@@ -9,25 +9,35 @@ import { checkSubscriptionStatus } from "./getSubscription";
 const NewSubscriptionStatus = (
   user,
   setShowPricingModal,
-  setSubscriptionInfo 
+  setSubscriptionInfo
 ) => {
+
   useEffect(() => {
     if (!user?.email) return;
 
     // internal / admin bypass
-    const bypassEmails = [
-      "noah@caringways.com.au",
-      "utkarsh@curki.ai",
-      "kris@curki.ai",
-      "gjavier@tenderlovingcaredisability.com.au",
-      "kaylyn@allaboutcaring.com.au",
-      "mtalukder@tenderlovingcaredisability.com.au",
-      "bastruc@tenderlovingcare.com.au",
-      "mfarag@tenderlovingcare.com.au",
-      "yzaki@tenderlovingcare.com.au"
+    // const bypassEmails = [
+    //   "noah@caringways.com.au",
+    //   "utkarsh@curki.ai",
+    //   "kris@curki.ai",
+    //   "gjavier@tenderlovingcaredisability.com.au",
+    //   "kaylyn@allaboutcaring.com.au",
+    //   "mtalukder@tenderlovingcaredisability.com.au",
+    //   "bastruc@tenderlovingcare.com.au",
+    //   "mfarag@tenderlovingcare.com.au",
+    //   "yzaki@tenderlovingcare.com.au",
+    // ];
+    const bypassDomains = [
+      "curki.ai",
+      "caringways.com.au",
+      "tenderlovingcaredisability.com.au",
+      "tenderlovingcare.com.au",
+      "allaboutcaring.com.au",
+      "youcareds.com",
+      "contemporarycoordination.com"
     ];
-
-    if (bypassEmails.includes(user.email)) {
+    const emailDomain = user.email.split("@")[1]?.toLowerCase();
+    if (bypassDomains.includes(emailDomain)) {
       setShowPricingModal(false);
       setSubscriptionInfo(null); // no trial badge
       return;
@@ -38,7 +48,7 @@ const NewSubscriptionStatus = (
 
       setShowPricingModal(result.shouldShowPricing);
 
-      // ✅ expose subscription to HomePage
+      //expose subscription to HomePage
       if (result.subscription) {
         setSubscriptionInfo(result.subscription);
       } else {
