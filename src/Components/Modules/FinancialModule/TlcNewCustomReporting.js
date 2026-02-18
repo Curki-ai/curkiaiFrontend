@@ -408,9 +408,6 @@ export default function TlcNewCustomerReporting(props) {
     };
 
 
-
-
-
     const handleFileChange = (e, type) => {
         const files = Array.from(e.target.files);
         if (files.length === 0) return;
@@ -419,8 +416,8 @@ export default function TlcNewCustomerReporting(props) {
         const validFiles = files.filter((file) => {
             const name = file.name
                 .toLowerCase()
-                .replace(/[_-]/g, " ")     
-                .replace(/\s+/g, " ");     
+                .replace(/[_-]/g, " ")
+                .replace(/\s+/g, " ");
 
             return (
                 name.includes("pay journal") ||
@@ -578,9 +575,16 @@ export default function TlcNewCustomerReporting(props) {
             // -------------------------------
             // STEP 2️⃣: RUN ANALYSIS API
             // -------------------------------
+            const formatToDMY = (date) => {
+                const d = String(date.getDate()).padStart(2, "0");
+                const m = String(date.getMonth() + 1).padStart(2, "0");
+                const y = date.getFullYear();
+                return `${d}-${m}-${y}`;
+            };
+
             const query = new URLSearchParams({
-                start: `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, "0")}-${String(startDate.getDate()).padStart(2, "0")}`,
-                end: `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, "0")}-${String(endDate.getDate()).padStart(2, "0")}`,
+                start: formatToDMY(startDate),
+                end: formatToDMY(endDate),
             });
 
 
