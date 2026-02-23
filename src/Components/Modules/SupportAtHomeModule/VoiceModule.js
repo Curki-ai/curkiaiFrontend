@@ -2595,18 +2595,24 @@ const VoiceModule = (props) => {
 
                         {templates?.length > 0 &&
                             <button
-                                className={`template-select-confirm ${selectedTemplate ? "selected" : "not-selected"
+                                className={`template-select-confirm ${selectedTemplate?.isMulti && selectedTemplate.templates.length > 0
+                                    ? "selected"
+                                    : "not-selected"
                                     }`}
-                                disabled={!selectedTemplate}
+                                disabled={
+                                    !selectedTemplate?.isMulti ||
+                                    selectedTemplate.templates.length === 0
+                                }
                                 onClick={() => setStaffStep("working")}
                             >
                                 ✓ Choose Template
 
-                                {selectedTemplate?.isMulti && (
-                                    <span className="template-count">
-                                        {selectedTemplate.templates.length}
-                                    </span>
-                                )}
+                                {selectedTemplate?.isMulti &&
+                                    selectedTemplate.templates.length > 0 && (
+                                        <span className="template-count">
+                                            {selectedTemplate.templates.length}
+                                        </span>
+                                    )}
                             </button>
 
                         }
