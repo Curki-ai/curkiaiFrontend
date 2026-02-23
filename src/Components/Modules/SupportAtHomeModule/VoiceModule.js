@@ -98,7 +98,8 @@ const VoiceModule = (props) => {
     const [selectedTemplate, setSelectedTemplate] = useState(null);
     const [uploadedTranscriptFile, setUploadedTranscriptFile] = useState(null);
     const [transcriptSource, setTranscriptSource] = useState(null);
-    const [isGenerating, setIsGenerating] = useState(false);
+    const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
+    const [isGeneratingFile, setIsGeneratingFile] = useState(false);
     // RAW – AI source of truth (DB + Python)
     const [rawPrompt, setRawPrompt] = useState("");
     const [rawMapper, setRawMapper] = useState(null);
@@ -972,6 +973,11 @@ const VoiceModule = (props) => {
         stopProgress();
         setStage("idle");
         setShowUploadSection(true);
+        setTemplateFile(null);
+        setSampleFiles([]);
+        setEditingTemplateId(null);
+        setRawPrompt("");
+        setRawMapper(null);
         setMapperRows([]);
         setAnalysisText("");
         setFeedbackText("");
@@ -1113,7 +1119,7 @@ const VoiceModule = (props) => {
             !transcriptTextParam
         ) return;
 
-        setIsGenerating(true);
+        setIsGeneratingAudio(true);
         setCurrentTask("Generating documents from audio");
 
         const docsToSend = [];
@@ -1133,7 +1139,8 @@ const VoiceModule = (props) => {
 
         setGeneratedDocs([]);
         emailSentRef.current = false;
-        setIsGenerating(false);
+        setIsGeneratingAudio(false);
+        resetStaffUI();
         setCurrentTask("");
     };
 
@@ -1215,15 +1222,15 @@ const VoiceModule = (props) => {
         }
 
         try {
-            setIsGenerating(true); // 🔥 START LOADING
+            setIsGeneratingFile(true); // 🔥 START LOADING
 
             const formData = new FormData();
-            // 🔥 TEMPLATE FROM BLOB METADATA
+            // TEMPLATE FROM BLOB METADATA
             formData.append("templateBlobName", selectedTemplate.templateBlobName);
             formData.append("templateMimeType", selectedTemplate.templateMimeType);
             formData.append("templateOriginalName", selectedTemplate.templateOriginalName);
 
-            // 🔥 SAMPLE BLOBS (ARRAY OR EMPTY)
+            // SAMPLE BLOBS (ARRAY OR EMPTY)
             formData.append(
                 "sampleBlobs",
                 JSON.stringify(selectedTemplate.sampleBlobs || [])
@@ -1282,6 +1289,7 @@ const VoiceModule = (props) => {
                 downloadBase64File(data.filled_document, filename);
 
                 await sendGeneratedDocsEmail(docs);
+                resetStaffUI();
             }
 
             setGeneratedDocs([]);
@@ -1291,7 +1299,7 @@ const VoiceModule = (props) => {
             console.error("Document generation failed", err);
             alert("Failed to generate document");
         } finally {
-            setIsGenerating(false);
+            setIsGeneratingFile(false);
             setTranscribing(false);
         }
     };
@@ -1436,7 +1444,7 @@ const VoiceModule = (props) => {
             uploadedTranscriptFiles.length === 0
         ) return;
 
-        setIsGenerating(true);
+        setIsGeneratingFile(true);
 
         const docsToSend = [];
 
@@ -1477,7 +1485,8 @@ const VoiceModule = (props) => {
         await sendGeneratedDocsEmail(docsToSend);
 
         emailSentRef.current = false;
-        setIsGenerating(false);
+        setIsGeneratingFile(false);
+        resetStaffUI();
         setCurrentTask("");
     };
 
@@ -1526,6 +1535,24 @@ const VoiceModule = (props) => {
     }, [props.isMobileOrTablet]);
 
     const transcriptInputRef = useRef(null);
+    const resetStaffUI = () => {
+        setRecordMode("idle");
+        setAudioURL(null);
+        setAudioBlob(null);
+        setRecordTime(0);
+        setPlayTime(0);
+        setIsPlaying(false);
+
+        setTranscriptData(null);
+        setUploadedTranscriptFiles([]);
+        setTranscriptSource(null);
+
+        setSelectedTemplate(null);
+        setStaffStep("landing");
+
+        setStaffName("");
+        setStaffEmail("");
+    };
     return (
         <div className="voice-container">
             {/* ================= TOP ROW ================= */}
@@ -2441,11 +2468,11 @@ const VoiceModule = (props) => {
                                     <button
                                         className="staff-primary"
                                         onClick={acceptRecording}
-                                        disabled={transcribing || isGenerating}
+                                        disabled={transcribing || isGeneratingAudio}
                                     >
                                         {transcribing
                                             ? "Transcribing..."
-                                            : isGenerating
+                                            : isGeneratingAudio
                                                 ? "Generating Document..."
                                                 : "✓ Submit"}
                                     </button>
@@ -2490,7 +2517,7 @@ const VoiceModule = (props) => {
                                         : submitToDocumentFiller
                                 }
                                 disabled={
-                                    isGenerating ||
+                                    isGeneratingFile ||
 
                                     // ❌ no template selected
                                     !selectedTemplate ||
@@ -2505,7 +2532,7 @@ const VoiceModule = (props) => {
                                     )
                                 }
                             >
-                                {isGenerating ? "Generating..." : "✓ Generate Document"}
+                                {isGeneratingFile ? "Generating..." : "✓ Generate Document"}
                             </button>
 
                         </div>

@@ -519,7 +519,7 @@ const TlcNewClientProfitability = (props) => {
                 throw new Error(data.error || "Upload failed");
             }
 
-            console.log("Upload successful:", data);
+            // console.log("Upload successful:", data);
 
             return data;
 
@@ -536,7 +536,7 @@ const TlcNewClientProfitability = (props) => {
     //     console.log("props.tlcClientProfitabilityPayload in handleFinal analysis", props?.tlcClientProfitabilityPayload)
     //     console.log("finalPayload", finalPayload)
     //     try {
-    //         console.log("🔄 Starting final analysis request...");
+    //         console.log("Starting final analysis request...");
     //         const analyzeRes = await fetch(
     //             `${BASE_URL}/tlcClientProfitibility/analyze-from-files?userEmail=${userEmail}`,
     //             {
@@ -552,11 +552,11 @@ const TlcNewClientProfitability = (props) => {
     //         }
 
     //         const analyzeData = await analyzeRes.json();
-    //         console.log("✅ FINAL ANALYSIS RESPONSE:", analyzeData);
+    //         console.log("FINAL ANALYSIS RESPONSE:", analyzeData);
     //         setResponseData(analyzeData);
     //         return analyzeData;
     //     } catch (error) {
-    //         console.error("❌ Final analysis error:", error);
+    //         console.error("Final analysis error:", error);
     //         throw error; // Re-throw to handle in calling function
     //     }
     // };
@@ -597,7 +597,7 @@ const TlcNewClientProfitability = (props) => {
             );
 
             const result = await res.json();
-            console.log("result of tlc new profitibility",result)
+            // console.log("result of tlc new profitibility",result)
             if (!res.ok) {
                 throw new Error(result.error || "Analysis failed");
             }
@@ -758,7 +758,7 @@ const TlcNewClientProfitability = (props) => {
             if (!res.ok) throw new Error(result.error || "Failed to load history");
 
             const record = result.data;
-            console.log("Loaded history record:", record);
+            // console.log("Loaded history record:", record);
             const { start, end } = record.filters || {};
 
             updateTab({
@@ -796,7 +796,7 @@ const TlcNewClientProfitability = (props) => {
 
                 isFromHistory: true,
             });
-            console.log("record.responseData.table", record.responseData.table)
+            // console.log("record.responseData.table", record.responseData.table)
             if (record?.responseData?.table) {
                 onPrepareAiPayload({
                     table_data: record?.responseData?.table, // ✅ EXACT structure backend expects
@@ -1086,7 +1086,7 @@ const TlcNewClientProfitability = (props) => {
     }, [activeTabData?.responseData]);
 
 
-    console.log("activeTabData", activeTabData)
+    // console.log("activeTabData", activeTabData)
     const renderHistorySection = () => (
         <section className="history-container">
             {activeTabData?.responseData && (
