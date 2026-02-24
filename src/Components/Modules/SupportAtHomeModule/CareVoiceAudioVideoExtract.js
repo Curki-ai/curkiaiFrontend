@@ -6,53 +6,88 @@ export const extractAudioFromVideo = async (videoFile) => {
     const videoURL = URL.createObjectURL(videoFile);
     const video = document.createElement("video");
 
-    // 🔇 HARD MUTE — no sound allowed
+    // Don't mute the video - we need the audio track
+    video.muted = false;
+    video.crossOrigin = "anonymous";
     video.src = videoURL;
-    video.muted = true;
-    video.volume = 0;
-    video.playsInline = true;
-    video.preload = "metadata";
+    video.preload = "auto";
 
-    const audioContext = new AudioContext();
+    // Create audio context and resume it
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
-    // ⛔ prevent audio output completely
-    audioContext.suspend();
+    // We need to wait for user interaction to resume AudioContext in some browsers
+    // But since this is triggered by user click, we can resume it
+    audioContext.resume().catch(err => {
+      console.warn("AudioContext resume failed:", err);
+    });
 
-    const source = audioContext.createMediaElementSource(video);
-    const destination = audioContext.createMediaStreamDestination();
-
-    // ✅ route ONLY to recorder
-    source.connect(destination);
-
-    const mediaRecorder = new MediaRecorder(destination.stream);
-    const chunks = [];
-
-    mediaRecorder.ondataavailable = (e) => {
-      if (e.data.size > 0) chunks.push(e.data);
-    };
-
-    mediaRecorder.onstop = () => {
-      URL.revokeObjectURL(videoURL);
-      resolve(new Blob(chunks, { type: "audio/webm" }));
-    };
-
-    video.onloadedmetadata = async () => {
+    const processVideo = async () => {
       try {
+        // Create source from video element
+        const source = audioContext.createMediaElementSource(video);
+        const destination = audioContext.createMediaStreamDestination();
+        source.connect(destination);
+
+        // Also connect to speakers so video plays (optional, but helps with some browsers)
+        source.connect(audioContext.destination);
+
+        const mediaRecorder = new MediaRecorder(destination.stream);
+        const chunks = [];
+
+        mediaRecorder.ondataavailable = (e) => {
+          if (e.data.size > 0) chunks.push(e.data);
+        };
+
+        mediaRecorder.onstop = () => {
+          URL.revokeObjectURL(videoURL);
+          audioContext.close();
+          const audioBlob = new Blob(chunks, { type: "audio/webm" });
+
+          // Check if we actually captured any audio
+          if (chunks.length === 0 || audioBlob.size === 0) {
+            reject(new Error("No audio data captured from video"));
+          } else {
+            resolve(audioBlob);
+          }
+        };
+
+        // Start recording
         mediaRecorder.start();
 
-        // ❌ NEVER play video
-        video.currentTime = 0;
+        // Play the video to extract audio
+        video.play().catch(err => {
+          reject(new Error(`Failed to play video: ${err.message}`));
+        });
 
-        // Let decoding happen silently
-        setTimeout(() => {
-          mediaRecorder.stop();
-        }, video.duration * 1000);
+        // Wait for video to end or timeout after duration + buffer
+        const duration = video.duration || 30; // fallback to 30 seconds if duration unknown
+        const timeout = setTimeout(() => {
+          if (mediaRecorder.state !== "inactive") {
+            mediaRecorder.stop();
+          }
+        }, (duration * 1000) + 1000);
+
+        video.onended = () => {
+          clearTimeout(timeout);
+          if (mediaRecorder.state !== "inactive") {
+            mediaRecorder.stop();
+          }
+        };
+
       } catch (err) {
         reject(err);
       }
     };
 
-    video.onerror = reject;
+    video.onloadedmetadata = () => {
+      processVideo().catch(reject);
+    };
+
+    video.onerror = (err) => {
+      URL.revokeObjectURL(videoURL);
+      audioContext?.close();
+      reject(new Error(`Video loading failed: ${video.error?.message || 'Unknown error'}`));
+    };
   });
 };
 
