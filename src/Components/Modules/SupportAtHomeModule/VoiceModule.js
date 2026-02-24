@@ -133,6 +133,9 @@ const VoiceModule = (props) => {
 
     const [staffName, setStaffName] = useState("");
     const [staffEmail, setStaffEmail] = useState("");
+    const [generationStage, setGenerationStage] = useState(null);
+    const [fileStage, setFileStage] = useState(null);
+
     const isVideoFile = (file) =>
         file.type.startsWith("video/");
 
@@ -447,7 +450,7 @@ const VoiceModule = (props) => {
                 setTranscriptData(data);
                 setTranscribing(false);
 
-                // PASS transcript text directly
+                setGenerationStage("generating");
                 await submitMultipleTemplatesWithAudio(data.text);
             }
 
@@ -478,6 +481,7 @@ const VoiceModule = (props) => {
         if (!audioBlob) return;
 
         try {
+            setGenerationStage("transcribing");
             setTranscribing(true);
             setTranscriptSource("audio");
             const uploadUrl = await uploadAudioToAssemblyAI();
@@ -1132,14 +1136,15 @@ const VoiceModule = (props) => {
 
             if (doc) docsToSend.push(doc);
         });
-
         await Promise.all(tasks);
+        setGenerationStage("emailing");
 
         await sendGeneratedDocsEmail(docsToSend);
 
         setGeneratedDocs([]);
         emailSentRef.current = false;
         setIsGeneratingAudio(false);
+        setGenerationStage(null);
         resetStaffUI();
         setCurrentTask("");
     };
@@ -1445,7 +1450,7 @@ const VoiceModule = (props) => {
         ) return;
 
         setIsGeneratingFile(true);
-
+        setFileStage("generating");
         const docsToSend = [];
 
         const tasks = [];
@@ -1481,11 +1486,12 @@ const VoiceModule = (props) => {
         }
 
         await Promise.all(tasks);
-
+        setFileStage("emailing");
         await sendGeneratedDocsEmail(docsToSend);
 
         emailSentRef.current = false;
         setIsGeneratingFile(false);
+        setFileStage(null);
         resetStaffUI();
         setCurrentTask("");
     };
@@ -2468,13 +2474,15 @@ const VoiceModule = (props) => {
                                     <button
                                         className="staff-primary"
                                         onClick={acceptRecording}
-                                        disabled={transcribing || isGeneratingAudio}
+                                        disabled={generationStage !== null}
                                     >
-                                        {transcribing
+                                        {generationStage === "transcribing"
                                             ? "Transcribing..."
-                                            : isGeneratingAudio
-                                                ? "Generating Document..."
-                                                : "✓ Submit"}
+                                            : generationStage === "generating"
+                                                ? "Generating Documents..."
+                                                : generationStage === "emailing"
+                                                    ? "Sending Emails..."
+                                                    : "✓ Submit"}
                                     </button>
                                 </>
                             )}
@@ -2517,24 +2525,18 @@ const VoiceModule = (props) => {
                                         : submitToDocumentFiller
                                 }
                                 disabled={
-                                    isGeneratingFile ||
-
-                                    // ❌ no template selected
+                                    fileStage !== null ||
                                     !selectedTemplate ||
-
-                                    // ❌ multi mode but nothing selected
                                     (selectedTemplate?.isMulti && selectedTemplate.templates.length === 0) ||
-
-                                    // ❌ no transcript (neither file nor audio)
-                                    (
-                                        uploadedTranscriptFiles.length === 0 &&
-                                        !transcriptData
-                                    )
+                                    uploadedTranscriptFiles.length === 0
                                 }
                             >
-                                {isGeneratingFile ? "Generating..." : "✓ Generate Document"}
+                                {fileStage === "generating"
+                                    ? "Generating Documents..."
+                                    : fileStage === "emailing"
+                                        ? "Sending Emails..."
+                                        : "✓ Generate Document"}
                             </button>
-
                         </div>
                     </div>
 
