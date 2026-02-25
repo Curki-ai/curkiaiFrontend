@@ -99,7 +99,8 @@ export default function TlcNewCustomerReporting(props) {
         "kbrennen@tenderlovingcaredisability.com.au": "New South Wales",
     };
     const userEmail = props?.user?.email?.trim()?.toLowerCase();
-
+    // const userEmail = "amera@tenderlovingcare.com.au"
+    // const userEmail = "lcowell@tenderlovingcare.com.au"
     const userState = EMAIL_STATE_MAP[userEmail];
     const handleNewTab = () => {
         const newId = tabs.length ? Math.max(...tabs.map((t) => t.id)) + 1 : 1;

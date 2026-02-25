@@ -73,7 +73,8 @@ const TlcNewClientProfitability = (props) => {
         "kbrennen@tenderlovingcaredisability.com.au": "New South Wales",
     };
     const userEmail = user?.email;
-
+    // const userEmail = "amera@tenderlovingcare.com.au";
+    // const userEmail = "lcowell@tenderlovingcare.com.au"
     const userState = EMAIL_STATE_MAP[userEmail];
     const [tabs, setTabs] = useState([
         {
@@ -585,6 +586,10 @@ const TlcNewClientProfitability = (props) => {
                 startDate: activeTabData.startDate.toISOString().split("T")[0],
                 endDate: activeTabData.endDate.toISOString().split("T")[0],
                 email: userEmail,
+                state:
+                    activeTabData.selectedState.length > 0
+                        ? activeTabData.selectedState.map(s => s.value).join(", ")
+                        : undefined,
             };
 
             const res = await fetch(
@@ -597,7 +602,7 @@ const TlcNewClientProfitability = (props) => {
             );
 
             const result = await res.json();
-            // console.log("result of tlc new profitibility",result)
+            console.log("result of tlc new profitibility", result)
             if (!res.ok) {
                 throw new Error(result.error || "Analysis failed");
             }
