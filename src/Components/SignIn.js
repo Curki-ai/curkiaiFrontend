@@ -262,17 +262,17 @@ const SignIn = ({ show, onClose }) => {
         email: email,
       };
 
-      // try {
-      //   await emailjs.send(
-      //     "service_6otxz7o",
-      //     "template_fxslvkj",
-      //     templateParams,
-      //     "hp6wyNEGYtFRXcOSs"
-      //   );
-      //   console.log("Email sent successfully");
-      // } catch (emailError) {
-      //   console.error("Failed to send email:", emailError);
-      // }
+      try {
+        await emailjs.send(
+          "service_6otxz7o",
+          "template_fxslvkj",
+          templateParams,
+          "hp6wyNEGYtFRXcOSs"
+        );
+        console.log("Email sent successfully");
+      } catch (emailError) {
+        console.error("Failed to send email:", emailError);
+      }
 
       // Mailchimp Welcome flow
       try {
@@ -393,17 +393,17 @@ const SignIn = ({ show, onClose }) => {
           email: newEmail,
         };
 
-        // try {
-        //   await emailjs.send(
-        //     "service_6otxz7o",
-        //     "template_fxslvkj",
-        //     templateParams,
-        //     "hp6wyNEGYtFRXcOSs"
-        //   );
-        //   console.log("Email sent successfully.");
-        // } catch (emailError) {
-        //   console.error("Failed to send email:", emailError);
-        // }
+        try {
+          await emailjs.send(
+            "service_6otxz7o",
+            "template_fxslvkj",
+            templateParams,
+            "hp6wyNEGYtFRXcOSs"
+          );
+          console.log("Email sent successfully.");
+        } catch (emailError) {
+          console.error("Failed to send email:", emailError);
+        }
 
         // Mailchimp Welcome flow
         try {
