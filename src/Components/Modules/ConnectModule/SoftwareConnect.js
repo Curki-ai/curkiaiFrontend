@@ -2,13 +2,13 @@ import React, { useState, useEffect } from "react";
 import "../../../Styles/SoftwareConnect.css";
 import axios from "axios";
 import AlayaCare from "../../../Images/Alayacare.png";
-import Xero from "../../../Images/Xero.png";
-import EmployementHero from "../../../Images/EmploymentHero.png";
-import VisualCare from "../../../Images/VisualCare.png";
-import QuickBooks from "../../../Images/IntuitQuickBooks.png";
-import Myp from "../../../Images/MypTech.png";
-import MyOB from "../../../Images/MyOb.png";
-import CareVision from "../../../Images/CareVision.png";
+import Xero from "../../../Images/xeroNewImage.png";
+import EmployementHero from "../../../Images/employmentHeroNewImage.png";
+import VisualCare from "../../../Images/visualCareNewImage.png";
+import QuickBooks from "../../../Images/intuitNewImage.png";
+import Myp from "../../../Images/mypNewImage.png";
+import MyOB from "../../../Images/myobNewImage.png";
+import CareVision from "../../../Images/careVisionNewImage.png";
 import GoogledriveIcon from "../../../Images/GoogleDriveIcon.png";
 import SharePointIcon from "../../../Images/SharePointIcon.png";
 import { toast, ToastContainer } from "react-toastify";
@@ -18,7 +18,7 @@ const SoftwareConnect = (props) => {
   const XERO_URL = "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net"; // ✅ your ngrok for testing
 
   const softwareList = [
-    { name: "AlayaCare", logo: AlayaCare },
+    // { name: "AlayaCare", logo: AlayaCare },
     { name: "VisualCare", logo: VisualCare },
     { name: "MYP Technologies", logo: Myp },
     { name: "CareVision", logo: CareVision },
