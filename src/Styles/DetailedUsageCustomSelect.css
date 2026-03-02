@@ -1,0 +1,92 @@
+/* Container */
+.crs-container {
+  position: relative;
+  width: 180px;
+  font-family: Inter, sans-serif;
+}
+
+/* Header */
+.crs-header {
+  background-color: white;
+  border: 1px solid #2c2e33;
+  padding: 10px 14px;
+  border-radius: 10px;
+  color: #1e1f24;
+  font-size: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.crs-header:hover {
+  border-color: #16c79a;
+}
+
+.crs-header.open {
+  border-color: #16c79a;
+  box-shadow: 0 0 0 2px rgba(22, 199, 154, 0.15);
+}
+
+/* Selected Text */
+.crs-selected {
+  font-weight: 500;
+}
+
+/* Arrow */
+.crs-arrow {
+  width: 14px;
+  height: 14px;
+  transition: transform 0.25s ease;
+}
+
+.crs-arrow.rotate {
+  transform: rotate(180deg);
+}
+
+/* Dropdown */
+.crs-dropdown {
+  position: absolute;
+  top: 110%;
+  width: 100%;
+  background-color: #1e1f24;
+  border: 1px solid #2c2e33;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+  z-index: 999;
+  animation: fadeIn 0.2s ease forwards;
+}
+
+/* Options */
+.crs-option {
+  padding: 10px 14px;
+  font-size: 14px;
+  color: #cfcfcf;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.crs-option:hover {
+  background-color: #2a2c32;
+  color: #ffffff;
+}
+
+.crs-option.active {
+  background-color: rgba(22, 199, 154, 0.15);
+  color: #16c79a;
+  font-weight: 500;
+}
+
+/* Animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

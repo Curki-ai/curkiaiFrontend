@@ -45,6 +45,7 @@ import sideBarLogout from "../Images/sideBarLogout.svg"
 import viewDetailsSideBarRight from "../Images/viewDetailsRightArrow.svg"
 import { FaChevronUp } from "react-icons/fa";
 import PricingPlansModal from "./NewPricingModal";
+import axios from "axios";
 
 const Sidebar = ({
   setSelectedRole,
@@ -67,7 +68,8 @@ const Sidebar = ({
   setShowDropdown,
   showDropdown,
   openSettings,
-  openTeamMembers
+  openTeamMembers,
+  openUsageDetails
 }) => {
   // console.log(activeReportType);
   const [showRoles, setShowRoles] = useState(true);
@@ -77,7 +79,47 @@ const Sidebar = ({
   const [showPricingModal, setShowPricingModal] = useState(false);
   const [usageOpen, setUsageOpen] = useState(false);
   const [modulesOpen, setModulesOpen] = useState(false);
+  const [usageSummary, setUsageSummary] = useState(null);
+  const [usageLoading, setUsageLoading] = useState(false);
   console.log("user", user)
+  useEffect(() => {
+    if (!user?.email) return;
+
+    const domain = user.email.split("@")[1].toLowerCase();
+
+    const fetchUsageSummary = async () => {
+      try {
+        setUsageLoading(true);
+
+        const res = await axios.get(
+          `https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/analysis/${domain}?range=year`,
+        );
+        console.log("Usage summary response:", res);
+        setUsageSummary(res.data);
+      } catch (err) {
+        console.error("Usage fetch error:", err);
+      } finally {
+        setUsageLoading(false);
+      }
+    };
+
+    fetchUsageSummary();
+  }, [user]);
+  const tokenLimit =
+    usageSummary?.tokenUsagePercent > 0
+      ? Math.round(
+        usageSummary.totalTokensUsed /
+        (usageSummary.tokenUsagePercent / 100)
+      )
+      : 0;
+
+  const smsLimit =
+    usageSummary?.smsUsagePercent > 0
+      ? Math.round(
+        usageSummary.totalSmsUsed /
+        (usageSummary.smsUsagePercent / 100)
+      )
+      : 0;
   const toggleRoles = () => {
     // setShowRoles(!showRoles);
     setShowUploadReport(false);
@@ -482,12 +524,19 @@ const Sidebar = ({
 
                     </div>
 
-                    <div className="usage-percent">52%</div>
+                    <div className="usage-percent">
+                      {usageSummary?.tokenUsagePercent || 0}%
+                    </div>
 
                   </div>
 
                   <div className="usage-bar">
-                    <div className="usage-bar-fill" style={{ width: "52%" }} />
+                    <div
+                      className="usage-bar-fill"
+                      style={{
+                        width: `${usageSummary?.tokenUsagePercent || 0}%`
+                      }}
+                    />
                   </div>
 
 
@@ -506,16 +555,30 @@ const Sidebar = ({
 
                     </div>
 
-                    <div className="usage-percent">14%</div>
+                    <div className="usage-percent">
+                      {usageSummary?.smsUsagePercent || 0}%
+                    </div>
 
                   </div>
 
                   <div className="usage-bar">
-                    <div className="usage-bar-fill" style={{ width: "14%" }} />
+                    <div
+                      className="usage-bar-fill"
+                      style={{
+                        width: `${usageSummary?.smsUsagePercent || 0}%`
+                      }}
+                    />
                   </div>
 
 
-                  <div className="usage-details">
+                  <div
+                    className="usage-details"
+                    onClick={() => {
+                      setShowProfilePanel(false);
+                      openUsageDetails();
+                    }}
+                    style={{ cursor: "pointer" }}
+                  >
                     <p>View Details</p>
                     <img src={viewDetailsSideBarRight} className="profile-item-arrow" />
                   </div>

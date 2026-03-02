@@ -45,7 +45,7 @@ export const checkSubscriptionStatus = async (email) => {
         const data = await res.json();
         console.log("Subscription data:", data);
 
-        // 🟢 If subscription not found → DO NOT show pricing
+        // If subscription not found → DO NOT show pricing
         if (!data.ok || !data.subscription) {
             return { 
                 shouldShowPricing: false,

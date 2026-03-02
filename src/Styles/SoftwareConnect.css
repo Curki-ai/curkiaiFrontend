@@ -10,14 +10,15 @@
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     /* 3 columns */
-    grid-template-rows: repeat(4, auto);
+    grid-template-rows: repeat(3, auto);
+    /* 3 rows */
     /* up to 4 rows */
-    column-gap: 5%;
+    column-gap: 22px;
     justify-content: center;
     margin: 60px 130px 30px 130px;
 }
 
-.software-grid>div:nth-child(1) {
+/* .software-grid>div:nth-child(1) {
     grid-column: 1;
     grid-row: 1;
 }
@@ -55,7 +56,7 @@
 .software-grid>div:nth-child(8) {
     grid-column: 3;
     grid-row: 1;
-}
+} */
 
 
 .software-card {
@@ -68,7 +69,7 @@
     justify-content: center;
     align-items: center;
     background: #fff;
-    height: 60px;
+    height: 100px;
     transition: all 0.3s ease;
     margin-bottom: 22px;
 }
@@ -87,7 +88,7 @@
 }
 
 .software-card img {
-    width: 60%;
+    width: 85%;
     height: auto;
     object-fit: contain;
 }
@@ -139,19 +140,7 @@
     cursor: pointer;
 }
 
-.employment-hero-logo {
-    width: 80% !important;
-    /* max-height: 40px; */
-}
 
-
-.xero-logo {
-    max-width: 40%;
-}
-
-.myob-logo {
-    max-width: 40%;
-}
 
 .connect-system-btn.disconnect-btn {
     background-color: #E52F07;
@@ -188,32 +177,31 @@
     align-items: center;
     gap: 12px;
     margin: 20px 130px;
-  }
-  
-  .integration-icon {
+}
+
+.integration-icon {
     width: 35px;
     height: 35px;
     object-fit: contain;
-  }
-  
-  .integration-input {
+}
+
+.integration-input {
     flex: 1;
     padding: 8px 10px;
     border: 1px solid #ccc;
     border-radius: 8px;
     font-size: 14px;
-  }
-  
-  .connect-url-btn {
+}
+
+.connect-url-btn {
     padding: 8px 18px;
     background-color: #6C4CDC;
     color: white;
     border: none;
     border-radius: 8px;
     cursor: pointer;
-  }
-  
-  .connect-url-btn.disconnect-btn {
+}
+
+.connect-url-btn.disconnect-btn {
     background-color: #dc3545;
-  }
-  
+}
