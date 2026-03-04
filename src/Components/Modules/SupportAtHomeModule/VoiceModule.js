@@ -138,7 +138,7 @@ const VoiceModule = (props) => {
     const [audioProgress, setAudioProgress] = useState(0);
     const [fileProgress, setFileProgress] = useState(0);
     const platformType = navigator.userAgent.toLowerCase().includes("web") ? "web" : "mobile";
-    console.log("Platform type:", platformType);
+    // console.log("Platform type:", platformType);
     const testRecord = false;
     const isVideoFile = (file) =>
         file.type.startsWith("video/");
@@ -147,14 +147,14 @@ const VoiceModule = (props) => {
         file.type.startsWith("audio/");
     const processVoiceRecordingAndroid = async () => {
         try {
-            console.log("ANDROID voice pipeline started");
+            // console.log("ANDROID voice pipeline started");
 
             if (!audioBlob) {
                 console.log("No audio blob");
                 return;
             }
 
-            console.log("selectedTemplate?.templates", selectedTemplate?.templates);
+            // console.log("selectedTemplate?.templates", selectedTemplate?.templates);
 
             const formData = new FormData();
 
@@ -190,7 +190,7 @@ const VoiceModule = (props) => {
 
             if (data.success && data.documents?.length > 0) {
 
-                console.log("Documents received:", data.documents.length);
+                // console.log("Documents received:", data.documents.length);
 
                 for (const doc of data.documents) {
 
@@ -199,7 +199,7 @@ const VoiceModule = (props) => {
                         continue;
                     }
 
-                    console.log("Downloading document:", doc.filename);
+                    // console.log("Downloading document:", doc.filename);
 
                     const fileResponse = await fetch(doc.url);
                     const blob = await fileResponse.blob();
@@ -1275,7 +1275,7 @@ const VoiceModule = (props) => {
         setCurrentTask("Generating documents from audio");
 
         const docsToSend = [];
-        console.log("Selected templates for audio generation:", selectedTemplate.templates);
+        // console.log("Selected templates for audio generation:", selectedTemplate.templates);
         const tasks = selectedTemplate.templates.map(async (tpl) => {
             const doc = await processSingleTranscriptWithTemplateText(
                 tpl,
@@ -1465,7 +1465,7 @@ const VoiceModule = (props) => {
             !userEmail
         ) {
             console.log("emailSentRef.current", emailSentRef.current)
-            console.log("docs", docs)
+            // console.log("docs", docs)
             console.log("sendGeneratedDocsEmail says returned", userEmail)
             return;
         }
