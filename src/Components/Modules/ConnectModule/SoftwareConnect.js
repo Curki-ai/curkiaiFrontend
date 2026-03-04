@@ -15,7 +15,7 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 const SoftwareConnect = (props) => {
-  const XERO_URL = "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net"; // ✅ your ngrok for testing
+  const XERO_URL = "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net"; 
 
   const softwareList = [
     // { name: "AlayaCare", logo: AlayaCare },

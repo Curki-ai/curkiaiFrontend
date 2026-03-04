@@ -137,12 +137,97 @@ const VoiceModule = (props) => {
     const [fileStage, setFileStage] = useState(null);
     const [audioProgress, setAudioProgress] = useState(0);
     const [fileProgress, setFileProgress] = useState(0);
+    const platformType = navigator.userAgent.toLowerCase().includes("web") ? "web" : "mobile";
+    console.log("Platform type:", platformType);
+    const testRecord = false;
     const isVideoFile = (file) =>
         file.type.startsWith("video/");
 
     const isAudioFile = (file) =>
         file.type.startsWith("audio/");
+    const processVoiceRecordingAndroid = async () => {
+        try {
+            console.log("ANDROID voice pipeline started");
 
+            if (!audioBlob) {
+                console.log("No audio blob");
+                return;
+            }
+
+            console.log("selectedTemplate?.templates", selectedTemplate?.templates);
+
+            const formData = new FormData();
+
+            formData.append("audio", audioBlob, "recording.webm");
+
+            formData.append(
+                "templates",
+                JSON.stringify(selectedTemplate?.templates || [])
+            );
+
+            formData.append("userEmail", userEmail || "");
+            formData.append("staffEmail", staffEmail || "");
+            formData.append("staffName", staffName || "");
+
+            console.log("ANDROID request payload ready");
+
+            setGenerationStage("generating");
+
+            animateProgress(audioProgress, setAudioProgress, 30, 600);
+
+            const res = await fetch(`${API_BASE}/api/process-recording`, {
+                method: "POST",
+                body: formData
+            });
+
+            console.log("ANDROID backend response received");
+
+            animateProgress(30, setAudioProgress, 70, 800);
+
+            const data = await res.json();
+
+            console.log("ANDROID voice response", data);
+
+            if (data.success && data.documents?.length > 0) {
+
+                console.log("Documents received:", data.documents.length);
+
+                for (const doc of data.documents) {
+
+                    if (!doc.url) {
+                        console.log("Missing document url for:", doc.filename);
+                        continue;
+                    }
+
+                    console.log("Downloading document:", doc.filename);
+
+                    const fileResponse = await fetch(doc.url);
+                    const blob = await fileResponse.blob();
+
+                    const blobUrl = window.URL.createObjectURL(blob);
+
+                    const link = document.createElement("a");
+                    link.href = blobUrl;
+                    link.download = doc.filename || "document.docx";
+
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+
+                    window.URL.revokeObjectURL(blobUrl);
+                }
+
+                console.log("ANDROID documents downloaded");
+
+                animateProgress(70, setAudioProgress, 100, 500);
+            } else {
+                console.log("No documents returned from backend");
+            }
+
+        } catch (err) {
+            console.error("ANDROID voice processing failed", err);
+        }
+    };
     const openDropdown = (e, tplId) => {
         e.stopPropagation();
 
@@ -346,6 +431,27 @@ const VoiceModule = (props) => {
         return `${h}:${m}:${s}`;
     };
     const startRecording = async () => {
+        // if (testRecord) {
+
+        //     try {
+
+        //         const res = await fetch("/you-re-cncdjd.webm");
+        //         const blob = await res.blob();
+
+        //         console.log("Test audio loaded size:", blob.size);
+
+        //         setAudioBlob(blob);
+        //         setAudioURL(URL.createObjectURL(blob));
+
+        //         setRecordMode("preview");
+        //         setRecordTime(7200);
+
+        //     } catch (err) {
+        //         console.error("Failed to load test audio", err);
+        //     }
+
+        //     return;
+        // }
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
         const mediaRecorder = new MediaRecorder(stream);
@@ -503,10 +609,27 @@ const VoiceModule = (props) => {
 
     const acceptRecording = async () => {
         if (!audioBlob) return;
-
+        if (recordTime < 10) {
+            alert("Audio must be at least 10 seconds long.");
+            return;
+        }
         try {
+            if (platformType !== "web") {
+
+                console.log("ANDROID detected, using backend voice pipeline");
+
+                setGenerationStage("generating");
+
+                await processVoiceRecordingAndroid();
+
+                setGenerationStage(null);
+
+                resetStaffUI();
+
+                return;
+            }
             setGenerationStage("transcribing");
-            animateProgress(audioProgress,setAudioProgress, 20, 600);
+            animateProgress(audioProgress, setAudioProgress, 20, 600);
             setTranscribing(true);
             setTranscriptSource("audio");
             const uploadUrl = await uploadAudioToAssemblyAI();
@@ -596,14 +719,14 @@ const VoiceModule = (props) => {
         // console.log("template", template);
         // console.log("[UI][EDIT] Editing template", template.id);
 
-        // 🔐 RAW SOURCE
+
         setRawPrompt(template.prompt || "");
         setRawMapper(template.mappings || null);
 
-        // 🎨 UI
+
         setAnalysisText(template.prompt);
 
-        // ✅ ONLY ONE MAPPER: mapper.mapper.... flatten into rows
+
         setMapperRows(mapperToRows(template.mappings));
 
         setEditingTemplateId(template.id);
@@ -632,7 +755,7 @@ const VoiceModule = (props) => {
             });
 
             setEditingNameId(null);
-            fetchTemplates(); // 🔥 refresh list
+            fetchTemplates();
         } catch (err) {
             console.error("[UI] Rename failed", err);
         }
@@ -738,7 +861,7 @@ const VoiceModule = (props) => {
     const pushEvent = (label, step) => {
         const now = new Date().toLocaleTimeString();
 
-        setCurrentTask(label); // 🔥 THIS DRIVES THE TIMELINE
+        setCurrentTask(label);
 
         setEventLogs(prev => {
             const last = prev[prev.length - 1];
@@ -1152,7 +1275,7 @@ const VoiceModule = (props) => {
         setCurrentTask("Generating documents from audio");
 
         const docsToSend = [];
-
+        console.log("Selected templates for audio generation:", selectedTemplate.templates);
         const tasks = selectedTemplate.templates.map(async (tpl) => {
             const doc = await processSingleTranscriptWithTemplateText(
                 tpl,
@@ -1162,10 +1285,10 @@ const VoiceModule = (props) => {
             if (doc) docsToSend.push(doc);
         });
         await Promise.all(tasks);
-        animateProgress(audioProgress,setAudioProgress, 80, 600);
+        animateProgress(audioProgress, setAudioProgress, 80, 600);
         setGenerationStage("emailing");
         await sendGeneratedDocsEmail(docsToSend);
-        animateProgress(audioProgress,setAudioProgress, 100, 400);
+        animateProgress(audioProgress, setAudioProgress, 100, 400);
 
         setGeneratedDocs([]);
         emailSentRef.current = false;
