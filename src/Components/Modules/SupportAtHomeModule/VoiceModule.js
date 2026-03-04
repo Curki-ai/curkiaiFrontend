@@ -151,7 +151,7 @@ const VoiceModule = (props) => {
 
     const platformType = getPlatformType();
 
-    console.log("Platform type:", platformType);
+    // console.log("Platform type:", platformType);
     const testRecord = false;
     const isVideoFile = (file) =>
         file.type.startsWith("video/");
@@ -1196,20 +1196,20 @@ const VoiceModule = (props) => {
                 formData.append("template", templateFile);
             }
 
-            // ✅ SAMPLE FILES (MULTIPLE)
+            // SAMPLE FILES (MULTIPLE)
             sampleFiles.forEach((file) => {
                 formData.append("samples", file);
             });
-
-            const url = editingTemplateId
+            // console.log("editingTemplateId",editingTemplateId)
+            const url = editingTemplateId !== null 
                 ? `${API_BASE}/api/voiceModuleTemplate/${editingTemplateId}`
                 : `${API_BASE}/api/voiceModuleTemplate`;
 
             const method = editingTemplateId ? "PUT" : "POST";
-
+            // console.log("method",method)
             const res = await fetch(url, {
                 method,
-                body: formData // ❗ NO headers
+                body: formData 
             });
 
             const data = await res.json();
