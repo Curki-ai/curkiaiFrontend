@@ -137,9 +137,22 @@ const VoiceModule = (props) => {
     const [fileStage, setFileStage] = useState(null);
     const [audioProgress, setAudioProgress] = useState(0);
     const [fileProgress, setFileProgress] = useState(0);
-    const platformType = navigator.userAgent.toLowerCase().includes("web") ? "web" : "mobile";
-    // console.log("Platform type:", platformType);
-    const testRecord = false;
+    const getPlatformType = () => {
+        const ua = navigator.userAgent;
+
+        if (/android/i.test(ua)) return "android";
+        if (/iPad|iPhone|iPod/.test(ua)) return "ios";
+        if (/Windows/i.test(ua)) return "windows";
+        if (/Mac/i.test(ua)) return "mac";
+        if (/Linux/i.test(ua)) return "linux";
+
+        return "unknown";
+    };
+
+    const platformType = getPlatformType();
+
+    console.log("Platform type:", platformType);
+    const testRecord = true;
     const isVideoFile = (file) =>
         file.type.startsWith("video/");
 
@@ -431,27 +444,27 @@ const VoiceModule = (props) => {
         return `${h}:${m}:${s}`;
     };
     const startRecording = async () => {
-        // if (testRecord) {
+        if (testRecord) {
 
-        //     try {
+            try {
 
-        //         const res = await fetch("/you-re-cncdjd.webm");
-        //         const blob = await res.blob();
+                const res = await fetch("/you-re-cncdjd.webm");
+                const blob = await res.blob();
 
-        //         console.log("Test audio loaded size:", blob.size);
+                console.log("Test audio loaded size:", blob.size);
 
-        //         setAudioBlob(blob);
-        //         setAudioURL(URL.createObjectURL(blob));
+                setAudioBlob(blob);
+                setAudioURL(URL.createObjectURL(blob));
 
-        //         setRecordMode("preview");
-        //         setRecordTime(7200);
+                setRecordMode("preview");
+                setRecordTime(7200);
 
-        //     } catch (err) {
-        //         console.error("Failed to load test audio", err);
-        //     }
+            } catch (err) {
+                console.error("Failed to load test audio", err);
+            }
 
-        //     return;
-        // }
+            return;
+        }
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
         const mediaRecorder = new MediaRecorder(stream);
@@ -614,7 +627,7 @@ const VoiceModule = (props) => {
             return;
         }
         try {
-            if (platformType !== "web") {
+            if (platformType !== "windows" || platformType !== "mac") {
 
                 console.log("ANDROID detected, using backend voice pipeline");
 
