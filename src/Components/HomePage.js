@@ -245,7 +245,7 @@ const HomePage = () => {
   }, []);
 
 
-  console.log("subscriptionInfo", subscriptionInfo)
+  // console.log("subscriptionInfo", subscriptionInfo)
   const toggleSidebar = () => setSidebarVisible(!sidebarVisible);
 
   const fetchManifest = async () => {
