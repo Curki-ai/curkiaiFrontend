@@ -63,6 +63,7 @@ import TrialStartedPopup from "./TrialPopup";
 import useSubscriptionStatus from "./NewSubscriptionStatus";
 import DetailedUsage from "./DetailedUsage";
 import AutoPaymentPopup from "./Modules/AutoPaymentPopup";
+import PlansAndBillings from "./PlansAndBillings";
 const HomePage = () => {
   const [sidebarVisible, setSidebarVisible] = useState(true);
   const [documentString, setDocumentString] = useState("");
@@ -109,6 +110,7 @@ const HomePage = () => {
   const [payrollAiHistoryPayload, setPayrollAiHistoryPayload] = useState("");
   const [showUsageDetails, setShowUsageDetails] = useState(false);
   const [showAutoPaymentPopup, setShowAutoPaymentPopup] = useState(false);
+  const [showPlansBillingModal, setShowPlansBillingModal] = useState(false);
   const handleModalOpen = () => setModalVisible(true);
   const handleModalClose = () => setModalVisible(false);
   const handleLeftModalOpen = () => setLeftModalVisible(true);
@@ -119,6 +121,9 @@ const HomePage = () => {
   useEffect(() => {
 
     const handleAutoTopupPopup = () => {
+      if (subscriptionInfo?.subscription_type === "trial") {
+        return;
+      }
       setShowAutoPaymentPopup(true);
     };
 
@@ -240,7 +245,7 @@ const HomePage = () => {
   }, []);
 
 
-
+  // console.log("subscriptionInfo", subscriptionInfo)
   const toggleSidebar = () => setSidebarVisible(!sidebarVisible);
 
   const fetchManifest = async () => {
@@ -632,6 +637,7 @@ const HomePage = () => {
                     setShowSettings(false);
                     setShowTeamMembers(false);
                   }}
+                  openPlansBilling={() => setShowPlansBillingModal(true)}
                 />
               )}
 
@@ -1231,6 +1237,14 @@ const HomePage = () => {
         <AutoPaymentPopup
           userEmail={user?.email}
           onClose={() => setShowAutoPaymentPopup(false)}
+        />
+      )}
+      {showPlansBillingModal && (
+        <PlansAndBillings
+          onClose={() => setShowPlansBillingModal(false)}
+          email={user?.email}
+          firstName={user?.displayName}
+          setSubscriptionInfo={setSubscriptionInfo}
         />
       )}
     </>

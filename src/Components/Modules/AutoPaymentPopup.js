@@ -78,8 +78,8 @@ const AutoPaymentPopup = ({ onClose, userEmail }) => {
           <h3 className="autopay-amount">Recharge Amount: $50</h3>
 
           <div className="autopay-details">
-            <span>AI Tokens: 1M</span>
-            <span>SMS: 1M</span>
+            <span>AI Tokens: 2M</span>
+            <span>SMS: 100</span>
           </div>
         </div>
 

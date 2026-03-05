@@ -1150,6 +1150,14 @@ const VoiceModule = (props) => {
     };
     const saveTemplate = async () => {
         if (isSaving) return;
+        if (!rawPrompt || mapperRows.length === 0) {
+            console.warn("Save prevented: Missing prompt or mapper");
+            return;
+        }
+        if (!editingTemplateId && stage !== "completed") {
+            console.warn("Save prevented: Not in edit mode");
+            return;
+        }
         setIsSaving(true);
         // console.log("rawPrompt during save", rawPrompt)
         try {
@@ -1201,7 +1209,7 @@ const VoiceModule = (props) => {
                 formData.append("samples", file);
             });
             // console.log("editingTemplateId",editingTemplateId)
-            const url = editingTemplateId !== null 
+            const url = editingTemplateId !== null
                 ? `${API_BASE}/api/voiceModuleTemplate/${editingTemplateId}`
                 : `${API_BASE}/api/voiceModuleTemplate`;
 
@@ -1209,13 +1217,15 @@ const VoiceModule = (props) => {
             // console.log("method",method)
             const res = await fetch(url, {
                 method,
-                body: formData 
+                body: formData
             });
 
             const data = await res.json();
             if (!data.success) throw new Error("Save failed");
             alert(editingTemplateId ? "Template updated successfully" : "Template saved successfully");
-            resetToTemplateList();
+            if (!editingTemplateId) {
+                resetToTemplateList();
+            }
             fetchTemplates();
 
         } catch (err) {

@@ -69,7 +69,8 @@ const Sidebar = ({
   showDropdown,
   openSettings,
   openTeamMembers,
-  openUsageDetails
+  openUsageDetails,
+  openPlansBilling
 }) => {
   // console.log(activeReportType);
   const [showRoles, setShowRoles] = useState(true);
@@ -607,7 +608,7 @@ const Sidebar = ({
                   <div
                     onClick={() => {
                       setShowProfilePanel(false);
-                      setShowPricingModal(true);
+                      openPlansBilling();
                     }}
                   >
                     <ProfileItem
