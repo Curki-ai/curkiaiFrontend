@@ -7,13 +7,14 @@ import pricingExampleIcon from "../Images/PricingExampleIcon.svg"
 import pricingTooltip from "../Images/pricingTooltipIcon.svg"
 import pricingExample from "../Images/newPricingExample.svg"
 import ausDollar from "../Images/AusDollar.svg"
-
-const PlansAndBillings = ({ onClose, email: userEmail, firstName: firstName, setSubscriptionInfo }) => {
-    console.log("User Email:", userEmail); // For debugging
+import crossIcon from "../Images/ComparePriceCross.png"
+const PlansAndBillings = ({ onClose, email: userEmail, firstName: firstName, setSubscriptionInfo, subscriptionInfo }) => {
+    console.log("User Email:", userEmail);
+    console.log("Subscription Info:", subscriptionInfo);
     const [billing, setBilling] = useState("monthly");
     const [showCompare, setShowCompare] = useState(false);
-
-
+    const currentPlan = subscriptionInfo?.plan_key || "trial";
+    const currentBilling = subscriptionInfo?.billing_interval || "monthly";
     const handleCheckout = async ({ planKey }) => {
         try {
             if (!userEmail) {
@@ -76,7 +77,7 @@ const PlansAndBillings = ({ onClose, email: userEmail, firstName: firstName, set
                         Indicative provider saving $1.2M+/Year
                     </div>
 
-                  
+
                 </div>
 
                 <div className="pb-command-right">
@@ -95,12 +96,12 @@ const PlansAndBillings = ({ onClose, email: userEmail, firstName: firstName, set
         <div className="pb-overlay">
             <div className="pb-container">
                 {/* Top bar */}
-                {/* <div className="pb-top">
+                <div className="pb-top">
                     <div></div>
                     <button className="pb-close" onClick={onClose}>
                         <IoClose size={22} />
                     </button>
-                </div> */}
+                </div>
 
                 {/* Header */}
                 <div className="pb-header">
@@ -185,6 +186,8 @@ const PlansAndBillings = ({ onClose, email: userEmail, firstName: firstName, set
                         onClose={onClose}
                         firstName={firstName}
                         setSubscriptionInfo={setSubscriptionInfo}
+                        currentPlan={currentPlan}
+                        currentBilling={currentBilling}
                     />
 
                     <Plan
@@ -209,6 +212,8 @@ const PlansAndBillings = ({ onClose, email: userEmail, firstName: firstName, set
                         onClose={onClose}
                         firstName={firstName}
                         setSubscriptionInfo={setSubscriptionInfo}
+                        currentPlan={currentPlan}
+                        currentBilling={currentBilling}
                     />
 
                     <Plan
@@ -235,6 +240,8 @@ const PlansAndBillings = ({ onClose, email: userEmail, firstName: firstName, set
                         onClose={onClose}
                         firstName={firstName}
                         setSubscriptionInfo={setSubscriptionInfo}
+                        currentPlan={currentPlan}
+                        currentBilling={currentBilling}
                     />
 
                 </div>
@@ -340,8 +347,94 @@ const Plan = ({ title,
     userEmail,
     onClose,
     firstName,
-    setSubscriptionInfo, highlighted, badge }) => {
+    setSubscriptionInfo, highlighted, badge, currentPlan, currentBilling }) => {
+    const PLAN_ORDER = {
+        trial: 0,
+        start: 1,
+        grow: 2,
+        thrive: 3,
+        command: 4
+    };
+    console.log("PLAN_ORDER[planKey]", PLAN_ORDER[planKey])
+    console.log("PLAN_ORDER[currentPlan]", PLAN_ORDER[currentPlan])
+    const isSamePlan = PLAN_ORDER[planKey] === PLAN_ORDER[currentPlan];
+    const isSameBilling = billing === currentBilling;
+
+    const isCurrentPlan = isSamePlan && isSameBilling;
+
+    let isUpgrade = false;
+    let isDowngrade = false;
+
+    if (PLAN_ORDER[planKey] > PLAN_ORDER[currentPlan]) {
+        isUpgrade = true;
+    }
+    else if (PLAN_ORDER[planKey] < PLAN_ORDER[currentPlan]) {
+        isDowngrade = true;
+    }
+    else if (isSamePlan && !isSameBilling) {
+
+        // billing change
+        if (currentBilling === "monthly" && billing === "yearly") {
+            isUpgrade = true;
+        }
+
+        if (currentBilling === "yearly" && billing === "monthly") {
+            isDowngrade = true;
+        }
+    }
+    console.log("isUpgrade", isUpgrade);
+    console.log("isCurrentPlan", isCurrentPlan);
     const price = billing === "monthly" ? monthly : yearly;
+    const [loading, setLoading] = useState(false);
+    const handlePlanChange = async () => {
+        try {
+            setLoading(true);
+
+            const endpoint = isUpgrade
+                ? "/api/subscription/upgrade"
+                : "/api/subscription/downgrade";
+
+            const res = await fetch(
+                `https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net${endpoint}`,
+                {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        email: userEmail,
+                        newPlanKey: planKey,
+                        billingInterval: billing
+                    })
+                }
+            );
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                console.error("Plan change failed", data);
+                setLoading(false);
+                return;
+            }
+
+            // If upgrade requires payment
+            if (data.checkoutUrl) {
+                window.location.href = data.checkoutUrl;
+                return;
+            }
+
+            console.log("Plan updated", data);
+
+            setSubscriptionInfo((prev) => ({
+                ...prev,
+                plan_key: data.planKey,
+                billing_interval: billing
+            }));
+
+        } catch (err) {
+            console.error("Plan change error", err);
+        } finally {
+            setLoading(false);
+        }
+    };
     const formatPrice = (value) => {
         if (!value) return value;
         return value.toLocaleString("en-US");
@@ -354,7 +447,7 @@ const Plan = ({ title,
     };
 
     const tooltipContent = tooltipContentMap[planKey] || "";
-     
+
     const startTrial = async () => {
         try {
             // 1️⃣ Start trial in your system
@@ -466,8 +559,8 @@ const Plan = ({ title,
                         </li>
                     );
                 })}
-                
-                {saving  && (
+
+                {saving && (
                     <div className="pb-saving-badge-container" >
                         <div className="pb-saving-badge">
                             Indicative provider saving {saving}
@@ -510,12 +603,28 @@ const Plan = ({ title,
                                     ? "pb-primary-btn pb-popular-btn"
                                     : "pb-primary-btn pb-outline-plan-btn"
                             }
+                            disabled={isCurrentPlan}
                             onClick={(e) => {
                                 e.stopPropagation();
-                                onCheckout({ planKey });
+
+                                if (isUpgrade || isDowngrade) {
+                                    handlePlanChange();
+                                } else {
+                                    onCheckout({ planKey });
+                                }
                             }}
                         >
-                            Choose Plan
+                            {
+                                loading
+                                    ? "Processing..."
+                                    : isCurrentPlan
+                                        ? "Current Plan"
+                                        : isUpgrade
+                                            ? "Upgrade"
+                                            : isDowngrade
+                                                ? "Downgrade"
+                                                : "Choose Plan"
+                            }
                         </button>
 
                         {/* Trial */}

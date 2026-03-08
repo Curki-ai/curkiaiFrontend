@@ -989,3 +989,39 @@ html,
   justify-content: center;
   gap: 3px;
 }
+.api-key-help-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+
+  color: #15C8A8;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: "Inter";
+
+  height: 44px;
+  width: 242px;
+
+  padding: 10px 16px;
+  border-radius: 22px;
+
+  border: 1px solid #E6E6E6;
+  background: #FFFFFF;
+
+  margin-left: auto;
+  margin-right: 25px;
+  margin-top: 16px;
+
+  transition: all 0.2s ease;
+}
+
+.api-key-help-btn:hover {
+  background: #EAE8F2;
+  border: 1px solid #E3E1EA;
+}
+
+.api-key-icon {
+  width: 24px;
+  height: 24px;
+}
