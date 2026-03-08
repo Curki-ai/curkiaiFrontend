@@ -43,6 +43,11 @@
     background: none;
     border: none;
     cursor: pointer;
+    color: #8B8B8B;
+}
+.pb-close:hover {
+    background-color: #EAE8F2;
+    border-radius: 50%;
 }
 
 /* Header */

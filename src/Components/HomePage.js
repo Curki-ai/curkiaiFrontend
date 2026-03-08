@@ -64,6 +64,8 @@ import useSubscriptionStatus from "./NewSubscriptionStatus";
 import DetailedUsage from "./DetailedUsage";
 import AutoPaymentPopup from "./Modules/AutoPaymentPopup";
 import PlansAndBillings from "./PlansAndBillings";
+import chatBotKeyIcon from "../Images/chatBoyKeyIcon.svg"
+import apiTutorialsIcon from "../Images/apiTutorialKeyIcon.svg"
 const HomePage = () => {
   const [sidebarVisible, setSidebarVisible] = useState(true);
   const [documentString, setDocumentString] = useState("");
@@ -91,8 +93,10 @@ const HomePage = () => {
   const isSmartRosteringPage = selectedRole === 'Smart Rostering'
   const isTlcClientProfitabilityPage = selectedRole === "Clients Profitability";
   const isHRAskAiPage = selectedRole === "Smart Onboarding (Staff)";
+  const isSoftwareConnectPage = selectedRole === "Connect Your Systems";
   const [tlcClientProfitabilityPayload, setTlcClientProfitabilityPayload] = useState(null);
   const [Suggestions, setSuggestions] = useState([]);
+  const [chatbotRules, setChatbotRules] = useState([]);
   const [manualAskAiFile, setManualAskAiFile] = useState(null);
   const [manualResumeZip, setManualResumeZip] = useState(null);
   const [IsSmartRosteringHistory, SetIsSmartRosteringHistory] = useState(false);
@@ -118,6 +122,17 @@ const HomePage = () => {
   // console.log("user?.email",user?.email)
   const userEmail = user?.email;
   // const userEmail = "kris@curki.ai";
+  function convertDriveUrl(url) {
+    if (!url) return url;
+
+    const match = url.match(/id=([^&]+)/);
+
+    if (match) {
+      return `https://drive.google.com/thumbnail?id=${match[1]}&sz=w1000`;
+    }
+
+    return url;
+  }
   useEffect(() => {
 
     const handleAutoTopupPopup = () => {
@@ -151,7 +166,13 @@ const HomePage = () => {
       "How many workers are available today ?",
       "How many rosters are having Carer as -1 ?"
     ],
-
+    softWareConnect: [
+      { label: "Xero", event: "xero" },
+      { label: "Employment Hero", event: "employment_hero" },
+      { label: "Intuit Quickbooks", event: "quickbooks" },
+      { label: "MYP Technologies", event: "myptechnologies" },
+      { label: "MYOB", event: "myob" }
+    ],
     default: []
   };
   useEffect(() => {
@@ -269,7 +290,7 @@ const HomePage = () => {
       }
 
       const manifest = result.data;
-      console.log("Fetched Manifest:", manifest[0]);
+      // console.log("Fetched Manifest:", manifest[0]);
       setManifestData(manifest[0]);
 
 
@@ -282,7 +303,7 @@ const HomePage = () => {
 
 
 
-  const handleSend = async (customText) => {
+  const handleSend = async (customText, eventName = null) => {
     const rawQuery =
       typeof customText === "string"
         ? customText
@@ -291,11 +312,12 @@ const HomePage = () => {
           : "";
 
     const finalQuery = rawQuery.trim();
-    if (!finalQuery) return;
-    if (!finalQuery) return;
+    if (!finalQuery && !eventName) return;
 
     // show user message and temp bot message
-    setMessages((prev) => [...prev, { sender: "user", text: finalQuery }]);
+    if (finalQuery) {
+      setMessages((prev) => [...prev, { sender: "user", text: finalQuery }]);
+    }
     const tempBotMessage = { sender: "bot", text: "Generating response...", temp: true };
     setMessages((prev) => [...prev, tempBotMessage]);
 
@@ -303,8 +325,54 @@ const HomePage = () => {
     if (!customText) setInput("");
 
     try {
-      // 🟢 SMART ROSTERING MODE
-      // 🟣 ASK-AI FOR RESUME ZIP (Smart Onboarding / HR Module)
+      //SMART ROSTERING MODE
+      //ASK-AI FOR RESUME ZIP (Smart Onboarding / HR Module)
+      //SOFTWARE CONNECT CHATBOT (Dialogflow)
+      if (isSoftwareConnectPage) {
+        try {
+
+          const response = await axios.post(
+            "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/dialogflow",
+            {
+              event: eventName
+            }
+          );
+
+          // console.log("Dialogflow response:", response.data);
+
+          let botReply = response.data?.reply || "No response";
+          botReply = botReply.replace("Rich response received", "").trim();
+          const richContent = response.data?.richContent || [];
+
+          const elements = richContent.flat();
+
+          setMessages(prev =>
+            prev.map(msg =>
+              msg.temp
+                ? {
+                  sender: "bot",
+                  text: botReply,
+                  richContent: elements
+                }
+                : msg
+            )
+          );
+
+        } catch (error) {
+
+          console.error("Dialogflow Error:", error);
+
+          setMessages(prev =>
+            prev.map(msg =>
+              msg.temp
+                ? { sender: "bot", text: "Chatbot failed to respond." }
+                : msg
+            )
+          );
+        }
+
+        return;
+      }
       if (isHRAskAiPage) {
         try {
           const form = new FormData();
@@ -317,7 +385,7 @@ const HomePage = () => {
             { headers: { "Content-Type": "multipart/form-data" } }
           );
 
-          console.log("Resume Ask-AI Response: ", response.data);
+          // console.log("Resume Ask-AI Response: ", response.data);
 
           const botReply =
             response.data?.results?.answer ||
@@ -366,7 +434,7 @@ const HomePage = () => {
           question: finalQuery,
         };
 
-        console.log("🟡 Smart Rostering Payload:", payload);
+        // console.log("🟡 Smart Rostering Payload:", payload);
         const userEmail = user?.email?.trim()?.toLowerCase();
         // if (userEmail === "kris@curki.ai") {
         //   payload.env = "sandbox";
@@ -377,7 +445,7 @@ const HomePage = () => {
           payload
         );
 
-        console.log("Smart Rostering response:", response);
+        // console.log("Smart Rostering response:", response);
 
         const botReply = response.data?.answer || "No response";
 
@@ -410,7 +478,7 @@ const HomePage = () => {
         //     payload: tlcClientProfitabilityPayload
         //   }
         // )
-        console.log("tlcClientProfitabilityPayload in homepage", tlcClientProfitabilityPayload)
+        // console.log("tlcClientProfitabilityPayload in homepage", tlcClientProfitabilityPayload)
         const payload = {
           question: finalQuery,
           table_data: tlcClientProfitabilityPayload,
@@ -426,7 +494,7 @@ const HomePage = () => {
           payload
         );
 
-        console.log("response of tlc client profit ask ai ", response)
+        // console.log("response of tlc client profit ask ai ", response)
         const botReply =
           response.data?.ai_answer ||
           response.data?.answer ||
@@ -484,7 +552,7 @@ const HomePage = () => {
         payload
       );
 
-      console.log("response from default ask ai", response);
+      // console.log("response from default ask ai", response);
 
       const botReply = response.data?.response?.text || response.data?.response || "No response";
 
@@ -554,7 +622,11 @@ const HomePage = () => {
     }
     else if (isSmartRosteringPage) {
       setSuggestions(moduleSuggestions.smart);
-    } else {
+    }
+    else if (isSoftwareConnectPage) {
+      setSuggestions(moduleSuggestions.softWareConnect);
+    }
+    else {
       setSuggestions(moduleSuggestions.default);
     }
   }, [selectedRole]);
@@ -764,6 +836,20 @@ const HomePage = () => {
                     </div>
                   )}
                 </div>
+                {isSoftwareConnectPage && (
+                  <div
+                    className="api-key-help-btn"
+                    onClick={() => setShowAIChat(true)}
+                  >
+                    <span>See How To Get API Keys</span>
+
+                    <img
+                      src={chatBotKeyIcon}
+                      alt="api-help"
+                      className="api-key-icon"
+                    />
+                  </div>
+                )}
                 {isMobileOrTablet && showMobileMenu && (
                   <>
                     {/* RIGHT */}
@@ -936,16 +1022,16 @@ const HomePage = () => {
                   module={selectedRole}
                 />
 
-                <div className="ask-ai-button" onClick={() => setShowAIChat(!showAIChat)}>
+                {!isSoftwareConnectPage && <div className="ask-ai-button" onClick={() => setShowAIChat(!showAIChat)}>
                   <img src={askAiStar} alt="askAiStar" style={{ width: "22px", height: "22px" }} />
                   <div style={{ fontFamily: "Inter", fontSize: "16px", color: "white" }}>Ask AI</div>
-                </div>
+                </div>}
 
                 {showAIChat && (
-                  <div style={{ position: "fixed", bottom: "20px", right: "21px", width: "76%", height: "80%", backgroundColor: "#FFFEFF", borderRadius: "24px", zIndex: 999, display: "flex", flexDirection: "column", justifyContent: "space-between", border: '1.09px solid #6C4CDC', boxShadow: '0px 4.36px 65.42px 0px #FFFFFF03', padding: ' 14px 30px', marginBottom: "8px" }}>
+                  <div style={{ position: "fixed", bottom: "20px", right: "21px", width: "76%", height: isSoftwareConnectPage ? "86%" : "80%", backgroundColor: "#FFFEFF", borderRadius: "24px", zIndex: 999, display: "flex", flexDirection: "column", justifyContent: "space-between", border: '1.09px solid #6C4CDC', boxShadow: '0px 4.36px 65.42px 0px #FFFFFF03', padding: ' 14px 30px', marginBottom: "8px" }}>
                     <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", borderTopRightRadius: "24px", borderTopLeftRadius: "24px", }}>
                       <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: "44px" }}>
-                        <div
+                        {messages.length > 0 && <div
                           onClick={() => setMessages([])}
                           style={{
                             display: "flex",
@@ -957,13 +1043,13 @@ const HomePage = () => {
                             cursor: "pointer"
                           }}
                         >
-                          <img
+                          {!isSoftwareConnectPage && <img
                             src={newChatBtnNoteIcon}
                             alt="new-chat"
                             style={{
                               width: "14px", height: "14px",
                             }}
-                          />
+                          />}
                           <span
                             style={{
                               color: "#fff",
@@ -972,9 +1058,9 @@ const HomePage = () => {
                               fontFamily: "Inter",
                             }}
                           >
-                            New Chat
+                            {isSoftwareConnectPage ? "View all Platforms" : "New Chat"}
                           </span>
-                        </div>
+                        </div>}
 
 
                         <img
@@ -988,10 +1074,10 @@ const HomePage = () => {
                     </div>
                     {messages.length === 0 &&
                       <div>
-                        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: '20px', gap: '20px' }}>
-                          <img src={purpleStar} alt='blue-star' style={{ width: '36px', height: 'auto' }} />
+                        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: '20px', gap: isSoftwareConnectPage ? '14px' : '20px' }}>
+                          <img src={isSoftwareConnectPage ? apiTutorialsIcon : purpleStar} alt='blue-star' style={{ width: isSoftwareConnectPage ? '32px' : '36px', height: 'auto' }} />
                           <div style={{ textAlign: 'center', fontSize: '24px', fontFamily: 'Inter', fontWeight: '500' }}>
-                            Ask AI.
+                            {isSoftwareConnectPage ? "API Connection Tutorials" : "Ask AI"}
                           </div>
                         </div>
                       </div>
@@ -1056,6 +1142,84 @@ const HomePage = () => {
                                     remarkPlugins={[remarkGfm]}
                                     rehypePlugins={[rehypeRaw, rehypeHighlight]}
                                   />
+
+                                  {/* 👇 ADD THIS BLOCK RIGHT HERE */}
+                                  {msg.sender === "bot" && msg.richContent?.length > 0 && (
+                                    <div style={{ marginTop: "10px" }}>
+                                      {msg.richContent.map((item, i) => {
+
+                                        if (item.type === "info") {
+                                          return (
+                                            <div key={i} style={{ marginBottom: "10px" }}>
+                                              <div style={{ fontWeight: 600 }}>{item.title}</div>
+                                              <div style={{ fontSize: "13px", color: "#555" }}>
+                                                {item.subtitle}
+                                              </div>
+                                            </div>
+                                          );
+                                        }
+
+                                        if (item.type === "image") {
+                                          const fileIdMatch = item.rawUrl?.match(/id=([^&]+)/);
+                                          const fileId = fileIdMatch ? fileIdMatch[1] : null;
+
+                                          if (!fileId) return null;
+
+                                          const previewUrl = `https://drive.google.com/file/d/${fileId}/preview`;
+
+                                          return (
+                                            <iframe
+                                              key={i}
+                                              src={previewUrl}
+                                              width="100%"
+                                              height="220"
+                                              style={{
+                                                border: "none",
+                                                borderRadius: "10px",
+                                                marginBottom: "10px"
+                                              }}
+                                              allow="autoplay"
+                                              title="Drive Preview"
+                                            />
+                                          );
+                                        }
+
+                                        if (item.type === "button") {
+                                          return (
+                                            <button
+                                              key={i}
+                                              onClick={() => {
+                                                if (item.event?.name) {
+                                                  setMessages(prev => [
+                                                    ...prev,
+                                                    { sender: "user", text: item.text }
+                                                  ]);
+
+                                                  handleSend(null, item.event.name);
+                                                }
+
+                                                if (item.link) {
+                                                  window.open(item.link, "_blank");
+                                                }
+                                              }}
+                                              style={{
+                                                padding: "10px 14px",
+                                                margin: "5px",
+                                                borderRadius: "8px",
+                                                border: "1px solid #6C4CDC",
+                                                background: "#F9F8FF",
+                                                cursor: "pointer"
+                                              }}
+                                            >
+                                              {item.text}
+                                            </button>
+                                          );
+                                        }
+
+                                        return null;
+                                      })}
+                                    </div>
+                                  )}
                                 </div>
                               </div>
                               {msg.sender === "user" && (
@@ -1093,7 +1257,7 @@ const HomePage = () => {
                         <div>
                           {Suggestions.length !== 0 &&
                             <div style={{ textAlign: 'left', marginBottom: '9px', fontSize: '14px', fontWeight: '500', fontFamily: 'Inter' }}>
-                              Predefined Prompts
+                              {isSoftwareConnectPage ? "Select your platform" : "Predefined Prompts"}
                             </div>
                           }
                           <div
@@ -1112,7 +1276,16 @@ const HomePage = () => {
                               {Suggestions.map((q, i) => (
                                 <button
                                   key={i}
-                                  onClick={() => handleSend(q)}
+                                  onClick={() => {
+                                    if (typeof q === "string") {
+                                      // normal modules (TLC, Smart Rostering etc.)
+                                      handleSend(q);
+                                    } else {
+                                      // SoftwareConnect module
+                                      setMessages(prev => [...prev, { sender: "user", text: q.label }]);
+                                      handleSend(null, q.event);
+                                    }
+                                  }}
                                   style={{
                                     padding: "12px",
                                     borderRadius: "8px",
@@ -1124,7 +1297,7 @@ const HomePage = () => {
                                     width: "100%"
                                   }}
                                 >
-                                  {q}
+                                  {typeof q === "string" ? q : q.label}
                                 </button>
                               ))}
                             </div>
@@ -1225,28 +1398,35 @@ const HomePage = () => {
         </>
       }
 
-      {showTrialPopup && (
-        <TrialStartedPopup
-          trialEnd={formattedTrialEnd}
-          onClose={() => {
-            setShowTrialPopup(false);
-          }}
-        />
-      )}
-      {showAutoPaymentPopup && (
-        <AutoPaymentPopup
-          userEmail={user?.email}
-          onClose={() => setShowAutoPaymentPopup(false)}
-        />
-      )}
-      {showPlansBillingModal && (
-        <PlansAndBillings
-          onClose={() => setShowPlansBillingModal(false)}
-          email={user?.email}
-          firstName={user?.displayName}
-          setSubscriptionInfo={setSubscriptionInfo}
-        />
-      )}
+      {
+        showTrialPopup && (
+          <TrialStartedPopup
+            trialEnd={formattedTrialEnd}
+            onClose={() => {
+              setShowTrialPopup(false);
+            }}
+          />
+        )
+      }
+      {
+        showAutoPaymentPopup && (
+          <AutoPaymentPopup
+            userEmail={user?.email}
+            onClose={() => setShowAutoPaymentPopup(false)}
+          />
+        )
+      }
+      {
+        showPlansBillingModal && (
+          <PlansAndBillings
+            onClose={() => setShowPlansBillingModal(false)}
+            email={user?.email}
+            firstName={user?.displayName}
+            setSubscriptionInfo={setSubscriptionInfo}
+            subscriptionInfo={subscriptionInfo}
+          />
+        )
+      }
     </>
   );
 };
