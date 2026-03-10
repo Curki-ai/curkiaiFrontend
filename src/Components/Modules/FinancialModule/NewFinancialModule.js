@@ -88,6 +88,7 @@ const NewFinancialHealth = (props) => {
             financialVisualizations: [],
             apiExcelUrls: [],
             excel_exports: {},
+            askAiDataframes: {},
             titleArray: [],
             reportType: null,
 
@@ -136,6 +137,7 @@ const NewFinancialHealth = (props) => {
                 financialVisualizations: [],
                 apiExcelUrls: [],
                 excel_exports: {},
+                askAiDataframes: {},
                 titleArray: [],
                 reportType: null,
 
@@ -156,7 +158,47 @@ const NewFinancialHealth = (props) => {
 
         setActiveTab(newId);
     };
+    function tablesToAskAiDataframes(tables = {}) {
+        const dataframes = {};
 
+        Object.entries(tables).forEach(([tableName, rows]) => {
+            if (!Array.isArray(rows) || rows.length === 0) return;
+
+            // Extract sheet name
+            const parts = tableName.split("/");
+            const sheetName = parts[parts.length - 1].toLowerCase();
+
+            let key = null;
+
+            if (sheetName.includes("claim")) key = "claims";
+            else if (sheetName.includes("payroll")) key = "payroll";
+            else if (sheetName.includes("roster")) key = "timesheets";
+            else if (sheetName.includes("revenue")) key = "receivables";
+
+            if (!key) return;
+
+            const headers = Object.keys(rows[0]);
+
+            const csv =
+                headers.join(",") +
+                "\n" +
+                rows
+                    .map((row) =>
+                        headers
+                            .map((h) => {
+                                const val = row[h];
+                                if (val === null || val === undefined) return "";
+                                return `"${String(val).replace(/"/g, '""')}"`;
+                            })
+                            .join(",")
+                    )
+                    .join("\n");
+
+            dataframes[key] = csv;
+        });
+
+        return dataframes;
+    }
     const updateTab = (updates) => {
         setTabs(prev =>
             prev.map(t =>
@@ -182,7 +224,6 @@ const NewFinancialHealth = (props) => {
 
         return `${format(startDate)} - ${format(endDate)}`;
     };
-
 
     const formatHistoryDateRange = (dateRange) => {
         if (!Array.isArray(dateRange) || dateRange.length !== 2) return "–";
@@ -585,6 +626,7 @@ const NewFinancialHealth = (props) => {
                 excelExports: activeTabData.excel_exports || {},
                 titleArray: activeTabData.titleArray || [],
                 reportType: activeTabData.reportType || null,
+                askAiDataframes: activeTabData.askAiDataframes || {},
 
                 // 🔴 FILTERS (same as client profitability)
                 filters: {
@@ -630,7 +672,8 @@ const NewFinancialHealth = (props) => {
 
             const json = await res.json();
             const data = json.data;
-
+            props.setFinancialAiPayload(data.askAiDataframes || {});
+            props.setFinancialAiHistoryPayload([]);
             // console.log("data when clicked", data);
 
             // ---- Date range parsing (common) ----
@@ -657,7 +700,7 @@ const NewFinancialHealth = (props) => {
                 selectedDepartment: data.filters?.selectedDepartment || [],
                 selectedType: data.filters?.selectedType || [],
                 selectedRole: data.filters?.selectedRole || [],
-
+                askAiDataframes: data.askAiDataframes || {},
                 isFromHistory: true,
                 loading: false,
                 progress: 100,
@@ -880,6 +923,13 @@ const NewFinancialHealth = (props) => {
 
                 // console.log("Analysis API response:", analysisRes);
                 analysisData = analysisRes.data;
+                // console.log("Analysis API response data of type api:", analysisData);
+                const askAiFrames = analysisData?.csv_data
+                updateTab({
+                    askAiDataframes: askAiFrames
+                })
+                props.setFinancialAiPayload(askAiFrames);
+                props.setFinancialAiHistoryPayload([]);
 
             } else {
 
@@ -897,7 +947,14 @@ const NewFinancialHealth = (props) => {
                 );
 
                 analysisData = analysisRes.data;
-                // console.log("Analysis API response:", analysisData);
+                // console.log("Analysis API response of type upload:", analysisData);
+                const dataframes = tablesToAskAiDataframes(analysisData?.normalized_files?.tables);
+                updateTab({
+                    askAiDataframes: dataframes
+                })
+                // console.log("Extracted dataframes for AI:", dataframes);
+                props.setFinancialAiPayload(dataframes);
+                props.setFinancialAiHistoryPayload([]);
             }
 
             if (!analysisData) throw new Error("Empty response from analysis API");
@@ -2032,7 +2089,7 @@ const NewFinancialHealth = (props) => {
                     <AccordionHeader
                         title={
                             startDate && endDate
-                                ? `AI Insight (${startDate.toLocaleDateString("en-US")} - ${endDate.toLocaleDateString("en-US")})`
+                                ? `AI Insight (${startDate.toLocaleDateString("en-GB")} - ${endDate.toLocaleDateString("en-GB")})`
                                 : "AI Insight"
                         }
                         isOpen={activeTabData.aiInsightOpen}
@@ -2143,7 +2200,7 @@ const NewFinancialHealth = (props) => {
                     <AccordionHeader
                         title={
                             startDate && endDate
-                                ? `Financial Vizualization (${startDate.toLocaleDateString("en-US")} - ${endDate.toLocaleDateString("en-US")})`
+                                ? `Financial Vizualization (${startDate.toLocaleDateString("en-GB")} - ${endDate.toLocaleDateString("en-GB")})`
                                 : "Financial Vizualization"
                         }
                         isOpen={activeTabData.accordions.charts}
@@ -2211,7 +2268,7 @@ const NewFinancialHealth = (props) => {
                     {activeTabData.reportType === "api" && <AccordionHeader
                         title={
                             startDate && endDate
-                                ? `Exported Data (${startDate.toLocaleDateString("en-US")} - ${endDate.toLocaleDateString("en-US")})`
+                                ? `Exported Data (${startDate.toLocaleDateString("en-GB")} - ${endDate.toLocaleDateString("en-GB")})`
                                 : "Exported Data"
                         }
                         isOpen={activeTabData.accordions.summary}

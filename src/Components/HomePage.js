@@ -96,6 +96,7 @@ const HomePage = () => {
   const isTlcClientProfitabilityPage = selectedRole === "Clients Profitability";
   const isHRAskAiPage = selectedRole === "Smart Onboarding (Staff)";
   const isSoftwareConnectPage = selectedRole === "Connect Your Systems";
+  const isNewFinancialModule = selectedRole === "Financial Health";
   const [tlcClientProfitabilityPayload, setTlcClientProfitabilityPayload] = useState(null);
   const [Suggestions, setSuggestions] = useState([]);
   const [chatbotRules, setChatbotRules] = useState([]);
@@ -117,6 +118,8 @@ const HomePage = () => {
   const [showUsageDetails, setShowUsageDetails] = useState(false);
   const [showAutoPaymentPopup, setShowAutoPaymentPopup] = useState(false);
   const [showPlansBillingModal, setShowPlansBillingModal] = useState(false);
+  const [financialAiPayload, setFinancialAiPayload] = useState(null);
+  const [financialAiHistoryPayload, setFinancialAiHistoryPayload] = useState(null);
   const handleModalOpen = () => setModalVisible(true);
   const handleModalClose = () => setModalVisible(false);
   const handleLeftModalOpen = () => setLeftModalVisible(true);
@@ -331,6 +334,36 @@ const HomePage = () => {
       //SMART ROSTERING MODE
       //ASK-AI FOR RESUME ZIP (Smart Onboarding / HR Module)
       //SOFTWARE CONNECT CHATBOT (Dialogflow)
+      if (isNewFinancialModule) {
+
+        try {
+
+          const response = await axios.post(
+            "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/financial-v2/askAi",
+            {
+              question: finalQuery,
+              dataframes: financialAiPayload,
+              conversation_history: financialAiHistoryPayload,
+              provider: "NDIS"
+            }
+          );
+
+          const botReply =
+            response.data?.answer ||
+            "No response";
+
+          setMessages(prev =>
+            prev.map(msg =>
+              msg.temp ? { sender: "bot", text: botReply } : msg
+            )
+          );
+
+        } catch (err) {
+          console.error("Financial AskAI Error:", err);
+        }
+
+        return;
+      }
       if (isSoftwareConnectPage) {
         try {
 
@@ -950,7 +983,8 @@ const HomePage = () => {
                       )}
                       <div style={{ display: selectedRole === "Financial Health" ? "block" : "none" }}>
                         {/* <FinancialHealth selectedRole="Financial Health" handleClick={handleClick} setShowFeedbackPopup={setShowFeedbackPopup} user={user} /> */}
-                        <NewFinancialHealth selectedRole="Financial Health" handleClick={handleClick} setShowFeedbackPopup={setShowFeedbackPopup} user={user} />
+                        <NewFinancialHealth selectedRole="Financial Health" handleClick={handleClick} setShowFeedbackPopup={setShowFeedbackPopup} user={user} setFinancialAiPayload={setFinancialAiPayload}
+                          setFinancialAiHistoryPayload={setFinancialAiHistoryPayload} />
                       </div>
 
                       <div style={{ display: selectedRole === "SIRS Analysis" ? "block" : "none" }}>
