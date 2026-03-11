@@ -119,7 +119,9 @@ const HomePage = () => {
   const [showAutoPaymentPopup, setShowAutoPaymentPopup] = useState(false);
   const [showPlansBillingModal, setShowPlansBillingModal] = useState(false);
   const [financialAiPayload, setFinancialAiPayload] = useState(null);
-  const [financialAiHistoryPayload, setFinancialAiHistoryPayload] = useState(null);
+  const [financialAiHistoryPayload, setFinancialAiHistoryPayload] = useState([]);
+  const [clientProfitabilityAiHistoryPayload, setClientProfitabilityAiHistoryPayload] = useState([]);
+  const [tlcPayrollAskAiConversationHistory, setTlcPayrollAskAiConversationHistory] = useState([]);
   const handleModalOpen = () => setModalVisible(true);
   const handleModalClose = () => setModalVisible(false);
   const handleLeftModalOpen = () => setLeftModalVisible(true);
@@ -127,6 +129,15 @@ const HomePage = () => {
   // console.log("user?.email",user?.email)
   const userEmail = user?.email;
   // const userEmail = "kris@curki.ai";
+  const userDomain = userEmail?.split("@")[1]?.toLowerCase();
+
+  const tlcDomains = [
+    "tenderlovingcaredisability.com.au",
+    "tenderlovingcare.com.au",
+  ];
+
+  const isTlcDomainUser = tlcDomains.includes(userDomain);
+  const isDemoUser = userEmail === "kris@curki.ai";
   function convertDriveUrl(url) {
     if (!url) return url;
 
@@ -335,28 +346,29 @@ const HomePage = () => {
       //ASK-AI FOR RESUME ZIP (Smart Onboarding / HR Module)
       //SOFTWARE CONNECT CHATBOT (Dialogflow)
       if (isNewFinancialModule) {
-
         try {
-
+          // ✅ Send the FULL history, don't remove anything
           const response = await axios.post(
             "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/financial-v2/askAi",
             {
               question: finalQuery,
               dataframes: financialAiPayload,
-              conversation_history: financialAiHistoryPayload,
+              conversation_history: financialAiHistoryPayload || [], 
               provider: "NDIS"
             }
           );
 
-          const botReply =
-            response.data?.answer ||
-            "No response";
+          // console.log("Financial AI Response: ", response.data);
+          const botReply = response.data?.answer || "No response";
 
           setMessages(prev =>
             prev.map(msg =>
               msg.temp ? { sender: "bot", text: botReply } : msg
             )
           );
+
+          // ✅ Update with the NEW conversation history from response
+          setFinancialAiHistoryPayload(response.data?.conversation_history || []);
 
         } catch (err) {
           console.error("Financial AskAI Error:", err);
@@ -495,80 +507,104 @@ const HomePage = () => {
       if (isTlcClientProfitabilityPage) {
         console.log("🟡 TLC Client Profitability Ask AI triggered");
 
-        // Step 1: Rebuild JSON files for AI
-        // const payloadCreateRes = await fetch(
-        //   `https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/tlcClientProfitibility/prepare_ai_payload`,
-        //   {
-        //     method: "POST",
-        //     headers: { "Content-Type": "application/json" },
-        //     body: JSON.stringify({ payload: tlcClientProfitabilityPayload })
-        //   }
-        // );
+        try {
+          // ✅ Build history from your local messages state
+          const localHistory = messages.map(msg => ({
+            role: msg.sender === 'user' ? 'user' : 'assistant',
+            content: msg.text
+          }));
 
-        // Step 2: Ask AI
-        const userEmail = user?.email
-        // const response = await axios.post(
-        //   `https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/tlcClientProfitibility/ask_ai?userEmail=${userEmail}`,
-        //   {
-        //     question: finalQuery,
-        //     payload: tlcClientProfitabilityPayload
-        //   }
-        // )
-        // console.log("tlcClientProfitabilityPayload in homepage", tlcClientProfitabilityPayload)
-        const payload = {
-          question: finalQuery,
-          table_data: tlcClientProfitabilityPayload,
-        };
+          // Remove the temp message if it exists
+          const cleanHistory = localHistory.filter(msg => !msg.content.includes('Generating response...'));
+          // console.log("tlcClientProfitabilityPayload", tlcClientProfitabilityPayload);
+          const payload = {
+            question: finalQuery,
+            table_data: tlcClientProfitabilityPayload,
+            conversation_history: cleanHistory,
+          };
 
-        // only for kris add env
-        if (userEmail === "kris@curki.ai") {
-          payload.env = "sandbox";
-        }
-
-        const response = await axios.post(
-          `https://curki-backend-api-container.yellowflower-c21bea82.australiaeast.azurecontainerapps.io/header_modules/clients_profitability/ask_ai`,
-          payload
-        );
-
-        // console.log("response of tlc client profit ask ai ", response)
-        const botReply =
-          response.data?.ai_answer ||
-          response.data?.answer ||
-          "No response";
-
-        setMessages((prev) =>
-          prev.map((msg) => (msg.temp ? { sender: "bot", text: botReply } : msg))
-        );
-
-        // Count usage for Client Profitability
-        if (user?.email) {
-          try {
-            const email = user.email.trim().toLowerCase();
-            await incrementAnalysisCount(email, "tlc-client-profitability-askai", response?.data?.ai_analysis_cost);
-          } catch (err) {
-            console.error("❌ Failed to increment Client Profitability AskAI count:", err.message);
+          // only for kris add env
+          if (userEmail === "kris@curki.ai") {
+            payload.env = "sandbox";
           }
+
+          const response = await axios.post(
+            `https://curki-backend-api-container.yellowflower-c21bea82.australiaeast.azurecontainerapps.io/header_modules/clients_profitability/ask_ai`,
+            payload
+          );
+
+          // console.log("response of tlc client profit ask ai ", response.data);
+          const botReply = response.data?.ai_answer || response.data?.answer || "No response";
+
+          setMessages(prev =>
+            prev.map(msg => (msg.temp ? { sender: "bot", text: botReply } : msg))
+          );
+
+          // ✅ Update history with your own messages + new response
+          const updatedHistory = [
+            ...cleanHistory,
+            { role: 'assistant', content: botReply }
+          ];
+
+          setClientProfitabilityAiHistoryPayload(updatedHistory);
+
+          // Count usage for Client Profitability
+          if (user?.email) {
+            try {
+              const email = user.email.trim().toLowerCase();
+              await incrementAnalysisCount(email, "tlc-client-profitability-askai", response?.data?.ai_analysis_cost);
+            } catch (err) {
+              console.error("❌ Failed to increment Client Profitability AskAI count:", err.message);
+            }
+          }
+        } catch (err) {
+          console.error("TLC Client Profitability AskAI Error:", err);
+          setMessages(prev =>
+            prev.map(msg =>
+              msg.temp ? { sender: "bot", text: "Something went wrong!" } : msg
+            )
+          );
         }
+
         return;
       }
 
       if (isTlcPage) {
         try {
+          // Build history from messages
+          const localHistory = messages.map(msg => ({
+            role: msg.sender === 'user' ? 'user' : 'assistant',
+            content: msg.text
+          }));
+
+          const cleanHistory = localHistory.filter(msg => !msg.content.includes('Generating response...'));
+          // console.log("cleanHistory", cleanHistory);
           const response = await axios.post(
             "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/payroll-askai",
             {
               tlcAskAiPayload,
-              tlcAskAiHistoryPayload,
+              tlcAskAiHistoryPayload,  // existing parameter
               question: finalQuery,
               userEmail: userEmail,
+              conversation_history: cleanHistory  // new parameter for conversation
             }
           );
 
+          // console.log("response", response.data);
           const botReply = response.data?.answer || "No response";
 
           setMessages(prev =>
             prev.map(msg => (msg.temp ? { sender: "bot", text: botReply } : msg))
           );
+
+          // Update conversation history
+          const updatedHistory = [
+            ...cleanHistory,
+            { role: 'assistant', content: botReply }
+          ];
+
+          setTlcPayrollAskAiConversationHistory(updatedHistory);
+
         } catch (err) {
           console.error("TLC AskAI Error:", err);
         }
@@ -581,14 +617,13 @@ const HomePage = () => {
       let payload = { query: finalQuery };
       if (documentString) payload.document = documentString;
 
-      // console.log("🟡 Default Ask AI Payload:", payload);
+      // console.log("Default Ask AI Payload:", payload);
 
       const response = await axios.post(
         "https://curki-backend-api-container.yellowflower-c21bea82.australiaeast.azurecontainerapps.io/askai",
         payload
       );
 
-      // console.log("response from default ask ai", response);
 
       const botReply = response.data?.response?.text || response.data?.response || "No response";
 
@@ -669,7 +704,8 @@ const HomePage = () => {
 
   useEffect(() => {
     setMessages([]);
-
+    setFinancialAiHistoryPayload([]);
+    setClientProfitabilityAiHistoryPayload([]);
     // clear textarea safely
     if (textareaRef.current) {
       textareaRef.current.value = "";
@@ -778,9 +814,9 @@ const HomePage = () => {
                           gap: "20px",
                         }}
                       >
-                        {(isTlcPage || isTlcClientProfitabilityPage) && (
+                        {(isTlcPage || isTlcClientProfitabilityPage) && (isDemoUser || isTlcDomainUser) && (
                           <img
-                            src={userEmail === "kris@curki.ai" ? dummyLogo : newTlcLogo}
+                            src={isDemoUser ? dummyLogo : newTlcLogo}
                             alt="TLC"
                             style={{
                               height: "32px",
@@ -1025,6 +1061,8 @@ const HomePage = () => {
                           onPrepareAiPayload={(payload) => setTlcClientProfitabilityPayload(payload)}
                           tlcClientProfitabilityPayload={tlcClientProfitabilityPayload}
                           user={user}
+                          setClientProfitabilityAiHistoryPayload={setClientProfitabilityAiHistoryPayload} // ✅ ADD THIS
+                          clientProfitabilityAiHistoryPayload={clientProfitabilityAiHistoryPayload} // ✅ ADD THIS
                         />
                       </div>
 
@@ -1176,14 +1214,22 @@ const HomePage = () => {
                                   }}
                                   className="ask-ai-res-div"
                                 >
-                                  <ReactMarkdown
-                                    children={msg.text
-                                      .replace(/```(?:\w+)?\n?/, "")
-                                      .replace(/```$/, "")
-                                    }
-                                    remarkPlugins={[remarkGfm]}
-                                    rehypePlugins={[rehypeRaw, rehypeHighlight]}
-                                  />
+                                  {msg.temp ? (
+                                    <div className="askai-loader">
+                                      <span></span>
+                                      <span></span>
+                                      <span></span>
+                                    </div>
+                                  ) : (
+                                    <ReactMarkdown
+                                      children={msg.text
+                                        .replace(/```(?:\w+)?\n?/, "")
+                                        .replace(/```$/, "")
+                                      }
+                                      remarkPlugins={[remarkGfm]}
+                                      rehypePlugins={[rehypeRaw, rehypeHighlight]}
+                                    />
+                                  )}
 
                                   {/* 👇 ADD THIS BLOCK RIGHT HERE */}
                                   {msg.sender === "bot" && msg.richContent?.length > 0 && (

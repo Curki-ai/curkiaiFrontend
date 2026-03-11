@@ -686,7 +686,7 @@ const VoiceModule = (props) => {
     const fetchTemplates = async () => {
         try {
             const res = await fetch(
-                `${API_BASE}/api/voiceModuleTemplate?domain=${domain}`
+                `${API_BASE}/api/voiceModuleTemplate?email=${userEmail}`
             );
             const data = await res.json();
             // console.log("fetched templates", data?.data)

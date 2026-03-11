@@ -42,6 +42,7 @@
     "react-sortablejs": "^6.1.4",
     "react-toastify": "^11.0.5",
     "react-toggle": "^4.1.3",
+    "recharts": "^3.8.0",
     "rehype-highlight": "^7.0.2",
     "rehype-raw": "^7.0.0",
     "remark-gfm": "^3.0.1",
