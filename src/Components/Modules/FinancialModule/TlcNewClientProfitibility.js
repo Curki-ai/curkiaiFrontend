@@ -553,7 +553,7 @@ const TlcNewClientProfitability = (props) => {
                 throw new Error(data.error || "Upload failed");
             }
 
-            console.log("Upload successful:", data);
+            // console.log("Upload successful:", data);
             return data;
 
         } catch (err) {
@@ -635,7 +635,7 @@ const TlcNewClientProfitability = (props) => {
             );
 
             const result = await res.json();
-            console.log("result of tlc new profitibility", result)
+            // console.log("result of tlc new profitibility", result)
             if (!res.ok) {
                 throw new Error(result.error || "Analysis failed");
             }

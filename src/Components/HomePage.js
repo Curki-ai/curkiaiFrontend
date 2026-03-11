@@ -353,12 +353,12 @@ const HomePage = () => {
             {
               question: finalQuery,
               dataframes: financialAiPayload,
-              conversation_history: financialAiHistoryPayload || [], // ✅ Send full history
+              conversation_history: financialAiHistoryPayload || [], 
               provider: "NDIS"
             }
           );
 
-          console.log("Financial AI Response: ", response.data);
+          // console.log("Financial AI Response: ", response.data);
           const botReply = response.data?.answer || "No response";
 
           setMessages(prev =>
@@ -516,7 +516,7 @@ const HomePage = () => {
 
           // Remove the temp message if it exists
           const cleanHistory = localHistory.filter(msg => !msg.content.includes('Generating response...'));
-          console.log("tlcClientProfitabilityPayload", tlcClientProfitabilityPayload);
+          // console.log("tlcClientProfitabilityPayload", tlcClientProfitabilityPayload);
           const payload = {
             question: finalQuery,
             table_data: tlcClientProfitabilityPayload,
@@ -533,7 +533,7 @@ const HomePage = () => {
             payload
           );
 
-          console.log("response of tlc client profit ask ai ", response.data);
+          // console.log("response of tlc client profit ask ai ", response.data);
           const botReply = response.data?.ai_answer || response.data?.answer || "No response";
 
           setMessages(prev =>
@@ -578,7 +578,7 @@ const HomePage = () => {
           }));
 
           const cleanHistory = localHistory.filter(msg => !msg.content.includes('Generating response...'));
-          console.log("cleanHistory", cleanHistory);
+          // console.log("cleanHistory", cleanHistory);
           const response = await axios.post(
             "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/payroll-askai",
             {
@@ -590,7 +590,7 @@ const HomePage = () => {
             }
           );
 
-          console.log("response", response.data);
+          // console.log("response", response.data);
           const botReply = response.data?.answer || "No response";
 
           setMessages(prev =>
@@ -617,7 +617,7 @@ const HomePage = () => {
       let payload = { query: finalQuery };
       if (documentString) payload.document = documentString;
 
-      // console.log("🟡 Default Ask AI Payload:", payload);
+      // console.log("Default Ask AI Payload:", payload);
 
       const response = await axios.post(
         "https://curki-backend-api-container.yellowflower-c21bea82.australiaeast.azurecontainerapps.io/askai",

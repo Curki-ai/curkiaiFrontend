@@ -667,7 +667,7 @@ export default function TlcNewCustomerReporting(props) {
                     };
                 }
 
-                console.log("Analysis API response:", analyzeData);
+                // console.log("Analysis API response:", analyzeData);
             }
 
             // console.log("analyzeData.payload", analyzeData.payload)
