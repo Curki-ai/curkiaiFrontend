@@ -72,6 +72,7 @@ export default function TlcNewCustomerReporting(props) {
             dateOpen: false,
             aiProgress: 0,
             exporting: false,
+            tlcPayrollAskAiConversationHistory: [],
         },
     ]);
     const [activeTab, setActiveTab] = useState(1);
@@ -101,6 +102,8 @@ export default function TlcNewCustomerReporting(props) {
     const userEmail = props?.user?.email?.trim()?.toLowerCase();
     // const userEmail = "amera@tenderlovingcare.com.au"
     // const userEmail = "lcowell@tenderlovingcare.com.au"
+    const setTlcPayrollAskAiConversationHistory = props.setTlcPayrollAskAiConversationHistory; // ✅ NEW
+    const tlcPayrollAskAiConversationHistory = props.tlcPayrollAskAiConversationHistory; // ✅ NEW
     const userState = EMAIL_STATE_MAP[userEmail];
     const handleNewTab = () => {
         const newId = tabs.length ? Math.max(...tabs.map((t) => t.id)) + 1 : 1;
@@ -138,6 +141,7 @@ export default function TlcNewCustomerReporting(props) {
             dateOpen: false,
             aiProgress: 0,
             exporting: false,
+            tlcPayrollAskAiConversationHistory: [],
         };
         setTabs((prev) => [...prev, newTab]);
         setActiveTab(newId);
@@ -151,6 +155,15 @@ export default function TlcNewCustomerReporting(props) {
             setActiveTab(remainingTabs[0].id);
         }
     };
+    // Sync history when loading from history
+    useEffect(() => {
+        if (activeTabData?.isFromHistory) {
+            // Clear conversation history when loading from history
+            if (setTlcPayrollAskAiConversationHistory) {
+                setTlcPayrollAskAiConversationHistory([]);
+            }
+        }
+    }, [activeTabData?.isFromHistory, setTlcPayrollAskAiConversationHistory]);
     // ------------------------------------------------------------
 
     // -------------------- BASE STATES --------------------
@@ -1029,8 +1042,11 @@ export default function TlcNewCustomerReporting(props) {
                 `https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/getById/${item.id}`
             );
             const data = await res.json();
+            if (setTlcPayrollAskAiConversationHistory) {
+                setTlcPayrollAskAiConversationHistory([]);
+            }
             // console.log("data in history click", data)
-            updateTab({ tlcAskAiHistoryPayload: data.data.analysisResult });
+            updateTab({ tlcPayrollAskAiConversationHistory: [], tlcAskAiHistoryPayload: data.data.analysisResult });
             if (tabs.find(t => t.id === activeTab)) {
                 props.setTlcAskAiHistoryPayload(data.data.analysisResult);
             }

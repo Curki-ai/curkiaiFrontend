@@ -38,6 +38,8 @@ import { addSectionWithGraphsToWord, parseMarkdownToDocx } from "./TlcClientProf
 const TlcNewClientProfitability = (props) => {
     const onPrepareAiPayload = props.onPrepareAiPayload;
     const user = props.user
+    const setClientProfitabilityAiHistoryPayload = props.setClientProfitabilityAiHistoryPayload; // ✅ ADD THIS
+    const clientProfitabilityAiHistoryPayload = props.clientProfitabilityAiHistoryPayload; // ✅ ADD THIS
     // console.log("user in client profitibility", user)
     // console.log("useremail in profitibility",userEmail)
     const [startMonth, setStartMonth] = useState("");
@@ -72,6 +74,8 @@ const TlcNewClientProfitability = (props) => {
         "laurente@tenderlovingcaredisability.com.au": "Victoria",
         "kbrennen@tenderlovingcaredisability.com.au": "New South Wales",
     };
+    // Sync history when loading from history
+
     const userEmail = user?.email;
     // const userEmail = "amera@tenderlovingcare.com.au";
     // const userEmail = "lcowell@tenderlovingcare.com.au"
@@ -110,6 +114,7 @@ const TlcNewClientProfitability = (props) => {
             aiLoading: false,
             aiProgress: 0,
             exporting: false,
+            clientProfitabilityAiHistoryPayload: [],
         },
     ]);
 
@@ -126,7 +131,14 @@ const TlcNewClientProfitability = (props) => {
             )
         );
     };
-
+    useEffect(() => {
+        if (activeTabData?.isFromHistory) {
+            // Clear conversation history when loading from history
+            if (setClientProfitabilityAiHistoryPayload) {
+                setClientProfitabilityAiHistoryPayload([]);
+            }
+        }
+    }, [activeTabData?.isFromHistory, setClientProfitabilityAiHistoryPayload]);
     const BASE_URL = "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net";
     // const BASE_URL = "https://curki-backend-api-container.yellowflower-c21bea82.australiaeast.azurecontainerapps.io"
     // 🔹 MOCK FILTER OPTIONS (SHOWCASE ONLY)
@@ -343,6 +355,7 @@ const TlcNewClientProfitability = (props) => {
                 aiLoading: false,
                 aiProgress: 0,
                 exporting: false,
+                clientProfitabilityAiHistoryPayload: [],
             },
         ]);
 
@@ -540,7 +553,7 @@ const TlcNewClientProfitability = (props) => {
                 throw new Error(data.error || "Upload failed");
             }
 
-            console.log("Upload successful:", data);
+            // console.log("Upload successful:", data);
             return data;
 
         } catch (err) {
@@ -622,7 +635,7 @@ const TlcNewClientProfitability = (props) => {
             );
 
             const result = await res.json();
-            console.log("result of tlc new profitibility", result)
+            // console.log("result of tlc new profitibility", result)
             if (!res.ok) {
                 throw new Error(result.error || "Analysis failed");
             }
@@ -780,6 +793,9 @@ const TlcNewClientProfitability = (props) => {
                 `https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/clients-profitability/history/${item.id}`
             );
             const result = await res.json();
+            if (setClientProfitabilityAiHistoryPayload) {
+                setClientProfitabilityAiHistoryPayload([]);
+            }
             if (!res.ok) throw new Error(result.error || "Failed to load history");
 
             const record = result.data;
@@ -787,6 +803,7 @@ const TlcNewClientProfitability = (props) => {
             const { start, end } = record.filters || {};
 
             updateTab({
+                clientProfitabilityAiHistoryPayload: [],
                 responseData: record.responseData,
                 aiSummary: record.aiSummary || "",
                 // ✅ DATE RESTORE (new structure)
