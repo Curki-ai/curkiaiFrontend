@@ -2047,7 +2047,7 @@ export default function TlcNewCustomerReporting(props) {
                                     </div>
 
                                     <>
-                                        <div className="charts-grid">
+                                        <div className="charts-grid-payroll">
                                             <TlcGraphRenderer
                                                 plots={activeTabData.analysisData.pages?.["page 1"]?.plots}
                                             />
@@ -2086,7 +2086,7 @@ export default function TlcNewCustomerReporting(props) {
 
                             {activeTabData.page2 && (
                                 <>
-                                    <div className="charts-grid">
+                                    <div className="charts-grid-payroll">
                                         <TlcGraphRenderer
                                             plots={activeTabData.analysisData.pages?.["page 2"]?.plots}
                                         />
@@ -2131,7 +2131,7 @@ export default function TlcNewCustomerReporting(props) {
                             )} */}
                             {activeTabData.page3 && (
                                 <>
-                                    <div className="charts-grid">
+                                    <div className="charts-grid-payroll">
                                         <TlcGraphRenderer
                                             plots={activeTabData.analysisData.pages?.["page 3"]?.plots}
                                         />
@@ -2169,7 +2169,7 @@ export default function TlcNewCustomerReporting(props) {
                             {activeTabData.page4 && (
                                 <>
                                     <>
-                                        <div className="charts-grid">
+                                        <div className="charts-grid-payroll">
                                             <TlcGraphRenderer
                                                 plots={activeTabData.analysisData.pages?.["page 4"]?.plots}
                                             />

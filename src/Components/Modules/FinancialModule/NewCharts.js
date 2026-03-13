@@ -17,13 +17,14 @@ import {
 import "../../../Styles/newGraphs.css";
 
 const COLORS = [
-    "#6366f1",
-    "#8b5cf6",
-    "#ec4899",
-    "#f43f5e",
-    "#f59e0b",
-    "#10b981",
-    "#3b82f6"
+    "#22C55E", // Green
+    "#F59E0B", // Amber
+    "#1e1300", // Black
+    "#EF4444", // Red
+    "#A855F7", // Purple
+    "#b8beb8",  // Lime
+    "#3B82F6", // Blue
+    "#06B6D4" // Cyan
 ];
 
 /* ---------------- SAMPLE DATA ---------------- */
@@ -67,6 +68,7 @@ const formatYAxis = (value) => {
     }
     return value;
 };
+
 const renderCustomXAxisTick = (props) => {
     const { x, y, payload } = props;
 
@@ -166,7 +168,9 @@ const Legend = ({ names, visible, toggle }) => {
 
                     <span
                         className="chart-visualizer-legend-dot"
-                        style={{ background: COLORS[i % COLORS.length] }}
+                        style={{
+                            background: COLORS[i % COLORS.length]
+                        }}
                     />
 
                     <span className="chart-visualizer-legend-text">
@@ -183,12 +187,12 @@ const Legend = ({ names, visible, toggle }) => {
 /* ---------------- BAR CHART ---------------- */
 
 const BarChartWrapper = ({ data, meta }) => {
-
+    // console.log("data in bar graph", data)
     const names = Object.keys(data.series);
     const [visible, setVisible] = useState(names);
     const labelOffset = getXAxisLabelOffset(data.x);
-    console.log("labelOffSet", labelOffset)
-    console.log("meta", meta)
+    // console.log("labelOffSet", labelOffset)
+    // console.log("meta", meta)
     const toggle = name => {
         setVisible(prev =>
             prev.includes(name)
@@ -212,60 +216,91 @@ const BarChartWrapper = ({ data, meta }) => {
         <div>
 
             <Legend names={names} visible={visible} toggle={toggle} />
+            <div className="chart-area">
 
-            <ResponsiveContainer width="100%" height={350}>
+                <ResponsiveContainer width="100%" height={350}>
 
-                <BarChart
-                    data={chartData}
-                    margin={{ top: 20, right: 20, left: 20, bottom: 60 }}
-                >
+                    <BarChart
+                        data={chartData}
+                        margin={{ top: 20, right: 20, left: 20, bottom: 60 }}
+                    >
+                        <defs>
+                            {names.map((n, i) => {
+                                const base = COLORS[i % COLORS.length];
 
-                    <XAxis
-                        dataKey="name"
-                        angle={-35}
-                        textAnchor="end"
-                        interval={0}
-                        height={80}
-                        tick={{ fontSize: 12 }}
-                        label={{
-                            value: meta?.x_label,
-                            position: "insideBottom",
-                            offset:
-                                meta?.title === "No. of Employees Paid – By Pay-Run Date" ||
-                                    meta?.title === "Revenue vs Expense by Region" ||
-                                    meta?.title === "Revenue vs Expense by Department"
-                                    ? labelOffset + 30
-                                    : labelOffset
-                        }}
-                    />
-
-                    <YAxis
-                        tickFormatter={formatYAxis}
-                        label={{
-                            value: meta?.y_label,
-                            angle: -90,
-                            position: "insideLeft",
-                            style: { textAnchor: "middle" }
-                        }}
-                    />
-
-                    <Tooltip content={<CustomTooltip />} />
-
-                    {names.map((n, i) => (
-                        <Bar
-                            key={n}
-                            dataKey={n}
-                            fill={COLORS[i]}
-                            hide={!visible.includes(n)}
-                            barSize={40}              // thinner bar
-                            radius={[8, 8, 0, 0]}        // rounded top corners
+                                return (
+                                    <linearGradient
+                                        key={n}
+                                        id={`gradBar${i}`}
+                                        x1="0"
+                                        y1="0"
+                                        x2="0"
+                                        y2="1"
+                                    >
+                                        <stop
+                                            offset="0%"
+                                            stopColor={base}
+                                            stopOpacity={0.35}
+                                        />
+                                        <stop
+                                            offset="100%"
+                                            stopColor={base}
+                                            stopOpacity={1}
+                                        />
+                                    </linearGradient>
+                                );
+                            })}
+                        </defs>
+                        <XAxis
+                            dataKey="name"
+                            angle={-35}
+                            textAnchor="end"
+                            interval={0}
+                            height={80}
+                            tick={{ fontSize: 12 }}
+                            label={{
+                                value: meta?.x_label,
+                                position: "insideBottom",
+                                offset:
+                                    meta?.title === "No. of Employees Paid – By Pay-Run Date" ||
+                                        meta?.title === "Revenue vs Expense by Region" ||
+                                        meta?.title === "Revenue vs Expense by Department" ||
+                                        meta?.title === "Total Wages Paid by Employee Category" ||
+                                        meta?.title === "Hours of Service Delivered by Location"
+                                        ? labelOffset + 30
+                                        : labelOffset,
+                                style:{fill: "#0f172a"}        
+                            }}
                         />
-                    ))}
 
-                </BarChart>
+                        <YAxis
+                            tickFormatter={formatYAxis}
+                            label={{
+                                value: meta?.y_label,
+                                angle: -90,
+                                position: "insideLeft",
+                                style: { textAnchor: "middle",fill: "#0f172a" }
+                            }}
+                            tick={{ fontSize: "12px" }}
+                        />
 
-            </ResponsiveContainer>
+                        <Tooltip content={<CustomTooltip />} />
 
+                        {names.map((n, i) => (
+                            <Bar
+                                key={n}
+                                dataKey={n}
+                                fill={`url(#gradBar${i})`}
+                                hide={!visible.includes(n)}
+                                barSize={40}              // thinner bar
+                                radius={[8, 8, 0, 0]}        // rounded top corners
+                            />
+                        ))}
+
+                    </BarChart>
+
+                </ResponsiveContainer>
+            </div>
         </div>
     );
 };
@@ -276,6 +311,7 @@ const LineChartWrapper = ({ data, meta }) => {
 
     const names = Object.keys(data.series);
     const [visible, setVisible] = useState(names);
+    const labelOffset = getXAxisLabelOffset(data.x);
 
     const toggle = name => {
         setVisible(prev =>
@@ -300,52 +336,58 @@ const LineChartWrapper = ({ data, meta }) => {
         <div>
 
             <Legend names={names} visible={visible} toggle={toggle} />
-
-            <ResponsiveContainer width="100%" height={350}>
-
-                <AreaChart
-                    data={chartData}
-                    margin={{ top: 20, right: 20, left: 20, bottom: 60 }}
-                >
-                    <XAxis
-                        dataKey="name"
-                        label={{
-                            value: meta?.x_label,
-                            position: "insideBottom",
-                            offset: -17
-                        }}
-                    />
-
-                    <YAxis
-                        tickFormatter={formatYAxis}
-                        label={{
-                            value: meta?.y_label,
-                            angle: -90,
-                            position: "insideLeft",
-                            style: { textAnchor: "middle" }
-                        }}
-                    />
-
-                    <Tooltip content={<CustomTooltip />} />
-
-                    {names.map((n, i) => (
-                        <Area
-                            key={n}
-                            dataKey={n}
-                            stroke={COLORS[i]}
-                            fill={COLORS[i]}
-                            fillOpacity={0.2}
-                            hide={!visible.includes(n)}
-                            strokeWidth={3}
-                            dot={{ r: 4 }}          // shows dot on each point
-                            activeDot={{ r: 6 }}    // bigger dot on hover
+            <div className="chart-area">
+                <ResponsiveContainer width="100%" height={350}>
+                    <AreaChart
+                        data={chartData}
+                        margin={{ top: 20, right: 20, left: 20, bottom: 60 }}
+                    >
+                        <XAxis
+                            dataKey="name"
+                            angle={-35}
+                            textAnchor="end"
+                            interval={0}
+                            height={80}
+                            tick={{ fontSize: 12 }}
+                            label={{
+                                value: meta?.x_label,
+                                position: "insideBottom",
+                                offset: labelOffset + 30,
+                                style:{fill: "#0f172a"}
+                            }}
                         />
-                    ))}
 
-                </AreaChart>
+                        <YAxis
+                            tickFormatter={formatYAxis}
+                            label={{
+                                value: meta?.y_label,
+                                angle: -90,
+                                position: "insideLeft",
+                                style: { textAnchor: "middle",fill: "#0f172a" }
+                            }}
+                            tick={{ fontSize: "12px" }}
+                        />
 
-            </ResponsiveContainer>
+                        <Tooltip content={<CustomTooltip />} />
 
+                        {names.map((n, i) => (
+                            <Area
+                                key={n}
+                                dataKey={n}
+                                stroke={COLORS[i]}
+                                fill={COLORS[i]}
+                                fillOpacity={0.2}
+                                hide={!visible.includes(n)}
+                                strokeWidth={3}
+                                dot={{ r: 4 }}          // shows dot on each point
+                                activeDot={{ r: 6 }}    // bigger dot on hover
+                            />
+                        ))}
+
+                    </AreaChart>
+
+                </ResponsiveContainer>
+            </div>
         </div>
     );
 };
@@ -355,7 +397,7 @@ const LineChartWrapper = ({ data, meta }) => {
 const PieChartWrapper = ({ data, meta }) => {
     // console.log("meta",meta)
     const names = data.labels;
-    console.log("data", data)
+    // console.log("data", data)
     const [visible, setVisible] = useState(names);
 
     const toggle = name => {
@@ -378,30 +420,30 @@ const PieChartWrapper = ({ data, meta }) => {
         <div>
 
             <Legend names={names} visible={visible} toggle={toggle} />
+            <div className="chart-area">
+                <ResponsiveContainer width="100%" height={350}>
 
-            <ResponsiveContainer width="100%" height={350}>
+                    <PieChart>
+                        <Pie
+                            data={chartData}
+                            dataKey="value"
+                            innerRadius={100}
+                            outerRadius={140}
+                            paddingAngle={1}
+                            minAngle={2}
+                        >
+                            {chartData.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={entry.color} />
+                            ))}
+                        </Pie>
 
-                <PieChart>
+                        <Tooltip content={<CustomTooltip />} />
 
-                    <Pie
-                        data={chartData}
-                        dataKey="value"
-                        innerRadius={100}
-                        outerRadius={140}
-                        paddingAngle={1}
-                        minAngle={2}
-                    >
-                        {chartData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                    </Pie>
+                    </PieChart>
 
-                    <Tooltip content={<CustomTooltip />} />
+                </ResponsiveContainer>
 
-                </PieChart>
-
-            </ResponsiveContainer>
-
+            </div>
         </div>
     );
 };
@@ -436,61 +478,63 @@ const StackedBarChartWrapper = ({ data, meta }) => {
         <div>
 
             <Legend names={names} visible={visible} toggle={toggle} />
+            <div className="chart-area">
+                <ResponsiveContainer width="100%" height={350}>
 
-            <ResponsiveContainer width="100%" height={350}>
+                    <BarChart
+                        data={chartData}
+                        margin={{ top: 20, right: 20, left: 20, bottom: 60 }}
+                    >
+                        <XAxis
+                            dataKey="name"
+                            angle={-35}
+                            textAnchor="end"
+                            interval={0}
+                            height={80}
+                            tick={{ fontSize: 12 }}
+                            label={{
+                                value: meta?.x_label,
+                                position: "insideBottom",
+                                offset: -5,
+                                style:{fill: "#0f172a"}
+                            }}
+                        />
 
-                <BarChart
-                    data={chartData}
-                    margin={{ top: 20, right: 20, left: 20, bottom: 60 }}
-                >
-                    <XAxis
-                        dataKey="name"
-                        angle={-35}
-                        textAnchor="end"
-                        interval={0}
-                        height={80}
-                        tick={{ fontSize: 12 }}
-                        label={{
-                            value: meta?.x_label,
-                            position: "insideBottom",
-                            offset: -5
-                        }}
-                    />
+                        <YAxis
+                            tickFormatter={formatYAxis}
+                            label={{
+                                value: meta?.y_label,
+                                angle: -90,
+                                position: "insideLeft",
+                                style: { textAnchor: "middle",fill: "#0f172a" }
+                            }}
+                            tick={{ fontSize: "12px" }}
+                        />
 
-                    <YAxis
-                        tickFormatter={formatYAxis}
-                        label={{
-                            value: meta?.y_label,
-                            angle: -90,
-                            position: "insideLeft",
-                            style: { textAnchor: "middle" }
-                        }}
-                    />
+                        <Tooltip content={<CustomTooltip />} />
 
-                    <Tooltip content={<CustomTooltip />} />
+                        {names.map((n, i) => {
 
-                    {names.map((n, i) => {
+                            const isTop = i === names.length - 1;
 
-                        const isTop = i === names.length - 1;
+                            return (
+                                <Bar
+                                    key={n}
+                                    dataKey={n}
+                                    stackId="a"
+                                    fill={COLORS[i]}
+                                    hide={!visible.includes(n)}
+                                    barSize={40}
+                                    radius={isTop ? [8, 8, 0, 0] : [0, 0, 0, 0]}
+                                />
+                            );
 
-                        return (
-                            <Bar
-                                key={n}
-                                dataKey={n}
-                                stackId="a"
-                                fill={COLORS[i]}
-                                hide={!visible.includes(n)}
-                                barSize={40}
-                                radius={isTop ? [8, 8, 0, 0] : [0, 0, 0, 0]}
-                            />
-                        );
+                        })}
 
-                    })}
+                    </BarChart>
 
-                </BarChart>
-
-            </ResponsiveContainer>
-
+                </ResponsiveContainer>
+            </div>
         </div>
     );
 };
@@ -506,89 +550,79 @@ export default function ChartVisualiser({ plotData, plotName }) {
         <div className="chart-visualizer-app">
 
             {chartType === "bar" && (
-                <div className="chart-visualizer-card">
                     <div className="chart-header">
 
                         <div className="chart-title">
                             {meta?.title || plotName}
                         </div>
 
-                        {meta?.y_label && (
+                        {/* {meta?.y_label && (
                             <div className="chart-subtitle">
                                 {meta.y_label.toUpperCase()}
                             </div>
-                        )}
+                        )} */}
 
-                    </div>
 
                     <BarChartWrapper data={plotData} meta={meta} />
                 </div>
             )}
 
             {chartType === "line" && (
-                <div className="chart-visualizer-card">
                     <div className="chart-header">
                         <div className="chart-title">
                             {meta?.title || plotName}
                         </div>
 
-                        {meta?.y_label && (
+                        {/* {meta?.y_label && (
                             <div className="chart-subtitle">
                                 {meta.y_label.toUpperCase()}
                             </div>
-                        )}
-                    </div>
+                        )} */}
                     <LineChartWrapper data={plotData} meta={meta} />
                 </div>
             )}
 
             {chartType === "area" && (
-                <div className="chart-visualizer-card">
                     <div className="chart-header">
                         <div className="chart-title">
                             {meta?.title || plotName}
                         </div>
 
-                        {meta?.y_label && (
+                        {/* {meta?.y_label && (
                             <div className="chart-subtitle">
                                 {meta.y_label.toUpperCase()}
                             </div>
-                        )}
-                    </div>
+                        )} */}
                     <LineChartWrapper data={plotData} meta={meta} />
                 </div>
             )}
 
             {chartType === "pie" && (
-                <div className="chart-visualizer-card">
                     <div className="chart-header">
                         <div className="chart-title">
                             {meta?.title || plotName}
                         </div>
 
-                        {meta?.y_label && (
+                        {/* {meta?.y_label && (
                             <div className="chart-subtitle">
                                 {meta.y_label.toUpperCase()}
                             </div>
-                        )}
-                    </div>
+                        )} */}
                     <PieChartWrapper data={plotData} meta={meta} />
                 </div>
             )}
 
             {chartType === "stacked_bar" && (
-                <div className="chart-visualizer-card">
                     <div className="chart-header">
                         <div className="chart-title">
                             {meta?.title || plotName}
                         </div>
 
-                        {meta?.y_label && (
+                        {/* {meta?.y_label && (
                             <div className="chart-subtitle">
                                 {meta.y_label.toUpperCase()}
                             </div>
-                        )}
-                    </div>
+                        )} */}
                     <StackedBarChartWrapper data={plotData} meta={meta} />
                 </div>
             )}
