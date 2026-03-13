@@ -135,7 +135,12 @@ const HomePage = () => {
   const userEmail = user?.email;
   // const userEmail = "kris@curki.ai";
   const userDomain = userEmail?.split("@")[1]?.toLowerCase();
-
+  const blockedAutoTopupDomains = [
+    "curki.ai",
+    "tenderlovingcaredisability.com.au",
+    "tenderlovingcare.com.au",
+    "careait.com"
+  ];
   const tlcDomains = [
     "tenderlovingcaredisability.com.au",
     "tenderlovingcare.com.au",
@@ -196,6 +201,10 @@ const HomePage = () => {
   useEffect(() => {
 
     const handleAutoTopupPopup = () => {
+      if (blockedAutoTopupDomains.includes(userDomain)) {
+        return;
+      }
+
       if (subscriptionInfo?.subscription_type === "trial") {
         return;
       }
@@ -1505,7 +1514,7 @@ const HomePage = () => {
                             cursor: "pointer",
                           }}
                         >
-                          <FaMicrophone size={16} color="#fff"/>
+                          <FaMicrophone size={16} color="#fff" />
                         </div>
                         {/* <FaCircleArrowRight onClick={handleSend} size={22} style={{ position: "absolute", right: "14px", top: "50%", transform: "translateY(-50%)", cursor: "pointer", color: "#6C4CDC" }} /> */}
                         <div
