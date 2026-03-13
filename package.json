@@ -24,6 +24,7 @@
     "lucide-react": "^0.563.0",
     "markdown-parser-react": "^2.0.2",
     "marked": "^15.0.12",
+    "microsoft-cognitiveservices-speech-sdk": "^1.48.0",
     "motion": "^12.23.24",
     "nodemailer": "^6.10.1",
     "papaparse": "^5.5.3",
