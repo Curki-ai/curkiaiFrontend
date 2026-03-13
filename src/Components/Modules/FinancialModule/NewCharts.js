@@ -222,7 +222,7 @@ const BarChartWrapper = ({ data, meta }) => {
 
                     <BarChart
                         data={chartData}
-                        margin={{ top: 20, right: 20, left: 20, bottom: 60 }}
+                        margin={{ top: 20, right: 20, left: 20, bottom: 45 }}
                     >
                         <defs>
                             {names.map((n, i) => {
@@ -340,7 +340,7 @@ const LineChartWrapper = ({ data, meta }) => {
                 <ResponsiveContainer width="100%" height={350}>
                     <AreaChart
                         data={chartData}
-                        margin={{ top: 20, right: 20, left: 20, bottom: 60 }}
+                        margin={{ top: 20, right: 20, left: 20, bottom: 20 }}
                     >
                         <XAxis
                             dataKey="name"
@@ -483,7 +483,7 @@ const StackedBarChartWrapper = ({ data, meta }) => {
 
                     <BarChart
                         data={chartData}
-                        margin={{ top: 20, right: 20, left: 20, bottom: 60 }}
+                        margin={{ top: 20, right: 20, left: 20, bottom: 20 }}
                     >
                         <XAxis
                             dataKey="name"

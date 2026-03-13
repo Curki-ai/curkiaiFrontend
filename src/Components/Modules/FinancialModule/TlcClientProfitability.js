@@ -15,7 +15,7 @@ import ClientProfitabilityAIAnalysisReportViewer from "./TlcClientProfitibilityR
 const TlcClientProfitability = (props) => {
     const onPrepareAiPayload = props.onPrepareAiPayload;
     const user = props.user
-    console.log("user in client profitibility", user)
+    // console.log("user in client profitibility", user)
     const userEmail = user?.email
     const [startMonth, setStartMonth] = useState("");
     const [endMonth, setEndMonth] = useState("");
