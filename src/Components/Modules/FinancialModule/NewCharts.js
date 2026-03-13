@@ -187,12 +187,12 @@ const Legend = ({ names, visible, toggle }) => {
 /* ---------------- BAR CHART ---------------- */
 
 const BarChartWrapper = ({ data, meta }) => {
-    console.log("data in bar graph", data)
+    // console.log("data in bar graph", data)
     const names = Object.keys(data.series);
     const [visible, setVisible] = useState(names);
     const labelOffset = getXAxisLabelOffset(data.x);
-    console.log("labelOffSet", labelOffset)
-    console.log("meta", meta)
+    // console.log("labelOffSet", labelOffset)
+    // console.log("meta", meta)
     const toggle = name => {
         setVisible(prev =>
             prev.includes(name)
@@ -397,7 +397,7 @@ const LineChartWrapper = ({ data, meta }) => {
 const PieChartWrapper = ({ data, meta }) => {
     // console.log("meta",meta)
     const names = data.labels;
-    console.log("data", data)
+    // console.log("data", data)
     const [visible, setVisible] = useState(names);
 
     const toggle = name => {
