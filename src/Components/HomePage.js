@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import "../Styles/UploaderPage.css";
 import BlackExpandIcon from "../../src/Images/BlackExpandIcon.png";
 import axios from "axios";
-import { FaPaperPlane } from "react-icons/fa";
+import { FaMicrophone, FaPaperPlane } from "react-icons/fa";
 import { FaCircleArrowRight } from "react-icons/fa6";
 import Modal from "./Modal";
 import SignIn from "./SignIn";
@@ -66,6 +66,8 @@ import AutoPaymentPopup from "./Modules/AutoPaymentPopup";
 import PlansAndBillings from "./PlansAndBillings";
 import chatBotKeyIcon from "../Images/chatBoyKeyIcon.svg"
 import apiTutorialsIcon from "../Images/apiTutorialKeyIcon.svg"
+import { startSpeechRecognition, stopSpeechRecognition } from "./AskAiSTT";
+import { LuSpeech } from "react-icons/lu";
 const HomePage = () => {
   const [sidebarVisible, setSidebarVisible] = useState(true);
   const [documentString, setDocumentString] = useState("");
@@ -122,6 +124,9 @@ const HomePage = () => {
   const [financialAiHistoryPayload, setFinancialAiHistoryPayload] = useState([]);
   const [clientProfitabilityAiHistoryPayload, setClientProfitabilityAiHistoryPayload] = useState([]);
   const [tlcPayrollAskAiConversationHistory, setTlcPayrollAskAiConversationHistory] = useState([]);
+  const [isListening, setIsListening] = useState(false);
+  const [isSTTActive, setIsSTTActive] = useState(false);
+  const recognizerRef = useRef(null);
   const handleModalOpen = () => setModalVisible(true);
   const handleModalClose = () => setModalVisible(false);
   const handleLeftModalOpen = () => setLeftModalVisible(true);
@@ -138,6 +143,45 @@ const HomePage = () => {
 
   const isTlcDomainUser = tlcDomains.includes(userDomain);
   const isDemoUser = userEmail === "kris@curki.ai";
+  const handleMicClick = async () => {
+    try {
+
+      if (!isListening) {
+
+        console.log("Starting speech recognition");
+
+        setIsListening(true);
+        setIsSTTActive(true); // LOCK SEND BUTTON
+
+        recognizerRef.current = await startSpeechRecognition((text) => {
+
+          console.log("Speech text received:", text);
+
+          if (textareaRef.current) {
+            textareaRef.current.value = text;
+          }
+
+          inputRef.current = text;
+
+        });
+
+      } else {
+
+        console.log("Stopping speech recognition");
+
+        stopSpeechRecognition(recognizerRef.current);
+
+        setIsListening(false);
+        setIsSTTActive(false); // UNLOCK SEND BUTTON
+      }
+
+    } catch (error) {
+      console.error("Microphone error", error);
+
+      setIsListening(false);
+      setIsSTTActive(false);
+    }
+  };
   function convertDriveUrl(url) {
     if (!url) return url;
 
@@ -353,7 +397,7 @@ const HomePage = () => {
             {
               question: finalQuery,
               dataframes: financialAiPayload,
-              conversation_history: financialAiHistoryPayload || [], 
+              conversation_history: financialAiHistoryPayload || [],
               provider: "NDIS"
             }
           );
@@ -1444,9 +1488,31 @@ const HomePage = () => {
 
 
                         />
+                        <div
+                          onClick={handleMicClick}
+                          style={{
+                            position: "absolute",
+                            right: "70px",
+                            top: "63%",
+                            transform: "translateY(-50%)",
+                            width: "32px",
+                            height: "32px",
+                            backgroundColor: isListening ? "#FF4D4F" : "#6C4CDC",
+                            borderRadius: "10px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            cursor: "pointer",
+                          }}
+                        >
+                          <FaMicrophone size={16} color="#fff"/>
+                        </div>
                         {/* <FaCircleArrowRight onClick={handleSend} size={22} style={{ position: "absolute", right: "14px", top: "50%", transform: "translateY(-50%)", cursor: "pointer", color: "#6C4CDC" }} /> */}
                         <div
                           onClick={() => {
+
+                            if (isSTTActive) return; // LOCK SEND DURING STT
+
                             handleSend();
 
                             if (textareaRef.current) {
@@ -1454,6 +1520,7 @@ const HomePage = () => {
                             }
 
                             inputRef.current = "";
+
                           }}
                           style={{
                             position: "absolute",
@@ -1462,12 +1529,13 @@ const HomePage = () => {
                             transform: "translateY(-50%)",
                             width: "32px",
                             height: "32px",
-                            backgroundColor: "#6C4CDC",   // purple background
                             borderRadius: "10px",         // rounded square
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
                             cursor: "pointer",
+                            backgroundColor: isSTTActive ? "#C9C4E3" : "#6C4CDC",
+                            opacity: isSTTActive ? 0.5 : 1
                           }}
                         >
                           <img
