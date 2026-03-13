@@ -926,7 +926,7 @@ const NewFinancialHealth = (props) => {
 
                 // console.log("Analysis API response:", analysisRes);
                 analysisData = analysisRes.data;
-                console.log("Analysis API response data of type api:", analysisData);
+                // console.log("Analysis API response data of type api:", analysisData);
                 const askAiFrames = analysisData?.csv_data
                 updateTab({
                     askAiDataframes: askAiFrames
@@ -950,122 +950,121 @@ const NewFinancialHealth = (props) => {
                 );
 
                 analysisData = analysisRes.data;
-                console.log("Analysis API response of type upload:", analysisData);
-                const dataframes = tablesToAskAiDataframes(analysisData?.normalized_files?.tables);
+                // console.log("Analysis API response of type upload:", analysisData);
+                // const dataframes = tablesToAskAiDataframes(analysisData?.normalized_files?.tables);
                 updateTab({
-                    askAiDataframes: dataframes
+                    askAiDataframes: analysisData?.csv_data
                 })
                 // console.log("Extracted dataframes for AI:", dataframes);
-                props.setFinancialAiPayload(dataframes);
+                props.setFinancialAiPayload(analysisData?.csv_data);
                 props.setFinancialAiHistoryPayload([]);
             }
 
             if (!analysisData) throw new Error("Empty response from analysis API");
 
-            if (!analysisData) throw new Error("Empty response from analysis API");
 
-            // --- Step 2: Build Visualization Payload ---
-            let vizPayload;
+            // // --- Step 2: Build Visualization Payload ---
+            // let vizPayload;
 
-            // Non-Kris = normal behavior
-            vizPayload = {
-                reportResponse: analysisData,
-                from_date: fromDate,
-                to_date: toDate,
-                userEmail: userEmail
-            };
-            // console.log("vizPayload", vizPayload)
+            // // Non-Kris = normal behavior
+            // vizPayload = {
+            //     reportResponse: analysisData,
+            //     from_date: fromDate,
+            //     to_date: toDate,
+            //     userEmail: userEmail
+            // };
+            // // console.log("vizPayload", vizPayload)
 
-            // --- Step 3: Call Visualization API ---
-            let vizData = null;
-            // console.log("vizpayload", vizPayload)
-            if (type === "upload") {
-                const vizRes = await axios.post(
-                    "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/vizualize-reports",
-                    vizPayload,
-                    { headers: { "Content-Type": "application/json" } }
-                );
+            // // --- Step 3: Call Visualization API ---
+            // let vizData = null;
+            // // console.log("vizpayload", vizPayload)
+            // if (type === "upload") {
+            //     const vizRes = await axios.post(
+            //         "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/vizualize-reports",
+            //         vizPayload,
+            //         { headers: { "Content-Type": "application/json" } }
+            //     );
 
-                vizData = vizRes.data;
-            }
+            //     vizData = vizRes.data;
+            // }
 
-            // --- Step 4: Normalize Figures ---
-            const normalizeFigures = (source) => {
-                // console.log("source", source);
+            // // --- Step 4: Normalize Figures ---
+            // const normalizeFigures = (source) => {
+            //     // console.log("source", source);
 
-                const results = [];
+            //     const results = [];
 
-                // 1️⃣ Case: Normal Plotly JSON charts
-                if (Array.isArray(source?.data?.figures)) {
-                    const charts = source.data.figures.map((fig, i) => ({
-                        type: "json",
-                        figure: fig.figure,
-                        metricName: fig.key || `Figure ${i + 1}`,
-                    }));
-                    results.push(...charts);
-                }
+            //     // 1️⃣ Case: Normal Plotly JSON charts
+            //     if (Array.isArray(source?.data?.figures)) {
+            //         const charts = source.data.figures.map((fig, i) => ({
+            //             type: "json",
+            //             figure: fig.figure,
+            //             metricName: fig.key || `Figure ${i + 1}`,
+            //         }));
+            //         results.push(...charts);
+            //     }
 
-                // 🧩 2️⃣ Case: Image attachments
-                if (Array.isArray(source?.data?.attachments)) {
-                    const images = source.data.attachments.map((att, i) => ({
-                        type: "image",
-                        image: `data:image/png;base64,${att.file_base64}`,
-                        metricName: att.filename
-                            ? att.filename.replace(/\.[^/.]+$/, "")
-                            : `Attachment ${i + 1}`,
-                    }));
-                    results.push(...images);
-                }
+            //     // 🧩 2️⃣ Case: Image attachments
+            //     if (Array.isArray(source?.data?.attachments)) {
+            //         const images = source.data.attachments.map((att, i) => ({
+            //             type: "image",
+            //             image: `data:image/png;base64,${att.file_base64}`,
+            //             metricName: att.filename
+            //                 ? att.filename.replace(/\.[^/.]+$/, "")
+            //                 : `Attachment ${i + 1}`,
+            //         }));
+            //         results.push(...images);
+            //     }
 
-                // 🧩 3️⃣ Case: Unavailable metrics (✅ top level)
-                if (Array.isArray(source?.unavailable_metrics)) {
-                    // console.log("Found top-level unavailable_metrics", source.unavailable_metrics);
-                    const seen = new Set();
-                    const uniqueMetrics = [];
+            //     // 🧩 3️⃣ Case: Unavailable metrics (✅ top level)
+            //     if (Array.isArray(source?.unavailable_metrics)) {
+            //         // console.log("Found top-level unavailable_metrics", source.unavailable_metrics);
+            //         const seen = new Set();
+            //         const uniqueMetrics = [];
 
-                    for (const [metricName, reason] of source.unavailable_metrics) {
-                        if (!metricName) continue;
-                        if (!seen.has(metricName)) {
-                            seen.add(metricName);
-                            uniqueMetrics.push({ metricName, reason });
-                        }
-                    }
+            //         for (const [metricName, reason] of source.unavailable_metrics) {
+            //             if (!metricName) continue;
+            //             if (!seen.has(metricName)) {
+            //                 seen.add(metricName);
+            //                 uniqueMetrics.push({ metricName, reason });
+            //             }
+            //         }
 
-                    const blanks = uniqueMetrics.map(({ metricName, reason }, i) => ({
-                        type: "blank",
-                        metricName: metricName || `Unavailable Metric ${i + 1}`,
-                        reason: reason || "No data available",
-                    }));
+            //         const blanks = uniqueMetrics.map(({ metricName, reason }, i) => ({
+            //             type: "blank",
+            //             metricName: metricName || `Unavailable Metric ${i + 1}`,
+            //             reason: reason || "No data available",
+            //         }));
 
-                    results.push(...blanks);
-                }
+            //         results.push(...blanks);
+            //     }
 
-                // 🧩 4️⃣ Case: Unavailable metrics nested inside data
-                if (Array.isArray(source?.data?.unavailable_metrics)) {
-                    // console.log("Found nested unavailable_metrics", source.data.unavailable_metrics);
-                    const seen = new Set();
-                    const uniqueMetrics = [];
+            //     // 🧩 4️⃣ Case: Unavailable metrics nested inside data
+            //     if (Array.isArray(source?.data?.unavailable_metrics)) {
+            //         // console.log("Found nested unavailable_metrics", source.data.unavailable_metrics);
+            //         const seen = new Set();
+            //         const uniqueMetrics = [];
 
-                    for (const [metricName, reason] of source.data.unavailable_metrics) {
-                        if (!metricName) continue;
-                        if (!seen.has(metricName)) {
-                            seen.add(metricName);
-                            uniqueMetrics.push({ metricName, reason });
-                        }
-                    }
+            //         for (const [metricName, reason] of source.data.unavailable_metrics) {
+            //             if (!metricName) continue;
+            //             if (!seen.has(metricName)) {
+            //                 seen.add(metricName);
+            //                 uniqueMetrics.push({ metricName, reason });
+            //             }
+            //         }
 
-                    const blanks = uniqueMetrics.map(({ metricName, reason }, i) => ({
-                        type: "blank",
-                        metricName: metricName || `Unavailable Metric ${i + 1}`,
-                        reason: reason || "No data available",
-                    }));
+            //         const blanks = uniqueMetrics.map(({ metricName, reason }, i) => ({
+            //             type: "blank",
+            //             metricName: metricName || `Unavailable Metric ${i + 1}`,
+            //             reason: reason || "No data available",
+            //         }));
 
-                    results.push(...blanks);
-                }
+            //         results.push(...blanks);
+            //     }
 
-                // console.log("normalizeFigures results:", results);
-                return results;
-            };
+            //     // console.log("normalizeFigures results:", results);
+            //     return results;
+            // };
 
             // console.log("vizPayload?.reportResponse?.excel_exports", vizPayload?.reportResponse?.excel_exports)
             // if (type === "api") {
@@ -1251,7 +1250,7 @@ const NewFinancialHealth = (props) => {
                 // SINGLE updateTab call with ALL data
                 updateTab({
                     responseData: apiResponseText,
-                    financialVisualizations: apiFigures,
+                    // financialVisualizations: apiFigures,
                     apiPlots: apiPlots,
                     apiExcelUrls: builtApiUrls,
                     titleArray: builtTitles,
@@ -1266,7 +1265,10 @@ const NewFinancialHealth = (props) => {
                 // 🔹 Old upload flow
                 // 🔹 Upload flow (FIXED – parse like API)
 
-                let uploadResponseText = analysisData?.final;
+                let uploadResponseText =
+                    analysisData?.report?.review_response ||
+                    analysisData?.review_response ||
+                    "";
 
                 // Parse if stringified JSON
                 if (typeof uploadResponseText === "string") {
@@ -1284,13 +1286,15 @@ const NewFinancialHealth = (props) => {
                     }
                 }
 
-                const uploadFigures = normalizeFigures(vizData);
+                // const uploadFigures = normalizeFigures(vizData);
+                const uploadPlots = analysisData?.plots || [];
 
                 const tabDateName = formatDateRangeForTab(startDate, endDate);
 
                 updateTab({
                     responseData: uploadResponseText,
-                    financialVisualizations: uploadFigures,
+                    // financialVisualizations: uploadFigures,
+                    apiPlots: uploadPlots,
                     apiExcelUrls: [],
                     titleArray: [],
                     excel_exports: analysisData?.excel_exports || {},
@@ -2212,7 +2216,7 @@ const NewFinancialHealth = (props) => {
                     />
 
                     {activeTabData.accordions.charts && (
-                        activeTabData.reportType === "api" ? (
+                        activeTabData.apiPlots?.length > 0 ? (
 
                             <div className="charts-grid">
                                 <TlcGraphRenderer plots={activeTabData.apiPlots} />

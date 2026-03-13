@@ -67,6 +67,55 @@ const formatYAxis = (value) => {
     }
     return value;
 };
+const renderCustomXAxisTick = (props) => {
+    const { x, y, payload } = props;
+
+    const MAX_LENGTH = 14;
+
+    const fullText = payload.value;
+    const shortText =
+        fullText.length > MAX_LENGTH
+            ? fullText.substring(0, MAX_LENGTH) + "..."
+            : fullText;
+
+    return (
+        <g transform={`translate(${x},${y})`}>
+            <title>{fullText}</title> {/* native hover tooltip */}
+
+            <text
+                x={0}
+                y={0}
+                dy={16}
+                textAnchor="end"
+                fill="#6b7280"
+                fontSize="12"
+                transform="rotate(-35)"
+                style={{ cursor: "pointer" }}
+            >
+                {shortText}
+            </text>
+        </g>
+    );
+};
+const getXAxisLabelOffset = (labels) => {
+    if (!labels || labels.length === 0) return -10;
+
+    const longest = labels.reduce((a, b) => (a.length > b.length ? a : b));
+
+    const fontSize = 12;
+    const charWidth = fontSize * 0.6;
+
+    const textWidth = longest.length * charWidth;
+
+    const angle = 35 * (Math.PI / 180);
+
+    const rotatedHeight = Math.sin(angle) * textWidth;
+
+    const offset = -(rotatedHeight + 10);
+
+    // clamp so it doesn't go too far
+    return Math.max(offset, -40);
+};
 /* ---------------- TOOLTIP ---------------- */
 
 const CustomTooltip = ({ active, payload, label }) => {
@@ -137,7 +186,9 @@ const BarChartWrapper = ({ data, meta }) => {
 
     const names = Object.keys(data.series);
     const [visible, setVisible] = useState(names);
-
+    const labelOffset = getXAxisLabelOffset(data.x);
+    console.log("labelOffSet", labelOffset)
+    console.log("meta", meta)
     const toggle = name => {
         setVisible(prev =>
             prev.includes(name)
@@ -171,10 +222,20 @@ const BarChartWrapper = ({ data, meta }) => {
 
                     <XAxis
                         dataKey="name"
+                        angle={-35}
+                        textAnchor="end"
+                        interval={0}
+                        height={80}
+                        tick={{ fontSize: 12 }}
                         label={{
                             value: meta?.x_label,
                             position: "insideBottom",
-                            offset: -10
+                            offset:
+                                meta?.title === "No. of Employees Paid – By Pay-Run Date" ||
+                                    meta?.title === "Revenue vs Expense by Region" ||
+                                    meta?.title === "Revenue vs Expense by Department"
+                                    ? labelOffset + 30
+                                    : labelOffset
                         }}
                     />
 
@@ -251,7 +312,7 @@ const LineChartWrapper = ({ data, meta }) => {
                         label={{
                             value: meta?.x_label,
                             position: "insideBottom",
-                            offset: -10
+                            offset: -17
                         }}
                     />
 
@@ -291,9 +352,10 @@ const LineChartWrapper = ({ data, meta }) => {
 
 /* ---------------- PIE CHART ---------------- */
 
-const PieChartWrapper = ({ data }) => {
-
+const PieChartWrapper = ({ data, meta }) => {
+    // console.log("meta",meta)
     const names = data.labels;
+    console.log("data", data)
     const [visible, setVisible] = useState(names);
 
     const toggle = name => {
@@ -324,16 +386,13 @@ const PieChartWrapper = ({ data }) => {
                     <Pie
                         data={chartData}
                         dataKey="value"
-                        innerRadius={100}     // donut hole
+                        innerRadius={100}
                         outerRadius={140}
-                        paddingAngle={6}      // space between slices
-                        cornerRadius={0}      // rounded slice edges
+                        paddingAngle={1}
+                        minAngle={2}
                     >
-                        {chartData.map((entry) => (
-                            <Cell
-                                key={entry.name}
-                                fill={entry.color}
-                            />
+                        {chartData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
                         ))}
                     </Pie>
 
@@ -353,7 +412,7 @@ const StackedBarChartWrapper = ({ data, meta }) => {
 
     const names = Object.keys(data.series);
     const [visible, setVisible] = useState(names);
-
+    // const labelOffset = getXAxisLabelOffset(data.x);
     const toggle = name => {
         setVisible(prev =>
             prev.includes(name)
@@ -386,10 +445,15 @@ const StackedBarChartWrapper = ({ data, meta }) => {
                 >
                     <XAxis
                         dataKey="name"
+                        angle={-35}
+                        textAnchor="end"
+                        interval={0}
+                        height={80}
+                        tick={{ fontSize: 12 }}
                         label={{
                             value: meta?.x_label,
                             position: "insideBottom",
-                            offset: -10
+                            offset: -5
                         }}
                     />
 

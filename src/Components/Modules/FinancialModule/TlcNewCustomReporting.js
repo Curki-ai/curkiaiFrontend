@@ -597,11 +597,16 @@ export default function TlcNewCustomerReporting(props) {
                 return `${d}-${m}-${y}`;
             };
 
-            const query = new URLSearchParams({
-                start: formatToDMY(startDate),
-                end: formatToDMY(endDate),
-            });
+            const startFormatted = `${startDate.getDate()}-${startDate.getMonth() + 1}-${startDate.getFullYear()}`;
+            const endFormatted = `${endDate.getDate()}-${endDate.getMonth() + 1}-${endDate.getFullYear()}`;
 
+            // console.log("Start Date:", startFormatted);
+            // console.log("End Date:", endFormatted);
+
+            const query = new URLSearchParams({
+                start: startFormatted,
+                end: endFormatted,
+            });
 
             if (selectedState.length)
                 query.append("state", selectedState.map((s) => s.value).join(","));
