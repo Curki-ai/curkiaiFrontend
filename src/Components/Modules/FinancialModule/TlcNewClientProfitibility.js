@@ -78,6 +78,7 @@ const TlcNewClientProfitability = (props) => {
     // Sync history when loading from history
 
     const userEmail = user?.email;
+    // const userEmail = "kris@curki.ai"
     // const userEmail = "amera@tenderlovingcare.com.au";
     // const userEmail = "lcowell@tenderlovingcare.com.au"
     const userState = EMAIL_STATE_MAP[userEmail];
@@ -525,14 +526,14 @@ const TlcNewClientProfitability = (props) => {
                 formData.append("files", file);
             });
 
-            if (activeTabData.selectedState.length > 1) {
-                alert("Please select only one state while uploading data.");
-                return null;
+            if (activeTabData.selectedState.length > 0) {
+                formData.append(
+                    "state",
+                    activeTabData.selectedState.map(s => s.value).join(",")
+                );
             }
 
-            if (activeTabData.selectedState.length === 1) {
-                formData.append("state", activeTabData.selectedState[0].value);
-            }
+
 
 
             if (activeTabData.startDate && activeTabData.endDate) {
@@ -620,9 +621,9 @@ const TlcNewClientProfitability = (props) => {
                 startDate: formatLocalDate(activeTabData.startDate),
                 endDate: formatLocalDate(activeTabData.endDate),
                 email: userEmail,
-                state:
+                states:
                     activeTabData.selectedState.length > 0
-                        ? activeTabData.selectedState.map(s => s.value).join(", ")
+                        ? activeTabData.selectedState.map(s => s.value)
                         : undefined,
             };
 
