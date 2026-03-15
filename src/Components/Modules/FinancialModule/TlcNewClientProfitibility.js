@@ -67,6 +67,7 @@ const TlcNewClientProfitability = (props) => {
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [selectedHistoryId, setSelectedHistoryId] = useState(null);
     const [aiProgressDisplay, setAiProgressDisplay] = useState(0);
+    const [batchId, setBatchId] = useState(null);
     const [deleting, setDeleting] = useState(false);
     const aiProgressRef = useRef({});
     const reportRef = useRef(null);
@@ -549,6 +550,10 @@ const TlcNewClientProfitability = (props) => {
             );
 
             const data = await res.json();
+            console.log("data after upload", data)
+            if (data?.batchId) {
+                setBatchId(data?.batchId);
+            }
 
             if (!res.ok) {
                 throw new Error(data.error || "Upload failed");
@@ -606,13 +611,18 @@ const TlcNewClientProfitability = (props) => {
             updateTab({ loading: true });
 
             // 🔹 Step 1: If files selected → upload first
+            let currentBatchId = batchId;
+
             if (activeTabData.selectedFiles.length > 0) {
+
                 const uploadResult = await handleUpload();
 
                 if (!uploadResult) {
                     updateTab({ loading: false });
                     return;
                 }
+
+                currentBatchId = uploadResult.batchId;
             }
 
             // 🔹 Step 2: Now call analyze-by-date
@@ -620,10 +630,11 @@ const TlcNewClientProfitability = (props) => {
                 startDate: formatLocalDate(activeTabData.startDate),
                 endDate: formatLocalDate(activeTabData.endDate),
                 email: userEmail,
-                state:
+                batchId: currentBatchId,
+                states:
                     activeTabData.selectedState.length > 0
-                        ? activeTabData.selectedState.map(s => s.value).join(", ")
-                        : undefined,
+                        ? activeTabData.selectedState.map(s => s.value)
+                        : [],
             };
 
             const res = await fetch(

@@ -17,7 +17,7 @@ export const startSpeechRecognition = async (setTextCallback) => {
         const response = await fetch("https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/speech-token");
 
         const data = await response.json();
-        console.log("data",data)
+        // console.log("data", data)
         logWithTime("Speech token received");
 
         const speechConfig = SpeechSDK.SpeechConfig.fromAuthorizationToken(
@@ -26,7 +26,10 @@ export const startSpeechRecognition = async (setTextCallback) => {
         );
 
         speechConfig.speechRecognitionLanguage = "en-US";
-
+        speechConfig.setProperty(
+            SpeechSDK.PropertyId.SpeechServiceConnection_EndSilenceTimeoutMs,
+            "5000"
+        );
         logWithTime("Creating microphone audio configuration");
 
         const audioConfig = SpeechSDK.AudioConfig.fromDefaultMicrophoneInput();
@@ -39,20 +42,20 @@ export const startSpeechRecognition = async (setTextCallback) => {
         );
 
         logWithTime("Speech recognizer initialized successfully");
-
+        let finalTranscript = "";
         recognizer.recognizing = (sender, event) => {
             if (event.result.text) {
-                // logWithTime("Partial speech detected", event.result.text);
-                setTextCallback(event.result.text);
+                const combined = finalTranscript + " " + event.result.text;
+                setTextCallback(combined.trim());
             }
         };
 
         recognizer.recognized = (sender, event) => {
             if (event.result.text) {
-                // logWithTime("Final speech recognized", event.result.text);
-                setTextCallback(event.result.text);
-            } else {
-                logWithTime("Speech recognition event received but no text detected");
+
+                finalTranscript += " " + event.result.text;
+
+                setTextCallback(finalTranscript.trim());
             }
         };
 
