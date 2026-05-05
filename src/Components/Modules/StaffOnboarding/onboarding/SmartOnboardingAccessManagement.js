@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import "../../../../Styles/SmartOnboardingAccessManagement.css";
+﻿import React, { useEffect, useState } from "react";
+import "../../../../Styles/general-styles/SmartOnboardingAccessManagement.css";
 
 // Only "admin" is supported on this surface. The previous "staff" role was
 // never enforced server-side, so the dropdown was replaced with a static

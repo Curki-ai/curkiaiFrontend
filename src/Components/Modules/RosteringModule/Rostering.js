@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import "../../../Styles/RosteringModal.css";
+import "../../../Styles/RosteringModule/RosteringModal.css";
 import searchIcon from "../../../Images/rostering_search_button.png"; // Update the path as needed
 import sendIcon from "../../../Images/rostering_send_button.png"; // Update the path as needed
 import Report from "./Report";

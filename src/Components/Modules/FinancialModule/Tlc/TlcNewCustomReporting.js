@@ -1,0 +1,2787 @@
+import React, { useState, useRef, useEffect, memo, useMemo } from "react";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+import "../../../../Styles/FinancialModule/TlcNewCustomReporting.css";
+import TLCLogo from "../../../../Images/TLCLogo.png";
+import { FiChevronDown } from "react-icons/fi";
+import parse, { domToReact } from "html-react-parser";
+import star from '../../../../Images/star.png';
+import AIAnalysisReportViewer from "./TlcAiAnalysisReport";
+import incrementAnalysisCount from "./TLcAnalysisCount";
+import TlcPayrollDownArrow from "../../../../Images/tlc_payroll_down_button.png"
+import TlcPayrollInsightIcon from "../../../../Images/TlcPayrollinsightIcon.png"
+import Toggle from "react-toggle";
+import "react-toggle/style.css";
+import TlcPayrollRoleIcon from "../../../../Images/TlcPayrollRoleIcon.png"
+import TlcPayrollSyncTickIcon from "../../../../Images/TlcPayrollSyncTick.png"
+import TlcPayrollRoleDownArrowIcon from "../../../../Images/TlcPayrollRoleDownArrow.png"
+import TlcPayrollDateFilterIcon from "../../../../Images/TlcPayrollDateFilterIcon.png"
+import TlcPayrollDepartmentIcon from "../../../../Images/TlcPayrollDepartmentIcon.png"
+import TlcPayrollTypeIcon from "../../../../Images/TlcPayrollType.png"
+import TlcPayrollStateIcon from "../../../../Images/TlcPayrollStateIcon.png"
+import TlcPayrollHistoryIcon from "../../../../Images/TlcPayrollHistory.png"
+import UploadTlcIcon from "../../../../Images/UploadTlcIcon.png";
+import { RiDeleteBin6Line } from "react-icons/ri";
+import TlcPayrollDownloadIcon from "../../../../Images/TlcPayrollDownloadIcon.png"
+import { dummyData, dummyPayload } from "./TlcPayrollDummyData";
+import TlcSaveButton from "../../../../Images/Tlc_Save_Button.png"
+import TlcCompareAnalyseIcon from "../../../../Images/Tlc_Compare_Analyse_Icon.png"
+import TlcAiWordExporter, { addSectionWithGraphsToWord, parseMarkdownToDocx } from "./TlcAiWordExporter";
+import { Document, Packer, Paragraph, HeadingLevel, ImageRun } from "docx";
+import { saveAs } from "file-saver";
+import html2canvas from "html2canvas";
+import { GoArrowLeft } from "react-icons/go";
+import { registerLocale } from "react-datepicker";
+import enGB from "date-fns/locale/en-GB";
+import TlcGraphRenderer from "./TlcGraphRenderer";
+import MultiSelectCustom from "../MultiSelectCustom";
+import { MdOutlineFileDownload } from "react-icons/md";
+import incrementCareVoiceAnalysisCount from "../../SupportAtHomeModule/careVoiceCostAnalysis";
+
+const HtmlFigure = memo(function HtmlFigure({ htmlString }) {
+    const parsed = useMemo(
+        () =>
+            parse(htmlString, {
+                replace: (domNode) => (domNode.name === "script" ? null : undefined),
+            }),
+        [htmlString]
+    );
+
+    useEffect(() => {
+        const raf = requestAnimationFrame(() => {
+            try {
+                const tempDiv = document.createElement("div");
+                tempDiv.innerHTML = htmlString;
+
+                const scripts = tempDiv.getElementsByTagName("script");
+                for (let script of scripts) {
+                    const newScript = document.createElement("script");
+                    if (script.src) newScript.src = script.src;
+                    else if (script.textContent) newScript.text = script.textContent;
+                    document.body.appendChild(newScript);
+                    document.body.removeChild(newScript);
+                }
+            } catch (e) {
+                console.warn("Script execution error:", e);
+            }
+        });
+
+        return () => cancelAnimationFrame(raf);
+    }, [htmlString]);
+
+    return parsed;
+});
+
+registerLocale("en-GB", enGB);
+export default function TlcNewCustomerReporting(props) {
+    const USE_DUMMY_DATA = false;
+    const [tabs, setTabs] = useState([
+        {
+            id: 1,
+            name: "Tab 1",
+            startDate: null,
+            endDate: null,
+            selectedState: [],
+            selectedDepartment: [],
+            selectedRole: [],
+            selectedEmploymentType: [],
+            fileNames: { payroll: [], people: [], employee: [] },
+            stage: "filters",
+            analysisData: null,
+            error: null,
+            currentPage: 1,
+            viewingHistory: false,
+            showReport: false,
+            aiReport: null,
+            aiLoading: false,
+            loading: false,
+            uploading: false,
+            progressStage: "idle",
+            tlcAskAiPayload: null,
+            tlcAskAiHistoryPayload: null,
+            page1: false,
+            page2: false,
+            page3: false,
+            page4: false,
+            aiAccordion: false,
+            whoAreYou: "NDIS",
+            headerRole: "",
+            syncEnabled: false,
+            dateOpen: false,
+            aiProgress: 0,
+            exporting: false,
+            tlcPayrollAskAiConversationHistory: [],
+            isFromHistory: false,
+        },
+    ]);
+    const [activeTab, setActiveTab] = useState(1);
+    const [historyLoading, setHistoryLoading] = useState(false);
+    const pageRef = useRef(null);
+    const activeTabData = tabs.find((t) => t.id === activeTab);
+    const displayedHtmlArray = [];
+    const updateTab = (updates) => {
+        setTabs((prev) =>
+            prev.map((t) => (t.id === activeTab ? { ...t, ...updates } : t))
+        );
+    };
+    const togglePage = (pageKey) => {
+        updateTab({ [pageKey]: !activeTabData[pageKey] });
+    };
+    useEffect(() => {
+        const active = tabs.find((t) => t.id === activeTab);
+        if (active) {
+            props.setTlcAskAiPayload(active.tlcAskAiPayload || "");
+            props.setTlcAskAiHistoryPayload(active.tlcAskAiHistoryPayload || "");
+        }
+    }, [activeTab, tabs]);
+    const EMAIL_STATE_MAP = {
+        "molley@tenderlovingcaredisability.com.au": [
+            "South Australia",
+            "Queensland",
+        ],
+
+        "ilaurente@tenderlovingcaredisability.com.au": [
+            "Victoria",
+            "Queensland",
+        ],
+
+        "kbrennen@tenderlovingcaredisability.com.au": [
+            "New South Wales",
+        ],
+    };
+    const userEmail = props?.user?.email?.trim();
+    // const userEmail = "gjavier@tenderlovingcaredisability.com.au";
+    // const userEmail = "bastruc@tenderlovingcaredisability.com.au";
+    // const userEmail = "mtalukder@tenderlovingcaredisability.com.au";
+    const RESTRICTED_USERS = [
+        "jballares@tenderlovingcaredisability.com.au",
+        "iaquino@tenderlovingcaredisability.com.au",
+        "kperu@tenderlovingcaredisability.com.au",
+        "mboutros@tenderlovingcaredisability.com.au",
+        "rjodeh@tenderlovingcaredisability.com.au",
+        "ryounes@tenderlovingcaredisability.com.au",
+        "stickner@tenderlovingcaredisability.com.au"
+    ];
+
+    const isRestrictedUser = RESTRICTED_USERS.includes(
+        (userEmail || "").toLowerCase()
+    );
+    const setTlcPayrollAskAiConversationHistory = props.setTlcPayrollAskAiConversationHistory; // ✅ NEW
+    const tlcPayrollAskAiConversationHistory = props.tlcPayrollAskAiConversationHistory; // ✅ NEW
+    const userStates = EMAIL_STATE_MAP[userEmail] || [];
+    const handleNewTab = () => {
+        const newId = tabs.length ? Math.max(...tabs.map((t) => t.id)) + 1 : 1;
+        const newTab = {
+            id: newId,
+            name: `Tab ${newId}`,
+            startDate: null,
+            endDate: null,
+            selectedState: [],
+            selectedDepartment: [],
+            selectedRole: [],
+            selectedEmploymentType: [],
+            fileNames: { payroll: [], people: [], employee: [] },
+            stage: "filters",
+            analysisData: null,
+            error: null,
+            currentPage: 1,
+            viewingHistory: false,
+            showReport: false,
+            aiReport: null,
+            aiLoading: false,
+            loading: false,
+            uploading: false,
+            progressStage: "idle",
+            tlcAskAiPayload: null,
+            tlcAskAiHistoryPayload: null,
+            page1: false,
+            page2: false,
+            page3: false,
+            page4: false,
+            aiAccordion: false,
+            whoAreYou: "NDIS",
+            headerRole: "",
+            syncEnabled: false,
+            dateOpen: false,
+            aiProgress: 0,
+            exporting: false,
+            tlcPayrollAskAiConversationHistory: [],
+            isFromHistory: false,
+        };
+        setTabs((prev) => [...prev, newTab]);
+        setActiveTab(newId);
+    };
+
+    const handleCloseTab = (id) => {
+        // console.log("Closing tab:", id);
+        const remainingTabs = tabs.filter((t) => t.id !== id);
+        setTabs(remainingTabs);
+        if (id === activeTab && remainingTabs.length > 0) {
+            setActiveTab(remainingTabs[0].id);
+        }
+    };
+    // Sync history when loading from history
+    useEffect(() => {
+        if (activeTabData?.isFromHistory) {
+            // Clear conversation history when loading from history
+            if (setTlcPayrollAskAiConversationHistory) {
+                setTlcPayrollAskAiConversationHistory([]);
+            }
+        }
+    }, [activeTabData?.isFromHistory, setTlcPayrollAskAiConversationHistory]);
+    // ------------------------------------------------------------
+
+    // -------------------- BASE STATES --------------------
+    const [historyList, setHistoryList] = useState([]);
+    const [loadingHistory, setLoadingHistory] = useState(false);
+    const [saving, setSaving] = useState(false);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [selectedHistoryId, setSelectedHistoryId] = useState(null);
+    const [deleting, setDeleting] = useState(false);
+    const [isAllowed, setIsAllowed] = useState(null);
+    const reportRef = useRef(null);
+    // Add this state near your other state declarations
+    const [searchQuery, setSearchQuery] = useState("");
+    const [searching, setSearching] = useState(false);
+    const [filteredHistoryList, setFilteredHistoryList] = useState([]);
+    const [searchMode, setSearchMode] = useState(false); // To track if we're in search mode
+
+    // Add this function to handle search
+    const BASE_URL = "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net";
+    // const BASE_URL = "http://localhost:5000";    
+    const handleSearch = async () => {
+        if (!searchQuery.trim()) {
+            setSearchMode(false);
+            setFilteredHistoryList([]);
+            return;
+        }
+
+        setSearching(true);
+        try {
+            const response = await fetch(`${BASE_URL}/searchParse`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ query: searchQuery }),
+            });
+
+            const result = await response.json();
+
+            if (!response.ok || !result.success) {
+                throw new Error(result.error || "Search failed");
+            }
+
+            const parsedRanges = result.data;
+            console.log("Parsed search ranges:", parsedRanges);
+
+            if (!parsedRanges || parsedRanges.length === 0) {
+                setFilteredHistoryList([]);
+                setSearchMode(true);
+                return;
+            }
+
+            // console.log("historyList", historyList);
+
+            // ✅ FIXED: Get filters from the correct location
+            const filtered = historyList.filter(historyItem => {
+                // Try multiple possible locations for filters
+                const filters = historyItem.analysisResult?.filters || historyItem.filters || {};
+                const { start, end, state } = filters;
+                console.log(`Checking history item`, start, end, state);
+                if (!start || !end) return false;
+
+                const historyStart = new Date(start);
+                const historyEnd = new Date(end);
+
+                return parsedRanges.some(range => {
+                    let matches = true;
+
+                    if (range.Start && range.End) {
+                        const rangeStart = new Date(range.Start);
+                        const rangeEnd = new Date(range.End);
+
+                        // Check for ANY overlap between the two date ranges
+                        console.log("history start", historyStart)
+                        console.log("history end", historyEnd)
+                        console.log("range start", rangeStart)
+                        console.log("range end", rangeEnd)
+
+
+                        const datesMatch = !(
+                            historyEnd < rangeStart ||
+                            historyStart > rangeEnd
+                        );
+                        console.log("Dates match?", datesMatch);
+                        if (!datesMatch) matches = false;
+                    }
+
+                    //STATE FILTER - handle empty states properly
+                    if (range.State && range.State.trim() !== "") {
+                        if (!state || state.trim() === "") {
+                            matches = false;
+                        } else {
+                            const rangeStateLower = range.State.toLowerCase();
+                            const historyStateLower = state.toLowerCase();
+
+                            // Check if the history state contains the search state
+                            // or if it's an exact match (depending on your needs)
+                            if (!historyStateLower.includes(rangeStateLower) &&
+                                historyStateLower !== rangeStateLower) {
+                                matches = false;
+                            }
+                        }
+                    }
+
+                    return matches;
+                });
+            });
+
+            console.log(`Found ${filtered.length} matching history items`);
+            console.log("Filtered items:", filtered); // Debug: see what matched
+            setFilteredHistoryList(filtered);
+            setSearchMode(true);
+
+        } catch (err) {
+            console.error("❌ Search error:", err);
+            alert("Search failed: " + err.message);
+            setSearchMode(false);
+            setFilteredHistoryList([]);
+        } finally {
+            setSearching(false);
+        }
+    };
+
+    // Add debounced search (optional but recommended)
+    useEffect(() => {
+        const delayDebounce = setTimeout(() => {
+            if (searchQuery.trim()) {
+                handleSearch();
+            } else {
+                setSearchMode(false);
+                setFilteredHistoryList([]);
+            }
+        }, 500); // Wait 500ms after user stops typing
+
+        return () => clearTimeout(delayDebounce);
+    }, [searchQuery]);
+
+    // Modify the history section rendering to use filtered list when in search mode
+    const displayHistoryList = searchMode ? filteredHistoryList : historyList;
+
+    // Update the history section JSX (replace the existing history container JSX)
+    const optionsState = [
+        { label: "New South Wales", value: "New South Wales" },
+        { label: "Victoria", value: "Victoria" },
+        { label: "Queensland", value: "Queensland" },
+        { label: "Western Australia", value: "Western Australia" },
+        { label: "South Australia", value: "South Australia" },
+        { label: "Tasmania", value: "Tasmania" },
+    ];
+
+    const optionsDepartment = [
+        { label: "ACAC", value: "ACAC" },
+        { label: "AUGU", value: "AUGU" },
+        // { label: "AUS Chief Executive Officer", value: "AUS Chief Executive Officer" },
+        { label: "Accommodation", value: "Accommodation" },
+        { label: "Allied Health", value: "Allied Health" },
+        { label: "Behaviour", value: "Behaviour" },
+        { label: "Customer Care", value: "Customer Care" },
+        { label: "DS - WERR", value: "DS - WERR" },
+        { label: "Day Program", value: "Day Program" },
+        // { label: "Finance", value: "Finance" },
+        // { label: "Global Chief Executive Officer", value: "Global Chief Executive Officer" },
+        // { label: "Growth and Marketing", value: "Growth and Marketing" },
+        { label: "HUB - Central Coast", value: "HUB - Central Coast" },
+        { label: "Hub - Bankstown", value: "Hub - Bankstown" },
+        { label: "Inactive", value: "Inactive" },
+        // { label: "Information Communications and Technology", value: "Information Communications and Technology" },
+        { label: "MAC", value: "MAC" },
+        { label: "MayeFoodz", value: "MayeFoodz" },
+        { label: "NDIS", value: "NDIS" },
+        { label: "OT", value: "OT" },
+        { label: "Operations", value: "Operations" },
+        { label: "PHYSIO", value: "PHYSIO" },
+        { label: "PSYCH", value: "PSYCH" },
+        // { label: "People and Culture", value: "People and Culture" },
+        // { label: "Quality and Safeguards", value: "Quality and Safeguards" },
+        { label: "Scheduling", value: "Scheduling" },
+        { label: "Speech", value: "Speech" },
+        { label: "Support Coordination", value: "Support Coordination" },
+        { label: "Travel", value: "Travel" },
+    ];
+
+    const optionsRole = [
+        { label: "Admin Assistant", value: "Admin Assistant" },
+        { label: "Area Manager", value: "Area Manager" },
+        { label: "Behaviour Support Practitioner", value: "Behaviour Support Practitioner" },
+        { label: "Business Development Manager", value: "Business Development Manager" },
+        { label: "CEO - Australian Operations", value: "CEO - Australian Operations" },
+        { label: "Customer Care Coordinator", value: "Customer Care Coordinator" },
+        { label: "Customer Care Manager", value: "Customer Care Manager" },
+        { label: "Customer Care Specialist", value: "Customer Care Specialist" },
+        { label: "Day Program Coordinator", value: "Day Program Coordinator" },
+        { label: "Direct Service Coordinator", value: "Direct Service Coordinator" },
+        { label: "Direct Services Manager", value: "Direct Services Manager" },
+        { label: "Domestic Assistant", value: "Domestic Assistant" },
+        { label: "Group Chief Executive Officer", value: "Group Chief Executive Officer" },
+        { label: "House Lead", value: "House Lead" },
+        { label: "National Business Development Manager", value: "National Business Development Manager" },
+        { label: "Physiotherapist", value: "Physiotherapist" },
+        { label: "Program Manager", value: "Program Manager" },
+        { label: "Quality & Safeguarding Officer", value: "Quality & Safeguarding Officer" },
+        { label: "Quality Coordinator", value: "Quality Coordinator" },
+        { label: "SIL Intake Coordinator", value: "SIL Intake Coordinator" },
+        { label: "Senior Support Coordinator", value: "Senior Support Coordinator" },
+        { label: "State Manager", value: "State Manager" },
+        { label: "Support Coordinator", value: "Support Coordinator" },
+        { label: "Support Coordinator Team Leader", value: "Support Coordinator Team Leader" },
+        { label: "Support Worker", value: "Support Worker" },
+        { label: "Team Leader", value: "Team Leader" },
+    ];
+
+    const optionsType = [
+        { label: "Casual", value: "Casual" },
+        { label: "Full Time", value: "Full Time" },
+        { label: "Part Time", value: "Part Time" },
+    ];
+    const formatTabDate = (start, end) => {
+        if (!start || !end) return null;
+        return `${start.toLocaleDateString("en-US")} - ${end.toLocaleDateString("en-US")}`;
+    };
+    const formatDMY = (date) => {
+        if (!date) return "";
+        const d = date.getDate();
+        const m = date.getMonth() + 1;
+        const y = date.getFullYear();
+        return `${d}-${m}-${y}`;
+    };
+
+    // ✅ ADD THIS AT THE BOTTOM
+    const buildMarkdownDocxContent = (markdown) => {
+        if (!markdown) return [];
+
+        return [
+            new Paragraph({
+                text: "AI Summary Report",
+                heading: HeadingLevel.HEADING_1,
+                spacing: { after: 300 },
+            }),
+            ...parseMarkdownToDocx(markdown),
+        ];
+    };
+
+    const waitForChartToRender = async (node, timeout = 4000) => {
+        const start = Date.now();
+
+        while (Date.now() - start < timeout) {
+            if (node.querySelector("svg") || node.querySelector("canvas")) {
+                return;
+            }
+            await new Promise(r => setTimeout(r, 200));
+        }
+
+        console.warn("⚠️ Chart render timeout");
+    };
+
+    const captureNode = async (node) => {
+        await waitForChartToRender(node);
+
+        const canvas = await html2canvas(node, {
+            scale: 1.25,
+            backgroundColor: "#ffffff",
+            useCORS: true,
+            foreignObjectRendering: false,
+        });
+
+        return {
+            data: Uint8Array.from(
+                atob(canvas.toDataURL("image/png").split(",")[1]),
+                c => c.charCodeAt(0)
+            ),
+            width: canvas.width,
+            height: canvas.height,
+        };
+    };
+
+
+    const handleDownloadWordReport = async () => {
+        const prevAccordionState = {
+            aiAccordion: activeTabData.aiAccordion,
+            page1: activeTabData.page1,
+            page2: activeTabData.page2,
+            page3: activeTabData.page3,
+            page4: activeTabData.page4,
+        };
+        updateTab({ exporting: true });
+        // 🔓 Force open all accordions before capture
+
+
+        updateTab({
+            aiAccordion: true,
+            page1: true,
+            page2: true,
+            page3: true,
+            page4: true,
+        });
+
+        // 🧠 DOM ko render hone ka time do
+        await new Promise(r => setTimeout(r, 600));
+        if (!reportRef.current) {
+            updateTab({ exporting: false });
+            return;
+        }
+
+        const children = [];
+
+        /* ================= TITLE ================= */
+        children.push(
+            new Paragraph({
+                text: "Payroll Analysis Report",
+                heading: HeadingLevel.TITLE,
+                spacing: { after: 400 },
+            })
+        );
+
+        children.push(
+            new Paragraph({
+                text: `Date Range: ${formatDateRange()}`,
+                spacing: { after: 300 },
+            })
+        );
+
+        /* ================= AI MARKDOWN (USING TlcAiWordExporter) ================= */
+        if (activeTabData.aiReport) {
+            children.push(...buildMarkdownDocxContent(activeTabData.aiReport));
+        }
+
+        /* ================= DASHBOARD ================= */
+        /* ================= AI INSIGHT ================= */
+        if (activeTabData.aiReport) {
+            children.push(...buildMarkdownDocxContent(activeTabData.aiReport));
+        }
+
+        await addSectionWithGraphsToWord({
+            title: `AI Insight (${formatDateRange()})`,
+            sectionKey: "ai-insight",
+            children,
+            reportRoot: reportRef.current,
+            captureNode,
+        });
+
+        await addSectionWithGraphsToWord({
+            title: `Payroll Overview (${formatDateRange()})`,
+            sectionKey: "payroll-overview",
+            children,
+            reportRoot: reportRef.current,
+            captureNode,
+        });
+
+        await addSectionWithGraphsToWord({
+            title: `Detailed Breakdown (${formatDateRange()})`,
+            sectionKey: "detailed-breakdown",
+            children,
+            reportRoot: reportRef.current,
+            captureNode,
+        });
+
+        await addSectionWithGraphsToWord({
+            title: `Leave and absence (${formatDateRange()})`,
+            sectionKey: "leave-absence",
+            children,
+            reportRoot: reportRef.current,
+            captureNode,
+        });
+
+        // await addSectionWithGraphsToWord({
+        //     title: `Payroll Comparison (${formatDateRange()})`,
+        //     sectionKey: "payroll-comparison",
+        //     children,
+        //     reportRoot: reportRef.current,
+        //     captureNode,
+        //     displayedHtmlArray
+        // });
+
+
+        /* ================= CREATE ONE WORD FILE ================= */
+        const doc = new Document({
+            sections: [{ children }],
+        });
+
+        const blob = await Packer.toBlob(doc);
+        saveAs(blob, `Payroll_Report_${formatDateRange()}.docx`);
+        try {
+            console.log("Starting excel export request");
+
+            const excelRes = await fetch(`${BASE_URL}/api/export-html-excel`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    displayedHtmlArray,
+                }),
+            });
+
+            const excelData = await excelRes.json();
+
+            if (!excelRes.ok || !excelData.success) {
+                throw new Error(excelData.message || "Excel export failed");
+            }
+
+            console.log("Excel response received");
+
+            const link = document.createElement("a");
+            link.href = excelData.excelDownloadBlob;
+            link.download = `Payroll_Report_${formatDateRange()}.xlsx`;
+
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            console.log("Excel downloaded successfully");
+
+        } catch (error) {
+            console.error("Excel download failed:", error);
+        }
+        updateTab({
+            exporting: false,
+            ...prevAccordionState,
+        });
+    };
+
+
+    const handleFileChange = (e, type) => {
+        const files = Array.from(e.target.files);
+        if (files.length === 0) return;
+
+        // ✅ Validate file names
+        const validFiles = files.filter((file) => {
+            const name = file.name
+                .toLowerCase()
+                .replace(/[_-]/g, " ")
+                .replace(/\s+/g, " ");
+
+            return (
+                name.includes("pay journal") ||
+                name.includes("people team members") ||
+                name.includes("employeeupdate")
+            );
+        });
+
+        if (validFiles.length === 0) {
+            alert(`⚠️ Invalid file uploaded in ${type.toUpperCase()} section.`)
+            e.target.value = "";
+            return;
+        }
+
+        // ✅ Save both file names and actual file objects
+        // ✅ Append new files instead of replacing
+        const existingNames = activeTabData.fileNames[type] || [];
+        const existingFiles = activeTabData[`${type}Files`] || [];
+
+        updateTab({
+            fileNames: {
+                ...activeTabData.fileNames,
+                [type]: [...existingNames, ...validFiles.map((f) => f.name)],
+            },
+            [`${type}Files`]: [...existingFiles, ...validFiles],
+        });
+
+
+        // console.log(`Selected ${type} files:`, validFiles.map((f) => f.name));
+
+        // Allow reselecting same file
+        e.target.value = "";
+    };
+
+    const handleAnalyse = async () => {
+        if (!activeTabData) return;
+
+        const {
+            startDate,
+            endDate,
+            selectedState,
+            selectedDepartment,
+            selectedRole,
+            selectedEmploymentType,
+            fileNames,
+        } = activeTabData;
+
+        // ✅ Basic check for date range
+        if (!startDate || !endDate) {
+            alert("Please select a date range first!");
+            return;
+        }
+        if (userStates.length > 0 && selectedState.length > 0) {
+            const selectedStates = selectedState.map((s) => s.value);
+
+            const isInvalid = selectedStates.some(
+                (state) =>
+                    !userStates.some(
+                        (allowed) =>
+                            allowed.toLowerCase() === state.toLowerCase()
+                    )
+            );
+
+            if (isInvalid) {
+                alert(`You are allowed to analyse only: ${userStates.join(", ")}`);
+                return;
+            }
+        }
+        try {
+            updateTab({
+                loading: true,
+                showReport: false,
+                stage: "loading",
+                error: null,
+                uploading: true,
+                progressStage: "uploading",
+            });
+            // console.log("Starting analysis process for tab:", activeTab);
+
+            // -------------------------------
+            // STEP 1️: VALIDATE FILE UPLOADS
+            // -------------------------------
+            const inputs = ["payroll", "people", "employee"].map((type) => ({
+                type,
+                files: activeTabData[`${type}Files`] || [],
+            }));
+
+            const hasAnyFile = inputs.some((set) => set.files.length > 0);
+
+            if (hasAnyFile) {
+                lastManualWithFilesRef.current = true;
+                console.log("Upload path selected — validating uploaded files...");
+
+                const invalidUploads = [];
+
+                // Validate each file section
+                // for (const input of inputs) {
+                //     const { type, files } = input;
+                //     if (!files.length) {
+                //         invalidUploads.push(`❌ Missing file(s) for ${type.toUpperCase()}`);
+                //         continue;
+                //     }
+
+                //     const invalidFiles = files.filter((file) => {
+                //         const name = file.name.toLowerCase();
+                //         if (type === "payroll" && !name.includes("pay journal")) return true;
+                //         if (type === "people" && !name.includes("people - team members")) return true;
+                //         if (type === "employee" && !name.includes("employeeupdate")) return true;
+                //         return false;
+                //     });
+
+                //     if (invalidFiles.length > 0) {
+                //         invalidUploads.push(
+                //             `⚠️ Incorrect file(s) in ${type.toUpperCase()} section: ${invalidFiles
+                //                 .map((f) => f.name)
+                //                 .join(", ")}`
+                //         );
+                //     }
+                // }
+
+
+                // ✅ Check if all 3 sections have files
+                const allTypesUploaded = inputs.every(
+                    (input) => input && input.files && input.files.length > 0
+                );
+
+                if (invalidUploads.length > 0) {
+                    updateTab({ loading: false, stage: "filters" });
+
+                    let message = "⚠️ Please correct the following before analysing:\n\n";
+                    if (invalidUploads.length > 0)
+                        message += "\n" + invalidUploads.join("\n");
+
+                    alert(message);
+                    return;
+                }
+
+                // If everything is valid, upload first
+                console.log("All uploaded files are valid. Uploading before analysis...");
+                try {
+                    updateTab({ uploading: true, progressStage: "uploading" });
+                    const formData = new FormData();
+                    inputs.forEach((input) => {
+                        Array.from(input.files).forEach((file) => formData.append("files", file));
+                    });
+
+                    const uploadRes = await fetch(
+                        `${BASE_URL}/payroll/upload-latest`,
+                        { method: "POST", body: formData }
+                    );
+
+                    const uploadData = await uploadRes.json();
+
+                    if (!uploadRes.ok) {
+                        throw new Error(uploadData.error || "File upload failed.");
+                    }
+
+                    console.log("Files uploaded successfully before analysis.");
+                    updateTab({ progressStage: "analysing" });
+                } catch (uploadErr) {
+                    console.error("❌ Upload failed:", uploadErr);
+                    alert("Some files failed to upload. Continuing with existing data...");
+                } finally {
+                    updateTab({ uploading: false });
+                }
+            } else {
+                lastManualWithFilesRef.current = false;
+                updateTab({ progressStage: "analysing" });
+                console.log("No files selected. Proceeding with existing database data...");
+            }
+
+            // -------------------------------
+            // STEP 2️: RUN ANALYSIS API
+            // -------------------------------
+            const formatToDMY = (date) => {
+                const d = String(date.getDate()).padStart(2, "0");
+                const m = String(date.getMonth() + 1).padStart(2, "0");
+                const y = date.getFullYear();
+                return `${d}-${m}-${y}`;
+            };
+
+            const startFormatted = `${startDate.getDate()}-${startDate.getMonth() + 1}-${startDate.getFullYear()}`;
+            const endFormatted = `${endDate.getDate()}-${endDate.getMonth() + 1}-${endDate.getFullYear()}`;
+
+            // console.log("Start Date:", startFormatted);
+            // console.log("End Date:", endFormatted);
+
+            const query = new URLSearchParams({
+                start: startFormatted,
+                end: endFormatted,
+            });
+
+            let finalStates = [];
+
+            if (selectedState.length > 0) {
+                finalStates = selectedState.map((s) => s.value);
+            } else if (userStates.length > 0) {
+                finalStates = userStates;
+
+                updateTab({
+                    selectedState: userStates.map((state) => ({
+                        label: state,
+                        value: state,
+                    })),
+                });
+            }
+
+            if (finalStates.length) {
+                query.append("state", finalStates.join(","));
+            }
+            if (selectedDepartment.length)
+                query.append("department", selectedDepartment.map((d) => d.value).join(","));
+            if (selectedEmploymentType.length)
+                query.append("employmentType", selectedEmploymentType.map((e) => e.value).join(","));
+            if (selectedRole.length)
+                query.append("role", selectedRole.map((r) => r.value).join(","));
+
+            query.append("userEmail", userEmail);
+
+
+            let analyzeData;
+
+            if (USE_DUMMY_DATA) {
+                console.log("Using dummy payroll data");
+                analyzeData = {
+                    payload: dummyPayload,
+                    analysisResult: dummyData.analysisResult,
+                };
+            } else {
+                if (isAllowed) {
+                    // 🔵 TLC FLOW (GET + query params)
+                    const url = `${BASE_URL}/payroll/filter?${query.toString()}`;
+                    // console.log("TLC API URL:", url);
+
+                    const analyzeRes = await fetch(url);
+                    analyzeData = await analyzeRes.json();
+
+                } else {
+                    // 🟢 NORMAL PAYROLL FLOW (POST body)
+                    const url = `${BASE_URL}/api/normal-payroll/analyze`;
+                    // console.log("Normal Payroll API URL:", url);
+
+                    const futureEndDate = new Date("2099-12-31T23:59:59Z");
+
+                    const bodyPayload = {
+                        userEmail,
+                        dateRange: {
+                            from: formatToISO(startDate),
+                            to: formatToISO(endDate, true),
+                        },
+                    };
+
+                    // console.log("Normal Payroll Payload:", bodyPayload);
+
+                    const analyzeRes = await fetch(url, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify(bodyPayload),
+                    });
+
+                    analyzeData = await analyzeRes.json();
+
+                    // ⚠️ Important: Normal API returns { ok, report }
+                    analyzeData = {
+                        payload: null,
+                        analysisResult: analyzeData.report
+                    };
+                }
+
+                console.log("Analysis API response:", analyzeData);
+            }
+
+            // console.log("analyzeData.payload", analyzeData.payload)
+            updateTab({ tlcAskAiPayload: analyzeData.payload });
+            if (tabs.find(t => t.id === activeTab)) {
+                props.setTlcAskAiPayload(analyzeData.payload);
+            }
+
+            // 🧩 Handle invalid date range
+            if (analyzeData.message && analyzeData.message.includes("Invalid date range")) {
+                alert("⚠️ Invalid date range selected. Please choose correct start and end dates.");
+                updateTab({ loading: false, uploading: false, stage: "filters", progressStage: "idle" });
+                return;
+            }
+
+            // 🧩 Handle no data found
+            if (analyzeData.analysisResult?.message === "No data found for given filters.") {
+                alert("⚠️ No data found for the selected filters. Please adjust your filters and try again.");
+                updateTab({ loading: false, uploading: false, stage: "filters", progressStage: "idle" });
+                return;
+            }
+            if (!analyzeData.analysisResult) {
+                throw new Error(analyzeData.error || "Analysis failed. No valid response received.");
+            }
+            updateTab({ progressStage: "preparing" });
+            await new Promise(resolve => setTimeout(resolve, 800));
+            console.log("Analysis data received successfully.");
+            justRanManualAnalysisRef.current = true;
+            updateTab({
+                analysisData: { ...analyzeData.analysisResult, payload: analyzeData.payload },
+                stage: "overview",
+                loading: false,
+                uploading: false,
+                progressStage: "idle",
+                // name: formatDateRange()
+                name: `${startDate.getDate()}-${startDate.getMonth() + 1}-${startDate.getFullYear()} - ${endDate.getDate()}-${endDate.getMonth() + 1}-${endDate.getFullYear()}`,
+                aiReport: null,
+                aiLoading: false,
+                showReport: false,
+                aiProgress: 0,
+            });
+            try {
+                if (userEmail) {
+                    await incrementCareVoiceAnalysisCount(userEmail, "ai-analysis", analyzeData?.analysisResult?.llm_cost?.total_usd,"payroll-analysis",analyzeData?.analysisResult?.llm_cost?.token_usage);
+                } else {
+                    console.warn("⚠️ User email missing — skipping count increment");
+                }
+            } catch (err) {
+                console.error("❌ Failed to increment count:", err.message);
+            }
+            lastManualWithFilesRef.current = false;
+        } catch (err) {
+            console.error("❌ Error in handleAnalyse:", err);
+            updateTab({ error: err.message, stage: "filters" });
+            alert("Something went wrong: " + err.message);
+        } finally {
+            updateTab({ loading: false, uploading: false });
+            setTimeout(() => updateTab({ progressStage: "idle" }), 800);
+        }
+    };
+
+    const { startDate, endDate, selectedState, selectedDepartment, selectedRole, selectedEmploymentType } = activeTabData;
+    const hasFiltersFieldChanged = [
+        startDate,
+        endDate,
+        selectedState?.length,
+        selectedDepartment?.length,
+        selectedRole?.length,
+        selectedEmploymentType?.length,
+    ].some(Boolean);
+
+
+    // 🧠 Auto-run analysis logic (final stable version)
+    const lastAnalysisKeyRef = useRef("");
+    const lastManualWithFilesRef = useRef(false);
+    const justRanManualAnalysisRef = useRef(false);
+
+    // 🧩 Reset "isFromHistory" when user edits any filters or date
+    useEffect(() => {
+        if (!activeTabData) return;
+
+        const { isFromHistory, analysisData, startDate, endDate, selectedState, selectedDepartment, selectedRole, selectedEmploymentType } = activeTabData;
+
+        // Run only if it's a history-loaded record AND analysis exists
+        if (!isFromHistory || !analysisData) return;
+
+        const hasFiltersChanged = [
+            startDate,
+            endDate,
+            selectedState?.length,
+            selectedDepartment?.length,
+            selectedRole?.length,
+            selectedEmploymentType?.length,
+        ].some(Boolean);
+
+        // If user modifies any filter/date, allow saving again
+        if (hasFiltersChanged) {
+            updateTab({ isFromHistory: false });
+        }
+    }, [
+        activeTabData?.startDate,
+        activeTabData?.endDate,
+        activeTabData?.selectedState,
+        activeTabData?.selectedDepartment,
+        activeTabData?.selectedRole,
+        activeTabData?.selectedEmploymentType,
+    ]);
+    useEffect(() => {
+
+        if (!userEmail) {
+            setIsAllowed(false);
+            return;
+        }
+
+        const allowedDomains = [
+            "tenderlovingcaredisability.com.au",
+            "tenderlovingcare.com.au",
+            "curki.ai",
+            "careait.com"
+        ];
+
+        const userDomain = userEmail.split("@")[1];
+
+        setIsAllowed(allowedDomains.includes(userDomain));
+    }, [props.user]);
+    const formatToISO = (date, endOfDay = false) => {
+        const d = new Date(date);
+
+        if (endOfDay) {
+            d.setHours(23, 59, 59, 999);
+        } else {
+            d.setHours(0, 0, 0, 0);
+        }
+
+        return d.toISOString();
+    };
+    // -------------------- SAVE HANDLER --------------------
+    const handleSaveToDatabase = async () => {
+        if (!activeTabData) return;
+
+
+        // ✅ If loaded from history, block saving again
+        if (activeTabData.isFromHistory) {
+            alert("⚠️ This analysis is already saved in the history list.");
+            return;
+        }
+
+        // ✅ Also check if already saved in this session
+        if (activeTabData.analysisData?.savedToHistory) {
+            alert("⚠️ This analysis has already been saved.");
+            return;
+        }
+
+        const { analysisData, startDate, endDate, selectedState, selectedDepartment, selectedRole, selectedEmploymentType } = activeTabData;
+
+        if (!analysisData) {
+            alert("No analysis data found. Please run an analysis first.");
+            return;
+        }
+
+        const email = userEmail
+        if (!email) {
+            alert("Email is missing — cannot save data.");
+            return;
+        }
+
+        setSaving(true);
+        try {
+            // console.log("Saving analysis data to database for tab:", activeTab);
+            // console.log("analysisData", analysisData)
+            const enrichedAnalysis = {
+                pages: analysisData?.pages,
+                scorecard: analysisData?.scorecard,
+                filters: {
+                    start: `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, "0")}-${String(startDate.getDate()).padStart(2, "0")}`,
+                    end: `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, "0")}-${String(endDate.getDate()).padStart(2, "0")}`,
+                    state: selectedState.map((s) => s.value).join(", "),
+                    department: selectedDepartment.map((d) => d.value).join(", "),
+                    role: selectedRole.map((r) => r.value).join(", "),
+                    employmentType: selectedEmploymentType.map((e) => e.value).join(", "),
+                },
+            };
+
+            // console.log("enrichedAnalysis", enrichedAnalysis)
+            const markdownReport = activeTabData.aiReport || activeTabData.analysisData?.report_md || "";
+
+            // console.log("markdown in save history", markdownReport)
+            const response = await fetch(
+                `${BASE_URL}/payroll/save`,
+                {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        analysisData: enrichedAnalysis,
+                        email,
+                        markdown: markdownReport
+                    }),
+                }
+            );
+
+            const result = await response.json();
+            if (!response.ok) {
+                console.error("❌ Failed to save:", result.error);
+                alert(`Error: ${result.error || "Failed to save data."}`);
+                return;
+            }
+
+            // console.log("Save response:", result);
+            alert("Analysis data saved successfully!");
+            updateTab({
+                isFromHistory: true,
+                analysisData: {
+                    ...activeTabData.analysisData,
+                    savedToHistory: true  // Add this flag
+                }
+            });
+
+            // instantly update history list
+            setHistoryList((prev) => [
+                {
+                    id: result?.id || Date.now(),
+                    filters: {
+                        start: `${startDate}`,
+                        end: `${endDate}`,
+                        state: selectedState.map((s) => s.value).join(", "),
+                    },
+                    createdAt: new Date().toISOString(),
+                },
+                ...prev,
+            ]);
+        } catch (err) {
+            console.error("❌ Error saving data:", err);
+            alert("Something went wrong while saving data.");
+        } finally {
+            setSaving(false);
+        }
+    };
+    const handleDeleteHistory = async () => {
+        if (!selectedHistoryId) return;
+
+        try {
+            setDeleting(true);
+            const res = await fetch(
+                `${BASE_URL}/deleteById`,
+                {
+                    method: "DELETE",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ id: selectedHistoryId }),
+                }
+            );
+
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || "Failed to delete history.");
+
+            // console.log("Deleted successfully:", data);
+            setHistoryList((prev) => prev.filter((item) => item.id !== selectedHistoryId));
+            setShowDeleteModal(false);
+            alert("✅ Deleted successfully!");
+        } catch (err) {
+            console.error("❌ Error deleting:", err);
+            alert("Failed to delete history: " + err.message);
+        } finally {
+            setDeleting(false);
+        }
+    };
+
+
+    // -------------------- HISTORY FETCH --------------------
+    useEffect(() => {
+        const fetchHistory = async () => {
+            if (!userEmail) return;
+            try {
+                setLoadingHistory(true);
+                const res = await fetch(`${BASE_URL}/payroll/history?email=${userEmail}`);
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || "Failed to fetch history");
+                const filteredHistory = userStates.length
+                    ? data.data.filter(item =>
+                        userStates.some(
+                            state =>
+                                item.filters?.state?.toLowerCase() === state.toLowerCase()
+                        )
+                    )
+                    : data.data;
+
+                setHistoryList(filteredHistory);
+            } catch (err) {
+                console.error("❌ Error fetching history:", err);
+            } finally {
+                setLoadingHistory(false);
+            }
+        };
+
+        fetchHistory();
+    }, [props.user]);
+
+    const handleAiAnalysis = async () => {
+        let aiProgressInterval;
+        if (activeTabData.aiReport || activeTabData.aiLoading) return;
+        if (!activeTabData?.analysisData) {
+            alert("Please run the regular analysis first.");
+            return;
+        }
+        if (USE_DUMMY_DATA) {
+            console.log("Using dummy AI markdown");
+
+            updateTab({
+                aiReport: dummyData?.reportMarkdown,
+                showReport: true,
+                aiLoading: false,
+            });
+
+            return; // ⛔ STOP HERE
+        }
+        // ✅ Step 1: Retrieve payload from props or analysisData
+        const aiPayload =
+            props.tlcAskAiPayload ||
+            activeTabData.analysisData?.payload ||
+            [];
+
+        // console.log("AI Payload ready to send:", aiPayload);
+
+        if (!aiPayload || aiPayload.length === 0) {
+            alert("No valid payload available for AI Analysis.");
+            return;
+        }
+
+        try {
+            // ✅ Step 2: Start loading
+            updateTab({ aiLoading: true, aiReport: null });
+            updateTab({ aiProgress: 5 });
+
+            let progress = 5;
+            aiProgressInterval = setInterval(() => {
+                progress += Math.random() * 6; // smooth fake increase
+                if (progress > 70) progress = 70;
+                updateTab({ aiProgress: Math.floor(progress) });
+            }, 600);
+            // console.log("Sending full payload to AI Analysis API...");
+            const requestPayload = {
+                ...(Array.isArray(aiPayload)
+                    ? { objects: aiPayload }
+                    : aiPayload),
+            };
+
+            // ✅ sandbox only for kris
+            if (userEmail === "kris@curki.ai") {
+                requestPayload.env = "sandbox";
+            }
+
+            // console.log("Final AI request payload", requestPayload);
+
+            const res = await fetch(
+                "https://curki-backend-api-container.yellowflower-c21bea82.australiaeast.azurecontainerapps.io/tlc/payroll/ai-analysis-report",
+                {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(requestPayload),
+                }
+            );
+
+            const data = await res.json();
+
+            if (!res.ok || !data.ok) {
+                throw new Error(data.error || "AI Analysis failed");
+            }
+
+            // ✅ Step 4: Save report into tab
+            clearInterval(aiProgressInterval);
+
+            updateTab({
+                aiReport: data?.report_md,
+                showReport: true,
+                aiLoading: false,
+                aiProgress: 100,
+            });
+            console.log("data in report",data)
+            try {
+                if (userEmail) {
+                    await incrementCareVoiceAnalysisCount(userEmail, "report-generation", data?.ai_analysis_cost,"payroll-analysis",data?.token_usage);
+                }
+            } catch (err) {
+                console.error("Error incrementing AI analysis count:", err);
+            }
+        } catch (err) {
+            clearInterval(aiProgressInterval);
+            console.error("❌ AI Analysis Error:", err);
+            alert("AI Analysis failed: " + err.message);
+            updateTab({ aiLoading: false, aiProgress: 0 });
+        }
+    };
+
+
+
+    // -------------------- HISTORY CLICK --------------------
+    const handleHistoryClick = async (item) => {
+        // console.log("Loading history item:", item);
+        try {
+            setHistoryLoading(true);
+            await new Promise(resolve => setTimeout(resolve, 50));
+            const res = await fetch(
+                `${BASE_URL}/getById/${item.id}`
+            );
+            const data = await res.json();
+            if (setTlcPayrollAskAiConversationHistory) {
+                setTlcPayrollAskAiConversationHistory([]);
+            }
+
+            updateTab({ tlcPayrollAskAiConversationHistory: [], tlcAskAiHistoryPayload: data.data.analysisResult });
+            if (tabs.find(t => t.id === activeTab)) {
+                props.setTlcAskAiHistoryPayload(data.data.analysisResult);
+            }
+
+            if (!res.ok) throw new Error(data.error || "Failed to fetch analysis");
+            const { start, end } = data.data.filters || {};
+
+            updateTab({
+                analysisData: {
+                    ...data.data.analysisResult,
+                    savedToHistory: true  // ✅ ADD THIS LINE
+                },
+                stage: "overview",
+                currentPage: 1,
+                isFromHistory: true,  // ✅ Keep this
+
+                startDate: start ? new Date(start) : null,
+                endDate: end ? new Date(end) : null,
+
+                name: start && end
+                    ? `${new Date(start).getDate()}-${new Date(start).getMonth() + 1}-${new Date(start).getFullYear()} - ${new Date(end).getDate()}-${new Date(end).getMonth() + 1}-${new Date(end).getFullYear()}`
+                    : "History",
+            });
+
+            if (data.data.reportMarkdown) {
+                updateTab({
+                    aiReport: data.data.reportMarkdown,
+                    showReport: true,
+                });
+            } else {
+                updateTab({
+                    aiReport: null,
+                    showReport: false,
+                });
+            }
+
+            updateTab({ viewingHistory: true });
+            setTimeout(() => {
+                if (pageRef.current) {
+                    pageRef.current.scrollTo({
+                        top: 0,
+                        behavior: "smooth",
+                    });
+                }
+            }, 100);
+            await incrementCareVoiceAnalysisCount(userEmail,"history-click",0,"payroll-analysis",0)
+        } catch (err) {
+            console.error("❌ Error loading analysis:", err);
+            alert("Failed to load analysis: " + err.message);
+        }
+        finally {
+            setHistoryLoading(false);
+        }
+    };
+
+
+    const formatDateRange = () => {
+        if (!activeTabData || !activeTabData.startDate || !activeTabData.endDate)
+            return "Selected Date Range";
+
+        const format = (date) =>
+            `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
+
+        return `${format(activeTabData.startDate)} - ${format(activeTabData.endDate)}`;
+    };
+
+
+    // -------------------- TAB BAR --------------------
+    const renderTabBar = () => (
+        <div className="tab-bar" style={{ display: "flex", gap: "10px", alignItems: "center", marginBottom: "16px", paddingTop: "16px" }}>
+            {tabs.map((tab) => (
+                <div
+                    key={tab.id}
+                    onClick={() => {
+                        setActiveTab(tab.id); props.setTlcAskAiPayload(tab.tlcAskAiPayload || "");
+                        props.setTlcAskAiHistoryPayload(tab.tlcAskAiHistoryPayload || "");
+                    }}
+                    style={{
+                        padding: "8px 16px",
+                        borderRadius: "8px",
+                        background: tab.id === activeTab ? "#6C4CDC" : "#f3f4f6",
+                        color: tab.id === activeTab ? "#fff" : "#000",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        fontSize: "14px",
+                        fontWeight: tab.id === activeTab ? 600 : 400,
+                        transition: "all 0.2s ease",
+                    }}
+                >
+                    {tab.name}
+                    {tabs.length > 1 && (
+                        <span
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                handleCloseTab(tab.id);
+                            }}
+                            style={{
+                                marginLeft: "4px",
+                                color: tab.id === activeTab ? "#ccc" : "#999",
+                                cursor: "pointer",
+                                fontWeight: "bold",
+                                fontSize: "18px",
+                            }}
+                        >
+                            ×
+                        </span>
+                    )}
+                </div>
+            ))}
+            <button
+                onClick={handleNewTab}
+                style={{
+                    background: "#e5e7eb",
+                    borderRadius: "8px",
+                    padding: "8px 14px",
+                    border: "none",
+                    cursor: "pointer",
+                    fontWeight: 600,
+                    fontSize: "14px",
+                    transition: "all 0.2s ease",
+                }}
+            >
+                + New Tab
+            </button>
+        </div>
+    );
+
+    if (!activeTabData) return null;
+
+    const AccordionHeader = ({
+        title,
+        isOpen,
+        onClick,
+        showInsightIcon = false,
+        showDownloadIcon = false,   // ✅ NEW
+        onDownload,
+        needMarginBottom
+    }) => (
+        <div
+            onClick={(e) => {
+                e.stopPropagation(); // ✅ Prevent event bubbling
+                onClick();
+            }}
+            style={{
+                padding: "14px 18px",
+                background: "linear-gradient(180deg, #6C4CDC -65.32%, #FFFFFF 157.07%, #FFFFFF 226.61%)",
+                borderRadius: "8px",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: "12px",
+                fontWeight: 600,
+                marginBottom: needMarginBottom ? "12px" : 0,
+                color: "black",
+            }}
+        >
+            {/* ⬇️ DOWN ARROW (LEFT) */}
+            <img
+                src={TlcPayrollDownArrow}
+                alt="Toggle"
+                style={{
+                    width: "18px",
+                    height: "10px",
+                    transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
+                    transition: "transform 0.2s ease",
+                    flexShrink: 0,
+                }}
+            />
+
+            {/* TEXT */}
+            <span>{title}</span>
+
+            {/* ✨ INSIGHT ICON (TEXT KE BAAD) */}
+            {showInsightIcon && (
+                <img
+                    src={TlcPayrollInsightIcon}
+                    alt="AI Insight"
+                    style={{
+                        width: "18px",
+                        height: "18px",
+                        marginLeft: "4px",
+                        flexShrink: 0,
+                    }}
+                />
+            )}
+        </div>
+    );
+
+
+    const DateRangeInput = React.forwardRef(
+        ({ startDate, endDate, isOpen, onClick }, ref) => {
+            const hasStart = startDate;
+            const hasEnd = endDate;
+
+
+            return (
+                <div
+                    className="custom-input"
+                    onClick={onClick}
+                    ref={ref}
+                    style={{
+                        height: 38,
+                        display: "flex",
+                        alignItems: "center",
+                        border: "1px solid #D1D5DB",
+                        borderRadius: "8px",
+                        paddingLeft: "36px",
+                        paddingRight: "36px",
+                        cursor: "pointer",
+                        background: "#fff",
+                        fontFamily: "Inter",
+                        position: "relative",
+                        minWidth: 220,
+                    }}
+                >
+                    {/* LEFT ICON */}
+                    <img
+                        src={TlcPayrollDateFilterIcon}
+                        alt="date"
+                        style={{
+                            position: "absolute",
+                            left: "10px",
+                            width: "16px",
+                            height: "16px",
+                            pointerEvents: "none",
+                        }}
+                    />
+
+                    {/* TEXT */}
+                    <span
+                        style={{
+                            fontSize: "13px",
+                            color: hasStart ? "#111827" : "#9CA3AF",
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                        }}
+                    >
+                        {!hasStart && "Select Date Range"}
+                        {hasStart && !hasEnd && formatDMY(startDate)}
+                        {hasStart && hasEnd &&
+                            `${formatDMY(startDate)} - ${formatDMY(endDate)}`
+                        }
+                    </span>
+
+                    {/* RIGHT ARROW */}
+                    <img
+                        src={TlcPayrollRoleDownArrowIcon}
+                        alt="arrow"
+                        style={{
+                            position: "absolute",
+                            right: "10px",
+                            width: "12px",
+                            height: "7px",
+                            pointerEvents: "none",
+                            transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
+                            transition: "transform 0.2s ease",
+                        }}
+                    />
+                </div>
+            );
+        }
+    );
+    const isAnyAccordionOpen =
+        activeTabData.aiAccordion ||
+        activeTabData.page1 ||
+        activeTabData.page2 ||
+        activeTabData.page3 ||
+        activeTabData.page4;
+
+    const downloadWord = TlcAiWordExporter({
+        markdown: activeTabData.aiReport,
+        fileName: `AI_Summary_${formatDateRange()?.replace(/\s+/g, "_")}`,
+    });
+
+    // console.log("Rendering TlcNewCustomReporting with activeTabData:", activeTabData);
+
+
+    if (activeTabData?.analysisData?.pages) {
+        const pages = activeTabData.analysisData.pages;
+
+        // Page 1
+        if (pages["page 1"]?.table) {
+            displayedHtmlArray.push(pages["page 1"].table);
+        }
+
+        // Page 2
+        (pages["page 2"]?.figures || []).forEach((html, index) => {
+            if (index === 1) {
+                displayedHtmlArray.push(html);
+            }
+        });
+
+        // Page 3
+        (pages["page 3"]?.figures || []).forEach((html, index) => {
+            if (index === 2) {
+                displayedHtmlArray.push(html);
+            }
+        });
+
+        // Page 4
+        if (pages["page 4"]?.table) {
+            displayedHtmlArray.push(pages["page 4"].table);
+        }
+    }
+    // console.log("displayedHtmlArray:", displayedHtmlArray);
+    if (isRestrictedUser) {
+        return (
+            <div style={{
+                textAlign: "center",
+                padding: "120px 20px",
+                fontFamily: "Inter, sans-serif",
+                color: "#1f2937"
+            }}>
+                {/* <img
+                    src={TlcLogo}
+                    alt="Access Denied"
+                    style={{ width: "80px", opacity: 0.8, marginBottom: "20px" }}
+                /> */}
+
+                <h2 style={{ fontSize: "24px", marginBottom: "12px", color: "#6C4CDC" }}>
+                    Access Restricted 🚫
+                </h2>
+
+                <p style={{ fontSize: "16px", color: "#555" }}>
+                    Sorry, your account (<strong>{userEmail}</strong>)
+                    is not authorized to view this page.
+                </p>
+            </div>
+        );
+    }
+    return (
+        <div className="page-containersss" ref={pageRef}>
+            {historyLoading && (
+                <div className="full-screen-loader">
+                    <div className="history-loader"></div>
+                </div>
+            )}
+            <div className="headerss">
+                <div
+                    style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        padding: "12px 20px",
+                        borderBottom: "1px solid #E5E7EB",
+                        fontFamily: "Inter",
+                        background: "#fff",
+                    }}
+                >
+                    {/* LEFT SIDE */}
+                    <div style={{ display: "flex", alignItems: "center", gap: "24px" }}>
+                        {/* WHO ARE YOU */}
+                        <div
+                            style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "12px",
+                            }}
+                        >
+                            <div
+                                style={{
+                                    fontSize: "13px",
+                                    fontWeight: 500,
+                                    whiteSpace: "nowrap",
+                                }}
+                            >
+                                Who are you ?
+                            </div>
+
+                            <div
+                                style={{
+                                    display: "flex",
+                                    border: "1px solid #6C4CDC",
+                                    borderRadius: "6px",
+                                    overflow: "hidden",
+                                }}
+                            >
+                                {["Aged Care", "NDIS"].map((item) => (
+                                    <div
+                                        key={item}
+                                        onClick={() => updateTab({ whoAreYou: item })}
+                                        style={{
+                                            width: "92px",              // ✅ SAME WIDTH
+                                            textAlign: "center",        // ✅ text centered
+                                            padding: "6px 0",
+                                            fontSize: "13px",
+                                            fontWeight: 500,
+                                            cursor: "pointer",
+                                            background:
+                                                activeTabData.whoAreYou === item ? "#6C4CDC" : "#fff",
+                                            color:
+                                                activeTabData.whoAreYou === item ? "#fff" : "#6C4CDC",
+                                        }}
+                                    >
+                                        {item}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+
+                        {/* ROLE */}
+                        <div
+                            style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "12px",
+                            }}
+                        >
+
+                            <MultiSelectCustom
+                                options={optionsRole}
+                                selected={activeTabData.selectedRole}
+                                setSelected={(v) => updateTab({ selectedRole: v })}
+                                placeholder="Role"
+                                leftIcon={TlcPayrollRoleIcon}
+                                rightIcon={TlcPayrollRoleDownArrowIcon}
+                            />
+                        </div>
+
+                    </div>
+
+                    {/* RIGHT SIDE – SYNC */}
+                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                        <span style={{ fontSize: "13px", fontWeight: 500 }}>
+                            Sync With Your System
+                        </span>
+
+                        {/* CUSTOM SWITCH */}
+                        <div
+                            onClick={() =>
+                                updateTab({ syncEnabled: !activeTabData.syncEnabled })
+                            }
+                            style={{
+                                width: "40px",
+                                height: "22px",
+                                borderRadius: "20px",
+                                background: activeTabData.syncEnabled
+                                    ? "#6C4CDC"
+                                    : "#E5E7EB",
+                                display: "flex",
+                                alignItems: "center",
+                                padding: "2px",
+                                cursor: "pointer",
+                                transition: "all 0.2s ease",
+                            }}
+                        >
+                            <div
+                                style={{
+                                    width: "18px",
+                                    height: "18px",
+                                    borderRadius: "50%",
+                                    background: "#fff",
+                                    transform: activeTabData.syncEnabled
+                                        ? "translateX(18px)"
+                                        : "translateX(0)",
+                                    transition: "all 0.2s ease",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                }}
+                            >
+                                {activeTabData.syncEnabled && (
+                                    <img
+                                        src={TlcPayrollSyncTickIcon}
+                                        alt="tick"
+                                        style={{ width: "10px", height: "10px" }}
+                                    />
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+                <div className="left-headerss">
+                    {/* {activeTabData.analysisData && <img src={TLCLogo} alt="Logo" className="tlclogo" />} */}
+                    <div
+                        style={{
+                            display: "flex",
+                            alignItems: "flex-start",
+                            justifyContent: "space-between",
+                            width: "100%",
+                            marginTop: "12px",
+                        }}
+                    >
+                        {/* LEFT: TABS */}
+                        <div>
+                            {renderTabBar()}
+                        </div>
+
+                        {/* RIGHT: ACTION BUTTONS */}
+                        <div
+                            style={{
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: "8px",
+                                alignItems: "flex-end",
+                            }}
+                        >
+                            <button
+                                onClick={handleAnalyse}
+                                disabled={activeTabData.loading || activeTabData.uploading}
+                                style={{
+                                    background: "var(--Curki-2nd-Portal-1, #14C8A8)",
+                                    color: "#fff",
+                                    border: "none",
+                                    padding: "8px 16px",
+                                    borderRadius: "8px",
+                                    fontSize: "14px",
+                                    fontWeight: 400,
+                                    cursor: "pointer",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "8px",
+                                    marginTop: "17px",
+                                    opacity:
+                                        activeTabData.loading || activeTabData.uploading?.accounts
+                                            ? 0.6
+                                            : 1,
+                                }}
+                            >
+                                <img
+                                    src={TlcCompareAnalyseIcon}
+                                    alt="compare"
+                                    style={{ width: "14px", height: "14px" }}
+                                />
+                                Compare and Analyse
+                            </button>
+
+                            {activeTabData.stage === "overview" && !activeTabData.viewingHistory && (
+                                <button
+                                    className="save-btnss"
+                                    onClick={handleSaveToDatabase}
+                                    disabled={saving || activeTabData?.isFromHistory || activeTabData?.analysisData?.savedToHistory}
+                                    style={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: "8px",
+                                        opacity: (activeTabData?.isFromHistory || activeTabData?.analysisData?.savedToHistory) ? 0.6 : 1,
+                                        cursor: (activeTabData?.isFromHistory || activeTabData?.analysisData?.savedToHistory) ? "not-allowed" : "pointer",
+                                    }}
+                                >
+                                    <img
+                                        src={TlcSaveButton}
+                                        alt="save"
+                                        style={{ width: "14px", height: "14px" }}
+                                    />
+
+                                    {saving
+                                        ? "Processing..."
+                                        : (activeTabData?.isFromHistory || activeTabData?.analysisData?.savedToHistory)
+                                            ? "Saved"
+                                            : "Save"}
+                                </button>
+                            )}
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+            {!activeTabData.viewingHistory && (
+                <section className="filters-card" style={{ marginBottom: activeTabData?.isFromHistory ? "0px" : "40px" }}>
+                    <div className="filters-grid">
+                        <div>
+                            <DatePicker
+                                locale="en-GB"                 // ✅ FORCE DD/MM/YYYY behaviour
+                                selectsRange
+                                startDate={activeTabData.startDate}
+                                endDate={activeTabData.endDate}
+
+                                onCalendarOpen={() => updateTab({ dateOpen: true })}
+                                onCalendarClose={() => updateTab({ dateOpen: false })}
+
+                                onChange={(dates) => {
+                                    const [start, end] = dates;
+                                    updateTab({
+                                        startDate: start,
+                                        endDate: end,
+                                    });
+                                }}
+
+                                dateFormat="dd-MM-yyyy"        // ✅ DISPLAY FORMAT (input + typing)
+                                customInput={
+                                    <DateRangeInput
+                                        startDate={activeTabData.startDate}
+                                        endDate={activeTabData.endDate}
+                                        isOpen={activeTabData.dateOpen}   // ✅ PER TAB (unchanged)
+                                    />
+                                }
+                            />
+
+                        </div>
+                        <MultiSelectCustom
+                            options={optionsState}
+                            selected={activeTabData.selectedState}
+                            setSelected={(v) => updateTab({ selectedState: v })}
+                            placeholder="State"
+                            leftIcon={TlcPayrollStateIcon}
+                            rightIcon={TlcPayrollRoleDownArrowIcon}
+                        />
+                        <MultiSelectCustom
+                            options={optionsDepartment}
+                            selected={activeTabData.selectedDepartment}
+                            setSelected={(v) => updateTab({ selectedDepartment: v })}
+                            placeholder="Department"
+                            leftIcon={TlcPayrollDepartmentIcon}
+                            rightIcon={TlcPayrollRoleDownArrowIcon}
+                        />
+                        <MultiSelectCustom
+                            options={optionsType}
+                            selected={activeTabData.selectedEmploymentType}
+                            setSelected={(v) => updateTab({ selectedEmploymentType: v })}
+                            placeholder="Type"
+                            leftIcon={TlcPayrollTypeIcon}
+                            rightIcon={TlcPayrollRoleDownArrowIcon}
+                        />
+
+                    </div>
+                    {/* {activeTabData.analysisData && (
+                        <div style={{ display: "flex", justifyContent: "center" }}>
+                            <button
+                                onClick={handleAnalyse}
+                                disabled={activeTabData.loading || activeTabData.uploading}
+                                style={{
+                                    backgroundColor: "#6c4cdc",
+                                    padding: "10px 30px",
+                                    textAlign: "center",
+                                    border: "none",
+                                    borderRadius: "6px",
+                                    marginTop: "20px",
+                                    cursor: "pointer",
+                                    color: "white",
+                                    fontWeight: "500",
+                                    fontSize: "14px",
+                                    opacity: activeTabData.loading || activeTabData.uploading ? 0.7 : 1,
+                                }}
+                            >
+                                {activeTabData.loading || activeTabData.uploading ? "Processing..." : "Apply Filters"}
+                            </button>
+                        </div>
+                    )} */}
+
+                </section>
+            )}
+            {!activeTabData.viewingHistory &&
+                activeTabData.stage !== "overview" &&
+                (!activeTabData.analysisData ||
+                    Object.keys(activeTabData.analysisData).length === 0) && (
+
+                    <section className="data-upload-wrapper">
+                        {(() => {
+                            const item = { key: "payroll", title: "Upload Data" };
+                            const files = activeTabData.fileNames[item.key] || [];
+
+                            return (
+                                <div className="data-upload-card">
+                                    {/* HEADER */}
+                                    <div className="data-upload-header">
+                                        <span
+                                            className="data-upload-template"
+                                            onClick={() => {
+                                                const link = document.createElement("a");
+                                                link.href = "/templates/PayrollAnalysisTemplate.xlsx";
+                                                link.download = "PayrollAnalysisTemplate.xlsx";
+                                                document.body.appendChild(link);
+                                                link.click();
+                                                document.body.removeChild(link);
+                                            }}
+                                        >
+                                            Download Template
+                                            <img
+                                                src={TlcPayrollDownloadIcon}
+                                                alt="download"
+                                                style={{ width: "24px", height: "24px" }}
+                                            />
+
+                                        </span>
+
+                                        <span
+                                            className="data-upload-label"
+                                            style={{ marginRight: "auto", marginLeft: "12px" }}
+                                        >
+                                            {files.length === 0 ? "Upload Data" : "Upload Content"}
+                                        </span>
+                                    </div>
+
+                                    {/* DROP AREA */}
+                                    <div
+                                        className="data-upload-droparea"
+                                        onClick={() =>
+                                            document.getElementById(`file-${activeTab}-${item.key}`).click()
+                                        }
+                                    >
+                                        <input
+                                            id={`file-${activeTab}-${item.key}`}
+                                            type="file"
+                                            accept=".xlsx,.xls,.csv"
+                                            multiple
+                                            hidden
+                                            onChange={(e) => handleFileChange(e, item.key)}
+                                        />
+
+                                        {files.length === 0 ? (
+                                            <div className="data-upload-empty">
+                                                <img src={UploadTlcIcon} alt="upload" />
+                                                <div className="data-upload-cta">Click to upload</div>
+                                                <div className="data-upload-format">.XLSX, .XLS, .CSV</div>
+                                            </div>
+                                        ) : (
+                                            <div className="data-upload-filelist">
+                                                {files.map((fileName, idx) => (
+                                                    <div key={idx} className="data-upload-file">
+                                                        <div className="data-upload-fileinfo">
+                                                            <img
+                                                                src="https://cdn-icons-png.flaticon.com/512/732/732220.png"
+                                                                alt="xls"
+                                                            />
+                                                            <div>
+                                                                <div className="data-upload-filename">{fileName}</div>
+                                                                <div className="data-upload-status">
+                                                                    Uploaded • 100%
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="data-upload-actions">
+                                                            <span className="data-upload-success">✔</span>
+                                                            <RiDeleteBin6Line
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    const updated = files.filter((_, i) => i !== idx);
+                                                                    updateTab({
+                                                                        fileNames: {
+                                                                            ...activeTabData.fileNames,
+                                                                            [item.key]: updated,
+                                                                        },
+                                                                        [`${item.key}Files`]:
+                                                                            activeTabData[`${item.key}Files`]?.filter(
+                                                                                (_, i) => i !== idx
+                                                                            ),
+                                                                    });
+                                                                }}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        })()}
+                    </section>
+
+                )}
+            {activeTabData.stage === "loading" && (
+                <div className="inline-loader-wrapper">
+                    <div className="loader"></div>
+                    <div className="loading-text">
+                        {activeTabData.progressStage === "uploading" && "Uploading your files..."}
+                        {activeTabData.progressStage === "analysing" && "Analysing data..."}
+                        {activeTabData.progressStage === "preparing" && "Preparing your dashboard..."}
+                    </div>
+                </div>
+            )}
+            <div className="search-section">
+
+                {activeTabData.stage === "overview" && activeTabData.analysisData && (
+
+                    <section
+                        ref={reportRef}
+                        className={`dashboard ${!isAnyAccordionOpen ? "dashboard-decrease-margin-bottom" : ""}`}
+                    >
+                        {activeTabData.viewingHistory && (
+                            <div
+                                className="history-back-btn"
+                                onClick={() => {
+                                    updateTab({
+                                        // exit history mode
+                                        viewingHistory: false,
+                                        isFromHistory: false,
+
+                                        // reset flow
+                                        stage: "filters",
+                                        analysisData: null,
+
+                                        // IMPORTANT: reset AI summary
+                                        aiReport: null,
+                                        aiLoading: false,
+                                        showReport: false,
+
+                                        // reset dates & filters
+                                        startDate: null,
+                                        endDate: null,
+                                        selectedState: [],
+                                        selectedDepartment: [],
+                                        selectedRole: [],
+                                        selectedEmploymentType: [],
+
+                                        // reset tab name
+                                        name: `Tab ${activeTab}`,
+
+                                        // close accordions
+                                        aiAccordion: false,
+                                        page1: false,
+                                        page2: false,
+                                        page3: false,
+                                        page4: false,
+                                    });
+                                }}
+                            >
+                                <GoArrowLeft size={22} color="#6C4CDC" />
+                                Back
+                            </div>
+                        )}
+                        <section data-report-section="ai-insight">
+                            <AccordionHeader
+                                title={`AI Insight ${activeTabData.startDate && activeTabData.endDate
+                                    ? `(${formatDateRange()})`
+                                    : ""
+                                    }`}
+                                isOpen={activeTabData.aiAccordion}
+                                showInsightIcon={true}
+                                showDownloadIcon={!!activeTabData.aiReport}
+                                onDownload={downloadWord}
+                                onClick={() => {
+                                    // ✅ Prevent toggling ONLY if AI is loading
+                                    if (activeTabData.aiLoading) {
+                                        return; // Don't allow closing AI accordion while generating
+                                    }
+
+                                    const willOpen = !activeTabData.aiAccordion;
+
+                                    // Update state immediately for better UX
+                                    updateTab({ aiAccordion: willOpen });
+
+                                    // Only trigger AI analysis if needed and not already loading
+                                    if (willOpen && !activeTabData.aiReport && !activeTabData.aiLoading) {
+                                        handleAiAnalysis();
+                                    }
+                                }}
+                                needMarginBottom={true}
+                            />
+
+                            {activeTabData.aiAccordion && (
+                                <div style={{ marginBottom: "10px" }}>
+                                    <AIAnalysisReportViewer
+                                        reportText={activeTabData.aiReport}
+                                        loading={activeTabData.aiLoading}
+                                        onDownload={downloadWord}
+                                        progress={activeTabData.aiProgress}
+                                    />
+                                </div>
+                            )}
+                        </section>
+                        {/* ================= PAGE 1 ================= */}
+                        <section data-report-section="payroll-overview">
+                            <AccordionHeader
+                                title={`Payroll Overview ${activeTabData.startDate && activeTabData.endDate
+                                    ? `(${formatDateRange()})`
+                                    : ""
+                                    }`}
+                                isOpen={activeTabData.page1}
+                                showInsightIcon={false}
+                                onClick={() => togglePage("page1")}
+                                needMarginBottom={true}
+                            />
+
+                            {activeTabData.page1 && (
+                                <>
+                                    <div className="summary-cards">
+                                        {Object.entries(
+                                            activeTabData.analysisData.pages?.["page 1"]?.scorecard || {}
+                                        ).map(([label, value], index) => (
+                                            <div key={index} className="summary-card">
+                                                <p>{label}</p>
+                                                <h3>
+                                                    {typeof value === "number" || !isNaN(value)
+                                                        ? Number(value).toLocaleString(undefined, {
+                                                            minimumFractionDigits: 2,
+                                                            maximumFractionDigits: 2,
+                                                        })
+                                                        : value}
+                                                </h3>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <>
+                                        <div className="charts-grid-payroll">
+                                            <TlcGraphRenderer
+                                                plots={activeTabData.analysisData.pages?.["page 1"]?.plots}
+                                            />
+                                        </div>
+
+                                        {/* {(activeTabData.analysisData.pages?.["page 1"]?.figures || []).map(
+                                            (html, index) => (
+                                                <div key={index} className="table-box">
+                                                    <HtmlFigure htmlString={html} />
+                                                </div>
+                                            )
+                                        )} */}
+                                    </>
+
+                                    {activeTabData.analysisData.pages?.["page 1"]?.table && (
+                                        <div className="table-box">
+                                            <HtmlFigure htmlString={activeTabData.analysisData.pages["page 1"].table} />
+                                        </div>
+                                    )}
+                                </>
+                            )}
+                        </section>
+                        {/* ================= PAGE 2 ================= */}
+                        <section data-report-section="detailed-breakdown">
+                            <AccordionHeader
+                                title={`Detailed Breakdown ${activeTabData.startDate && activeTabData.endDate
+                                    ? `(${formatDateRange()})`
+                                    : ""
+                                    }`}
+                                isOpen={activeTabData.page2}
+                                showInsightIcon={false}
+                                onClick={() => togglePage("page2")}
+                                needMarginBottom={true}
+                            />
+
+                            {activeTabData.page2 && (
+                                <>
+                                    <div className="charts-grid-payroll">
+                                        <TlcGraphRenderer
+                                            plots={activeTabData.analysisData.pages?.["page 2"]?.plots}
+                                        />
+                                    </div>
+
+                                    {
+                                        (activeTabData.analysisData.pages?.["page 2"]?.figures || []).map(
+                                            (html, index) => {
+                                                // console.log("index on page 2", index)
+                                                if (index !== 1 && index !== 3) return null;
+                                                return (
+                                                    <div key={index} className="table-box">
+                                                        <HtmlFigure htmlString={html} />
+                                                    </div>
+                                                );
+                                            }
+                                        )
+                                    }
+                                </>
+                            )}
+                        </section>
+                        {/* ================= PAGE 3 ================= */}
+                        <section data-report-section="leave-absence">
+                            <AccordionHeader
+                                title={`Leave and absence ${activeTabData.startDate && activeTabData.endDate
+                                    ? `(${formatDateRange()})`
+                                    : ""
+                                    }`}
+                                isOpen={activeTabData.page3}
+                                showInsightIcon={false}
+                                onClick={() => togglePage("page3")}
+                                needMarginBottom={true}
+                            />
+
+                            {/* {activeTabData.page3 && (
+                                <>
+                                    {(activeTabData.analysisData.pages?.["page 3"]?.figures || []).map(
+                                        (html, index) => (
+                                            <div key={index}><HtmlFigure htmlString={html} /></div>
+                                        )
+                                    )}
+                                </>
+                            )} */}
+                            {activeTabData.page3 && (
+                                <>
+                                    <div className="charts-grid-payroll">
+                                        <TlcGraphRenderer
+                                            plots={activeTabData.analysisData.pages?.["page 3"]?.plots}
+                                        />
+                                    </div>
+
+                                    {
+                                        (activeTabData.analysisData.pages?.["page 3"]?.figures || []).map(
+                                            (html, index) => {
+                                                // console.log("index on page 3", index)
+                                                if (index !== 2) return null;
+
+                                                return (
+                                                    <div key={index} className="table-box">
+                                                        <HtmlFigure htmlString={html} />
+                                                    </div>
+                                                );
+                                            }
+                                        )
+                                    }
+                                </>
+                            )}
+                        </section>
+                        {/* ================= PAGE 4 ================= */}
+                        <section data-report-section="payroll-comparison">
+                            <AccordionHeader
+                                title={`Payroll Comparison ${activeTabData.startDate && activeTabData.endDate
+                                    ? `(${formatDateRange()})`
+                                    : ""
+                                    }`}
+                                isOpen={activeTabData.page4}
+                                showInsightIcon={false}
+                                onClick={() => togglePage("page4")}
+                                needMarginBottom={false}
+                            />
+
+                            {activeTabData.page4 && (
+                                <>
+                                    <>
+                                        <div className="charts-grid-payroll no-padding">
+                                            <TlcGraphRenderer
+                                                plots={activeTabData.analysisData.pages?.["page 4"]?.plots}
+                                            />
+                                        </div>
+
+                                        {/* {
+                                            (activeTabData.analysisData.pages?.["page 4"]?.figures || []).map(
+                                                (html, index) => {
+
+                                                    return (
+                                                        <div key={index} className="table-box">
+                                                            <HtmlFigure htmlString={html} />
+                                                        </div>
+                                                    );
+                                                }
+                                            )
+                                        } */}
+                                    </>
+                                    {activeTabData.analysisData.pages?.["page 4"]?.table && (
+                                        <div className="table-box">
+                                            <HtmlFigure htmlString={activeTabData.analysisData.pages["page 4"].table} />
+                                        </div>
+                                    )}
+                                </>
+                            )}
+                        </section>
+                    </section>
+                )}
+                {activeTabData.stage === "filters" && !activeTabData.analysisData && (
+                    <button
+                        className="search-btn"
+                        onClick={handleAnalyse}
+                        disabled={activeTabData.loading}   // ✅ sirf loading ke time disable
+                        style={{
+                            marginTop: activeTabData.isFromHistory ? 0 : "40px",
+                        }}
+                    >
+                        {activeTabData.loading ? (
+                            "Processing..."
+                        ) : (
+                            <>
+                                AI Analyse
+                                <img
+                                    src={star}
+                                    alt="AI Insight"
+                                    style={{ width: "20px", height: "20px" }}
+                                />
+                            </>
+                        )}
+                    </button>
+
+                )}
+            </div>
+
+            {activeTabData.stage !== "loading" && (
+                <section className="history-container">
+                    {activeTabData?.analysisData && (
+                        <button
+                            onClick={handleDownloadWordReport}
+                            className="download-report-btn"
+                            style={{
+                                opacity:
+                                    activeTabData.loading || activeTabData.uploading?.accounts ? 0.6 : 1,
+                            }}
+                        >
+                            <MdOutlineFileDownload size={16} />
+                            Download Report
+                        </button>
+                    )}
+
+                    <div
+                        style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            marginBottom: "16px",
+                            flexWrap: "wrap",
+                            gap: "12px",
+                        }}
+                    >
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                            <img
+                                src={TlcPayrollHistoryIcon}
+                                alt="icon"
+                                style={{
+                                    width: "22px",
+                                    height: "21px",
+                                    pointerEvents: "none",
+                                }}
+                            />
+                            <div className="history-title">History</div>
+                        </div>
+
+                        {/* SEARCH BAR */}
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px", flex: "1", maxWidth: "400px" }}>
+                            <input
+                                type="text"
+                                placeholder="Search history (e.g., 'April to May, Victoria' or 'last week')"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                style={{
+                                    flex: 1,
+                                    padding: "8px 12px",
+                                    border: "1px solid #D1D5DB",
+                                    borderRadius: "8px",
+                                    fontSize: "13px",
+                                    fontFamily: "Inter",
+                                    outline: "none",
+                                    transition: "all 0.2s ease",
+                                }}
+                                onKeyPress={(e) => {
+                                    if (e.key === "Enter") {
+                                        handleSearch();
+                                    }
+                                }}
+                            />
+                            {/* <button
+                                onClick={handleSearch}
+                                disabled={searching}
+                                style={{
+                                    background: "#6C4CDC",
+                                    color: "#fff",
+                                    border: "none",
+                                    padding: "8px 16px",
+                                    borderRadius: "8px",
+                                    fontSize: "13px",
+                                    fontWeight: 500,
+                                    cursor: searching ? "not-allowed" : "pointer",
+                                    opacity: searching ? 0.7 : 1,
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "6px",
+                                    whiteSpace: "nowrap",
+                                }}
+                            >
+                                {searching ? (
+                                    <>
+                                        <div
+                                            style={{
+                                                width: "14px",
+                                                height: "14px",
+                                                border: "2px solid #fff",
+                                                borderTop: "2px solid transparent",
+                                                borderRadius: "50%",
+                                                animation: "spin 0.8s linear infinite",
+                                            }}
+                                        />
+                                        Searching...
+                                    </>
+                                ) : (
+                                    "Search"
+                                )}
+                            </button> */}
+                            {searchMode && (
+                                <button
+                                    onClick={() => {
+                                        setSearchQuery("");
+                                        setSearchMode(false);
+                                        setFilteredHistoryList([]);
+                                    }}
+                                    style={{
+                                        background: "#E5E7EB",
+                                        color: "#374151",
+                                        border: "none",
+                                        padding: "8px 12px",
+                                        borderRadius: "8px",
+                                        fontSize: "13px",
+                                        fontWeight: 500,
+                                        cursor: "pointer",
+                                        whiteSpace: "nowrap",
+                                    }}
+                                >
+                                    Clear
+                                </button>
+                            )}
+                        </div>
+                    </div>
+
+                    {searchMode && searchQuery && (
+                        <div
+                            style={{
+                                fontSize: "12px",
+                                color: "#6B7280",
+                                marginBottom: "12px",
+                                padding: "6px 12px",
+                                background: "#F3F4F6",
+                                borderRadius: "6px",
+                                display: "inline-block",
+                            }}
+                        >
+                            Found {displayHistoryList.length} result(s) for "{searchQuery}"
+                        </div>
+                    )}
+
+                    {loadingHistory ? (
+                        <p style={{ textAlign: "center", color: "#555" }}>Loading history...</p>
+                    ) : displayHistoryList.length === 0 ? (
+                        <p style={{ textAlign: "center", color: "#777" }}>
+                            {searchMode ? "No matching history found." : "No saved history found."}
+                        </p>
+                    ) : (
+                        <>
+                            {displayHistoryList.map((item, index) => {
+                                const createdAt = new Date(item.createdAt).toLocaleString("en-GB", {
+                                    day: "2-digit",
+                                    month: "short",
+                                    year: "2-digit",
+                                });
+
+                                const filters = item.analysisResult?.filters || item?.filters || {};
+                                const { state, department, role, employmentType, start, end } = filters;
+
+                                return (
+                                    <div
+                                        key={item.id}
+                                        className="history-card-modern"
+                                        style={{
+                                            position: "relative",
+                                            transition: "transform 0.2s ease, box-shadow 0.3s ease",
+                                        }}
+                                    >
+                                        {/* Delete button (cross icon) */}
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setSelectedHistoryId(item.id);
+                                                setShowDeleteModal(true);
+                                            }}
+                                            title="Delete analysis"
+                                            style={{
+                                                position: "absolute",
+                                                top: "10px",
+                                                right: "10px",
+                                                background: "transparent",
+                                                border: "none",
+                                                fontSize: "20px",
+                                                color: "#6C4CDC",
+                                                fontWeight: "bold",
+                                                cursor: "pointer",
+                                                transition: "transform 0.2s ease, color 0.2s ease",
+                                            }}
+                                            onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.2)")}
+                                            onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1.0)")}
+                                        >
+                                            <RiDeleteBin6Line color='#6c4cdc' size={18} />
+                                        </button>
+
+                                        {/* History card body */}
+                                        <div onClick={() => handleHistoryClick(item)}>
+                                            <div className="history-top">
+                                                <div className="history-date-range">
+                                                    <strong className="label">Date Range:</strong>{" "}
+                                                    <span className="value">
+                                                        {start
+                                                            ? new Date(start).toLocaleDateString("en-GB", {
+                                                                day: "2-digit",
+                                                                month: "short",
+                                                                year: "2-digit",
+                                                            })
+                                                            : "N/A"}{" "}
+                                                        –{" "}
+                                                        {end
+                                                            ? new Date(end).toLocaleDateString("en-GB", {
+                                                                day: "2-digit",
+                                                                month: "short",
+                                                                year: "2-digit",
+                                                            })
+                                                            : "N/A"}
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            <div className="saved-on">
+                                                <span className="saved-label">Saved On:</span>{" "}
+                                                <span className="saved-value" style={{ color: "#57575c" }}>{createdAt}</span>
+                                            </div>
+
+                                            <div className="history-filters">
+                                                {state && (
+                                                    <span className="filter-item">
+                                                        <strong>State:</strong> {state}
+                                                    </span>
+                                                )}
+                                                {department && (
+                                                    <span className="filter-item">
+                                                        <strong>Department:</strong> {department}
+                                                    </span>
+                                                )}
+                                                {role && (
+                                                    <span className="filter-item">
+                                                        <strong>Role:</strong> {role}
+                                                    </span>
+                                                )}
+                                                {employmentType && (
+                                                    <span className="filter-item">
+                                                        <strong>Employment Type:</strong> {employmentType}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+
+                            {/* Delete confirmation modal */}
+                            {showDeleteModal && (
+                                <div
+                                    style={{
+                                        position: "fixed",
+                                        top: 0,
+                                        left: 0,
+                                        width: "100%",
+                                        height: "100%",
+                                        background: "rgba(0,0,0,0.4)",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        zIndex: 9999,
+                                        fontFamily: "Inter, sans-serif",
+                                    }}
+                                >
+                                    <div
+                                        style={{
+                                            background: "#fff",
+                                            borderRadius: "10px",
+                                            padding: "20px 28px",
+                                            boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
+                                            textAlign: "center",
+                                            animation: "scaleIn 0.25s ease",
+                                        }}
+                                    >
+                                        <h4
+                                            style={{
+                                                fontSize: "16px",
+                                                fontWeight: "600",
+                                                color: "#1f2937",
+                                                marginBottom: "16px",
+                                            }}
+                                        >
+                                            Are you sure you want to delete history?
+                                        </h4>
+
+                                        <div style={{ display: "flex", justifyContent: "center", gap: "12px" }}>
+                                            <button
+                                                onClick={() => setShowDeleteModal(false)}
+                                                style={{
+                                                    background: "#E5E7EB",
+                                                    color: "#111",
+                                                    border: "none",
+                                                    borderRadius: "6px",
+                                                    padding: "6px 16px",
+                                                    fontWeight: 500,
+                                                    cursor: "pointer",
+                                                }}
+                                            >
+                                                No
+                                            </button>
+                                            <button
+                                                onClick={handleDeleteHistory}
+                                                disabled={deleting}
+                                                style={{
+                                                    background: "#6C4CDC",
+                                                    color: "#fff",
+                                                    border: "none",
+                                                    borderRadius: "6px",
+                                                    padding: "6px 16px",
+                                                    fontWeight: 600,
+                                                    cursor: "pointer",
+                                                    opacity: deleting ? 0.7 : 1,
+                                                }}
+                                            >
+                                                {deleting ? "..." : "Yes"}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </>
+                    )}
+                </section>
+            )}
+            {activeTabData.exporting && (
+                <div
+                    style={{
+                        position: "fixed",
+                        inset: 0,
+                        background: "rgba(255,255,255,0.85)",
+                        zIndex: 99999,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontFamily: "Inter, sans-serif",
+                    }}
+                >
+                    <div style={{ textAlign: "center" }}>
+                        {/* 🔄 CIRCULAR LOADER */}
+                        <div
+                            style={{
+                                width: "48px",
+                                height: "48px",
+                                border: "4px solid #E5E7EB",
+                                borderTop: "4px solid #6C4CDC",
+                                borderRadius: "50%",
+                                animation: "spin 1s linear infinite",
+                                margin: "0 auto 12px",
+                            }}
+                        />
+
+                        <div
+                            style={{
+                                fontSize: "14px",
+                                fontWeight: 500,
+                                color: "#374151",
+                            }}
+                        >
+                            Downloading…
+                        </div>
+                    </div>
+                </div>
+            )}
+
+
+        </div>
+    );
+}

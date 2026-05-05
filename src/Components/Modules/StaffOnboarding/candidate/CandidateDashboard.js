@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+﻿import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import HRStaffView from "../onboarding/HRStaffView";
 import {
@@ -6,7 +6,7 @@ import {
   clearCandidateSession,
 } from "./candidateAuth";
 import curkiLogo from "../../../../Images/Black_logo.png";
-import "../../../../Styles/CandidateLogin.css";
+import "../../../../Styles/general-styles/CandidateLogin.css";
 
 const CandidateDashboard = () => {
   const navigate = useNavigate();

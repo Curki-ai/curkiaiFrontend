@@ -9,6 +9,27 @@ const STEPS = [
   { id: "publish", label: "Publish", num: "3" },
 ];
 
+const STEP_HEADERS = {
+  info: {
+    title: "Course Information",
+    subtitle: "Add the basics so your team knows what this course covers.",
+  },
+  curriculum: {
+    title: "Curriculum Builder",
+    subtitle:
+      "Organise sections and lessons. Click a lesson to edit its content on the right.",
+  },
+  publish: {
+    title: "Review & Publish",
+    subtitle: "Final check before learners see this course.",
+  },
+};
+
+// Curriculum + Publish step content widens to 1100px; Info stays at 880px.
+// The action bar matches the active step so its right edge lines up with
+// the form columns below it.
+const WIDE_STEPS = new Set(["curriculum", "publish"]);
+
 const CourseEditor = ({ course, onChange, onBack, saveStatus, organizationId }) => {
   const [step, setStep] = useState("info");
 
@@ -112,6 +133,28 @@ const CourseEditor = ({ course, onChange, onBack, saveStatus, organizationId }) 
         </div>
 
         <div className="ulms-editor-main">
+          <div
+            className={`ulms-step-actionbar ${WIDE_STEPS.has(step) ? "wide" : ""}`}
+          >
+            <div className="ulms-step-header">
+              <h2>{STEP_HEADERS[step].title}</h2>
+              <p>{STEP_HEADERS[step].subtitle}</p>
+            </div>
+            <div className="ulms-step-actions">
+              <button
+                className="ulms-footer-back-btn"
+                onClick={isFirst ? onBack : goPrev}
+              >
+                {isFirst ? "Cancel" : "← Back"}
+              </button>
+              {!isLast && (
+                <button className="ulms-footer-next-btn" onClick={goNext}>
+                  Next →
+                </button>
+              )}
+            </div>
+          </div>
+
           {step === "info" && <InfoStep course={course} onChange={onChange} />}
           {step === "curriculum" && (
             <CurriculumStep
@@ -130,23 +173,17 @@ const CourseEditor = ({ course, onChange, onBack, saveStatus, organizationId }) 
         </div>
       </div>
 
-      {/* Footer */}
+      {/* Footer — keeps the step indicator; primary navigation lives in the
+          action bar at the top of the editor pane. The inner wrapper is
+          width-matched to the active step so the text lines up with the
+          form column above. */}
       <div className="ulms-editor-footer">
-        <div className="ulms-footer-info">
-          Step {idx + 1} of {STEPS.length} · {STEPS[idx].label}
-        </div>
-        <div className="ulms-footer-btns">
-          <button
-            className="ulms-footer-back-btn"
-            onClick={isFirst ? onBack : goPrev}
-          >
-            {isFirst ? "Cancel" : "← Back"}
-          </button>
-          {!isLast && (
-            <button className="ulms-footer-next-btn" onClick={goNext}>
-              Next →
-            </button>
-          )}
+        <div
+          className={`ulms-footer-inner ${WIDE_STEPS.has(step) ? "wide" : ""}`}
+        >
+          <div className="ulms-footer-info">
+            Step {idx + 1} of {STEPS.length} · {STEPS[idx].label}
+          </div>
         </div>
       </div>
     </>

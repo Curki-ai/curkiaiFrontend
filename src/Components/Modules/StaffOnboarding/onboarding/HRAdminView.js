@@ -1,17 +1,17 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import "../../../../Styles/SmartOnboarding.enhanced.css";
-import "../../../../Styles/ResumeScreening.css";
-import "../../../../Styles/NewSmartOnboardingHrView.css"
+import "../../../../Styles/general-styles/SmartOnboarding.enhanced.css";
+import "../../../../Styles/general-styles/ResumeScreening.css";
+import "../../../../Styles/general-styles/NewSmartOnboardingHrView.css"
 import StaffOnboarding from "./StaffOnboarding";
 import StaffComplianceDashboard from "./StaffComplianceDashboard";
-import UploadFiles from "../../../UploadFiles";
+import UploadFiles from "../../../general-components/UploadFiles";
 import ScreeningTestCreation from "./ScreeningTestCreation";
 import AdminDocumentVerification from "./AdminDocumentVerification";
 // LMS v1 (legacy) — kept for rollback. Active LMS is v2 below.
 import AdminCourseCreation from "./AdminCourseCreation";
 // LMS v2 — replaces AdminCourseCreation in the Edit Training tab.
 import AdminCourseCreation_v2 from "../lms/LMSRedesign";
-import incrementAnalysisCount from "../../FinancialModule/TLcAnalysisCount";
+import incrementAnalysisCount from "../../FinancialModule/Tlc/TLcAnalysisCount";
 import incrementCareVoiceAnalysisCount from "../../SupportAtHomeModule/careVoiceCostAnalysis";
 import SmartOnboardingAccessManagement from "./SmartOnboardingAccessManagement";
 

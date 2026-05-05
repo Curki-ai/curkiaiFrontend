@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import "../../../../Styles/StaffOnboarding.css";
+﻿import React, { useEffect, useState } from "react";
+import "../../../../Styles/general-styles/StaffOnboarding.css";
 import { FaRegEdit } from "react-icons/fa";
 import { ReactSortable } from "react-sortablejs"; // ✅ new package
 import { FaPencilAlt } from "react-icons/fa";

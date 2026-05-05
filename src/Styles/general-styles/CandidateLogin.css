@@ -1,0 +1,564 @@
+/* ============================================================
+   Candidate Login / Signup — fancy animated screen
+   Matches the main Curki sign-in look (purple #6c4cdc)
+   ============================================================ */
+
+.candidate-login-page {
+  position: relative;
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background-image: url("../../Images/SignInBg.png");
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center;
+  overflow: hidden;
+}
+
+/* Soft animated gradient overlay so the bg never feels static */
+.candidate-login-page::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+      60% 50% at 20% 20%,
+      rgba(108, 76, 220, 0.18) 0%,
+      transparent 70%
+    ),
+    radial-gradient(
+      60% 50% at 85% 90%,
+      rgba(123, 92, 255, 0.22) 0%,
+      transparent 70%
+    );
+  animation: candidateBgDrift 16s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+@keyframes candidateBgDrift {
+  0% {
+    transform: translate3d(0, 0, 0);
+    opacity: 0.85;
+  }
+  100% {
+    transform: translate3d(-20px, 10px, 0);
+    opacity: 1;
+  }
+}
+
+/* Floating glow blobs */
+.candidate-login-page::after {
+  content: "";
+  position: absolute;
+  width: 420px;
+  height: 420px;
+  top: -120px;
+  right: -120px;
+  background: radial-gradient(
+    circle,
+    rgba(108, 76, 220, 0.35) 0%,
+    rgba(108, 76, 220, 0) 65%
+  );
+  filter: blur(20px);
+  animation: candidateBlobFloat 12s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+@keyframes candidateBlobFloat {
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(-30px, 40px) scale(1.05);
+  }
+  100% {
+    transform: translate(20px, -20px) scale(0.95);
+  }
+}
+
+/* ============================================================
+   Card
+   ============================================================ */
+.candidate-login-card {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 460px;
+  padding: 36px 44px 28px;
+  border-radius: 28px;
+  background: radial-gradient(
+    51.17% 39.86% at 35.21% 60.14%,
+    #ffffff 0%,
+    rgba(255, 255, 255, 0.82) 79.38%
+  );
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  box-shadow: 0 24px 60px rgba(60, 30, 120, 0.18),
+    0 6px 16px rgba(0, 0, 0, 0.05);
+  animation: candidateCardIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes candidateCardIn {
+  0% {
+    opacity: 0;
+    transform: translateY(18px) scale(0.97);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Subtle gradient ring around the card */
+.candidate-login-card::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: 29px;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    rgba(108, 76, 220, 0.55),
+    rgba(255, 255, 255, 0) 40%,
+    rgba(123, 92, 255, 0.45) 100%
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask: linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  opacity: 0.9;
+}
+
+/* ============================================================
+   Logo + header
+   ============================================================ */
+.candidate-login-logo {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 14px;
+  animation: candidateLogoFloat 4.5s ease-in-out infinite;
+}
+
+.candidate-login-logo img {
+  height: 44px;
+  width: auto;
+  filter: drop-shadow(0 6px 14px rgba(108, 76, 220, 0.25));
+}
+
+@keyframes candidateLogoFloat {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+.candidate-login-header {
+  text-align: center;
+  margin-bottom: 26px;
+}
+
+.candidate-login-header h1 {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1f1d2b;
+  margin: 0 0 6px 0;
+  background: linear-gradient(135deg, #1f1d2b 0%, #4f3ebf 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.2px;
+}
+
+.candidate-login-header p {
+  font-size: 14px;
+  color: #6b6880;
+  margin: 0;
+}
+
+/* ============================================================
+   Form
+   ============================================================ */
+.candidate-login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.candidate-input-label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #3a3753;
+  animation: candidateFieldIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.candidate-input-label:nth-child(1) { animation-delay: 0.05s; }
+.candidate-input-label:nth-child(2) { animation-delay: 0.12s; }
+.candidate-input-label:nth-child(3) { animation-delay: 0.19s; }
+
+@keyframes candidateFieldIn {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.candidate-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  border: 1.6px solid #e0e2e9;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.7);
+  transition: border-color 0.18s ease, box-shadow 0.18s ease,
+    background 0.18s ease, transform 0.18s ease;
+}
+
+.candidate-input-wrapper:hover {
+  border-color: #c8bfff;
+}
+
+.candidate-input-wrapper:focus-within {
+  border-color: #6c4cdc;
+  background: #ffffff;
+  box-shadow: 0 0 0 4px rgba(108, 76, 220, 0.18);
+  transform: translateY(-1px);
+}
+
+.candidate-input-icon {
+  margin-left: 14px;
+  color: #8b8b8b;
+  font-size: 18px;
+  flex-shrink: 0;
+  transition: color 0.18s ease, transform 0.18s ease;
+}
+
+.candidate-input-wrapper:focus-within .candidate-input-icon {
+  color: #6c4cdc;
+  transform: scale(1.05);
+}
+
+.candidate-input-wrapper input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  padding: 14px 12px 14px 10px;
+  font-size: 14px;
+  color: #1f1d2b;
+  font-family: inherit;
+}
+
+.candidate-input-wrapper input::placeholder {
+  color: #a9a7bd;
+}
+
+.candidate-input-wrapper input:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.candidate-eye-btn {
+  background: transparent;
+  border: none;
+  margin-right: 10px;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #8b8b8b;
+  font-size: 19px;
+  border-radius: 6px;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.candidate-eye-btn:hover {
+  color: #4f3ebf;
+  background: rgba(108, 76, 220, 0.08);
+}
+
+/* ============================================================
+   Messages
+   ============================================================ */
+.candidate-login-error,
+.candidate-login-info {
+  font-size: 13px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  animation: candidateMessageIn 0.3s ease both;
+}
+
+.candidate-login-error {
+  color: #c0392b;
+  background: #fdecea;
+  border: 1px solid #f5c6c2;
+}
+
+.candidate-login-info {
+  color: #1f6f43;
+  background: #e7f7ee;
+  border: 1px solid #b8e3c7;
+}
+
+@keyframes candidateMessageIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ============================================================
+   Submit button
+   ============================================================ */
+.candidate-login-submit {
+  position: relative;
+  margin-top: 6px;
+  padding: 14px 20px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #ffffff;
+  border: none;
+  border-radius: 40px;
+  cursor: pointer;
+  background: linear-gradient(
+    135deg,
+    #6c4cdc 0%,
+    #7b5cff 50%,
+    #5b4ad6 100%
+  );
+  background-size: 200% 200%;
+  background-position: 0% 50%;
+  box-shadow: 0 10px 24px rgba(108, 76, 220, 0.32);
+  overflow: hidden;
+  transition: transform 0.15s ease, box-shadow 0.2s ease,
+    background-position 0.4s ease, opacity 0.2s ease;
+}
+
+.candidate-login-submit::after {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -60%;
+  width: 50%;
+  height: 200%;
+  background: linear-gradient(
+    120deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.35) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  transform: skewX(-20deg);
+  transition: left 0.6s ease;
+}
+
+.candidate-login-submit:hover:not(:disabled) {
+  background-position: 100% 50%;
+  transform: translateY(-1px);
+  box-shadow: 0 14px 30px rgba(108, 76, 220, 0.4);
+}
+
+.candidate-login-submit:hover:not(:disabled)::after {
+  left: 130%;
+}
+
+.candidate-login-submit:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 6px 16px rgba(108, 76, 220, 0.3);
+}
+
+.candidate-login-submit:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+  background: linear-gradient(135deg, #a59bd6 0%, #b3aada 100%);
+  box-shadow: none;
+}
+
+.candidate-login-submit-spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.7);
+  border-top-color: transparent;
+  margin-right: 10px;
+  vertical-align: middle;
+  animation: candidateSpin 0.8s linear infinite;
+}
+
+@keyframes candidateSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ============================================================
+   Mode switch link + footnote
+   ============================================================ */
+.candidate-login-switch {
+  text-align: center;
+  font-size: 13px;
+  color: #707493;
+  margin: 20px 0 0;
+}
+
+.candidate-login-switch-link {
+  background: transparent;
+  border: none;
+  color: #6c4cdc;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 0 0 1px 0;
+  margin-left: 4px;
+  position: relative;
+  transition: color 0.15s ease;
+}
+
+.candidate-login-switch-link::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 1.5px;
+  background: #6c4cdc;
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 0.2s ease;
+}
+
+.candidate-login-switch-link:hover:not(:disabled)::after {
+  transform: scaleX(1);
+}
+
+.candidate-login-switch-link:hover:not(:disabled) {
+  color: #4f3ebf;
+}
+
+.candidate-login-switch-link:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.candidate-login-footnote {
+  text-align: center;
+  font-size: 12px;
+  color: #969ab8;
+  margin: 12px 0 0;
+}
+
+/* ============================================================
+   Dashboard shell (used by CandidateDashboard.js)
+   ============================================================ */
+.candidate-dashboard-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #f7f6fb;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.candidate-dashboard-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 24px;
+  background: #ffffff;
+  border-bottom: 1px solid #ece9f5;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.candidate-dashboard-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  font-size: 15px;
+  color: #1f1d2b;
+}
+
+.candidate-dashboard-brand img {
+  height: 28px;
+  width: auto;
+}
+
+.candidate-dashboard-user {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.candidate-dashboard-user-name {
+  font-size: 13px;
+  color: #4a4762;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.candidate-dashboard-logout {
+  background: #ffffff;
+  border: 1px solid #e0dcef;
+  color: #6c4cdc;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 8px 16px;
+  border-radius: 30px;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease,
+    color 0.15s ease, transform 0.15s ease;
+}
+
+.candidate-dashboard-logout:hover {
+  background: #f4f1ff;
+  border-color: #c8bfff;
+  color: #4f3ebf;
+  transform: translateY(-1px);
+}
+
+.candidate-dashboard-body {
+  flex: 1;
+  width: 100%;
+  padding: 0;
+}
+
+/* ============================================================
+   Responsive
+   ============================================================ */
+@media (max-width: 480px) {
+  .candidate-login-card {
+    padding: 28px 24px 22px;
+    border-radius: 22px;
+  }
+
+  .candidate-login-header h1 {
+    font-size: 20px;
+  }
+
+  .candidate-login-logo img {
+    height: 36px;
+  }
+}

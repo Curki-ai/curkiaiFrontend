@@ -1,6 +1,6 @@
-import React, { useState } from "react";
-import "../../../../Styles/SmartOnboarding.enhanced.css";
-import "../../../../Styles/ResumeScreening.css";
+﻿import React, { useState } from "react";
+import "../../../../Styles/general-styles/SmartOnboarding.enhanced.css";
+import "../../../../Styles/general-styles/ResumeScreening.css";
 import DocumentVerification from "./DocumentVerification";
 import LMSLearner from "../lms/LMSLearner";
 

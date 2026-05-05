@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import ConfirmDialog from "./ConfirmDialog";
 import { blankQuestion } from "./lmsMockData";
 import { uploadLessonFileApi } from "./api";
 
@@ -10,14 +11,23 @@ const TYPES = [
 ];
 
 const LessonEditor = ({ section, lesson, onChange, courseTitle, organizationId, courseId }) => {
+  const [pendingTypeSwitch, setPendingTypeSwitch] = useState(null);
+
   const setField = (key) => (e) => {
     const v = e?.target?.value !== undefined ? e.target.value : e;
     onChange((l) => ({ ...l, [key]: v }));
   };
 
-  const switchType = (type) => {
+  const requestSwitchType = (type) => {
     if (lesson.type === type) return;
-    if (!window.confirm(`Switch this lesson to ${type}? Existing type-specific content will be cleared.`)) return;
+    setPendingTypeSwitch(type);
+  };
+
+  const cancelSwitchType = () => setPendingTypeSwitch(null);
+
+  const confirmSwitchType = () => {
+    const type = pendingTypeSwitch;
+    if (!type) return;
     onChange((l) => {
       const base = { id: l.id, title: l.title, duration: l.duration, published: l.published, type };
       if (type === "video") return { ...base, videoUrl: "", transcript: "" };
@@ -32,6 +42,7 @@ const LessonEditor = ({ section, lesson, onChange, courseTitle, organizationId, 
       if (type === "file") return { ...base, fileName: "" };
       return base;
     });
+    setPendingTypeSwitch(null);
   };
 
   const togglePublished = () => onChange((l) => ({ ...l, published: !l.published }));
@@ -72,7 +83,7 @@ const LessonEditor = ({ section, lesson, onChange, courseTitle, organizationId, 
             <button
               key={t.id}
               className={`ulms-type-tab ${lesson.type === t.id ? "active" : ""}`}
-              onClick={() => switchType(t.id)}
+              onClick={() => requestSwitchType(t.id)}
             >
               {t.icon} {t.label}
             </button>
@@ -102,6 +113,19 @@ const LessonEditor = ({ section, lesson, onChange, courseTitle, organizationId, 
           />
         )}
       </div>
+
+      <ConfirmDialog
+        open={!!pendingTypeSwitch}
+        title="Switch lesson type?"
+        confirmLabel="Switch"
+        cancelLabel="Cancel"
+        onConfirm={confirmSwitchType}
+        onCancel={cancelSwitchType}
+      >
+        {`Switching this lesson to `}
+        <strong>{pendingTypeSwitch}</strong>
+        {` will clear the existing type-specific content. Continue?`}
+      </ConfirmDialog>
     </div>
   );
 };
@@ -110,6 +134,7 @@ const VideoBody = ({ lesson, onChange, organizationId, courseId, sectionId }) =>
   const [uploading, setUploading] = useState(false);
   const [uploadPct, setUploadPct] = useState(0);
   const [uploadErr, setUploadErr] = useState("");
+  const [confirmRemove, setConfirmRemove] = useState(false);
 
   const handleFile = async (e) => {
     const file = e.target.files?.[0];
@@ -142,9 +167,11 @@ const VideoBody = ({ lesson, onChange, organizationId, courseId, sectionId }) =>
     }
   };
 
-  const removeUploaded = () => {
-    if (!window.confirm("Remove the uploaded video?")) return;
+  const requestRemoveUploaded = () => setConfirmRemove(true);
+  const cancelRemoveUploaded = () => setConfirmRemove(false);
+  const confirmRemoveUploaded = () => {
     onChange((l) => ({ ...l, attachment: null }));
+    setConfirmRemove(false);
   };
 
   const previewSrc = lesson.attachment?.sasUrl || (lesson.videoUrl ? toEmbedUrl(lesson.videoUrl) : "");
@@ -186,7 +213,7 @@ const VideoBody = ({ lesson, onChange, organizationId, courseId, sectionId }) =>
           <button
             className="ulms-embed-btn"
             style={{ background: "#fff", color: "#c0392b", border: "1px solid #ffc6c6" }}
-            onClick={removeUploaded}
+            onClick={requestRemoveUploaded}
             disabled={uploading}
           >
             Remove
@@ -206,6 +233,19 @@ const VideoBody = ({ lesson, onChange, organizationId, courseId, sectionId }) =>
         value={lesson.transcript || ""}
         onChange={(e) => onChange((l) => ({ ...l, transcript: e.target.value }))}
       />
+
+      <ConfirmDialog
+        open={confirmRemove}
+        title="Remove video?"
+        confirmLabel="Remove"
+        cancelLabel="Cancel"
+        danger
+        onConfirm={confirmRemoveUploaded}
+        onCancel={cancelRemoveUploaded}
+      >
+        This will detach the uploaded video from this lesson. You can upload
+        a new one afterwards.
+      </ConfirmDialog>
     </>
   );
 };

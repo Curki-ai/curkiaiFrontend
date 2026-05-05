@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import "../../../../Styles/AdminCourseCreation.css";
+﻿import React, { useEffect, useState } from "react";
+import "../../../../Styles/general-styles/AdminCourseCreation.css";
 import { createLectureApi, createModuleApi, deleteModuleApi, editModuleApi, getAllModulesApi, updateLectureApi } from "./AdminCourseApis";
 import lms_file_icon from "../../../../Images/lms_file_icon.png"
 import lms_play_icon1 from "../../../../Images/lms_play_icon1.png"

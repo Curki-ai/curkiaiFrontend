@@ -1,6 +1,6 @@
-// AdminDocumentVerification.jsx
+﻿// AdminDocumentVerification.jsx
 import React, { useState } from "react";
-import "../../../../Styles/AdminDocumentVerification.css";
+import "../../../../Styles/general-styles/AdminDocumentVerification.css";
 import SearchIcon from '../../../../Images/SearchIcon.png';
 import { BiSend } from "react-icons/bi";
 

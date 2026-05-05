@@ -1,6 +1,6 @@
 import React from "react";
-import "../../../Styles/ClientDetailsPage.css";
-import "../../../Styles/SMSBroadcastSuccess.css";
+import "../../../Styles/RosteringModule/ClientDetailsPage.css";
+import "../../../Styles/RosteringModule/SMSBroadcastSuccess.css";
 import BroadcastSuccess from "./BroadCaseSucces";
 import tickImage from "../../../Images/Tick.jpg"
 const ClientDetailsPage = ({

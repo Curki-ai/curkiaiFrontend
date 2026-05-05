@@ -1,7 +1,7 @@
 import "./App.css";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import HomePage from "./Components/HomePage";
-import InvitePage from "./Components/AcceptInvitation";
+import HomePage from "./Components/general-components/HomePage";
+import InvitePage from "./Components/general-components/AcceptInvitation";
 import CandidateScreeningTest from "./Components/Modules/StaffOnboarding/onboarding/ScreeningTest";
 import CandidateLogin from "./Components/Modules/StaffOnboarding/candidate/CandidateLogin";
 import CandidateDashboard from "./Components/Modules/StaffOnboarding/candidate/CandidateDashboard";

@@ -699,6 +699,7 @@
   color: #333;
   cursor: pointer;
   user-select: none;
+  text-align: left;
 }
 .ulrn-side-sec-hdr:hover { background: #f1f0f7; }
 .ulrn-side-sec-caret { font-size: 11px; color: #888; }
@@ -775,6 +776,7 @@
   font-size: 12px;
   color: #888;
   margin-bottom: 6px;
+  text-align: left;
 }
 .ulrn-viewer-crumb span { margin: 0 6px; color: #ccc; }
 .ulrn-viewer-title {
@@ -782,6 +784,7 @@
   font-size: 24px;
   font-weight: 700;
   color: #1a1a2e;
+  text-align: left;
 }
 .ulrn-viewer-meta {
   display: flex;
@@ -1147,5 +1150,5 @@
 .ulrn-detail-cta:hover { background: #4f30b8; }
 
 /* Back button */
-.ulrn-back-btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 8px; border: 1.5px solid #c5b8f0; background: #fff; color: #6C4CDC; font-size: 0.85rem; font-weight: 600; cursor: pointer; margin-bottom: 20px; transition: background 0.15s, border-color 0.15s; }
-.ulrn-back-btn:hover { background: #f5f2fe; border-color: #6C4CDC; }
+.ulrn-detail-back { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 8px; border: 1.5px solid #c5b8f0; background: #fff; color: #6C4CDC; font-size: 0.85rem; font-weight: 600; cursor: pointer; margin-bottom: 20px; transition: background 0.15s, border-color 0.15s; }
+.ulrn-detail-back:hover { background: #f5f2fe; border-color: #6C4CDC; }

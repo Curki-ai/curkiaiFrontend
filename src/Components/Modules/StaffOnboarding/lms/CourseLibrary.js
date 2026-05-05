@@ -1,8 +1,37 @@
 import React, { useState, useMemo } from "react";
+import ConfirmDialog from "./ConfirmDialog";
 
-const CourseLibrary = ({ courses, onOpen, onCreate, onDelete }) => {
+const CourseLibrary = ({ courses, onOpen, onCreate, onDelete, onPreview }) => {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all"); // all | published | draft
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
+
+  const requestDelete = (course) => {
+    setDeleteError("");
+    setDeleteTarget(course);
+  };
+
+  const closeDeleteDialog = () => {
+    if (isDeleting) return;
+    setDeleteTarget(null);
+    setDeleteError("");
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget || isDeleting) return;
+    setIsDeleting(true);
+    setDeleteError("");
+    try {
+      await onDelete(deleteTarget.id);
+      setDeleteTarget(null);
+    } catch (err) {
+      setDeleteError("Could not delete this course. Please try again.");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -94,15 +123,38 @@ const CourseLibrary = ({ courses, onOpen, onCreate, onDelete }) => {
       ) : (
         <div className="ulms-course-grid">
           {filtered.map((c) => (
-            <CourseCard key={c.id} course={c} onOpen={onOpen} onDelete={onDelete} />
+            <CourseCard
+              key={c.id}
+              course={c}
+              onOpen={onOpen}
+              onDelete={requestDelete}
+              onPreview={onPreview}
+            />
           ))}
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="Delete course?"
+        confirmLabel="Delete"
+        busyLabel="Deleting..."
+        cancelLabel="Cancel"
+        danger
+        busy={isDeleting}
+        error={deleteError}
+        onConfirm={confirmDelete}
+        onCancel={closeDeleteDialog}
+      >
+        {`Are you sure you want to delete `}
+        <strong>{deleteTarget?.title || "this course"}</strong>
+        {`? This action cannot be undone.`}
+      </ConfirmDialog>
     </div>
   );
 };
 
-const CourseCard = ({ course, onOpen, onDelete }) => {
+const CourseCard = ({ course, onOpen, onDelete, onPreview }) => {
   const lessonCount = (course.sections || []).reduce(
     (s, sec) => s + (sec.lessons || []).length,
     0
@@ -135,15 +187,17 @@ const CourseCard = ({ course, onOpen, onDelete }) => {
         <button className="ulms-card-edit-btn" onClick={() => onOpen(course.id)}>
           Edit
         </button>
-        <button className="ulms-card-prev-btn" title="Preview">
+        <button
+          className="ulms-card-prev-btn"
+          title="Preview"
+          onClick={() => onPreview && onPreview(course.id)}
+        >
           Preview
         </button>
         <button
           className="ulms-card-prev-btn ulms-danger"
           title="Delete"
-          onClick={() => {
-            if (window.confirm(`Delete "${course.title}"?`)) onDelete(course.id);
-          }}
+          onClick={() => onDelete(course)}
         >
           ✕
         </button>

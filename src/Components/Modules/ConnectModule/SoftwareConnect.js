@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import "../../../Styles/SoftwareConnect.css";
+import "../../../Styles/ConnectModule/SoftwareConnect.css";
 import axios from "axios";
 import AlayaCare from "../../../Images/Alayacare.png";
 import Xero from "../../../Images/xeroNewImage.png";

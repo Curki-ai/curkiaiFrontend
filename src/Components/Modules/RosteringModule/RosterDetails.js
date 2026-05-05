@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import "../../../Styles/RosterDetails.css";
+import "../../../Styles/RosteringModule/RosterDetails.css";
 import PersonalInformationIcon from '../../../Images/PersonalInformation.png';
 import ContactIcon from '../../../Images/ContactNameicon.png';
 import SuccessCheck from '../../../Images/SuccessCheck.png';

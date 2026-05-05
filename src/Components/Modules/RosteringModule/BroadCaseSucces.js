@@ -1,5 +1,5 @@
 import React from 'react';
-import '../../../Styles/SMSBroadcastSuccess.css';
+import '../../../Styles/RosteringModule/SMSBroadcastSuccess.css';
 
 const BroadcastSuccess = ({ message }) => {
   return (

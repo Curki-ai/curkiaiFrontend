@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import "../../../Styles/ClientEvent.css";
-import UploadFiles from "../../UploadFiles";
+import "../../../Styles/NDISModule/ClientEvent.css";
+import UploadFiles from "../../general-components/UploadFiles";
 import star from '../../../Images/star.png';
 import Toggle from "react-toggle";
 import historyIcon from "../../../Images/TlcPayrollHistory.png"
 import { GoArrowLeft } from "react-icons/go";
 import { RiDeleteBin6Line } from "react-icons/ri";
-import incrementAnalysisCount from "../FinancialModule/TLcAnalysisCount";
+import incrementAnalysisCount from "../FinancialModule/Tlc/TLcAnalysisCount";
 import incrementCareVoiceAnalysisCount from "../SupportAtHomeModule/careVoiceCostAnalysis";
 const BASE_URL =
   "https://curki-backend-api-container.yellowflower-c21bea82.australiaeast.azurecontainerapps.io";

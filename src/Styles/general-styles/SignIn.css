@@ -1,0 +1,268 @@
+/* Overlay background */
+.overlay-sign {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  /* background-color: rgb(255, 255, 255); */
+  background-image: url('../../Images/SignInBg.png');
+  background-repeat: no-repeat;
+  background-size: cover;        /* ✅ correct */
+  background-position: center;   /* ✅ recommended */
+  /* Opaque background */
+  display: flex;
+  justify-content: center;
+  align-items: center; 
+  z-index: 1000;
+}
+
+/* Popup container */
+.popup-sign {
+  background: radial-gradient(51.17% 39.86% at 35.21% 60.14%, #FFFFFF 0%, rgba(255, 255, 255, 0.7) 79.38%);
+  padding: 40px 80px;
+  border-radius: 30px;
+  position: relative;
+  max-width: 600px;
+  width: 90%;
+  
+}
+
+/* Close button */
+.close-btn {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  background: transparent;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #ffffff;
+}
+.signheader{
+  text-align: center;
+  font-size: 26px;
+  font-weight: 600;
+  margin-bottom: 14px;
+}
+
+
+h2 {
+  margin-bottom: 30px;
+  font-size: 24px;
+}
+
+.dividerss {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 24px 0;
+}
+
+.dividerss hr {
+  flex: 1;
+  border: none;
+  border-top: 1px solid #e4e6ec;
+}
+
+.dividerss span {
+  margin: 0 10px;
+  font-size: 14px;
+}
+
+.social-buttons {
+  display: flex;
+  flex-direction: column;
+  /* margin-bottom: 20px; */
+}
+
+.social-btn {
+  background-color: #6c4cdc;
+  border: none;
+  color: white;
+  padding: 12px 20px;
+  border-radius: 80px;
+  width: '100%';
+  height: 50px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: 0.3s;
+  /* margin-bottom: 10px; */
+  font-family: 'Inter';
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+input {
+  padding: 12px;
+  background-color:transparent;
+  color: black;
+  border-radius: 6px;
+  outline: none;
+  border: 1.6px solid #E0E2E9
+}
+
+input::placeholder {
+  color: #8b8b8b;
+}
+
+.signin-btn {
+  color: white;
+  border: none;
+  padding: 12px;
+  border-radius: 40px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.3s;
+  font-size: 14px;
+  background: #6c4cdc;
+  width: 100%;
+  height: 50px;
+  padding: 12px 20px;
+}
+.signin-btn:disabled{
+  color: white;
+  background-color: #A3A0B4;
+}
+
+.signin-btn:not(:disabled):hover {
+  background-color: #513acc;
+}
+
+.register-text {
+  font-size: 14px;
+  color: #969AB8;
+  font-weight: 500;
+}
+
+.register-link {
+  display: block;
+  margin: 10px 0;
+  color: #6C4CDC;
+  font-weight: bold;
+  font-size: 14px;
+  text-decoration: none !important;
+}
+
+.forgot-link {
+  display: block;
+  margin-top: 10px;
+  color: black;
+  font-size: 13px;
+}
+.error-message{
+  font-size: 14px;
+  color: white;
+  text-align: center;
+  font-family: sans-serif;
+  margin-top: 10px;
+}
+.loader {
+  width: 20px;
+  height: 20px;
+  border: 3px solid white;
+  border-top: 3px solid transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  display: inline-block;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+.tc-checkbox {
+  transform: scale(1.3);   /* adjust size */
+  cursor: pointer;
+}
+
+@media (max-width: 480px) {
+  .popup-sign {
+    padding: 24px 20px;
+    border-radius: 20px;
+    width: 85%;
+  }
+
+  .signheader {
+    font-size: 20px;
+  }
+
+  h2 {
+    font-size: 20px;
+    margin-bottom: 20px;
+  }
+
+  .social-btn,
+  .signin-btn {
+    height: 46px;
+    font-size: 13px;
+  }
+
+  input {
+    padding: 10px;
+    font-size: 13px;
+  }
+
+  .register-text,
+  .register-link,
+  .forgot-link {
+    font-size: 12px;
+  }
+
+  .dividerss span {
+    font-size: 12px;
+  }
+
+  .close-btn {
+    font-size: 1.2rem;
+  }
+}
+
+@media (min-width: 481px) and (max-width: 768px) {
+  .popup-sign {
+    padding: 32px 40px;
+    max-width: 500px;
+  }
+
+  .signheader {
+    font-size: 22px;
+  }
+
+  h2 {
+    font-size: 22px;
+  }
+
+  .social-btn,
+  .signin-btn {
+    height: 48px;
+    font-size: 14px;
+  }
+
+  input {
+    font-size: 14px;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  .popup-sign {
+    padding: 36px 60px;
+    max-width: 550px;
+  }
+
+  .signheader {
+    font-size: 24px;
+  }
+
+  h2 {
+    font-size: 23px;
+  }
+}

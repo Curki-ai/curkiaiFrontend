@@ -38,11 +38,6 @@ const PublishStep = ({ course, completion, onPublishToggle }) => {
 
   return (
     <div className="ulms-step-content ulms-publish-wrap">
-      <div className="ulms-step-header">
-        <h2>Review &amp; Publish</h2>
-        <p>Final check before learners see this course.</p>
-      </div>
-
       <div className="ulms-pub-grid">
         <div className="ulms-pub-card">
           <h3>✅ Readiness</h3>

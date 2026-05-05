@@ -1,9 +1,9 @@
-import React from "react";
+﻿import React from "react";
 import insight1 from "../../../Images/Graph.png";
 import insight2 from "../../../Images/Graph.png";
 import insight3 from "../../../Images/Graph.png";
 import insight4 from "../../../Images/Graph.png";
-import "../../../Styles/StaffComplianceDashboard.css";
+import "../../../Styles/general-styles/StaffComplianceDashboard.css";
 
 const StaffInsights = () => {
   return (

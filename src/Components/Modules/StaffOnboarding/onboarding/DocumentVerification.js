@@ -1,8 +1,8 @@
-// DocumentVerification.jsx
+﻿// DocumentVerification.jsx
 
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import "../../../../Styles/CandidateDocsUpload.css";
+import "../../../../Styles/general-styles/CandidateDocsUpload.css";
 
 const BASE_URL = "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api";
 

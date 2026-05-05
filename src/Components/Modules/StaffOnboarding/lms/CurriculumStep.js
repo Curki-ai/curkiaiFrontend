@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import LessonEditor from "./LessonEditor";
+import ConfirmDialog from "./ConfirmDialog";
 import { blankLesson } from "./lmsMockData";
 
 const TYPE_ICONS = {
@@ -12,6 +13,7 @@ const TYPE_ICONS = {
 const CurriculumStep = ({ course, onChange, organizationId }) => {
   const [activeKey, setActiveKey] = useState(null); // `${secId}::${lessonId}`
   const [openPicker, setOpenPicker] = useState(null); // sectionId
+  const [pendingDeleteSecId, setPendingDeleteSecId] = useState(null);
 
   // pick first lesson by default
   useEffect(() => {
@@ -57,11 +59,19 @@ const CurriculumStep = ({ course, onChange, organizationId }) => {
     );
   };
 
-  const deleteSection = (secId) => {
-    if (!window.confirm("Delete this section and its lessons?")) return;
+  const requestDeleteSection = (secId) => setPendingDeleteSecId(secId);
+  const cancelDeleteSection = () => setPendingDeleteSecId(null);
+  const confirmDeleteSection = () => {
+    const secId = pendingDeleteSecId;
+    if (!secId) return;
     updateSections((secs) => secs.filter((s) => s.id !== secId));
     if (activeKey?.startsWith(`${secId}::`)) setActiveKey(null);
+    setPendingDeleteSecId(null);
   };
+
+  const pendingDeleteSection = (course.sections || []).find(
+    (s) => s.id === pendingDeleteSecId
+  );
 
   const addLesson = (secId, type) => {
     const les = blankLesson(type);
@@ -104,11 +114,6 @@ const CurriculumStep = ({ course, onChange, organizationId }) => {
 
   return (
     <div className="ulms-step-content ulms-curric-step">
-      <div className="ulms-step-header">
-        <h2>Curriculum Builder</h2>
-        <p>Organise sections and lessons. Click a lesson to edit its content on the right.</p>
-      </div>
-
       <div className="ulms-curric-wrap">
         {/* Tree */}
         <div className="ulms-curric-tree">
@@ -134,7 +139,7 @@ const CurriculumStep = ({ course, onChange, organizationId }) => {
                   className="ulms-sec-del"
                   onClick={(e) => {
                     e.stopPropagation();
-                    deleteSection(sec.id);
+                    requestDeleteSection(sec.id);
                   }}
                   title="Delete section"
                 >
@@ -228,6 +233,20 @@ const CurriculumStep = ({ course, onChange, organizationId }) => {
           )}
         </div>
       </div>
+
+      <ConfirmDialog
+        open={!!pendingDeleteSection}
+        title="Delete section?"
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        danger
+        onConfirm={confirmDeleteSection}
+        onCancel={cancelDeleteSection}
+      >
+        {`Are you sure you want to delete `}
+        <strong>{pendingDeleteSection?.title || "this section"}</strong>
+        {` and all its lessons? This action cannot be undone.`}
+      </ConfirmDialog>
     </div>
   );
 };

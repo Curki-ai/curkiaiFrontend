@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+﻿import React, { useRef } from "react";
 import { Line } from "react-chartjs-2";
 import {
   Chart as ChartJS,
@@ -11,7 +11,7 @@ import {
   Filler,
   Legend,
 } from "chart.js";
-import "../../../../Styles/StaffComplianceDashboard.css";
+import "../../../../Styles/general-styles/StaffComplianceDashboard.css";
 import Report from "../../RosteringModule/Report"; // import the insights
 import StaffInsights from "./StaffInsights";
 import StaffCompliance from '../../../../Images/StaffCompliance.jpeg';

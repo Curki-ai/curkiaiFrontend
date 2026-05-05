@@ -1,8 +1,12 @@
 import React, { useEffect, useRef, useState } from "react";
 import "./LMSRedesign.css";
+// CoursePlayer markup uses .ulrn-* classes defined in LMSLearner.css; we
+// reuse the learner player for the admin's "Preview" flow.
+import "./LMSLearner.css";
 import { blankCourse } from "./lmsMockData";
 import CourseLibrary from "./CourseLibrary";
 import CourseEditor from "./CourseEditor";
+import CoursePlayer from "./CoursePlayer";
 import {
   listCoursesApi,
   createCourseApi,
@@ -20,6 +24,11 @@ const LMSRedesign = ({ user, organizationId }) => {
   const [courses, setCourses] = useState([]);
   const [view, setView] = useState("library");
   const [editingId, setEditingId] = useState(null);
+  const [previewId, setPreviewId] = useState(null);
+  const [previewProgress, setPreviewProgress] = useState({
+    completed: {},
+    quizScores: {},
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [saveStatus, setSaveStatus] = useState("idle"); // idle | saving | saved | error
@@ -117,10 +126,14 @@ const LMSRedesign = ({ user, organizationId }) => {
           setEditingId(null);
           setView("library");
         }
+        if (previewId === deletedId) {
+          setPreviewId(null);
+          setView("library");
+        }
       },
     });
     return unsubscribe;
-  }, [organizationId, editingId, saveStatus]);
+  }, [organizationId, editingId, previewId, saveStatus]);
 
   // ── Debounced auto-save ─────────────────────────────────────────────
   const scheduleSave = (courseId, payload) => {
@@ -179,6 +192,59 @@ const LMSRedesign = ({ user, organizationId }) => {
     setEditingId(null);
   };
 
+  const openPreview = (id) => {
+    setPreviewId(id);
+    setPreviewProgress({ completed: {}, quizScores: {} });
+    setView("preview");
+  };
+
+  const closePreview = () => {
+    setPreviewId(null);
+    setView("library");
+  };
+
+  // Local-only completion handler for the admin preview. We never write to
+  // enrollment APIs here — admins aren't enrolled, and a preview shouldn't
+  // mutate any learner's progress. Quizzes are graded locally because the
+  // admin payload still carries the `correct` index on each question.
+  const previewLessonComplete = (lessonId, extra) => {
+    const course = courses.find((c) => c.id === previewId);
+    if (!course) return undefined;
+
+    if (extra?.quizAnswers) {
+      let lesson;
+      for (const sec of course.sections || []) {
+        lesson = (sec.lessons || []).find((l) => l.id === lessonId);
+        if (lesson) break;
+      }
+      if (!lesson) return undefined;
+      const questions = lesson.questions || [];
+      const breakdown = questions.map((q) => ({
+        questionId: q.id,
+        correct: extra.quizAnswers[q.id] === q.correct,
+      }));
+      const correctCount = breakdown.filter((b) => b.correct).length;
+      const score = questions.length
+        ? Math.round((correctCount / questions.length) * 100)
+        : 0;
+      const passed = score >= (lesson.quiz?.passScore ?? 80);
+      setPreviewProgress((p) => ({
+        ...p,
+        quizScores: { ...p.quizScores, [lessonId]: score },
+        completed: passed
+          ? { ...p.completed, [lessonId]: true }
+          : p.completed,
+      }));
+      return { score, passed, breakdown };
+    }
+
+    setPreviewProgress((p) => ({
+      ...p,
+      completed: { ...p.completed, [lessonId]: true },
+    }));
+    return undefined;
+  };
+
   const createCourse = async () => {
     if (!organizationId) {
       setError("Organisation not resolved yet — please wait a moment.");
@@ -224,6 +290,7 @@ const LMSRedesign = ({ user, organizationId }) => {
   };
 
   const editingCourse = courses.find((c) => c.id === editingId) || null;
+  const previewCourse = courses.find((c) => c.id === previewId) || null;
 
   // ── Render ─────────────────────────────────────────────────────────
   if (!organizationId) {
@@ -275,6 +342,7 @@ const LMSRedesign = ({ user, organizationId }) => {
             onOpen={openEditor}
             onCreate={createCourse}
             onDelete={deleteCourse}
+            onPreview={openPreview}
           />
         ) : view === "editor" && editingCourse ? (
           <CourseEditor
@@ -283,6 +351,13 @@ const LMSRedesign = ({ user, organizationId }) => {
             onBack={backToLibrary}
             saveStatus={saveStatus}
             organizationId={organizationId}
+          />
+        ) : view === "preview" && previewCourse ? (
+          <CoursePlayer
+            course={previewCourse}
+            progress={previewProgress}
+            onBack={closePreview}
+            onComplete={previewLessonComplete}
           />
         ) : null}
       </div>

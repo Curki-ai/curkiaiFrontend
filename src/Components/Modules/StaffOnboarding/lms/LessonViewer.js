@@ -18,6 +18,8 @@ const LessonViewer = ({
   onPrev,
   onNext,
 }) => {
+  console.log("LessonViewer props:", { section, lesson, isCompleted, quizScore });
+  console.log("Rendering LessonViewer for lesson", lesson);
   if (!lesson.published) {
     return (
       <div className="ulrn-locked">
@@ -104,37 +106,52 @@ const LessonViewer = ({
   );
 };
 
-const VideoView = ({ lesson }) => (
-  <div>
-    <div className="ulrn-video-frame">
-      {lesson.videoUrl ? (
-        <iframe
-          title={lesson.title}
-          src={toEmbedUrl(lesson.videoUrl)}
-          frameBorder="0"
-          allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
-          allowFullScreen
-        />
-      ) : (
-        <div className="ulrn-video-empty">
-          <span className="ulrn-video-play">▶</span>
-          <p>Video preview placeholder</p>
-          <span className="ulrn-video-hint">
-            Your trainer hasn't attached a video yet — but the lesson is still
-            marked as available so you can mark it complete after reading any
-            transcript below.
-          </span>
+const VideoView = ({ lesson }) => {
+  const fileSrc = lesson.attachment?.sasUrl || lesson.attachment?.url || "";
+  const isVideoFile =
+    fileSrc &&
+    (lesson.attachment?.mimetype?.startsWith("video/") ||
+      /\.(mp4|webm|ogg|mov|m4v)(\?|$)/i.test(fileSrc));
+
+  return (
+    <div>
+      <div className="ulrn-video-frame">
+        {isVideoFile ? (
+          <video
+            src={fileSrc}
+            controls
+            controlsList="nodownload"
+            style={{ width: "100%", height: "100%" }}
+          />
+        ) : lesson.videoUrl ? (
+          <iframe
+            title={lesson.title}
+            src={toEmbedUrl(lesson.videoUrl)}
+            frameBorder="0"
+            allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          />
+        ) : (
+          <div className="ulrn-video-empty">
+            <span className="ulrn-video-play">▶</span>
+            <p>Video preview placeholder</p>
+            <span className="ulrn-video-hint">
+              Your trainer hasn't attached a video yet — but the lesson is still
+              marked as available so you can mark it complete after reading any
+              transcript below.
+            </span>
+          </div>
+        )}
+      </div>
+      {lesson.transcript && (
+        <div className="ulrn-content-block">
+          <h3>Transcript</h3>
+          <p>{lesson.transcript}</p>
         </div>
       )}
     </div>
-    {lesson.transcript && (
-      <div className="ulrn-content-block">
-        <h3>Transcript</h3>
-        <p>{lesson.transcript}</p>
-      </div>
-    )}
-  </div>
-);
+  );
+};
 
 const TextView = ({ lesson }) => (
   <div className="ulrn-content-block ulrn-text-content">

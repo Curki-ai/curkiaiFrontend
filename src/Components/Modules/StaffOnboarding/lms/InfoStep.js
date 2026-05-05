@@ -6,11 +6,6 @@ const InfoStep = ({ course, onChange }) => {
 
   return (
     <div className="ulms-step-content">
-      <div className="ulms-step-header">
-        <h2>Course Information</h2>
-        <p>Add the basics so your team knows what this course covers.</p>
-      </div>
-
       <div className="ulms-info-grid">
         <div className="ulms-field-group ulms-full">
           <label className="ulms-label">

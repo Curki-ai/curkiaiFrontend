@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import '../../../Styles/IncidentAuditing.css';
-import UploadFiles from "../../UploadFiles";
+import '../../../Styles/NDISModule/IncidentAuditing.css';
+import UploadFiles from "../../general-components/UploadFiles";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
@@ -11,11 +11,11 @@ import Toggle from "react-toggle";
 import Tippy from '@tippyjs/react';
 import 'tippy.js/dist/tippy.css';
 import { IoMdInformationCircleOutline } from "react-icons/io";
-import PulsatingLoader from "../../PulsatingLoader";
+import PulsatingLoader from "../../general-components/PulsatingLoader";
 import { IoIosArrowUp, IoIosArrowDown } from "react-icons/io";
 import { RiDeleteBin6Line } from "react-icons/ri";
 import { GoArrowLeft } from "react-icons/go";
-import incrementAnalysisCount from "../FinancialModule/TLcAnalysisCount";
+import incrementAnalysisCount from "../FinancialModule/Tlc/TLcAnalysisCount";
 import incrementCareVoiceAnalysisCount from "../SupportAtHomeModule/careVoiceCostAnalysis";
 
 const TASK_QUEUE = [
@@ -76,7 +76,8 @@ const IncidentAuditing = (props) => {
         "SGonzales@tenderlovingcaredisability.com.au",
         "mfarag@tenderlovingcare.com.au"
     ];
-
+    const BASE_URL = "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net";
+    // const BASE_URL = "http://localhost:5000";
     const isRestrictedUser = RESTRICTED_USERS.includes(
         (props?.user?.email || "").toLowerCase()
     );
@@ -101,7 +102,7 @@ const IncidentAuditing = (props) => {
                 setLoadingHistory(true);
 
                 const res = await fetch(
-                    `https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/incidentAuditingHistory?email=${props?.user?.email || ""}`
+                    `${BASE_URL}/api/incidentAuditingHistory?email=${props?.user?.email || ""}`
                 );
 
                 if (!res.ok) {
@@ -152,7 +153,7 @@ const IncidentAuditing = (props) => {
             };
 
             const res = await fetch(
-                "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/incidentAuditingHistory/save",
+                `${BASE_URL}/api/incidentAuditingHistory/save`,
                 {
                     method: "POST",
                     headers: {
@@ -168,7 +169,7 @@ const IncidentAuditing = (props) => {
 
             // ✅ Refresh history list immediately (same feel)
             const historyRes = await fetch(
-                `https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/incidentAuditingHistory?email${props?.user?.email || ""}`
+                `${BASE_URL}/api/incidentAuditingHistory?email=${props?.user?.email || ""}`
             );
             const historyJson = await historyRes.json();
             setHistoryList(historyJson.data || []);
@@ -183,7 +184,7 @@ const IncidentAuditing = (props) => {
     const handleIncidentHistoryClick = async (item) => {
         try {
             const res = await fetch(
-                `https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/incidentAuditingHistory/${item.id}`
+                `${BASE_URL}/api/incidentAuditingHistory/${item.id}`
             );
 
             if (!res.ok) throw new Error("Failed to fetch history item");
@@ -237,7 +238,7 @@ const IncidentAuditing = (props) => {
             setDeleting(true);
 
             const res = await fetch(
-                `https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/incidentAuditingHistory`,
+                `${BASE_URL}/api/incidentAuditingHistory`,
                 {
                     method: "DELETE",
                     headers: {
@@ -489,7 +490,7 @@ const IncidentAuditing = (props) => {
             }
 
             const response = await fetch(
-                "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/incidentAuditing",
+                `${BASE_URL}/incidentAuditing`,
                 {
                     method: "POST",
                     body: formData

@@ -1,4 +1,4 @@
-import "../../../Styles/BroadcastMessage.css";
+import "../../../Styles/RosteringModule/BroadcastMessage.css";
 
 const BroadcastMessage = ({ message }) => {
   const variant = message.variant || "info"; // info | success
