@@ -14,7 +14,7 @@ import {
     Area
 } from "recharts";
 
-import "../../../Styles/newGraphs.css";
+import "../../../Styles/FinancialModule/newGraphs.css";
 
 const COLORS = [
     "#22C55E", // Green

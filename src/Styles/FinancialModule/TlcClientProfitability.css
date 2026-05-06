@@ -1,0 +1,423 @@
+.tlcClient-dashboard-summary {
+  display: grid;
+  grid-template-columns: 23.5% 23.5% 23.5% 23.5%;
+  column-gap: 2%;
+}
+
+.tlcClient-dashboard-card {
+  background: #ffffff;
+  border-radius: 10px;
+  flex: 1;
+  text-align: center;
+  padding: 24px 18px;
+  border: 1px solid;
+  border-image-source: linear-gradient(0deg, #E5E5E5, #E5E5E5);
+  box-shadow: 0px 0px 4px 0px #00000040;
+  text-align: left;
+  margin-bottom: 40px;
+}
+
+.tlcClient-dashboard-card p {
+  font-size: 14px;
+  font-weight: 400;
+  font-family: 'Inter';
+  color: #6b6b6b;
+}
+
+.tlcClient-dashboard-card h3 {
+  font-size: 20px;
+  font-weight: 500;
+  font-family: 'Inter';
+  color: #000000;
+  margin-top: 6px;
+  margin-bottom: 6px;
+}
+
+
+.client-profitabilty-graph-each {
+  box-shadow: 0px 0px 4px 0px #00000040;
+  border: 1px solid;
+  border-image-source: linear-gradient(0deg, #E5E5E5, #E5E5E5);
+  border-radius: 12px;
+  margin-bottom: 24px;
+  padding: 12px;
+
+}
+
+.filter-dropdown {
+  text-align: left !important;
+  width: 100%;
+  font-size: 14px;
+  border-radius: 8px;
+  font-family: 'Inter';
+}
+
+.filter-search-input {
+  padding: 10px 16px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+  font-family: Inter;
+  width: 100%;
+}
+
+.filter-search-input:focus {
+  border-color: #6c4cdc;
+}
+
+.json-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: Inter;
+  font-size: 14px;
+}
+
+.json-table th {
+  background: #f4f4f4;
+  padding: 10px;
+  border: 1px solid #ccc;
+  font-weight: 600;
+}
+
+.json-table td {
+  padding: 10px;
+  border: 1px solid #e0e0e0;
+}
+
+.json-table tr:hover {
+  background: #f9f6ff;
+}
+
+.drill-toggle-btn {
+  border: none;
+  background: #e5e7eb;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  font-size: 14px;
+  cursor: pointer;
+  margin-right: 6px;
+}
+
+.tab-btn {
+  padding: 10px 22px;
+  font-size: 14px;
+  font-family: Inter, sans-serif;
+  font-weight: 500;
+  border: 1.5px solid #d3d3d3;
+  border-radius: 8px;
+  background: #f7f7f7;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  color: #444;
+}
+
+.tab-btn:hover {
+  background: #ececec;
+}
+
+.tab-btn.active {
+  background: #6C4CDC;
+  border-color: #6C4CDC;
+  color: white;
+  box-shadow: 0px 4px 10px rgba(108, 76, 220, 0.3);
+  transform: translateY(-1px);
+}
+
+.tab-btn:not(.active):hover {
+  border-color: #bfbfbf;
+}
+
+/* Keep date picker popup from pushing layout */
+.date-filter-wrapper {
+  position: relative;
+  z-index: 5;
+}
+
+/* If your DateRangePicker uses react-datepicker internally */
+.react-datepicker-popper {
+  position: absolute !important;
+  z-index: 9999 !important;
+}
+
+/* Ensure grid items stay aligned */
+.filters-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(200px, 1fr));
+  gap: 12px;
+  align-items: start;
+  /* 👈 important */
+}
+
+/* ===============================
+   FIX HISTORY CARD FONT & COLOR
+   =============================== */
+
+.history-card-modern {
+  color: #333;
+  font-weight: 400;
+}
+
+/* Date range */
+.history-card-modern .history-date-range .label {
+  color: #6C4CDC;
+  font-weight: 600;
+}
+
+.history-card-modern .history-date-range .value {
+  color: #333;
+  font-weight: 500;
+}
+
+/* Saved on */
+.history-card-modern .saved-on {
+  color: #57575c;
+  /* light grey */
+  font-size: 13px;
+  font-weight: 350;
+}
+
+.history-card-modern .saved-label {
+  color: #6C4CDC;
+  font-weight: 500;
+}
+
+/* Filters */
+.history-card-modern .history-filters {
+  font-size: 13px;
+  color: black;
+  font-weight: 400;
+}
+
+.history-card-modern .filter-item {
+  color:#57575c;
+  font-weight: 400;
+}
+
+.history-card-modern .filter-item strong {
+  color: #6C4CDC;
+  font-weight: 500;
+}
+
+.tlc-profitibility-history-back-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  color: #6C4CDC;
+  font-weight: 600;
+  font-size: 15px;
+  margin-left: 4px;
+  margin-bottom: 14px;
+  margin-top: 6px;
+  width: 66px;
+}
+
+.tlc-profitibility-history-back-btn:hover {
+  color: #4b2cc0;
+}
+.charts-grid {
+  display: grid;
+  grid-template-columns: 1fr;   /* one chart per row */
+  /* gap: 28px; */
+  width: 100%;
+}
+.full-screen-loader {
+    position: fixed;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(6px); /* 🔥 THIS IS THE BLUR */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 99999;
+}
+
+.history-loader {
+    width: 50px;
+    height: 50px;
+    border: 5px solid #e5e7eb;
+    border-top: 5px solid #6C4CDC;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+/* Hide scrollbar but allow scroll */
+.page-containersss {
+  height: 100vh;
+  overflow-y: auto;
+ padding: 24px 4%;
+  scrollbar-width: none;       /* Firefox */
+  -ms-overflow-style: none;    /* IE/Edge */
+}
+
+.page-containersss::-webkit-scrollbar {
+  width: 14px !important;
+}
+
+.page-containersss::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.page-containersss::-webkit-scrollbar-thumb {
+  background: linear-gradient(45deg, #6c4cdc, #d64d4d);
+  border-radius: 10px;
+  border: 3px solid #f1f1f1;
+}
+
+.page-containersss::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(45deg, #6c4cdc, #6c4cdc);
+}
+
+/* Firefox */
+.page-containersss {
+  scrollbar-width: auto;
+  scrollbar-color: #6c4cdc;
+}
+
+/* ============================================================
+   CLIENTS PROFITABILITY (TlcNewClientProfitibility) — RESPONSIVE
+   Supported viewport range: ≥821px (≤820px is routed to Care
+   Voice in HomePage.js).
+   Scoped to .tlc-cp-page and the tlc-cp-* hooks so other modules
+   sharing .page-containersss / .filters-grid / .financial-header
+   stay untouched.
+   ============================================================ */
+
+/* ------------------ Tab bar — fix shrink/wrap behaviour at all sizes ------------------ */
+.tlc-cp-page .tab-bar {
+  flex-wrap: wrap;
+  row-gap: 8px;
+}
+
+.tlc-cp-page .tab-bar > div,
+.tlc-cp-page .tab-bar > button {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* ------------------ Compare/Save buttons — never shrink or wrap text ------------------ */
+/* When the tab-bar wraps to multiple rows it grows vertically and squeezes the
+   action-buttons column horizontally. Lock the buttons so their text stays on
+   a single line and the button keeps its natural width. */
+.tlc-cp-actions-buttons {
+  flex-shrink: 0;
+}
+
+.tlc-cp-actions-buttons > button {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* ------------------ Small desktop / laptop (≤1280px) ------------------ */
+@media (max-width: 1280px) {
+  .tlc-cp-page .filters-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* ------------------ Tablet landscape (≤1024px) ------------------ */
+@media (max-width: 1024px) {
+  /* Page container padding eases up */
+  .tlc-cp-page {
+    padding: 20px 24px;
+  }
+
+  /* Top header (role-selector + sync) wraps */
+  .tlc-cp-page .financial-header {
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 12px 16px;
+  }
+
+  .tlc-cp-page .role-selector {
+    flex-wrap: wrap;
+    row-gap: 10px;
+  }
+
+  /* Tabs + Compare/Save row wraps; tab wrapper sizes to content
+     so we don't get a whitespace gap to the right of the tabs */
+  .tlc-cp-actions-row {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .tlc-cp-actions-buttons {
+    align-items: flex-end !important;
+  }
+
+  /* Filters drop to 2 columns */
+  .tlc-cp-page .filters-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  /* History margin tightened */
+  .tlc-cp-page .history-container {
+    margin-top: 64px;
+  }
+
+  /* Dashboard summary cards drop to 2 cols */
+  .tlc-cp-page .tlcClient-dashboard-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 12px;
+    row-gap: 12px;
+  }
+}
+
+/* ------------------ Lower end of supported range (≤900px) ------------------ */
+@media (max-width: 900px) {
+  .tlc-cp-page {
+    padding: 18px 20px;
+  }
+
+  .tlc-cp-page .financial-header {
+    padding: 10px 12px;
+    gap: 10px;
+  }
+
+  /* Buttons sit on the left when stacked under tabs */
+  .tlc-cp-actions-row {
+    align-items: flex-start;
+  }
+
+  .tlc-cp-actions-buttons {
+    align-items: flex-start !important;
+  }
+
+  /* Drop the desktop 17px top offset on the Compare button when stacked */
+  .tlc-cp-actions-buttons > button {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+  }
+
+  /* History header: search bar drops below the title */
+  .tlc-cp-history-header {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  .tlc-cp-history-search {
+    max-width: 100% !important;
+    width: 100%;
+  }
+
+  /* History container top margin tightened */
+  .tlc-cp-page .history-container {
+    margin-top: 40px;
+  }
+
+  /* Delete-confirm modal — fit a narrow viewport */
+  .tlc-cp-delete-modal {
+    min-width: 0 !important;
+    width: calc(100vw - 48px);
+    max-width: 380px;
+    padding: 18px 20px !important;
+  }
+}

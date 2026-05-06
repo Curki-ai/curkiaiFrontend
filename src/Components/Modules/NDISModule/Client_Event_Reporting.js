@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import "../../../Styles/ClientEvent.css";
-import UploadFiles from "../../UploadFiles";
+import "../../../Styles/NDISModule/ClientEvent.css";
+import UploadFiles from "../../general-components/UploadFiles";
 import star from '../../../Images/star.png';
 import Toggle from "react-toggle";
 import historyIcon from "../../../Images/TlcPayrollHistory.png"
 import { GoArrowLeft } from "react-icons/go";
 import { RiDeleteBin6Line } from "react-icons/ri";
-import incrementAnalysisCount from "../FinancialModule/TLcAnalysisCount";
+import incrementAnalysisCount from "../FinancialModule/Tlc/TLcAnalysisCount";
 import incrementCareVoiceAnalysisCount from "../SupportAtHomeModule/careVoiceCostAnalysis";
 const BASE_URL =
   "https://curki-backend-api-container.yellowflower-c21bea82.australiaeast.azurecontainerapps.io";
@@ -181,7 +181,7 @@ const Client_Event_Reporting = (props) => {
 
       // Mark history mode
       setIsFromHistory(true);
-      await incrementCareVoiceAnalysisCount(props.user.email,"history-click",0,"client-event-reporting",0)
+      await incrementCareVoiceAnalysisCount(props.user.email, "history-click", 0, "client-event-reporting", 0)
     } catch (err) {
       console.error("Failed to load client event history item", err);
     }
@@ -286,7 +286,7 @@ const Client_Event_Reporting = (props) => {
             .map((key) => s3[key]);
 
         setStage3Data(eventsArray);
-        await incrementCareVoiceAnalysisCount(props?.user?.email?.trim(), "ai-analysis",0,"client-event-reporting",0);
+        await incrementCareVoiceAnalysisCount(props?.user?.email?.trim(), "ai-analysis", 0, "client-event-reporting", 0);
       } else {
         alert("Stage 3 data not found in response");
       }
@@ -362,16 +362,16 @@ const Client_Event_Reporting = (props) => {
     { date: "12 Aug", type: "SE", format: "Txt", link: "#" },
   ];
   const renderHistorySection = () => (
-    <section className="history-container">
+    <section className="ce-history-container">
 
       {/* HEADER */}
-      <div style={{ display: "flex", gap: "8px" }}>
+      <div style={{ display: "flex", gap: "8px", marginBottom: "10px" }}>
         <img
           src={historyIcon}
           alt="icon"
           style={{ width: "22px", height: "21px", pointerEvents: "none" }}
         />
-        <div className="history-title">History</div>
+        <div className="ce-history-title">History</div>
       </div>
 
       {/* BODY */}
@@ -388,11 +388,11 @@ const Client_Event_Reporting = (props) => {
       )}
 
       {!loadingHistory && historyList.length > 0 && (
-        <div className="history-list">
+        <div className="ce-history-list">
           {historyList.map((item) => (
             <div
               key={item.id}
-              className="history-card-modern"
+              className="ce-history-card"
               onClick={() => handleClientEventHistoryClick(item)}
               style={{ position: "relative", cursor: "pointer" }}
             >
@@ -419,10 +419,10 @@ const Client_Event_Reporting = (props) => {
 
               {/* DATE RANGE */}
               {item.dateRange && (
-                <div className="history-top">
-                  <div className="history-date-range">
-                    <span className="label">Date Range: </span>
-                    <span className="value">
+                <div className="ce-history-top">
+                  <div className="ce-history-date-range">
+                    <span className="ce-label">Date Range: </span>
+                    <span className="ce-value">
                       {formatClientEventDateRange(item.dateRange)}
                     </span>
                   </div>
@@ -430,8 +430,8 @@ const Client_Event_Reporting = (props) => {
               )}
 
               {/* SAVED ON */}
-              <div className="saved-on">
-                <span className="saved-label">Saved on: </span>
+              <div className="ce-saved-on">
+                <span className="ce-saved-label">Saved on: </span>
                 <span style={{ color: "#000" }}>
                   {new Date(item.createdAt).toLocaleString()}
                 </span>
@@ -444,6 +444,7 @@ const Client_Event_Reporting = (props) => {
       {/* DELETE MODAL */}
       {showDeleteModal && (
         <div
+          className="ce-delete-overlay"
           style={{
             position: "fixed",
             inset: 0,
@@ -455,6 +456,7 @@ const Client_Event_Reporting = (props) => {
           }}
         >
           <div
+            className="ce-delete-modal"
             style={{
               background: "#fff",
               borderRadius: "12px",
@@ -540,12 +542,12 @@ const Client_Event_Reporting = (props) => {
     )
   }
   return (
-    <div className="upload-page">
+    <div className="ce-page">
       {/* Toggle */}
-      <div className="financial-header">
+      <div className="ce-header">
 
-        {!stage3Data && <h1 className="titless">PARTICIPANT EVENTS & INCIDENT MANAGEMENT</h1>}
-        <div className="sync-toggle" style={{ marginLeft: stage3Data ? "auto" : "0px" }}>
+        {!stage3Data && <h1 className="ce-title">PARTICIPANT EVENTS & INCIDENT MANAGEMENT</h1>}
+        <div className="ce-sync-toggle" style={{ marginLeft: stage3Data ? "auto" : "0px" }}>
           <div
             style={{
               fontSize: "14px",
@@ -563,26 +565,26 @@ const Client_Event_Reporting = (props) => {
           />
         </div>
       </div>
-      {!stage3Data && <div className="info-table">
-        <div className="table-headerss">
+      {!stage3Data && <div className="ce-info-table">
+        <div className="ce-info-table-header">
           <span>If You Upload This...</span>
           <span>Our AI Will Instantly...</span>
         </div>
-        <div className="table-rowss">
+        <div className="ce-info-table-row">
           <div>Care Management System - Shift Notes Report</div>
           <ul>
             <li>Detects unreported incidents under NDIS rules</li>
             <li>Identifies high-risk participants needing follow-up.</li>
           </ul>
         </div>
-        <div className="table-rowss">
+        <div className="ce-info-table-row">
           <div>Care Management System - Progress Notes Report</div>
           <ul>
             <li>Links repeated issues to specific staff or time slots.</li>
             <li>Predicts potential restrictive practice or escalation risks.</li>
           </ul>
         </div>
-        <div className="table-rowss">
+        <div className="ce-info-table-row">
           <div>Rostering System - Shift Logs / Daily Support Notes Report</div>
           <ul>
             <li>Ensures incident and reportable event compliance.</li>
@@ -591,9 +593,9 @@ const Client_Event_Reporting = (props) => {
         </div>
       </div>}
       {/* Date DropDown */}
-      {!stage3Data && <div className="date-section">
+      {!stage3Data && <div className="ce-date-section">
         {/* Report Start Date */}
-        <div className="date-picker">
+        <div className="ce-date-picker">
           <label
             style={{
               fontSize: "14px",
@@ -603,7 +605,7 @@ const Client_Event_Reporting = (props) => {
           >
             Report Start Date
           </label>
-          <div className="date-inputs">
+          <div className="ce-date-inputs">
             <select
               value={startDay}
               onChange={(e) => setStartDay(e.target.value)}
@@ -639,7 +641,7 @@ const Client_Event_Reporting = (props) => {
         </div>
 
         {/* Report End Date */}
-        <div className="date-picker">
+        <div className="ce-date-picker">
           <label
             style={{
               fontSize: "14px",
@@ -649,7 +651,7 @@ const Client_Event_Reporting = (props) => {
           >
             Report End Date
           </label>
-          <div className="date-inputs">
+          <div className="ce-date-inputs">
             <select
               value={endDay}
               onChange={(e) => setEndDay(e.target.value)}
@@ -688,10 +690,10 @@ const Client_Event_Reporting = (props) => {
       <>
         {!stage3Data && <>
           <div
-            className="uploader-grid"
+            className="ce-uploader-grid"
             style={{ display: 'flex', justifyContent: 'center' }}
           >
-            <div style={{ width: '50%' }}>
+            <div className="ce-uploader-col" style={{ width: '50%' }}>
               <UploadFiles
                 files={selectedFiles}
                 setFiles={setSelectedFiles}
@@ -708,7 +710,7 @@ const Client_Event_Reporting = (props) => {
           </div>
 
           <button
-            className="analyse-btn"
+            className="ce-analyse-btn"
             disabled={loading}
             style={{ backgroundColor: '#000', marginTop: '20px' }}
             onClick={handleAnalyse}
@@ -749,7 +751,7 @@ const Client_Event_Reporting = (props) => {
         {/* BACK BUTTON (only when opened from history) */}
         {isFromHistory && stage3Data && (
           <div
-            className="financial-health-history-back-btn"
+            className="ce-history-back-btn"
             onClick={() => {
               setIsFromHistory(false);
               setStage3Data(null);
@@ -772,12 +774,12 @@ const Client_Event_Reporting = (props) => {
 
         {/* Stage 3 Events */}
         {stage3Data && (
-          <div className="events-grid">
+          <div className="ce-events-grid">
             {stage3Data.map((content, idx) => (
-              <div key={idx} className="event-card">
+              <div key={idx} className="ce-event-card">
                 <h4>Event {idx + 1}</h4>
                 <div
-                  className="event-content"
+                  className="ce-event-content"
                   dangerouslySetInnerHTML={{
                     __html: content
                       .replace(/^###\s*/gm, "")

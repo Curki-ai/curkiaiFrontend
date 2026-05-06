@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import "../../../Styles/SmartRostering.css";
+import "../../../Styles/RosteringModule/SmartRostering.css";
 import { FiUploadCloud } from "react-icons/fi";
 import SearchIcon from '../../../Images/SearchIcon.png';
 import { BiSend } from "react-icons/bi";
@@ -10,14 +10,14 @@ import axios from "axios";
 import { MdOutlineHistory } from "react-icons/md";
 import RosterHistory from "./RosterHistory";
 import { LuDownload } from "react-icons/lu";
-import incrementAnalysisCount from "../FinancialModule/TLcAnalysisCount";
-import OnboardingForm from "../../OnboardingForm";
+import incrementAnalysisCount from "../FinancialModule/Tlc/TLcAnalysisCount";
+import OnboardingForm from "../../general-components/OnboardingForm";
 import { RiSettingsLine } from "react-icons/ri";
 import { FiCheck } from "react-icons/fi";
 import incrementCareVoiceAnalysisCount from "../SupportAtHomeModule/careVoiceCostAnalysis";
 
 const API_BASE = "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net";
-
+// const API_BASE = "http://localhost:5000";
 const SmartRostering = (props) => {
     const userEmail = props?.user?.email;
     // const userEmail = "kris@curki.ai";
@@ -633,9 +633,9 @@ const SmartRostering = (props) => {
                             </ul>
                         </div>
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '30px' }}>
+                    <div className="rostering-controls-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '30px' }}>
                         <div className="rostering-date">{formattedDate}</div>
-                        <div style={{ display: 'flex', gap: '14px' }}>
+                        <div className="rostering-controls-buttons" style={{ display: 'flex', gap: '14px' }}>
                             <button className="roster-settings-btn" onClick={() => setScreen(3)}><MdOutlineHistory size={18} color="#707493" /> History </button>
                             <button className="roster-settings-btn" onClick={() => setOpenRosterSetting(true)}><RiSettingsLine size={18} color="#707493" />Rostering Settings</button>
                             {/* {canUseVisualCare && (

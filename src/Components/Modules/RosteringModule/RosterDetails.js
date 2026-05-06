@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import "../../../Styles/RosterDetails.css";
+import "../../../Styles/RosteringModule/RosterDetails.css";
 import PersonalInformationIcon from '../../../Images/PersonalInformation.png';
 import ContactIcon from '../../../Images/ContactNameicon.png';
 import SuccessCheck from '../../../Images/SuccessCheck.png';
@@ -580,7 +580,7 @@ const RosterDetails = ({ setScreen, rosteringResponse, API_BASE, selectedClient,
                     </div>
 
                     <div className="roster-info-grid">
-                        <div style={{ display: 'flex', paddingLeft: '54px', gap: '42px', paddingTop: '20px', paddingBottom: '20px', borderBottom: '1px solid #E4E4E4' }}>
+                        <div className="roster-info-row" style={{ display: 'flex', paddingLeft: '54px', gap: '42px', paddingTop: '20px', paddingBottom: '20px', borderBottom: '1px solid #E4E4E4' }}>
                             <p>ID: <span style={{ color: 'black' }}>
                                 {client.ClientId || client.id || activeClient?.clientId || request.client_id || 'N/A'}
                             </span></p>
@@ -594,7 +594,7 @@ const RosterDetails = ({ setScreen, rosteringResponse, API_BASE, selectedClient,
                                 {client.Gender || client.gender || activeClient?.sex || 'N/A'}
                             </span></p>
                         </div>
-                        <div style={{ display: 'flex', paddingLeft: '54px', gap: '42px', paddingTop: '20px', paddingBottom: '20px', borderBottom: '1px solid #E4E4E4' }}>
+                        <div className="roster-info-row" style={{ display: 'flex', paddingLeft: '54px', gap: '42px', paddingTop: '20px', paddingBottom: '20px', borderBottom: '1px solid #E4E4E4' }}>
                             <p>Phone: <span style={{ color: 'black' }}>
                                 {client.Phone1 || client.phone || activeClient?.phone || 'N/A'}
                             </span></p>
@@ -603,7 +603,7 @@ const RosterDetails = ({ setScreen, rosteringResponse, API_BASE, selectedClient,
                             </span></p>
 
                         </div>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', paddingLeft: '54px', gap: '42px', paddingTop: '20px', paddingBottom: '20px', borderBottom: '1px solid #E4E4E4' }}>
+                        <div className="roster-info-row" style={{ display: 'flex', flexWrap: 'wrap', paddingLeft: '54px', gap: '42px', paddingTop: '20px', paddingBottom: '20px', borderBottom: '1px solid #E4E4E4' }}>
                             <p>Shift Date: <span style={{ color: 'black' }}>
                                 {formatDateDMY(activeClient?.dateOfService)}
                             </span></p>
@@ -614,12 +614,12 @@ const RosterDetails = ({ setScreen, rosteringResponse, API_BASE, selectedClient,
                                 {activeClient?.endTime}
                             </span></p>
                         </div>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', paddingLeft: '54px', gap: '42px', paddingTop: '20px', paddingBottom: '20px', borderBottom: '1px solid #E4E4E4' }}>
+                        <div className="roster-info-row" style={{ display: 'flex', flexWrap: 'wrap', paddingLeft: '54px', gap: '42px', paddingTop: '20px', paddingBottom: '20px', borderBottom: '1px solid #E4E4E4' }}>
                             <p>Address: <span style={{ color: 'black' }}>
                                 {formatAddress()}
                             </span></p>
                         </div>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', paddingLeft: '54px', gap: '42px', paddingTop: '20px', paddingBottom: '20px', borderBottom: '1px solid #E4E4E4', textAlign: 'left' }}>
+                        <div className="roster-info-row" style={{ display: 'flex', flexWrap: 'wrap', paddingLeft: '54px', gap: '42px', paddingTop: '20px', paddingBottom: '20px', borderBottom: '1px solid #E4E4E4', textAlign: 'left' }}>
                             <p>Skills: <span style={{ color: 'black' }}>
                                 {activeClient?.prefSkillsDescription?.join(', ')}
                             </span></p>

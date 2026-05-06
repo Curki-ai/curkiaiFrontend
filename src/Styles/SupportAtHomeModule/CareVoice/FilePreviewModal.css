@@ -1,0 +1,484 @@
+/* ===============================
+   FILE PREVIEW MODAL WINDOW
+================================= */
+
+.file-preview-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  z-index: 99998;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.file-preview-overlay::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: -1;
+}
+
+.file-preview-modal {
+  width: min(1200px, 97vw);
+  height: min(90vh, 860px);
+  background: #fff;
+  border-radius: 18px;
+  overflow: hidden;
+
+  /* Centered by the overlay's flex (display:flex; align-items:center;
+     justify-content:center). Avoid using position:fixed + transform here
+     because transform creates a containing block — any position:fixed
+     descendant (like SuperDoc toolbar popovers) would then be positioned
+     relative to the modal instead of the viewport, which hides them. */
+  position: relative;
+  z-index: 999999;
+
+  display: flex;
+  flex-direction: column;
+
+  box-shadow:
+    0 25px 60px rgba(0, 0, 0, .25),
+    0 8px 20px rgba(0, 0, 0, .12);
+}
+
+/* ===============================
+   HEADER
+================================= */
+
+.file-preview-header {
+  height: 62px;
+  padding: 0 18px;
+  border-bottom: 1px solid #ececec;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  text-align: left;
+}
+
+.file-preview-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #111827;
+  flex: 1;
+  min-width: 0;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.file-preview-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Buttons */
+
+.file-preview-icon-btn,
+.file-preview-close-btn,
+.file-preview-save-btn {
+  border: none;
+  cursor: pointer;
+  border-radius: 10px;
+  transition: .2s ease;
+}
+
+.file-preview-icon-btn,
+.file-preview-close-btn {
+  width: 38px;
+  height: 38px;
+  background: #f5f6fa;
+  color: #374151;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.file-preview-save-btn {
+  height: 38px;
+  padding: 0 14px;
+  background: #6c4cdc;
+  color: #fff;
+  font-weight: 600;
+
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ===============================
+   BODY
+================================= */
+
+.file-preview-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #f8fafc;
+}
+
+/* ===============================
+   TOOLBAR FIX
+================================= */
+
+/* Outer scroller — owns the horizontal overflow so the toolbar itself
+   can keep overflow:visible (so its dropdowns / kebab menus aren't
+   clipped by the toolbar box). The high z-index ensures any dropdown
+   rendered as a descendant of the toolbar paints above the document
+   editor area below (which would otherwise cover it because it comes
+   later in DOM order). */
+.superdoc-toolbar {
+  background: #fff;
+  border-bottom: 1px solid #ececec;
+  padding: 8px 10px;
+
+  /* Both axes visible so that toolbar dropdowns (the "more" kebab,
+     colour pickers, font menus, etc.) can extend below the toolbar
+     instead of being clipped. Horizontal scroll is delegated to
+     SuperDoc's own inner wrapper if needed. */
+  overflow: visible;
+  white-space: nowrap;
+  position: relative;
+  /* High enough that dropdowns appear above the editor area beneath. */
+  z-index: 100;
+}
+
+/* SuperDoc renders an inner wrapper inside .superdoc-toolbar — give
+   that wrapper the horizontal scroll so the visible toolbar buttons
+   can still scroll, while the parent stays overflow:visible for menus. */
+.superdoc-toolbar > div {
+  overflow-x: auto;
+  overflow-y: visible;
+  scrollbar-width: thin;
+  white-space: nowrap;
+}
+
+.superdoc-toolbar > div::-webkit-scrollbar {
+  height: 6px;
+}
+
+.superdoc-toolbar > div::-webkit-scrollbar-thumb {
+  background: #cfcfcf;
+  border-radius: 10px;
+}
+
+/* Keep toolbar content in single row */
+.superdoc-toolbar > * {
+  white-space: nowrap;
+}
+
+/* Toolbar dropdowns / popovers rendered within the toolbar must paint
+   above the .superdoc-container that sits beneath. Catches the kebab
+   "more" menu, colour pickers, font selectors, alignment menu, etc. */
+.superdoc-toolbar [class*="dropdown"],
+.superdoc-toolbar [class*="menu"],
+.superdoc-toolbar [class*="popup"],
+.superdoc-toolbar [class*="popover"],
+.superdoc-toolbar [class*="overlay"],
+.superdoc-toolbar [role="menu"],
+.superdoc-toolbar [role="listbox"],
+.superdoc-toolbar [role="dialog"] {
+  z-index: 2147483647 !important;
+}
+
+/* ===============================
+   EDITOR AREA
+================================= */
+
+.superdoc-container {
+  flex: 1;
+  overflow: auto;
+  background: #f3f4f6;
+  display: flex;
+  justify-content: center;
+
+  /* Make the horizontal scrollbar visible so users at narrow widths can
+     see they can scroll the document */
+  scrollbar-width: thin;
+}
+
+.superdoc-container::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.superdoc-container::-webkit-scrollbar-thumb {
+  background: #cfcfcf;
+  border-radius: 10px;
+}
+
+.superdoc-container::-webkit-scrollbar-thumb:hover {
+  background: #6c4cdc;
+}
+
+/* ===============================
+   DROPDOWNS ABOVE EVERYTHING
+================================= */
+
+body [class*="dropdown"],
+body [class*="menu"],
+body [class*="popup"],
+body [class*="popover"],
+body [role="menu"],
+body [data-radix-popper-content-wrapper] {
+  z-index: 2147483647 !important;
+}
+
+/* ===============================
+   EMAIL DIALOG
+================================= */
+
+.file-preview-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, .28);
+  z-index: 1000000;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.file-preview-dialog-box {
+  width: min(420px, 92vw);
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 26px 24px;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.18);
+  text-align: center;
+}
+
+.file-preview-dialog-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 10px;
+  line-height: 1.2;
+}
+
+.file-preview-dialog-message {
+  font-size: 17px;
+  color: #374151;
+  line-height: 1.45;
+  margin-bottom: 24px;
+}
+
+.file-preview-dialog-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+/* Common Button */
+.file-preview-yes-btn,
+.file-preview-no-btn {
+  min-width: 130px;
+  height: 46px;
+  padding: 0 18px;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 15px;
+  font-weight: 700;
+  transition: all 0.2s ease;
+}
+
+/* Yes Button */
+.file-preview-yes-btn {
+  background: #6c4cdc;
+  color: #ffffff;
+}
+
+.file-preview-yes-btn:hover {
+  background: #5935d8;
+  transform: translateY(-1px);
+}
+
+.file-preview-yes-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* No Button */
+.file-preview-no-btn {
+  background: #eef2f7;
+  color: #111827;
+}
+
+.file-preview-no-btn:hover {
+  background: #dfe5ee;
+  transform: translateY(-1px);
+}
+
+/* ===============================
+   FILE PREVIEW LOADER FIX
+================================= */
+
+.file-preview-loader {
+  position: absolute;
+  inset: 0;
+  z-index: 999;
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.file-preview-loader-box {
+  width: min(320px, 90vw);
+  /* background: #ffffff; */
+  border-radius: 18px;
+  padding: 28px 24px;
+  /* box-shadow: 0 18px 45px rgba(0, 0, 0, 0.12); */
+  text-align: center;
+}
+
+.file-preview-loader-spinner {
+  width: 52px;
+  height: 52px;
+  margin: 0 auto 18px;
+  border: 4px solid #ececff;
+  border-top: 4px solid #6c4cdc;
+  border-radius: 50%;
+  animation: filePreviewSpin 0.8s linear infinite;
+}
+
+.file-preview-loader-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 8px;
+}
+
+.file-preview-loader-subtitle {
+  font-size: 14px;
+  color: #6b7280;
+  line-height: 1.45;
+}
+
+@keyframes filePreviewSpin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ===============================
+   RESPONSIVE — narrow viewports
+================================= */
+/* Word documents inside SuperDoc have a fixed page width (≈816px). At
+   narrow viewports the user is forced to scroll the document
+   horizontally inside .superdoc-container. Tighten the modal padding
+   and the SuperDoc container so as much of the page as possible is
+   visible without padding eating screen real-estate. */
+@media (max-width: 1024px) {
+  .file-preview-overlay {
+    padding: 12px;
+  }
+
+  .file-preview-modal {
+    width: min(1200px, 100vw - 16px);
+    height: min(95vh, 100%);
+    border-radius: 14px;
+  }
+
+  .superdoc-container {
+    padding: 0;
+  }
+}
+
+/* When the SuperDoc page is wider than the container, justify-content:
+   center clips both sides equally — at narrow widths the user can see
+   the document is cut off on the left ("lan: Aman" instead of "Plan:
+   Aman"). Switch to flex-start so the page anchors to the left edge
+   and only the right side overflows (reachable via horizontal scroll). */
+@media (max-width: 1024px) {
+  .superdoc-container {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 768px) {
+  .file-preview-overlay {
+    padding: 0;
+  }
+
+  .file-preview-modal {
+    width: 100vw;
+    height: 100vh;
+    border-radius: 0;
+  }
+
+  .file-preview-header {
+    padding: 0 12px;
+    height: 56px;
+    gap: 8px;
+  }
+
+  .file-preview-title {
+    font-size: 14px;
+  }
+
+  .file-preview-actions {
+    gap: 6px;
+  }
+
+  .file-preview-icon-btn,
+  .file-preview-close-btn {
+    width: 34px;
+    height: 34px;
+  }
+
+  .file-preview-save-btn {
+    height: 34px;
+    padding: 0 12px;
+    font-size: 13px;
+  }
+
+  .superdoc-toolbar {
+    padding: 6px 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .file-preview-header {
+    padding: 0 10px;
+    height: 52px;
+  }
+
+  .file-preview-icon-btn,
+  .file-preview-close-btn {
+    width: 32px;
+    height: 32px;
+  }
+
+  /* Hide the Save button label on the smallest viewports; the icon
+     alone keeps the action available without breaking the row. */
+  .file-preview-save-btn {
+    padding: 0 10px;
+  }
+}
