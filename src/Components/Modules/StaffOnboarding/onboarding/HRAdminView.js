@@ -97,7 +97,13 @@ const HRAdminView = ({
 
     try {
       const res = await fetch(
-        `https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/get-test-results?organisation_id=${encodeURIComponent(organizationId)}`
+        `https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/get-test-results?organisation_id=${encodeURIComponent(organizationId)}`,
+        {
+          headers: {
+            "x-user-email": user?.email || "",
+            "x-organization-id": String(organizationId),
+          },
+        }
       );
       const data = await res.json();
 
@@ -111,7 +117,7 @@ const HRAdminView = ({
     } catch (error) {
       console.error("fetchTestResults error:", error);
     }
-  }, [organizationId]);
+  }, [organizationId, user?.email]);
 
   useEffect(() => {
     fetchTestResults();
@@ -131,7 +137,13 @@ const HRAdminView = ({
         organization_id: organizationId,
       });
       const res = await fetch(
-        `https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/get-all-candidates?${params.toString()}`
+        `https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/get-all-candidates?${params.toString()}`,
+        {
+          headers: {
+            "x-user-email": user?.email || "",
+            "x-organization-id": String(organizationId),
+          },
+        }
       );
       const data = await res.json();
 
@@ -199,7 +211,7 @@ const HRAdminView = ({
       if (document.visibilityState === "visible") refresh();
     };
 
-    const intervalId = setInterval(refresh, 8000);
+    const intervalId = setInterval(refresh, 4000);
     document.addEventListener("visibilitychange", handleVisibility);
     window.addEventListener("focus", refresh);
 
@@ -384,10 +396,14 @@ const HRAdminView = ({
         "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/delete-candidate",
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "x-user-email": user?.email || "",
+          },
           body: JSON.stringify({
-            organisation_id: organizationId ? organizationId : user?.email,
+            organisation_id: organizationId,
             candidate_id: candidate.candidateId,
+            admin_email: user?.email,
           }),
         }
       );
