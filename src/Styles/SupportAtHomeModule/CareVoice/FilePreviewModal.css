@@ -30,10 +30,12 @@
   border-radius: 18px;
   overflow: hidden;
 
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  /* Centered by the overlay's flex (display:flex; align-items:center;
+     justify-content:center). Avoid using position:fixed + transform here
+     because transform creates a containing block — any position:fixed
+     descendant (like SuperDoc toolbar popovers) would then be positioned
+     relative to the modal instead of the viewport, which hides them. */
+  position: relative;
   z-index: 999999;
 
   display: flex;
@@ -129,31 +131,64 @@
    TOOLBAR FIX
 ================================= */
 
+/* Outer scroller — owns the horizontal overflow so the toolbar itself
+   can keep overflow:visible (so its dropdowns / kebab menus aren't
+   clipped by the toolbar box). The high z-index ensures any dropdown
+   rendered as a descendant of the toolbar paints above the document
+   editor area below (which would otherwise cover it because it comes
+   later in DOM order). */
 .superdoc-toolbar {
   background: #fff;
   border-bottom: 1px solid #ececec;
   padding: 8px 10px;
 
-  overflow-x: auto;
-  /* 🔥 horizontal scroll */
-  overflow-y: hidden;
+  /* Both axes visible so that toolbar dropdowns (the "more" kebab,
+     colour pickers, font menus, etc.) can extend below the toolbar
+     instead of being clipped. Horizontal scroll is delegated to
+     SuperDoc's own inner wrapper if needed. */
+  overflow: visible;
   white-space: nowrap;
-
-  scrollbar-width: thin;
+  position: relative;
+  /* High enough that dropdowns appear above the editor area beneath. */
+  z-index: 100;
 }
 
-.superdoc-toolbar::-webkit-scrollbar {
+/* SuperDoc renders an inner wrapper inside .superdoc-toolbar — give
+   that wrapper the horizontal scroll so the visible toolbar buttons
+   can still scroll, while the parent stays overflow:visible for menus. */
+.superdoc-toolbar > div {
+  overflow-x: auto;
+  overflow-y: visible;
+  scrollbar-width: thin;
+  white-space: nowrap;
+}
+
+.superdoc-toolbar > div::-webkit-scrollbar {
   height: 6px;
 }
 
-.superdoc-toolbar::-webkit-scrollbar-thumb {
+.superdoc-toolbar > div::-webkit-scrollbar-thumb {
   background: #cfcfcf;
   border-radius: 10px;
 }
 
 /* Keep toolbar content in single row */
-.superdoc-toolbar>* {
+.superdoc-toolbar > * {
   white-space: nowrap;
+}
+
+/* Toolbar dropdowns / popovers rendered within the toolbar must paint
+   above the .superdoc-container that sits beneath. Catches the kebab
+   "more" menu, colour pickers, font selectors, alignment menu, etc. */
+.superdoc-toolbar [class*="dropdown"],
+.superdoc-toolbar [class*="menu"],
+.superdoc-toolbar [class*="popup"],
+.superdoc-toolbar [class*="popover"],
+.superdoc-toolbar [class*="overlay"],
+.superdoc-toolbar [role="menu"],
+.superdoc-toolbar [role="listbox"],
+.superdoc-toolbar [role="dialog"] {
+  z-index: 2147483647 !important;
 }
 
 /* ===============================
@@ -166,6 +201,24 @@
   background: #f3f4f6;
   display: flex;
   justify-content: center;
+
+  /* Make the horizontal scrollbar visible so users at narrow widths can
+     see they can scroll the document */
+  scrollbar-width: thin;
+}
+
+.superdoc-container::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.superdoc-container::-webkit-scrollbar-thumb {
+  background: #cfcfcf;
+  border-radius: 10px;
+}
+
+.superdoc-container::-webkit-scrollbar-thumb:hover {
+  background: #6c4cdc;
 }
 
 /* ===============================
@@ -331,5 +384,101 @@ body [data-radix-popper-content-wrapper] {
 
   to {
     transform: rotate(360deg);
+  }
+}
+
+/* ===============================
+   RESPONSIVE — narrow viewports
+================================= */
+/* Word documents inside SuperDoc have a fixed page width (≈816px). At
+   narrow viewports the user is forced to scroll the document
+   horizontally inside .superdoc-container. Tighten the modal padding
+   and the SuperDoc container so as much of the page as possible is
+   visible without padding eating screen real-estate. */
+@media (max-width: 1024px) {
+  .file-preview-overlay {
+    padding: 12px;
+  }
+
+  .file-preview-modal {
+    width: min(1200px, 100vw - 16px);
+    height: min(95vh, 100%);
+    border-radius: 14px;
+  }
+
+  .superdoc-container {
+    padding: 0;
+  }
+}
+
+/* When the SuperDoc page is wider than the container, justify-content:
+   center clips both sides equally — at narrow widths the user can see
+   the document is cut off on the left ("lan: Aman" instead of "Plan:
+   Aman"). Switch to flex-start so the page anchors to the left edge
+   and only the right side overflows (reachable via horizontal scroll). */
+@media (max-width: 1024px) {
+  .superdoc-container {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 768px) {
+  .file-preview-overlay {
+    padding: 0;
+  }
+
+  .file-preview-modal {
+    width: 100vw;
+    height: 100vh;
+    border-radius: 0;
+  }
+
+  .file-preview-header {
+    padding: 0 12px;
+    height: 56px;
+    gap: 8px;
+  }
+
+  .file-preview-title {
+    font-size: 14px;
+  }
+
+  .file-preview-actions {
+    gap: 6px;
+  }
+
+  .file-preview-icon-btn,
+  .file-preview-close-btn {
+    width: 34px;
+    height: 34px;
+  }
+
+  .file-preview-save-btn {
+    height: 34px;
+    padding: 0 12px;
+    font-size: 13px;
+  }
+
+  .superdoc-toolbar {
+    padding: 6px 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .file-preview-header {
+    padding: 0 10px;
+    height: 52px;
+  }
+
+  .file-preview-icon-btn,
+  .file-preview-close-btn {
+    width: 32px;
+    height: 32px;
+  }
+
+  /* Hide the Save button label on the smallest viewports; the icon
+     alone keeps the action available without breaking the row. */
+  .file-preview-save-btn {
+    padding: 0 10px;
   }
 }

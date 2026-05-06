@@ -136,7 +136,7 @@ const QualityandRisk = (props) => {
         )
     }
     return (
-        <>
+        <div className="qr-page">
             {analysedQualityReportdata.length === 0 ? (
                 <>
                     <div className="selectedModule">{props.selectedRole}</div>
@@ -191,7 +191,7 @@ const QualityandRisk = (props) => {
                     </div>
                 </div>
             )}
-        </>
+        </div>
     );
 };
 

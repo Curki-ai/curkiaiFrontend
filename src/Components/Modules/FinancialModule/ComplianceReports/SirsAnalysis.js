@@ -154,7 +154,7 @@ const SirsAnalysis = (props) => {
         )
     }
     return (
-        <>
+        <div className="sirs-page">
             {(!showSirsReport) ? (
                 <>
                     <div className="selectedModule">{props.selectedRole}</div>
@@ -213,7 +213,7 @@ const SirsAnalysis = (props) => {
                     </div>
                 </>
             )}
-        </>
+        </div>
     );
 };
 

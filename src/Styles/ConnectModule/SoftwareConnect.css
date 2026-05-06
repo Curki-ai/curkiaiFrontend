@@ -204,3 +204,94 @@
 .connect-url-btn.disconnect-btn {
     background-color: #dc3545;
 }
+
+/* ============================================================
+   SOFTWARE CONNECT — RESPONSIVE
+   The default desktop layout uses 130px left/right margins on the
+   software grid, the form rows, and the integration rows. At narrow
+   widths that horizontal margin consumes too much usable space, so
+   it scales down by breakpoint. The 3-column software grid also
+   reflows to 2 columns on tablet and below.
+   Scoped to .software-connect-container so nothing leaks elsewhere.
+   Supported viewport range: ≥821px (≤820px → Care Voice).
+   ============================================================ */
+
+/* ------------------ Small desktop / laptop (≤1280px) ------------------ */
+@media (max-width: 1280px) {
+  .software-connect-container .software-grid {
+    margin: 40px 60px 24px 60px;
+    column-gap: 18px;
+  }
+
+  .software-connect-container .forms-group {
+    margin: 0 60px 20px 60px;
+  }
+
+  .software-connect-container .integration-row {
+    margin: 20px 60px;
+  }
+}
+
+/* ------------------ Tablet landscape (≤1024px) ------------------ */
+@media (max-width: 1024px) {
+  /* Software grid: 3 → 2 columns */
+  .software-connect-container .software-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: auto;
+    margin: 32px 32px 20px 32px;
+    column-gap: 16px;
+  }
+
+  .software-connect-container .forms-group {
+    margin: 0 32px 18px 32px;
+  }
+
+  .software-connect-container .integration-row {
+    margin: 20px 32px;
+    flex-wrap: wrap;
+    row-gap: 10px;
+  }
+
+  /* Integration input grows to fill remaining space; button can wrap to its own line */
+  .software-connect-container .integration-input {
+    flex: 1 1 200px;
+    min-width: 0;
+  }
+
+  .software-connect-container .connect-url-btn {
+    flex: 0 0 auto;
+  }
+
+  /* Connect/Disconnect button stays centered if form is narrow */
+  .software-connect-container .connect-system-btn {
+    margin: 8px 32px 0;
+  }
+}
+
+/* ------------------ Lower end of supported range (≤900px) ------------------ */
+@media (max-width: 900px) {
+  /* Tighten margins further so cards/forms have room to breathe */
+  .software-connect-container .software-grid {
+    margin: 24px 16px 16px 16px;
+    column-gap: 12px;
+  }
+
+  .software-connect-container .forms-group {
+    margin: 0 16px 16px 16px;
+  }
+
+  .software-connect-container .integration-row {
+    margin: 16px 16px;
+    gap: 8px;
+  }
+
+  .software-connect-container .connect-system-btn {
+    margin: 8px 16px 0;
+  }
+
+  /* Software card heights reduce slightly so logos still fit nicely */
+  .software-connect-container .software-card {
+    height: 72px;
+    margin-bottom: 16px;
+  }
+}

@@ -453,3 +453,78 @@
   padding: 3px 6px;
   border-radius: 999px;
 }
+
+/* ============================================================
+   ROSTER HISTORY — RESPONSIVE
+   Supported viewport range: ≥821px (≤820px → Care Voice).
+   Scoped to .rostering-history-container so other modules are
+   not affected.
+   ============================================================ */
+
+/* ------------------ Tablet landscape (≤1024px) ------------------ */
+@media (max-width: 1024px) {
+  /* Sidebar gets wider so client cards have breathing room */
+  .rostering-history-container .rostering-history-sidebar {
+    width: 36%;
+  }
+
+  .rostering-history-container .rostering-history-details-panel {
+    width: 64%;
+  }
+
+  /* Calendar header inner controls wrap when month picker no longer fits */
+  .rostering-cal-controls {
+    flex-wrap: wrap;
+    row-gap: 8px;
+  }
+
+  /* Side panel narrower so it doesn't dominate */
+  .rostering-history-container ~ .side-panel-overlay .side-panel,
+  .side-panel {
+    width: 60vw;
+    max-width: 480px;
+  }
+}
+
+/* ------------------ Lower end of supported range (≤900px) ------------------ */
+@media (max-width: 900px) {
+  /* Stack the sidebar + details panel — sidebar becomes a thin top strip
+     with horizontal scroll of client cards, then the details panel fills below */
+  .rostering-history-container {
+    flex-direction: column;
+  }
+
+  .rostering-history-container .rostering-history-sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid #E2E8F1;
+  }
+
+  .rostering-history-container .rostering-client-list {
+    flex-direction: row;
+    height: auto;
+    max-height: none;
+    overflow-x: auto;
+    overflow-y: hidden;
+    flex-wrap: nowrap;
+  }
+
+  .rostering-history-container .rostering-client-card {
+    flex: 0 0 240px;
+  }
+
+  .rostering-history-container .rostering-history-details-panel {
+    width: 100%;
+  }
+
+  /* Side panel takes most of the screen on the lower end */
+  .side-panel {
+    width: 80vw;
+    max-width: 100%;
+  }
+
+  /* Calendar day columns slightly tighter to keep more visible */
+  .rostering-history-container .roster-day-column {
+    min-width: 130px;
+  }
+}

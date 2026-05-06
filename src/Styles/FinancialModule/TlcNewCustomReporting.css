@@ -1236,3 +1236,146 @@ body {
     scrollbar-width: auto;
     scrollbar-color: #6c4cdc #f1f1f1;
   }
+
+/* ============================================================
+   TLC NEW CUSTOM REPORTING (Payroll Analysis) — RESPONSIVE
+   Supported viewport range: ≥821px (≤820px is routed to Care
+   Voice in HomePage.js).
+   Scoped to .tlc-new-headerss and the new tlc-new-* hooks so
+   other modules sharing .page-containersss / .filters-grid /
+   .history-card-modern stay untouched.
+   ============================================================ */
+
+/* ------------------ Tab bar — fix shrink/wrap behaviour at all sizes ------------------ */
+/* Tabs were squishing (text wrapping vertically) when many were open.
+   Allow the tab-bar to flow onto multiple rows, and stop each tab from
+   shrinking or wrapping its text. Applies across desktop too. */
+.tlc-new-headerss .tab-bar {
+  flex-wrap: wrap;
+  row-gap: 8px;
+}
+
+.tlc-new-headerss .tab-bar > div,
+.tlc-new-headerss .tab-bar > button {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* ------------------ Compare/Save buttons — never shrink or wrap text ------------------ */
+/* When the tab-bar wraps to multiple rows it grows vertically and squeezes the
+   action-buttons column horizontally. Lock the buttons so their text stays on
+   a single line and the button keeps its natural width. */
+.tlc-new-actions-buttons {
+  flex-shrink: 0;
+}
+
+.tlc-new-actions-buttons > button {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* ------------------ Small desktop / laptop (≤1280px) ------------------ */
+@media (max-width: 1280px) {
+  .tlc-new-page .filters-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* ------------------ Tablet landscape (≤1024px) ------------------ */
+@media (max-width: 1024px) {
+  /* Top header row: WhoAreYou + Role on left, Sync on right — wrap */
+  .tlc-new-header-row {
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 12px 16px !important;
+  }
+
+  .tlc-new-header-left {
+    flex-wrap: wrap;
+    row-gap: 10px;
+  }
+
+  /* Tabs + Compare/Save row — wrap when there isn't enough width.
+     Tabs-wrap sizes to content (not flex-grow) so we don't get an
+     empty whitespace gap to the right of the tabs. */
+  .tlc-new-actions-row {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .tlc-new-tabs-wrap {
+    min-width: 0;
+    flex: 0 1 auto;
+  }
+
+  .tlc-new-actions-buttons {
+    align-items: flex-end !important;
+  }
+
+  /* Filters drop to 2 columns inside this module */
+  .tlc-new-page .filters-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+}
+
+/* ------------------ Lower end of supported range (≤900px) ------------------ */
+@media (max-width: 900px) {
+  /* Container padding: tighten so we keep usable width */
+  .tlc-new-page {
+    padding: 18px 20px;
+  }
+
+  .tlc-new-header-row {
+    padding: 10px 12px !important;
+    gap: 10px;
+  }
+
+  /* WhoAreYou pill width shrinks so the toggle doesn't push the row */
+  .tlc-new-actor-group [style*="width: 92px"] {
+    width: 78px !important;
+  }
+
+  /* Buttons sit on the right but allow column flow when truly tight */
+  .tlc-new-actions-row {
+    align-items: flex-start;
+  }
+
+  .tlc-new-actions-buttons {
+    align-items: flex-start !important;
+  }
+
+  /* Drop the desktop 17px top offset on the Compare button when stacked */
+  .tlc-new-actions-buttons > button {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+  }
+
+  /* Tab bar — tighten top padding when stacked under the header */
+  .tlc-new-headerss .tab-bar {
+    padding-top: 6px !important;
+  }
+
+  /* History header: search bar drops below the title cleanly */
+  .tlc-new-history-header {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  .tlc-new-history-search {
+    max-width: 100% !important;
+    width: 100%;
+  }
+
+  /* History container top margin tightened */
+  .tlc-new-page .history-container {
+    margin-top: 60px;
+  }
+
+  /* Delete-confirm modal — fit the supported viewport */
+  .tlc-new-delete-modal {
+    width: calc(100vw - 48px);
+    max-width: 380px;
+    padding: 18px 20px !important;
+  }
+}

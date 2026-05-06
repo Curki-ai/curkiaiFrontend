@@ -1350,6 +1350,7 @@ const TlcNewClientProfitability = (props) => {
 
                 {/* HEADER with SEARCH BAR */}
                 <div
+                    className="tlc-cp-history-header"
                     style={{
                         display: "flex",
                         alignItems: "center",
@@ -1369,7 +1370,7 @@ const TlcNewClientProfitability = (props) => {
                     </div>
 
                     {/* SEARCH BAR */}
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px", flex: "1", maxWidth: "400px" }}>
+                    <div className="tlc-cp-history-search" style={{ display: "flex", alignItems: "center", gap: "8px", flex: "1", maxWidth: "400px" }}>
                         <input
                             type="text"
                             placeholder="Search history (e.g., 'April to May, Victoria' or 'last week')"
@@ -1569,6 +1570,7 @@ const TlcNewClientProfitability = (props) => {
 
                         {showDeleteModal && (
                             <div
+                                className="tlc-cp-delete-modal-overlay"
                                 style={{
                                     position: "fixed",
                                     inset: 0,
@@ -1580,6 +1582,7 @@ const TlcNewClientProfitability = (props) => {
                                 }}
                             >
                                 <div
+                                    className="tlc-cp-delete-modal"
                                     style={{
                                         background: "#fff",
                                         borderRadius: "12px",
@@ -1737,7 +1740,7 @@ const TlcNewClientProfitability = (props) => {
         )
     }
     return (
-        <div className="page-containersss" ref={pageRef}>
+        <div className="page-containersss tlc-cp-page" ref={pageRef}>
             {historyLoading && (
                 <div className="full-screen-loader">
                     <div className="history-loader"></div>
@@ -1852,6 +1855,7 @@ const TlcNewClientProfitability = (props) => {
                 {/* {responseData && <img src={TlcLogo} alt="Logo" className="tlclogo" />}
                  */}
                 <div
+                    className="tlc-cp-actions-row"
                     style={{
                         display: "flex",
                         alignItems: "flex-start",
@@ -1927,6 +1931,7 @@ const TlcNewClientProfitability = (props) => {
 
                     {/* RIGHT: COMPARE & ANALYSE */}
                     <div
+                        className="tlc-cp-actions-buttons"
                         style={{
                             display: "flex",
                             flexDirection: "column",

@@ -1676,14 +1676,15 @@ export default function TlcNewCustomerReporting(props) {
         );
     }
     return (
-        <div className="page-containersss" ref={pageRef}>
+        <div className="page-containersss tlc-new-page" ref={pageRef}>
             {historyLoading && (
                 <div className="full-screen-loader">
                     <div className="history-loader"></div>
                 </div>
             )}
-            <div className="headerss">
+            <div className="headerss tlc-new-headerss">
                 <div
+                    className="tlc-new-header-row"
                     style={{
                         display: "flex",
                         justifyContent: "space-between",
@@ -1695,9 +1696,10 @@ export default function TlcNewCustomerReporting(props) {
                     }}
                 >
                     {/* LEFT SIDE */}
-                    <div style={{ display: "flex", alignItems: "center", gap: "24px" }}>
+                    <div className="tlc-new-header-left" style={{ display: "flex", alignItems: "center", gap: "24px" }}>
                         {/* WHO ARE YOU */}
                         <div
+                            className="tlc-new-actor-group"
                             style={{
                                 display: "flex",
                                 alignItems: "center",
@@ -1768,7 +1770,7 @@ export default function TlcNewCustomerReporting(props) {
                     </div>
 
                     {/* RIGHT SIDE – SYNC */}
-                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                    <div className="tlc-new-sync-group" style={{ display: "flex", alignItems: "center", gap: "12px" }}>
                         <span style={{ fontSize: "13px", fontWeight: 500 }}>
                             Sync With Your System
                         </span>
@@ -1823,6 +1825,7 @@ export default function TlcNewCustomerReporting(props) {
                 <div className="left-headerss">
                     {/* {activeTabData.analysisData && <img src={TLCLogo} alt="Logo" className="tlclogo" />} */}
                     <div
+                        className="tlc-new-actions-row"
                         style={{
                             display: "flex",
                             alignItems: "flex-start",
@@ -1832,12 +1835,13 @@ export default function TlcNewCustomerReporting(props) {
                         }}
                     >
                         {/* LEFT: TABS */}
-                        <div>
+                        <div className="tlc-new-tabs-wrap">
                             {renderTabBar()}
                         </div>
 
                         {/* RIGHT: ACTION BUTTONS */}
                         <div
+                            className="tlc-new-actions-buttons"
                             style={{
                                 display: "flex",
                                 flexDirection: "column",
@@ -2431,6 +2435,7 @@ export default function TlcNewCustomerReporting(props) {
                     )}
 
                     <div
+                        className="tlc-new-history-header"
                         style={{
                             display: "flex",
                             alignItems: "center",
@@ -2454,7 +2459,7 @@ export default function TlcNewCustomerReporting(props) {
                         </div>
 
                         {/* SEARCH BAR */}
-                        <div style={{ display: "flex", alignItems: "center", gap: "8px", flex: "1", maxWidth: "400px" }}>
+                        <div className="tlc-new-history-search" style={{ display: "flex", alignItems: "center", gap: "8px", flex: "1", maxWidth: "400px" }}>
                             <input
                                 type="text"
                                 placeholder="Search history (e.g., 'April to May, Victoria' or 'last week')"
@@ -2667,6 +2672,7 @@ export default function TlcNewCustomerReporting(props) {
                             {/* Delete confirmation modal */}
                             {showDeleteModal && (
                                 <div
+                                    className="tlc-new-delete-modal-overlay"
                                     style={{
                                         position: "fixed",
                                         top: 0,
@@ -2682,6 +2688,7 @@ export default function TlcNewCustomerReporting(props) {
                                     }}
                                 >
                                     <div
+                                        className="tlc-new-delete-modal"
                                         style={{
                                             background: "#fff",
                                             borderRadius: "10px",

@@ -172,7 +172,7 @@ const IncidentReport = (props) => {
         )
     }
     return (
-        <>
+        <div className="ir-page">
             {analysedIncidentReportdata.length === 0 ? (
                 <>
                     <div className="selectedModule">{props.selectedRole}</div>
@@ -227,7 +227,7 @@ const IncidentReport = (props) => {
                     </div>
                 </div>
             )}
-        </>
+        </div>
     );
 };
 

@@ -500,3 +500,105 @@
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
+
+/* ============================================================
+   ROSTER DETAILS — RESPONSIVE
+   Supported viewport range: ≥821px (≤820px → Care Voice).
+   Scoped to .roster-page so other modules are not affected.
+   ============================================================ */
+
+/* ------------------ Stack History below Personal Information (≤1432px) ------------------ */
+/* At wider screens (>1432px) the two panels sit side by side with a 100px gap.
+   Below 1432px the personal-info panel doesn't have enough horizontal room
+   for its 4-item top row (ID/Name/DOB/Gender), so values wrap onto a new
+   line under their labels. Stack the History below Personal Information
+   instead — that gives the info panel the full row width and the 4 items
+   fit cleanly. */
+@media (max-width: 1432px) {
+  .roster-page .roster-layout {
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .roster-page .roster-personal-info,
+  .roster-page .roster-history {
+    width: 100%;
+    flex: none;
+  }
+}
+
+/* ------------------ Small desktop / laptop (≤1280px) ------------------ */
+@media (max-width: 1280px) {
+  .roster-page .roster-layout {
+    gap: 40px;
+  }
+
+  /* Staff cards: 3 → 2 cols */
+  .roster-page .roster-staff-cards,
+  .roster-page .refined-staff-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 16px;
+    row-gap: 16px;
+  }
+
+  /* Clashing list: 4 → 3 cols */
+  .roster-page .clashing-list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    column-gap: 12px;
+  }
+}
+
+/* ------------------ Tablet landscape (≤1024px) ------------------ */
+@media (max-width: 1024px) {
+  .roster-page {
+    margin: 8px 4% 40px 4%;
+  }
+
+  /* Personal info + History stack vertically instead of side by side */
+  .roster-page .roster-layout {
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .roster-page .roster-personal-info,
+  .roster-page .roster-history {
+    width: 100%;
+    flex: none;
+  }
+
+  /* Personal info inner rows: tighten padding/gap so they fit */
+  .roster-info-row {
+    padding-left: 24px !important;
+    gap: 24px !important;
+    flex-wrap: wrap !important;
+  }
+
+  /* Clashing list: 3 → 2 cols */
+  .roster-page .clashing-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* ------------------ Lower end of supported range (≤900px) ------------------ */
+@media (max-width: 900px) {
+  .roster-page {
+    margin: 8px 16px 40px 16px;
+  }
+
+  /* Staff cards: 2 → 1 col so each card has full width */
+  .roster-page .roster-staff-cards,
+  .roster-page .refined-staff-cards {
+    grid-template-columns: 1fr;
+  }
+
+  /* Personal info inner rows: tighter still */
+  .roster-info-row {
+    padding-left: 16px !important;
+    gap: 16px !important;
+  }
+
+  /* Clashing list goes to single column */
+  .roster-page .clashing-list {
+    grid-template-columns: 1fr;
+  }
+}

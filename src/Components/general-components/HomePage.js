@@ -1706,10 +1706,17 @@ const HomePage = () => {
     setShowDropdown(false);
   };
 
-  // Force Care Voice on mobile/tablet
+  // Force Care Voice on mobile/tablet, restore previous role when returning to desktop
+  const previousRoleRef = useRef(null);
   useEffect(() => {
     if (isMobileOrTablet) {
+      if (selectedRole !== "Care Voice") {
+        previousRoleRef.current = selectedRole;
+      }
       setSelectedRole("Care Voice");
+    } else if (previousRoleRef.current) {
+      setSelectedRole(previousRoleRef.current);
+      previousRoleRef.current = null;
     }
   }, [isMobileOrTablet]);
 
@@ -2189,7 +2196,7 @@ const HomePage = () => {
                 </div>}
 
                 {showAIChat && (
-                  <div style={{ position: "fixed", bottom: "20px", right: "21px", width: "76%", height: isSoftwareConnectPage ? "86%" : "80%", backgroundColor: "#FFFEFF", borderRadius: "24px", zIndex: 999, display: "flex", flexDirection: "column", justifyContent: "space-between", border: '1.09px solid #6C4CDC', boxShadow: '0px 4.36px 65.42px 0px #FFFFFF03', padding: ' 14px 30px', marginBottom: "8px" }}>
+                  <div className="ask-ai-panel" style={{ position: "fixed", bottom: "20px", right: "21px", width: "76%", height: isSoftwareConnectPage ? "86%" : "80%", backgroundColor: "#FFFEFF", borderRadius: "24px", zIndex: 999, display: "flex", flexDirection: "column", justifyContent: "space-between", border: '1.09px solid #6C4CDC', boxShadow: '0px 4.36px 65.42px 0px #FFFFFF03', padding: ' 14px 30px', marginBottom: "8px" }}>
                     <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", borderTopRightRadius: "24px", borderTopLeftRadius: "24px", }}>
                       <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: "44px" }}>
                         {isHRAskAiPage && (
@@ -2288,9 +2295,9 @@ const HomePage = () => {
                     </div>
                     {messages.length === 0 &&
                       <div>
-                        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: '20px', gap: isSoftwareConnectPage ? '14px' : '20px' }}>
+                        <div className="ask-ai-heading-row" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: '20px', gap: isSoftwareConnectPage ? '14px' : '20px' }}>
                           <img src={isSoftwareConnectPage ? apiTutorialsIcon : purpleStar} alt='blue-star' style={{ width: isSoftwareConnectPage ? '32px' : '36px', height: 'auto' }} />
-                          <div style={{ textAlign: 'center', fontSize: '24px', fontFamily: 'Inter', fontWeight: '500' }}>
+                          <div className="ask-ai-heading-text" style={{ textAlign: 'center', fontSize: '24px', fontFamily: 'Inter', fontWeight: '500' }}>
                             {isCareVoicePage
                               ? (careVoiceStarted
                                 ? "Ask Any Question Related To Care Voice Document"
@@ -2344,9 +2351,10 @@ const HomePage = () => {
                               position: "relative"
                             }}
                           >
-                            <div style={{ display: "flex", flexDirection: "column", alignItems: msg.sender === "user" ? "flex-end" : "flex-start", position: "relative", maxWidth: '100%' }}>
-                              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '4px', maxWidth: '100%' }}>
+                            <div className="ask-ai-message-wrap" style={{ display: "flex", flexDirection: "column", alignItems: msg.sender === "user" ? "flex-end" : "flex-start", position: "relative", maxWidth: '100%' }}>
+                              <div className="ask-ai-message-row" style={{ display: 'flex', alignItems: 'flex-start', gap: '4px', maxWidth: '100%' }}>
                                 <div
+                                  className="ask-ai-message-col"
                                   style={{
                                     display: msg.sender === "user" ? "none" : "flex",
                                     flexDirection: "column",

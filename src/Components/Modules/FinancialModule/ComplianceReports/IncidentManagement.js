@@ -188,7 +188,7 @@ const IncidentManagement = (props) => {
         )
     }
     return (
-        <>
+        <div className="cim-page">
             {(!showFinalZipReport) ? (
                 <>
                     <div className="selectedModule">{props.selectedRole}</div>
@@ -281,7 +281,7 @@ const IncidentManagement = (props) => {
                     </div>
                 </>
             )}
-        </>
+        </div>
     );
 };
 

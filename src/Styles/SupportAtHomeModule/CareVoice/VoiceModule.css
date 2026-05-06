@@ -118,7 +118,7 @@
 .voice-action {
   display: flex;
   justify-content: center;
-  /* margin-top: 40px; */
+  margin-top: 32px;
 }
 
 .voice-action button {
@@ -1681,6 +1681,22 @@
   background-color: #ffffff;
 }
 
+/* Below 1100px the centred "Record Conversation" title expands toward
+   the right edge and starts touching the absolutely-positioned
+   "Selected" template button. Pin the button to the top-right corner of
+   .record-conversation and add top padding to the container so the
+   title sits below the button instead of overlapping it. */
+@media (max-width: 1100px) {
+  .record-conversation {
+    padding-top: 72px !important;
+  }
+
+  .selectedtemplatebtn {
+    top: 13px;
+    right: 16px;
+  }
+}
+
 .record-conversation {
   position: relative;
   display: flex;
@@ -1820,7 +1836,7 @@
 
   .selectedtemplatebtn {
     right: 0px;
-    top: -6px;
+    top: 5px;
   }
 
   .record-conversation {
@@ -2067,9 +2083,44 @@
 /* Responsive Adjustments */
 @media (max-width: 768px) {
 
+  /* Force single column regardless of file count.
+     The inline gridTemplateColumns ("1fr 1fr" for 2 files, "1fr" for 1,
+     auto-fill for 3+) and inline maxWidth (630px etc.) are overridden
+     here so cards never overflow narrow viewports. */
+  .generated-docs-grid {
+    grid-template-columns: 1fr !important;
+    max-width: 100% !important;
+    width: 100%;
+  }
+
+  .generated-docs-grid-wrapper {
+    width: 100%;
+    padding: 0 4px;
+    box-sizing: border-box;
+  }
+
+  /* Allow card content to shrink below its natural min-content size
+     so the filename ellipsis can actually take effect */
+  .generated-doc-card {
+    min-width: 0;
+  }
+
+  .generated-doc-content,
+  .generated-doc-info {
+    min-width: 0;
+  }
+
   .generated-doc-name,
   .generated-doc-filename {
-    max-width: 150px;
+    max-width: 100%;
+  }
+
+  .generated-docs-container {
+    padding: 20px 16px;
+  }
+
+  .generated-docs-title {
+    font-size: 22px;
   }
 
   .generated-docs-actions {
@@ -2086,6 +2137,24 @@
   .generated-doc-hover-icon img {
     width: 12px;
     height: 12px;
+  }
+}
+
+/* Tablet / small laptop range — keep cards 2-up but ensure they never
+   force horizontal overflow when the content area shrinks */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .generated-doc-card {
+    min-width: 0;
+  }
+
+  .generated-doc-content,
+  .generated-doc-info {
+    min-width: 0;
+  }
+
+  .generated-doc-name,
+  .generated-doc-filename {
+    max-width: 100%;
   }
 }
 
@@ -2315,4 +2384,125 @@
   height: auto;
   object-fit: contain;
   display: block;
+}
+
+/* ============================================================
+   CARE VOICE — UPLOAD FILENAME TRUNCATION
+   Scoped to .voice-upload-col so other modules using TlcUploadBox
+   (.data-upload-filename) keep their original behaviour.
+   ============================================================ */
+.voice-upload-col .data-upload-fileinfo,
+.voice-upload-col .data-upload-fileinfo > div {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.voice-upload-col .data-upload-filename {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* ============================================================
+   CARE VOICE — RESPONSIVE (DESKTOP RANGE: 821–1432px)
+   Note: Care Voice IS the ≤820px mobile experience and already
+   has comprehensive ≤820px / ≤768px styles above. This block
+   targets the desktop responsive range — between 820px (where
+   mobile rules already kick in) and a comfortable laptop width
+   — to fix fixed-width elements that overflow the available
+   content area when the sidebar is open.
+   ============================================================ */
+
+/* ------------------ Tablet landscape / small laptop (≤1280px) ------------------ */
+@media (min-width: 821px) and (max-width: 1280px) {
+  .voice-container {
+    padding: 20px 3%;
+  }
+
+  /* Top row — was a fixed 768px; let it fill the row up to that ceiling */
+  .voice-top-row {
+    width: 100%;
+    max-width: 768px;
+    flex-wrap: wrap;
+    height: auto;
+    row-gap: 10px;
+  }
+
+  /* Voice fields shrink with available width */
+  .voice-field {
+    width: auto;
+    flex: 1 1 200px;
+    min-width: 200px;
+  }
+
+  .voice-input {
+    width: 100%;
+    min-width: 0;
+  }
+
+  /* Upload row — tighten the giant gap so two columns fit comfortably */
+  .voice-upload-row {
+    gap: 24px;
+    height: auto;
+  }
+
+  /* Template cards — fluid width instead of locked 520/530px */
+  .vm-template-card,
+  .vm-template-card.vm-template-card-two {
+    width: 100% !important;
+    max-width: 520px;
+  }
+
+  /* Or-row — was 520px fixed */
+  .voice-or-row {
+    width: 100%;
+    max-width: 520px;
+  }
+
+  /* Template select modal — was 911px wide with 240px left margin (1151px
+     total). On tablet/small laptop this overflows. Center it and let it
+     fit the viewport with generous side margin. */
+  .vm-select-confirm-modal {
+    width: calc(100vw - 64px);
+    max-width: 911px;
+    height: auto;
+    max-height: 90vh;
+    margin-left: 0;
+  }
+}
+
+/* ------------------ Lower laptop range (≤1024px) ------------------ */
+@media (min-width: 821px) and (max-width: 1024px) {
+  .voice-container {
+    padding: 18px 20px;
+  }
+
+  /* Upload row stacks columns when there isn't enough width to keep the
+     two TlcUploadBoxes side by side */
+  .voice-upload-row {
+    flex-wrap: wrap;
+    gap: 20px;
+  }
+
+  .voice-upload-row .voice-upload-col {
+    width: 100% !important;
+    max-width: 520px;
+    margin: 0 auto;
+  }
+
+  .vm-admin-heading {
+    margin: 32px 0 20px;
+  }
+
+  .vm-admin-title {
+    font-size: 20px;
+  }
+
+  /* Template list height — let it grow if a single card row needs more
+     room when fluid-width cards stack within the slider */
+  .vm-template-list {
+    height: auto;
+    min-height: 199px;
+  }
 }

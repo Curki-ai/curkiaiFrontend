@@ -59,7 +59,7 @@ import { RiSettingsLine } from "react-icons/ri";
 import AccessManagementForm from "../../../general-components/AccessManagementForm";
 const VoiceModule = (props) => {
     const userEmail = props?.user?.email;
-    // const userEmail = "daniel@contemporarycoordination.com";
+    // const userEmail = "admin@contemporarycoordination.com";
     // const userEmail = "mboutros@tenderlovingcaredisability.com.au";
     const ALLOWED_USERS = [
         "mboutros@tenderlovingcaredisability.com.au",

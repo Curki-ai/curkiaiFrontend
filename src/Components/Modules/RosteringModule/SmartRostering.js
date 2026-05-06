@@ -633,9 +633,9 @@ const SmartRostering = (props) => {
                             </ul>
                         </div>
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '30px' }}>
+                    <div className="rostering-controls-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '30px' }}>
                         <div className="rostering-date">{formattedDate}</div>
-                        <div style={{ display: 'flex', gap: '14px' }}>
+                        <div className="rostering-controls-buttons" style={{ display: 'flex', gap: '14px' }}>
                             <button className="roster-settings-btn" onClick={() => setScreen(3)}><MdOutlineHistory size={18} color="#707493" /> History </button>
                             <button className="roster-settings-btn" onClick={() => setOpenRosterSetting(true)}><RiSettingsLine size={18} color="#707493" />Rostering Settings</button>
                             {/* {canUseVisualCare && (

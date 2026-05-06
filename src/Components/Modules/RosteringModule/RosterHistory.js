@@ -986,7 +986,7 @@ const RosterHistory = (props) => {
                         <div className="roster-calendar-header">
                             <h2 className="rostering-detail-title" >{selected.name}</h2>
 
-                            <div style={{ display: "flex", alignItems: "center", gap: "15px", justifyContent: 'space-between' }}>
+                            <div className="rostering-cal-controls" style={{ display: "flex", alignItems: "center", gap: "15px", justifyContent: 'space-between' }}>
                                 <div style={{ display: "flex", alignItems: "center", gap: "15px", }}>
                                     <FaAngleLeft color="#6c4cdc" onClick={() => (scrollRef.current.scrollLeft -= 350)} style={{ cursor: 'pointer' }} />
                                     <span style={{ fontWeight: 600 }}>{monthName} {year}</span>

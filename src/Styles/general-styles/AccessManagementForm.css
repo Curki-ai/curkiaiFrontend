@@ -411,6 +411,8 @@
     color: #707493;
     cursor: pointer;
     transition: background 0.15s ease, border-color 0.15s ease;
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .access-mgmt-trigger-btn:hover {

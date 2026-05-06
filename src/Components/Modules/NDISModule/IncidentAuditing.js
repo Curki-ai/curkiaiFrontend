@@ -269,16 +269,16 @@ const IncidentAuditing = (props) => {
         }
     };
     const renderHistorySection = () => (
-        <section className="history-container">
+        <section className="ia-history-container">
 
             {/* HEADER */}
-            <div style={{ display: "flex", gap: "8px" }}>
+            <div className="ia-history-header" style={{ display: "flex", gap: "8px" }}>
                 <img
                     src={require("../../../Images/TlcPayrollHistory.png")}
                     alt="icon"
                     style={{ width: "22px", height: "21px", pointerEvents: "none" }}
                 />
-                <div className="history-title">History</div>
+                <div className="ia-history-title">History</div>
             </div>
 
             {/* BODY */}
@@ -295,11 +295,11 @@ const IncidentAuditing = (props) => {
             )}
 
             {!loadingHistory && historyList.length > 0 && (
-                <div className="history-list">
+                <div className="ia-history-list">
                     {historyList.map((item) => (
                         <div
                             key={item.id}
-                            className="history-card-modern"
+                            className="ia-history-card"
                             onClick={() => handleIncidentHistoryClick(item)}
                             style={{ position: "relative" }}
                         >
@@ -326,10 +326,10 @@ const IncidentAuditing = (props) => {
 
                             {/* TOP ROW */}
                             {item?.filters?.syncEnabled && (
-                                <div className="history-top">
-                                    <div className="history-date-range">
-                                        <span className="label">Date Range: </span>
-                                        <span className="value">
+                                <div className="ia-history-top">
+                                    <div className="ia-history-date-range">
+                                        <span className="ia-label">Date Range: </span>
+                                        <span className="ia-value">
                                             {formatIncidentHistoryDateRange(item.filters)}
                                         </span>
                                     </div>
@@ -337,8 +337,8 @@ const IncidentAuditing = (props) => {
                             )}
 
                             {/* SAVED ON */}
-                            <div className="saved-on">
-                                <span className="saved-label">Saved on: </span>
+                            <div className="ia-saved-on">
+                                <span className="ia-saved-label">Saved on: </span>
                                 <span style={{ color: "#000" }}>
                                     {new Date(item.createdAt).toLocaleString()}
                                 </span>
@@ -346,9 +346,9 @@ const IncidentAuditing = (props) => {
 
                             {/* FILTER SUMMARY */}
                             {item.filters && (
-                                <div className="history-filters">
+                                <div className="ia-history-filters">
                                     {item.filters.syncEnabled != null && (
-                                        <div className="filter-item">
+                                        <div className="ia-filter-item">
                                             <strong>Sync Enabled:</strong>{" "}
                                             {item.filters.syncEnabled ? "Yes" : "No"}
                                         </div>
@@ -363,6 +363,7 @@ const IncidentAuditing = (props) => {
             {/* DELETE MODAL */}
             {showDeleteModal && (
                 <div
+                    className="ia-delete-overlay"
                     style={{
                         position: "fixed",
                         inset: 0,
@@ -374,6 +375,7 @@ const IncidentAuditing = (props) => {
                     }}
                 >
                     <div
+                        className="ia-delete-modal"
                         style={{
                             background: "#fff",
                             borderRadius: "12px",
@@ -622,10 +624,10 @@ const IncidentAuditing = (props) => {
                 </div>
             ) : responseData ? (
                 /* ✅ Show response reports after processing finishes */
-                <div style={{ padding: '24px 4%' }}>
+                <div className="ia-page">
                     {isFromHistory && (
                         <div
-                            className="financial-health-history-back-btn"
+                            className="ia-history-back-btn"
                             onClick={() => {
                                 setIsFromHistory(false);
 
@@ -834,10 +836,11 @@ const IncidentAuditing = (props) => {
                 </div>
             ) : (
                 /* 📁 Default: show upload + info UI */
-                <div style={{ padding: '24px 4%' }}>
-                    <div className="financial-header">
+                <div className="ia-page">
+                    <div className="ia-header">
                         <div></div>
                         <div
+                            className="ia-title-wrap"
                             style={{
                                 display: "flex",
                                 gap: "6px",
@@ -846,7 +849,7 @@ const IncidentAuditing = (props) => {
                                 marginLeft: "100px",
                             }}
                         >
-                            <h1 className="titless">INCIDENT AUDITING</h1>
+                            <h1 className="ia-title">INCIDENT AUDITING</h1>
                             <Tippy
                                 content={
                                     <div
@@ -871,7 +874,7 @@ const IncidentAuditing = (props) => {
                                 </div>
                             </Tippy>
                         </div>
-                        <div className="sync-toggle">
+                        <div className="ia-sync-toggle">
                             <div style={{ fontSize: "14px", fontWeight: "500", fontFamily: "Inter" }}>
                                 Sync With Your System
                             </div>
@@ -900,26 +903,26 @@ const IncidentAuditing = (props) => {
 
 
                     {/* Info Table */}
-                    <div className="info-table">
-                        <div className="table-headerss">
+                    <div className="ia-info-table">
+                        <div className="ia-info-table-header">
                             <span>If You Upload This...</span>
                             <span>Our AI Will Instantly...</span>
                         </div>
-                        <div className="table-rowss">
+                        <div className="ia-info-table-row">
                             <div>Care Management System - Incident Report</div>
                             <ul>
                                 <li>Collates evidence to support higher funding requests.</li>
                                 <li>Uncover CAPA (Corrective and Preventive Actions) insights per client.</li>
                             </ul>
                         </div>
-                        <div className="table-rowss">
+                        <div className="ia-info-table-row">
                             <div>Behaviour Support System - Behaviour Support Report</div>
                             <ul>
                                 <li>Auto-generates NDIS evidence summaries and reports.</li>
                                 <li>Links incidents to unmet care or supervision needs.</li>
                             </ul>
                         </div>
-                        <div className="table-rowss">
+                        <div className="ia-info-table-row">
                             <div>Care Management System - Shift Notes Report</div>
                             <ul>
                                 <li>Flags behavioural or mood changes in participants.</li>
@@ -929,13 +932,13 @@ const IncidentAuditing = (props) => {
                     </div>
 
                     {/* Date selectors */}
-                    <div className="date-section">
+                    <div className="ia-date-section">
                         {/* Start */}
-                        <div className="date-picker">
+                        <div className="ia-date-picker">
                             <label style={{ fontSize: "14px", fontWeight: "500", fontFamily: "Inter" }}>
                                 Report Start Date
                             </label>
-                            <div className="date-inputs">
+                            <div className="ia-date-inputs">
                                 <select value={startDay} onChange={(e) => setStartDay(e.target.value)}>
                                     <option value="">DD</option>
                                     {Array.from({ length: 31 }, (_, i) => {
@@ -977,11 +980,11 @@ const IncidentAuditing = (props) => {
                         </div>
 
                         {/* End */}
-                        <div className="date-picker">
+                        <div className="ia-date-picker">
                             <label style={{ fontSize: "14px", fontWeight: "500", fontFamily: "Inter" }}>
                                 Report End Date
                             </label>
-                            <div className="date-inputs">
+                            <div className="ia-date-inputs">
                                 <select value={endDay} onChange={(e) => setEndDay(e.target.value)}>
                                     <option value="">DD</option>
                                     {Array.from({ length: 31 }, (_, i) => {
@@ -1023,8 +1026,9 @@ const IncidentAuditing = (props) => {
                     </div>
 
                     {/* File uploader */}
-                    <div className="uploader-grid" style={{ display: "flex", justifyContent: "center" }}>
+                    <div className="ia-uploader-grid" style={{ display: "flex", justifyContent: "center" }}>
                         <div
+                            className="ia-uploader-col"
                             style={{
                                 width: "50%",
                                 opacity: syncEnabled ? 0.5 : 1,
@@ -1049,7 +1053,7 @@ const IncidentAuditing = (props) => {
 
                     {/* Analyse button */}
                     <button
-                        className="analyse-btn"
+                        className="ia-analyse-btn"
                         onClick={handleAnalyse}
                         disabled={isButtonDisabled || isIncidentAuditingProcessing}
                         style={{

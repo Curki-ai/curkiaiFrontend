@@ -280,3 +280,144 @@
   scrollbar-width: auto;
   scrollbar-color: #6c4cdc;
 }
+
+/* ============================================================
+   CLIENTS PROFITABILITY (TlcNewClientProfitibility) — RESPONSIVE
+   Supported viewport range: ≥821px (≤820px is routed to Care
+   Voice in HomePage.js).
+   Scoped to .tlc-cp-page and the tlc-cp-* hooks so other modules
+   sharing .page-containersss / .filters-grid / .financial-header
+   stay untouched.
+   ============================================================ */
+
+/* ------------------ Tab bar — fix shrink/wrap behaviour at all sizes ------------------ */
+.tlc-cp-page .tab-bar {
+  flex-wrap: wrap;
+  row-gap: 8px;
+}
+
+.tlc-cp-page .tab-bar > div,
+.tlc-cp-page .tab-bar > button {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* ------------------ Compare/Save buttons — never shrink or wrap text ------------------ */
+/* When the tab-bar wraps to multiple rows it grows vertically and squeezes the
+   action-buttons column horizontally. Lock the buttons so their text stays on
+   a single line and the button keeps its natural width. */
+.tlc-cp-actions-buttons {
+  flex-shrink: 0;
+}
+
+.tlc-cp-actions-buttons > button {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* ------------------ Small desktop / laptop (≤1280px) ------------------ */
+@media (max-width: 1280px) {
+  .tlc-cp-page .filters-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* ------------------ Tablet landscape (≤1024px) ------------------ */
+@media (max-width: 1024px) {
+  /* Page container padding eases up */
+  .tlc-cp-page {
+    padding: 20px 24px;
+  }
+
+  /* Top header (role-selector + sync) wraps */
+  .tlc-cp-page .financial-header {
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 12px 16px;
+  }
+
+  .tlc-cp-page .role-selector {
+    flex-wrap: wrap;
+    row-gap: 10px;
+  }
+
+  /* Tabs + Compare/Save row wraps; tab wrapper sizes to content
+     so we don't get a whitespace gap to the right of the tabs */
+  .tlc-cp-actions-row {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .tlc-cp-actions-buttons {
+    align-items: flex-end !important;
+  }
+
+  /* Filters drop to 2 columns */
+  .tlc-cp-page .filters-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  /* History margin tightened */
+  .tlc-cp-page .history-container {
+    margin-top: 64px;
+  }
+
+  /* Dashboard summary cards drop to 2 cols */
+  .tlc-cp-page .tlcClient-dashboard-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 12px;
+    row-gap: 12px;
+  }
+}
+
+/* ------------------ Lower end of supported range (≤900px) ------------------ */
+@media (max-width: 900px) {
+  .tlc-cp-page {
+    padding: 18px 20px;
+  }
+
+  .tlc-cp-page .financial-header {
+    padding: 10px 12px;
+    gap: 10px;
+  }
+
+  /* Buttons sit on the left when stacked under tabs */
+  .tlc-cp-actions-row {
+    align-items: flex-start;
+  }
+
+  .tlc-cp-actions-buttons {
+    align-items: flex-start !important;
+  }
+
+  /* Drop the desktop 17px top offset on the Compare button when stacked */
+  .tlc-cp-actions-buttons > button {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+  }
+
+  /* History header: search bar drops below the title */
+  .tlc-cp-history-header {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  .tlc-cp-history-search {
+    max-width: 100% !important;
+    width: 100%;
+  }
+
+  /* History container top margin tightened */
+  .tlc-cp-page .history-container {
+    margin-top: 40px;
+  }
+
+  /* Delete-confirm modal — fit a narrow viewport */
+  .tlc-cp-delete-modal {
+    min-width: 0 !important;
+    width: calc(100vw - 48px);
+    max-width: 380px;
+    padding: 18px 20px !important;
+  }
+}

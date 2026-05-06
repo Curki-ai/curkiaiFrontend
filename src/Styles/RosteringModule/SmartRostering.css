@@ -251,3 +251,69 @@
   visibility: visible !important;
   pointer-events: auto;
 }
+
+/* ============================================================
+   SMART ROSTERING (dashboard) — RESPONSIVE
+   Supported viewport range: ≥821px (≤820px is routed to Care
+   Voice in HomePage.js).
+   Scoped to the existing .rostering-dashboard wrapper so other
+   modules are not impacted.
+   ============================================================ */
+
+/* ------------------ Small desktop / laptop (≤1280px) ------------------ */
+@media (max-width: 1280px) {
+  /* The 4-col stats row (Shift Coverage / At-Risk / Staff Utilisation / Upload card)
+     gets too cramped at this width — break to 2x2 */
+  .rostering-dashboard .rostering-stats-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    row-gap: 16px;
+  }
+}
+
+/* ------------------ Tablet landscape (≤1024px) ------------------ */
+@media (max-width: 1024px) {
+  .rostering-dashboard {
+    margin: 8px 4% 40px 4%;
+  }
+
+  /* Date + History/Settings row — wrap when settings buttons no longer fit */
+  .rostering-controls-row {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .rostering-controls-buttons {
+    flex-wrap: wrap;
+  }
+
+  /* Tighten card padding so the 2x2 grid doesn't run too tall */
+  .rostering-dashboard .rostering-stat-card {
+    padding: 28px 16px;
+  }
+
+  .rostering-dashboard .rostering-stat-card p {
+    font-size: 16px;
+  }
+}
+
+/* ------------------ Lower end of supported range (≤900px) ------------------ */
+@media (max-width: 900px) {
+  .rostering-dashboard {
+    margin: 8px 16px 40px 16px;
+  }
+
+  .rostering-dashboard .rostering-date {
+    font-size: 20px;
+  }
+
+  /* Bulk Selection toggle — let it sit alongside the heading on a new line if needed */
+  .rostering-dashboard .unallocated-shifts-section > div[style*="width: 184px"] {
+    margin-left: auto !important;
+  }
+
+  /* Input box widens to use available space */
+  .rostering-dashboard .rostering-input-box {
+    max-width: 100%;
+  }
+}

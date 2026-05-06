@@ -19,6 +19,11 @@ html,
 
 .sidebar {
   width: 21%;
+  /* Floor the width so the sidebar never gets so narrow that role
+     labels need to wrap. flex-shrink:0 keeps the parent flex from
+     compressing it below the floor. */
+  min-width: 240px;
+  flex-shrink: 0;
   background: linear-gradient(175.63deg, #000000 -1.22%, #1A1235 48.04%, #1A1235 86.81%, #6C4CDC 118.54%);
   display: flex;
   flex-direction: column;
@@ -375,6 +380,146 @@ html,
   /* border-image-source: linear-gradient(180deg, rgba(101, 72, 255, 0.3) 59.37%, #826AFF 100%); */
   /* box-shadow: 0px 2.12px 0px 0px #9D94CB inset; */
   background-color: #6C4CDC !important;
+}
+
+/* Ask AI panel — desktop layout is driven by inline styles in HomePage.js
+   (76% width, fixed bottom-right). On smaller responsive widths the panel
+   should take the full viewport so it isn't squeezed by the sidebar.
+   Scoped to ≤1024px so desktop is untouched. */
+@media (max-width: 1024px) {
+  .ask-ai-panel {
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+    padding: 14px 20px !important;
+    border: none !important;
+    z-index: 1000 !important;
+  }
+}
+
+/* ============================================================
+   ASK AI — ANSWER CARD: NO HORIZONTAL SCROLL
+   The AI answer is rendered inside a chain of inline-styled flex
+   containers. By default flex items have min-width: auto, so a
+   single long URL/email like sarah@contemporarycoordination.com
+   forces the parent column to grow beyond the panel's width,
+   producing horizontal scroll. The fix has two parts:
+   (a) min-width: 0 on each wrapper in the chain so flex children
+       can shrink below their content's min-content;
+   (b) overflow-wrap: anywhere on text content so long unbreakable
+       words break and wrap onto the next line.
+   ============================================================ */
+.ask-ai-message-wrap,
+.ask-ai-message-row,
+.ask-ai-message-col {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.ask-ai-message-col {
+  flex: 1 1 auto;
+}
+
+.ask-ai-panel .ask-ai-res-div {
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  box-sizing: border-box;
+}
+
+/* Markdown content inside the answer — keep everything inside the card */
+.ask-ai-panel .ask-ai-res-div p,
+.ask-ai-panel .ask-ai-res-div li,
+.ask-ai-panel .ask-ai-res-div span,
+.ask-ai-panel .ask-ai-res-div a,
+.ask-ai-panel .ask-ai-res-div h1,
+.ask-ai-panel .ask-ai-res-div h2,
+.ask-ai-panel .ask-ai-res-div h3,
+.ask-ai-panel .ask-ai-res-div h4 {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+/* Code blocks wrap instead of forcing horizontal scroll */
+.ask-ai-panel .ask-ai-res-div pre,
+.ask-ai-panel .ask-ai-res-div code {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* Tables get their own contained horizontal scroll instead of overflowing the card */
+.ask-ai-panel .ask-ai-res-div table {
+  display: block;
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+/* Images can't push the card wider */
+.ask-ai-panel .ask-ai-res-div img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* ============================================================
+   ASK AI — HEADING (icon + title) RESPONSIVE
+   The inline fontSize: 24px is too big at narrow viewports where
+   long titles like "Ask Any Question Related To Care Voice
+   Document" wrap awkwardly. Scale font / icon / gap by breakpoint.
+   ============================================================ */
+.ask-ai-heading-row {
+  flex-wrap: wrap;
+  padding: 0 8px;
+}
+
+.ask-ai-heading-text {
+  line-height: 1.3;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 1024px) {
+  .ask-ai-heading-text {
+    font-size: 22px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .ask-ai-heading-row {
+    gap: 12px !important;
+  }
+
+  .ask-ai-heading-row > img {
+    width: 28px !important;
+  }
+
+  .ask-ai-heading-text {
+    font-size: 18px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .ask-ai-heading-row {
+    gap: 10px !important;
+  }
+
+  .ask-ai-heading-row > img {
+    width: 24px !important;
+  }
+
+  .ask-ai-heading-text {
+    font-size: 16px !important;
+  }
 }
 
 @keyframes spin {
@@ -1766,4 +1911,275 @@ html,
 .rs-fancy-btn:focus-visible {
   outline: 2px solid #6c4cdc !important;
   outline-offset: 2px !important;
+}
+
+/* ============================================================
+   COMPLIANCE / SIMPLE-UPLOAD MODULES — RESPONSIVE
+   Scoped to each module's outer wrapper (.qr-page, .sirs-page,
+   .ir-page, .cim-page) so the responsive overrides only affect
+   these four modules and never leak into other pages that use
+   the same shared classes (.uploader-grid, .selectedModule,
+   .selectedModuleDescription, .analyse-btn, .reports-box).
+
+   Modules covered:
+   - .qr-page    Quality and Risk Reporting
+   - .sirs-page  SIRS Analysis
+   - .ir-page    Incident Report
+   - .cim-page   Custom Incident Management
+
+   Supported viewport range: ≥821px (≤820px → Care Voice).
+   ============================================================ */
+
+/* ------------------ Small desktop / laptop (≤1280px) ------------------ */
+@media (max-width: 1280px) {
+  /* Single-column upload modules: the inline width:50% on the upload
+     column gets too narrow at this width. Bump to 70%. Targets the
+     direct child of .uploader-grid where the inline width:50% lives. */
+  .qr-page .uploader-grid > div,
+  .sirs-page .uploader-grid > div,
+  .ir-page .uploader-grid > div {
+    width: 70% !important;
+  }
+
+  /* Custom Incident Management uses a 4-cell grid (Incident Logs /
+     Investigation Reports / Root Cause / Corrective Actions). Drop
+     to 2x2 instead of 2x4 at this width. */
+  .cim-page .uploader-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 30px;
+    row-gap: 30px;
+  }
+}
+
+/* ------------------ Tablet landscape (≤1024px) ------------------ */
+@media (max-width: 1024px) {
+  /* Heading & description scale down so they don't dominate */
+  .qr-page .selectedModule,
+  .sirs-page .selectedModule,
+  .ir-page .selectedModule,
+  .cim-page .selectedModule {
+    font-size: 20px;
+    margin-top: 24px;
+    text-align: center;
+  }
+
+  .qr-page .selectedModuleDescription,
+  .sirs-page .selectedModuleDescription,
+  .ir-page .selectedModuleDescription,
+  .cim-page .selectedModuleDescription {
+    font-size: 14px;
+    margin-bottom: 30px;
+    text-align: center;
+    padding: 0 16px;
+  }
+
+  /* Upload column widens further on the single-upload modules */
+  .qr-page .uploader-grid > div,
+  .sirs-page .uploader-grid > div,
+  .ir-page .uploader-grid > div {
+    width: 90% !important;
+    max-width: 600px;
+  }
+
+  /* Custom Incident Management 4-cell grid stays 2x2 with tighter gaps */
+  .cim-page .uploader-grid {
+    column-gap: 20px;
+    row-gap: 20px;
+  }
+
+  /* Reports-box inner padding eases */
+  .qr-page .reports-box > div,
+  .sirs-page .reports-box > div,
+  .ir-page .reports-box > div,
+  .cim-page .reports-box > div {
+    padding: 10px 16px !important;
+  }
+}
+
+/* ------------------ Lower end of supported range (≤900px) ------------------ */
+@media (max-width: 900px) {
+  /* Heading scales further */
+  .qr-page .selectedModule,
+  .sirs-page .selectedModule,
+  .ir-page .selectedModule,
+  .cim-page .selectedModule {
+    font-size: 18px;
+  }
+
+  /* Upload column takes full width */
+  .qr-page .uploader-grid > div,
+  .sirs-page .uploader-grid > div,
+  .ir-page .uploader-grid > div {
+    width: 100% !important;
+    max-width: 100%;
+    padding: 0 8px;
+    box-sizing: border-box;
+  }
+
+  /* Custom Incident Management 4-cell grid → single column at this width */
+  .cim-page .uploader-grid {
+    grid-template-columns: 1fr;
+    column-gap: 0;
+    row-gap: 16px;
+  }
+
+  /* Analyse button — make sure it sits in the centre with sane spacing
+     when the upload column is full width above it */
+  .qr-page .analyse-btn,
+  .sirs-page .analyse-btn,
+  .ir-page .analyse-btn,
+  .cim-page .analyse-btn {
+    display: block;
+    margin: 16px auto 0;
+  }
+
+  /* Reports-box: ease padding so the report content has room to breathe */
+  .qr-page .reports-box,
+  .sirs-page .reports-box,
+  .ir-page .reports-box,
+  .cim-page .reports-box {
+    margin-top: 20px !important;
+  }
+
+  .qr-page .reports-box > div,
+  .sirs-page .reports-box > div,
+  .ir-page .reports-box > div,
+  .cim-page .reports-box > div {
+    padding: 10px 14px !important;
+  }
+}
+
+/* ============================================================
+   SIDEBAR — RESPONSIVE
+   Goal: nav labels never wrap onto multiple lines, the profile
+   card at the bottom doesn't clip user name mid-character, and
+   the sidebar maintains a usable minimum width on small laptops.
+   The sidebar's min-width: 240px and flex-shrink: 0 above set
+   the floor; everything below tightens internal spacing/typography
+   so labels fit without horizontally overflowing.
+   ============================================================ */
+
+/* Role-item label text never wraps. Labels that don't fit truncate
+   cleanly with ellipsis instead of either stacking on multiple lines
+   or overflowing past the rounded-card border (the "Connect Your
+   Systems" card was bleeding "Care Management, Financial," outside
+   its box). */
+.sidebar .role-item p {
+  /* white-space: nowrap; */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0;
+  max-width: 100%;
+}
+
+/* The role-item box clips its own content so any descendant overflow
+   never visually escapes the rounded border. */
+.sidebar .role-item {
+  overflow: hidden;
+}
+
+/* Each level of the inner flex chain needs min-width: 0 so flex
+   children can shrink below their natural min-content width and let
+   the ellipsis truncation actually take effect. */
+.sidebar .role-item > div,
+.sidebar .role-item > div > div {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+/* Profile button at the bottom: name / email truncate cleanly with
+   ellipsis instead of being clipped mid-character ("Secondary Tech-"). */
+.sidebar .profile-button {
+  gap: 8px;
+}
+
+.sidebar .profile-button-left {
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+}
+
+.sidebar .profile-name,
+.sidebar .profile-email {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.sidebar .profile-arrow {
+  flex-shrink: 0;
+}
+
+/* ------------------ Small desktop / laptop (≤1280px) ------------------ */
+@media (max-width: 1280px) {
+  /* Tighten role-item left margin so labels have more visible room
+     within the 21%-of-viewport sidebar */
+  .sidebar .role-item {
+    font-size: 14px;
+    margin-left: 22px;
+    margin-bottom: 14px;
+  }
+
+  .sidebar .role-item.active-role {
+    margin-left: 12px;
+    padding: 8px 10px;
+  }
+
+  /* Connect-card section headline keeps room for icon + label */
+  .sidebar .role-item img {
+    flex-shrink: 0;
+  }
+}
+
+/* ------------------ Tablet landscape / small laptop (≤1100px) ------------------ */
+@media (max-width: 1100px) {
+  .sidebar {
+    min-width: 220px;
+    padding: 12px 14px 12px 10px;
+  }
+
+  .sidebar .role-item {
+    font-size: 13px;
+    margin-left: 14px;
+    margin-bottom: 12px;
+    gap: 4px;
+  }
+
+  .sidebar .role-item.active-role {
+    margin-left: 8px;
+    padding: 8px;
+  }
+
+  /* Logo block tightens */
+  .sidebar .logo {
+    margin-bottom: 20px;
+  }
+}
+
+/* ------------------ Lower end of supported range (≤900px) ------------------ */
+@media (max-width: 900px) {
+  .sidebar {
+    min-width: 210px;
+  }
+
+  .sidebar .role-item {
+    font-size: 12.5px;
+    margin-left: 10px;
+    margin-bottom: 10px;
+  }
+
+  .sidebar .role-item.active-role {
+    margin-left: 6px;
+    padding: 7px 8px;
+  }
+
+  /* Profile button text shrinks to fit narrower sidebar */
+  .sidebar .profile-name {
+    font-size: 13px;
+  }
+
+  .sidebar .profile-email {
+    font-size: 11px;
+  }
 }

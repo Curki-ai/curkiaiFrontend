@@ -1682,6 +1682,7 @@ const NewFinancialHealth = (props) => {
                 )}
                 {showDeleteModal && (
                     <div
+                        className="delete-history-modal-overlay"
                         style={{
                             position: "fixed",
                             inset: 0,
@@ -1693,6 +1694,7 @@ const NewFinancialHealth = (props) => {
                         }}
                     >
                         <div
+                            className="delete-history-modal"
                             style={{
                                 background: "#fff",
                                 borderRadius: "12px",
@@ -1887,6 +1889,7 @@ const NewFinancialHealth = (props) => {
                         </div>
                     </div>
                     <div
+                        className="financial-actions-row"
                         style={{
                             display: "flex",
                             alignItems: "center",
@@ -1899,6 +1902,7 @@ const NewFinancialHealth = (props) => {
 
                         {/* RIGHT: COMPARE & ANALYSE */}
                         <div
+                            className="financial-actions-buttons"
                             style={{
                                 display: "flex",
                                 flexDirection: "column",
@@ -2187,6 +2191,7 @@ const NewFinancialHealth = (props) => {
                         </div>
                     </div>
                     <div
+                        className="financial-actions-row"
                         style={{
                             display: "flex",
                             alignItems: "center",
@@ -2199,6 +2204,7 @@ const NewFinancialHealth = (props) => {
 
                         {/* RIGHT: COMPARE & ANALYSE */}
                         <div
+                            className="financial-actions-buttons"
                             style={{
                                 display: "flex",
                                 flexDirection: "column",

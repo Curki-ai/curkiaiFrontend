@@ -270,3 +270,182 @@ body {
   scrollbar-width: auto;
   scrollbar-color: #6c4cdc #f1f1f1;
 }
+
+/* ============================================================
+   FINANCIAL HEALTH MODULE — RESPONSIVE
+   Supported viewport range: ≥821px (the app routes ≤820px to Care
+   Voice via HomePage.js — see `Force Care Voice on mobile/tablet`).
+   All overrides are scoped to .financial-main-container so other
+   modules sharing class names (.filters-grid, .history-card-modern,
+   .charts-grid, .tlcClient-dashboard-summary) stay untouched.
+   ============================================================ */
+
+/* Default desktop layout for the new className hooks
+   (these mirror the inline styles, so behaviour is unchanged) */
+.financial-actions-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.financial-actions-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+/* ------------------ Tab bar — fix shrink/wrap behaviour at all sizes ------------------ */
+/* Tabs were squishing (text wrapping vertically) when many were open.
+   Allow the tab-bar to flow onto multiple rows, and stop each tab from
+   shrinking or wrapping its text. Applies across desktop too. */
+.financial-main-container .tab-bar {
+  flex-wrap: wrap;
+  row-gap: 8px;
+}
+
+.financial-main-container .tab-bar > div,
+.financial-main-container .tab-bar > button {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* ------------------ Compare/Save buttons — never shrink or wrap text ------------------ */
+/* When the tab-bar wraps to multiple rows it grows vertically and squeezes the
+   action-buttons column horizontally. Lock the buttons so their text stays on
+   a single line and the button keeps its natural width. */
+.financial-actions-buttons {
+  flex-shrink: 0;
+}
+
+.financial-actions-buttons > button {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* When the tab bar wraps to several rows the row grows vertically. The inline
+   style on .financial-actions-row uses align-items: center which then drops
+   the Compare button to the visual middle. Anchor the button to the top so
+   it stays in its original position regardless of how many tab rows there are.
+   !important overrides the inline alignItems: "center". */
+.financial-actions-row {
+  align-items: flex-start !important;
+}
+
+/* The Financial tab bar has marginTop: 12px on top of paddingTop: 16px, so the
+   first tab visually sits 28px below the row's top edge. The Compare button
+   only has marginTop: 17px, leaving it 11px higher. Push the button column
+   down 11px so it aligns with the top of the first tab row. */
+.financial-actions-buttons {
+  margin-top: 11px;
+}
+
+/* ------------------ Small desktop / laptop (≤1280px) ------------------ */
+@media (max-width: 1280px) {
+  .financial-main-container .filters-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* ------------------ Tablet landscape (≤1024px, down to 821px) ------------------ */
+@media (max-width: 1024px) {
+  .financial-main-container {
+    padding: 20px 24px;
+  }
+
+  .financial-header {
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 12px 16px;
+  }
+
+  .role-selector {
+    flex-wrap: wrap;
+    row-gap: 10px;
+  }
+
+  .financial-actions-row {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .financial-actions-buttons {
+    align-items: flex-end;
+  }
+
+  .financial-main-container .filters-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .financial-main-container .graph-gridsss {
+    grid-template-columns: 1fr;
+    column-gap: 0;
+  }
+
+  .financial-main-container .tlcClient-dashboard-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 12px;
+    row-gap: 12px;
+  }
+
+  .financial-main-container .history-container {
+    margin-top: 64px;
+  }
+
+  .financial-main-container .history-card-modern {
+    padding: 16px 18px;
+  }
+
+  /* Reports / AI insight inner box — tighten so content fits a 821px container */
+  .financial-main-container .reports-box > div {
+    padding: 10px 16px !important;
+  }
+
+  /* Charts grid */
+  .financial-main-container .charts-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ------------------ Lower end of supported range (≤900px, down to 821px) ------------------ */
+@media (max-width: 900px) {
+  .financial-main-container {
+    padding: 18px 20px;
+  }
+
+  .financial-header {
+    padding: 10px 12px;
+    gap: 10px;
+  }
+
+  .financial-actions-row {
+    /* Let the buttons wrap onto their own line under the tab bar */
+    align-items: flex-start;
+  }
+
+  .financial-actions-buttons {
+    align-items: flex-start;
+  }
+
+  /* Compare/Save buttons drop the desktop top-spacing offset */
+  .financial-actions-buttons > button {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+  }
+
+  /* Tab bar wraps so a row of many tabs doesn't push the layout out */
+  .tab-bar {
+    flex-wrap: wrap;
+    padding-top: 6px !important;
+    margin-top: 4px !important;
+    margin-bottom: 10px !important;
+    row-gap: 8px;
+  }
+
+  .financial-main-container .history-top {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+}
