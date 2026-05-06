@@ -9,7 +9,7 @@ import { isCandidateAuthenticated } from "./Components/Modules/StaffOnboarding/c
 
 const RequireCandidateAuth = ({ children }) => {
   if (!isCandidateAuthenticated()) {
-    return <Navigate to="/hr-candidate" replace />;
+    return <Navigate to="/hr-candidate" replace />
   }
   return children;
 };
