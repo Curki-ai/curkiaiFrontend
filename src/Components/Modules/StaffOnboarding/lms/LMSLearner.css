@@ -370,13 +370,13 @@
 }
 .ulrn-tile-prog-bar {
   height: 6px;
-  background: #6C4CDC;
+  background: #f0eaff;
   border-radius: 4px;
   overflow: hidden;
 }
 .ulrn-tile-prog-fill {
   height: 100%;
-  background: #6C4CDC;
+  background: linear-gradient(90deg, #7c5cbf, #9d7adf);
   transition: width 0.3s;
 }
 .ulrn-tile-cta {
