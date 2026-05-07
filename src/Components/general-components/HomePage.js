@@ -195,6 +195,15 @@ const HomePage = () => {
   const [orgLookupStatus, setOrgLookupStatus] = useState("idle"); // idle | loading | found | not_found
   const { isConnected, sendHRChat } = useHRChat();
   const [hrScreenedCandidates, setHrScreenedCandidates] = useState([]);
+  // Conversation history that mirrors hr_chat_client.html's pattern: only
+  // finalized {role, content} pairs are tracked here, never intermediate
+  // status events. Updated on hr_complete with a real reply.
+  const hrConvHistoryRef = useRef([]);
+  const hrLastUserTextRef = useRef("");
+  const resetHrConversation = () => {
+    hrConvHistoryRef.current = [];
+    hrLastUserTextRef.current = "";
+  };
   let eventQueue = [];
   function fileToBase64(f) {
     return new Promise(function (resolve, reject) {
@@ -764,6 +773,7 @@ const HomePage = () => {
         }));
 
         setScreenedResults(list);
+        setHrScreenedCandidates(list);
         setSelectedCandidates(list.map((_, i) => i));
         setHrStep("RESULTS");
         // Discard the uploaded JD + resumes once screening completes so
@@ -908,6 +918,8 @@ const HomePage = () => {
     // initial send (with attached files) can go through without a typed prompt.
     setHasResumeRunStarted(false);
     setAskAiAttachedFiles([]);
+    setHrScreenedCandidates([]);
+    resetHrConversation();
 
     setMessages((prev) => [
       ...prev,
@@ -939,9 +951,13 @@ const HomePage = () => {
       );
     };
 
+    // Build attachments exactly the way hr_chat_client.html does:
+    //   - JD + résumés are attached whenever the user has them in state and
+    //     we're in resume_screening mode (regardless of prior screening
+    //     state — same as the HTML reference).
+    //   - "general" files are attached in general mode only.
     let attachments = [];
-    console.log("hrScreenedCandidates", hrScreenedCandidates)
-    if (hrMode === "resume_screening" && hrScreenedCandidates.length === 0) {
+    if (hrMode === "resume_screening") {
       attachments = await Promise.all([
         ...jdFiles.map(async (file) => ({
           filename: file.name,
@@ -954,48 +970,51 @@ const HomePage = () => {
           content_base64: await fileToBase64(file)
         }))
       ]);
-    }
-
-    if (askAiAttachedFiles.length > 0) {
-      const generalAttachments = await Promise.all(
+    } else if (askAiAttachedFiles.length > 0) {
+      attachments = await Promise.all(
         askAiAttachedFiles.map(async (file) => ({
           filename: file.name,
           document_role: "general",
           content_base64: await fileToBase64(file)
         }))
       );
-      attachments = [...attachments, ...generalAttachments];
       setAskAiAttachedFiles([]);
     }
 
+    // Mirror hr_chat_client.html's `body` shape exactly. `admin_name` /
+    // `admin_email` are kept on the proxy payload so the Node proxy can use
+    // them for outbound emails — the proxy strips them before relaying to
+    // the upstream WS, so the upstream sees the same shape as the HTML
+    // client.
     const payload = {
       organisation_id: organizationId,
       message: finalQuery,
-      api_key: "",
+      max_conversation_turns: 5,
       workflow_phase:
-        hrMode === "resume_screening"
-          ? "resume_screening"
-          : "general",
-
-      conversation_history: messages
-        .filter(
-          (m) =>
-            !m.temp &&
-            !m.isWelcomeMessage &&
-            !m.isUploadPrompt &&
-            !m.isFeedbackResponse
-        )
-        .map((m) => ({
-          role: m.sender === "user" ? "user" : "assistant",
-          content: m.text
-        })),
-
+        hrMode === "resume_screening" ? "resume_screening" : "general",
       admin_name: user?.displayName || "HR Admin",
-      admin_email: user?.email
+      admin_email: user?.email,
+      api_key: ""
     };
+    if (hrConvHistoryRef.current.length > 0) {
+      payload.conversation_history = hrConvHistoryRef.current;
+    }
+    if (hrScreenedCandidates && hrScreenedCandidates.length > 0) {
+      payload.screened_candidates = hrScreenedCandidates;
+    }
     if (attachments.length > 0) {
       payload.attachments = attachments;
     }
+
+    // Track this turn's user-side text the same way the HTML client does
+    // (text + "[N file(s)]" summary). Pushed into history on hr_complete.
+    const fileCount = attachments.length;
+    hrLastUserTextRef.current = finalQuery
+      ? fileCount
+        ? `${finalQuery} [${fileCount} file(s)]`
+        : finalQuery
+      : `[${fileCount} file(s) only]`;
+
     if (hrMode === "resume_screening" && attachments.length > 0) {
       setJdFiles([]);
       setResumeFiles([]);
@@ -1102,6 +1121,20 @@ const HomePage = () => {
             setJdFiles([]);
             setResumeFiles([]);
             attachments = [];
+          }
+
+          // Mirror hr_chat_client.html: on a real reply, append the
+          // {user, assistant} pair to the conversation history that we send
+          // back on the next turn. Skip when there's no reply text.
+          if (finalText && finalText !== "Done") {
+            hrConvHistoryRef.current = [
+              ...hrConvHistoryRef.current,
+              {
+                role: "user",
+                content: hrLastUserTextRef.current || ""
+              },
+              { role: "assistant", content: finalText }
+            ];
           }
 
           setMessages((prev) =>
@@ -2247,6 +2280,8 @@ const HomePage = () => {
                                   setScreenedResults([]);
                                   setSelectedCandidates([]);
                                   setHasResumeRunStarted(false);
+                                  setHrScreenedCandidates([]);
+                                  resetHrConversation();
                                   setMessages((prev) => prev.filter((m) => !m.isUploadPrompt));
                                 }
                               }}
@@ -2271,6 +2306,8 @@ const HomePage = () => {
                             setScreenedResults([]);
                             setSelectedCandidates([]);
                             setHasResumeRunStarted(false);
+                            setHrScreenedCandidates([]);
+                            resetHrConversation();
                           }}
                           style={{
                             display: "flex",
@@ -2497,6 +2534,8 @@ const HomePage = () => {
                                                     setJdFiles([]);
                                                     setResumeFiles([]);
                                                     setHrMode("general");
+                                                    setHrScreenedCandidates([]);
+                                                    resetHrConversation();
                                                     setMessages((prev) => prev.filter((m) => !m.isUploadPrompt));
                                                   }}
                                                   style={{

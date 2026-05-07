@@ -34,6 +34,14 @@ const LMSRedesign = ({ user, organizationId }) => {
   const [error, setError] = useState("");
   const [saveStatus, setSaveStatus] = useState("idle"); // idle | saving | saved | error
 
+  // A new course stays here, local-only, until the admin makes their first
+  // edit. Persisting on click would litter the library with empty
+  // "Untitled Course" rows whenever someone opens the editor and backs out.
+  const [draftCourse, setDraftCourse] = useState(null);
+  const draftCourseRef = useRef(null);
+  const draftCreateInFlight = useRef(false);
+  const draftCreateTimer = useRef(null);
+
   // Map of pending debounced saves, keyed by courseId.
   const saveTimers = useRef({});
   // Latest course payloads we want to PUT, keyed by courseId.
@@ -46,6 +54,10 @@ const LMSRedesign = ({ user, organizationId }) => {
   useEffect(() => {
     coursesRef.current = courses;
   }, [courses]);
+
+  useEffect(() => {
+    draftCourseRef.current = draftCourse;
+  }, [draftCourse]);
 
   const adminEmail = user?.email || "";
 
@@ -189,6 +201,16 @@ const LMSRedesign = ({ user, organizationId }) => {
   };
 
   const backToLibrary = () => {
+    // Backing out of an untouched draft should discard it — that's the
+    // whole point of deferring the create. If the draft was edited the
+    // debounced timer (or in-flight POST) will still carry through.
+    if (
+      draftCourse &&
+      !draftCreateTimer.current &&
+      !draftCreateInFlight.current
+    ) {
+      setDraftCourse(null);
+    }
     setView("library");
     setEditingId(null);
   };
@@ -246,36 +268,86 @@ const LMSRedesign = ({ user, organizationId }) => {
     return undefined;
   };
 
-  const createCourse = async () => {
+  const createCourse = () => {
     if (!organizationId) {
       setError("Organisation not resolved yet — please wait a moment.");
       return;
     }
-    try {
-      // Drop the client-side id so the server assigns its own.
-      const { id: _ignore, ...draft } = blankCourse();
-      const created = await createCourseApi({
-        organizationId,
-        adminEmail,
-        course: draft,
-      });
-      // The server emits `lms:course:upserted` *before* sending the HTTP
-      // response, so the socket broadcast often beats this point and our
-      // sync handler has already prepended the new course. Dedupe by id
-      // instead of blindly adding it again.
-      setCourses((prev) =>
-        prev.some((c) => c.id === created.id)
-          ? prev.map((c) => (c.id === created.id ? created : c))
-          : [created, ...prev]
-      );
-      openEditor(created.id);
-    } catch (err) {
-      console.error("[LMS v2][createCourse] failed", err);
-      setError("Failed to create course.");
-    }
+    // Open a local-only draft. The server POST is deferred to
+    // `scheduleDraftCreate`, fired by the first real edit, so backing out
+    // without typing leaves no empty course behind.
+    const draft = blankCourse();
+    setDraftCourse(draft);
+    setEditingId(draft.id);
+    setView("editor");
+  };
+
+  // Debounced "create on server" for the local-only draft. Mirrors the
+  // shape of `scheduleSave` so the user sees the same Saving/Saved cues.
+  const scheduleDraftCreate = () => {
+    setSaveStatus("saving");
+    if (draftCreateTimer.current) clearTimeout(draftCreateTimer.current);
+    draftCreateTimer.current = setTimeout(async () => {
+      draftCreateTimer.current = null;
+      // If a previous create is still in flight, just re-arm; the in-flight
+      // resolver will pick up any later edits via `hadFurtherEdits`.
+      if (draftCreateInFlight.current) {
+        scheduleDraftCreate();
+        return;
+      }
+      const local = draftCourseRef.current;
+      if (!local) return;
+      draftCreateInFlight.current = true;
+      const { id: tempId, ...body } = local;
+      try {
+        const created = await createCourseApi({
+          organizationId,
+          adminEmail,
+          course: body,
+        });
+        const latest = draftCourseRef.current;
+        const hadFurtherEdits = latest && latest !== local;
+        setCourses((prev) =>
+          prev.some((c) => c.id === created.id)
+            ? prev.map((c) => (c.id === created.id ? created : c))
+            : [created, ...prev]
+        );
+        setDraftCourse(null);
+        setEditingId((cur) => (cur === tempId ? created.id : cur));
+        if (hadFurtherEdits) {
+          // Carry the user's mid-flight edits forward under the server id
+          // and etag, then push them through the normal update pipeline.
+          const merged = { ...latest, id: created.id, _etag: created._etag };
+          setCourses((prev) =>
+            prev.map((c) => (c.id === created.id ? merged : c))
+          );
+          scheduleSave(created.id, merged);
+        } else {
+          setSaveStatus("saved");
+          setTimeout(() => setSaveStatus("idle"), 1500);
+        }
+      } catch (err) {
+        console.error("[LMS v2][scheduleDraftCreate] POST failed", err);
+        setSaveStatus("error");
+        setError("Failed to create course.");
+      } finally {
+        draftCreateInFlight.current = false;
+      }
+    }, SAVE_DEBOUNCE_MS);
   };
 
   const updateCourse = (id, updater) => {
+    // First edit on a not-yet-persisted draft: keep changes local and
+    // arm the deferred POST. Subsequent edits keep extending the debounce
+    // until typing pauses, then the course is created on the server.
+    if (draftCourseRef.current && draftCourseRef.current.id === id) {
+      setDraftCourse((d) => {
+        if (!d) return d;
+        return typeof updater === "function" ? updater(d) : updater;
+      });
+      scheduleDraftCreate();
+      return;
+    }
     setCourses((prev) => {
       const next = prev.map((c) =>
         c.id === id ? (typeof updater === "function" ? updater(c) : updater) : c
@@ -298,7 +370,10 @@ const LMSRedesign = ({ user, organizationId }) => {
     }
   };
 
-  const editingCourse = courses.find((c) => c.id === editingId) || null;
+  const editingCourse =
+    (draftCourse && draftCourse.id === editingId ? draftCourse : null) ||
+    courses.find((c) => c.id === editingId) ||
+    null;
   const previewCourse = courses.find((c) => c.id === previewId) || null;
 
   // ── Render ─────────────────────────────────────────────────────────

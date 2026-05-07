@@ -494,6 +494,37 @@ const ScreeningTestCreation = (props) => {
         showToast(`Question ${i + 1} text is empty.`, "error");
         return;
       }
+      if (q.type === "text") {
+        if (!q.correctText || !q.correctText.trim()) {
+          showToast(
+            `Question ${i + 1}: please enter the expected answer.`,
+            "error"
+          );
+          return;
+        }
+      } else {
+        const correct = q.correctAnswers || [];
+        if (correct.length === 0) {
+          showToast(
+            `Question ${i + 1}: please select the correct answer.`,
+            "error"
+          );
+          return;
+        }
+        // Guard against a "correct" pointer to an option whose text was
+        // cleared — saving that would silently drop the answer key on the
+        // backend (frontendQuestionToBackend filters empty options).
+        const hasEmptyCorrect = correct.some(
+          (idx) => !q.options[idx] || !q.options[idx].trim()
+        );
+        if (hasEmptyCorrect) {
+          showToast(
+            `Question ${i + 1}: the selected correct option is empty.`,
+            "error"
+          );
+          return;
+        }
+      }
     }
 
     if (!adminEmail || !ORG_ID) {
@@ -747,6 +778,7 @@ const ScreeningTestCreation = (props) => {
         style={{ animationDelay: "0.05s" }}
       >
         <div className="stc_input_group">
+           <label>Title</label>
           <input
             type="text"
             className="stc_input_full stc_title_input"
@@ -755,7 +787,7 @@ const ScreeningTestCreation = (props) => {
             onChange={(e) => onTitleChange(e.target.value)}
           />
         </div>
-        <div className="stc_input_group">
+        {/* <div className="stc_input_group">
           <textarea
             className="stc_input_full stc_desc_input"
             placeholder="Test description (optional)"
@@ -763,7 +795,7 @@ const ScreeningTestCreation = (props) => {
             onChange={(e) => onDescriptionChange(e.target.value)}
             rows={2}
           />
-        </div>
+        </div> */}
         <div className="stc_grid_two">
           <div className="stc_input_group">
             <label>Duration (Minutes)</label>
@@ -775,7 +807,7 @@ const ScreeningTestCreation = (props) => {
               onChange={(e) => onDurationChange(e.target.value)}
             />
           </div>
-          <div className="stc_input_group">
+          {/* <div className="stc_input_group">
             <label>Pass Score (%)</label>
             <input
               type="number"
@@ -785,7 +817,7 @@ const ScreeningTestCreation = (props) => {
               value={gfState.passScore}
               onChange={(e) => onPassScoreChange(e.target.value)}
             />
-          </div>
+          </div> */}
         </div>
       </div>
 
@@ -882,12 +914,12 @@ const ScreeningTestCreation = (props) => {
               <div className="stc_answer_key_section">
                 <div className="stc_answer_key_head">
                   <span className="stc_answer_key_label">Answer Key</span>
-                  <span className="stc_optional_badge">OPTIONAL</span>
+                  <span className="stc_required_pill">REQUIRED</span>
                 </div>
                 {q.type === "text" ? (
                   <textarea
                     className="stc_input_full"
-                    placeholder="Expected answer (optional)..."
+                    placeholder="Expected answer..."
                     value={q.correctText || ""}
                     onChange={(e) =>
                       onCorrectTextChange(qIdx, e.target.value)

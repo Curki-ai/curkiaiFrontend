@@ -14,6 +14,38 @@ const isLocalhost =
 
 const HR_WS_HOST = isLocalhost ? LOCAL_HR_WS_HOST : PROD_HR_WS_HOST;
 
+// Upstream backend events we never want to surface to the chat UI as visible
+// activity — these are connection-lifecycle / idle chatter.
+const IGNORED_UPSTREAM_EVENTS = new Set([
+  "staff_onboarding.ws_connected",
+  "staff_onboarding.ws_idle",
+  "staff_onboarding.ws_welcome",
+  "staff_onboarding.hr_ws_turn_done"
+]);
+
+const IGNORED_MESSAGE_PATTERNS = [
+  /send a message or attach files to begin/i,
+  /^connected\.?\s*$/i,
+  /^connecting to hr server/i,
+  /^connected to hr server/i
+];
+
+const isIgnorableEvent = (data) => {
+  const upstreamEvent = data?.event || "";
+  if (upstreamEvent && IGNORED_UPSTREAM_EVENTS.has(upstreamEvent)) {
+    return true;
+  }
+  const candidates = [
+    data?.message,
+    data?.payload?.message,
+    data?.payload?.status,
+    data?.payload?.text
+  ].filter(Boolean);
+  return candidates.some((text) =>
+    IGNORED_MESSAGE_PATTERNS.some((pattern) => pattern.test(text))
+  );
+};
+
 export const useHRChat = () => {
   const [socket, setSocket] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
@@ -24,9 +56,9 @@ export const useHRChat = () => {
     onError: null
   });
 
-  // Paces incoming events so they don't flash by — each event surfaces with a
-  // 1 second gap, and the final hr_complete/hr_error waits for the queue to
-  // drain so the bot reply doesn't appear before its preceding status updates.
+  // Paces incoming events so they don't flash by, and defers
+  // hr_complete/hr_error until the activity queue has drained so the final
+  // bot reply doesn't appear before its preceding status updates.
   const queueRef = useRef({
     items: [],
     processing: false,
@@ -38,8 +70,6 @@ export const useHRChat = () => {
   const EVENT_DELAY_MS = 200;
 
   useEffect(() => {
-    console.log("[HR CHAT] Initializing socket");
-
     console.log(`[HR CHAT] Connecting to ${HR_WS_HOST}`);
     const newSocket = io(HR_WS_HOST, {
       transports: ["websocket"],
@@ -57,41 +87,6 @@ export const useHRChat = () => {
       console.log("[HR CHAT] Disconnected", reason);
       setIsConnected(false);
     });
-
-    // Idle / welcome / connection-lifecycle events from the upstream WS that
-    // should never surface in the chat UI. These get filtered out before the
-    // consumer's onEvent callback fires.
-    const IGNORED_MESSAGE_PATTERNS = [
-      /send a message or attach files to begin/i,
-      /^connected\.?\s*$/i,
-      /^connecting to hr server/i,
-      /^connected to hr server/i
-    ];
-
-    const IGNORED_EVENT_NAMES = new Set([
-      "staff_onboarding.ws_connected",
-      "staff_onboarding.ws_idle",
-      "staff_onboarding.ws_welcome",
-      "staff_onboarding.hr_ws_turn_done"
-    ]);
-
-    const isIgnorableEvent = (eventName, data) => {
-      const upstreamEvent = data?.event || "";
-      if (upstreamEvent && IGNORED_EVENT_NAMES.has(upstreamEvent)) {
-        return true;
-      }
-
-      const candidates = [
-        data?.message,
-        data?.payload?.message,
-        data?.payload?.status,
-        data?.payload?.text
-      ].filter(Boolean);
-
-      return candidates.some((text) =>
-        IGNORED_MESSAGE_PATTERNS.some((pattern) => pattern.test(text))
-      );
-    };
 
     const processQueue = () => {
       const queue = queueRef.current;
@@ -117,7 +112,6 @@ export const useHRChat = () => {
       const next = queue.items.shift();
       callbacksRef.current.onEvent?.(next.eventName, next.data);
 
-      // First event surfaces immediately; subsequent events wait 1s.
       const delay = queue.firstEventShown ? EVENT_DELAY_MS : 0;
       queue.firstEventShown = true;
 
@@ -128,13 +122,7 @@ export const useHRChat = () => {
     };
 
     const handleEvent = (eventName, data) => {
-      console.log(`[HR CHAT] ${eventName}`, data);
-
-      if (isIgnorableEvent(eventName, data)) {
-        console.log(`[HR CHAT] Ignoring idle/welcome event`, eventName, data);
-        return;
-      }
-
+      if (isIgnorableEvent(data)) return;
       queueRef.current.items.push({ eventName, data });
       processQueue();
     };
@@ -194,12 +182,7 @@ export const useHRChat = () => {
       return false;
     }
 
-    callbacksRef.current = {
-      onEvent,
-      onComplete,
-      onError
-    };
-
+    callbacksRef.current = { onEvent, onComplete, onError };
     queueRef.current = {
       items: [],
       processing: false,
@@ -207,6 +190,14 @@ export const useHRChat = () => {
       pendingError: null,
       firstEventShown: false
     };
+
+    console.log("[HR CHAT] Outgoing payload", {
+      workflow_phase: payload?.workflow_phase,
+      message_len: (payload?.message || "").length,
+      attachments: (payload?.attachments || []).length,
+      conv_history: (payload?.conversation_history || []).length,
+      has_screened_candidates: payload?.screened_candidates != null
+    });
 
     socket.emit("hr_chat", payload);
     return true;
