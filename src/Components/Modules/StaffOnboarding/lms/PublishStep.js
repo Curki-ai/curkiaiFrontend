@@ -1,8 +1,22 @@
 import React, { useMemo } from "react";
+import {
+  FiAlertCircle,
+  FiAlertTriangle,
+  FiAward,
+  FiBarChart2,
+  FiBookOpen,
+  FiCheck,
+  FiCheckCircle,
+  FiClipboard,
+  FiClock,
+  FiHelpCircle,
+} from "react-icons/fi";
 
 const truncate = (s, n) => (s.length > n ? s.slice(0, n - 1) + "…" : s);
 
-const PublishStep = ({ course, completion, onPublishToggle }) => {
+const PublishStep = ({ course, completion, onPublishToggle, onSaveDraft, saveStatus }) => {
+  const isSaving = saveStatus === "saving";
+  const justSaved = saveStatus === "saved";
   const stats = useMemo(() => {
     const sections = course.sections || [];
     const lessons = sections.flatMap((s) => s.lessons || []);
@@ -40,24 +54,37 @@ const PublishStep = ({ course, completion, onPublishToggle }) => {
     <div className="ulms-step-content ulms-publish-wrap">
       <div className="ulms-pub-grid">
         <div className="ulms-pub-card">
-          <h3>✅ Readiness</h3>
+          <h3>
+            <FiCheckCircle style={{ color: "#4caf77" }} /> Readiness
+          </h3>
           <div className="ulms-readiness-list">
             {checks.map((c) => (
               <div className="ulms-check-row" key={c.id}>
                 <span className={c.ok ? "ulms-check-ok" : "ulms-check-warn"}>
-                  {c.ok ? "✓" : "!"}
+                  {c.ok ? <FiCheck /> : <FiAlertCircle />}
                 </span>
                 <span>{c.label}</span>
               </div>
             ))}
           </div>
           <div className={`ulms-ready-banner ${allReady ? "" : "warn"}`}>
-            {allReady ? "🎉 Ready to publish!" : "⚠️  Resolve the warnings above before publishing."}
+            {allReady ? (
+              <>
+                <FiAward style={{ verticalAlign: "-2px" }} /> Ready to publish!
+              </>
+            ) : (
+              <>
+                <FiAlertTriangle style={{ verticalAlign: "-2px" }} /> Resolve
+                the warnings above before publishing.
+              </>
+            )}
           </div>
         </div>
 
         <div className="ulms-pub-card">
-          <h3>📋 Course Card Preview</h3>
+          <h3>
+            <FiClipboard /> Course Card Preview
+          </h3>
           <div className="ulms-course-preview-card" style={{ background: course.color || "#7c5cbf" }}>
             <div className="ulms-cpc-banner">
               <div className="ulms-cpc-emoji">{course.thumb || "📚"}</div>
@@ -67,16 +94,24 @@ const PublishStep = ({ course, completion, onPublishToggle }) => {
               </div>
             </div>
             <div className="ulms-cpc-meta">
-              <span className="ulms-cpc-meta-item">📚 {stats.lessons} lessons</span>
-              <span className="ulms-cpc-meta-item">⏱ {course.duration || "—"}</span>
-              <span className="ulms-cpc-meta-item">❓ {stats.quizzes} quizzes</span>
+              <span className="ulms-cpc-meta-item">
+                <FiBookOpen /> {stats.lessons} lessons
+              </span>
+              <span className="ulms-cpc-meta-item">
+                <FiClock /> {course.duration || "—"}
+              </span>
+              <span className="ulms-cpc-meta-item">
+                <FiHelpCircle /> {stats.quizzes} quizzes
+              </span>
             </div>
           </div>
         </div>
       </div>
 
       <div className="ulms-pub-card">
-        <h3>📊 Summary</h3>
+        <h3>
+          <FiBarChart2 /> Summary
+        </h3>
         <div className="ulms-summary-grid">
           <div className="ulms-sum-card">
             <span className="ulms-sum-num">{stats.sections}</span>
@@ -102,7 +137,9 @@ const PublishStep = ({ course, completion, onPublishToggle }) => {
       </div>
 
       <div className="ulms-pub-card">
-        <h3>📚 Curriculum Overview</h3>
+        <h3>
+          <FiBookOpen /> Curriculum Overview
+        </h3>
         {(course.sections || []).map((sec) => (
           <div className="ulms-ov-sec" key={sec.id}>
             <div className="ulms-ov-sec-name">
@@ -127,7 +164,24 @@ const PublishStep = ({ course, completion, onPublishToggle }) => {
       </div>
 
       <div className="ulms-pub-actions">
-        <button className="ulms-save-draft-btn">Save as Draft</button>
+        <button
+          className="ulms-save-draft-btn"
+          onClick={onSaveDraft}
+          disabled={isSaving}
+        >
+          {isSaving ? (
+            <>
+              <span className="ulms-save-draft-spinner" aria-hidden="true" />
+              Saving…
+            </>
+          ) : justSaved ? (
+            <>
+              <FiCheck style={{ verticalAlign: "-2px" }} /> Saved
+            </>
+          ) : (
+            "Save as Draft"
+          )}
+        </button>
         <button
           className="ulms-big-pub-btn"
           disabled={!allReady && course.status !== "published"}

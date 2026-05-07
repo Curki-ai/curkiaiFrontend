@@ -85,6 +85,7 @@ const NoOrgEmptyState = ({ user, onRegistered }) => {
           marginBottom: "36px",
           textAlign: "center",
           maxWidth: "560px",
+          overflowWrap: "anywhere",
         }}
       >
         Your account (<strong>{email || "—"}</strong>) is not linked to an
@@ -150,7 +151,7 @@ const NoOrgEmptyState = ({ user, onRegistered }) => {
           <div style={{ fontSize: "18px", fontWeight: 600, color: "#1F1B2E", marginBottom: "10px" }}>
             Ask your admin or owner to invite you
           </div>
-          <div style={{ fontSize: "14px", color: "#555", lineHeight: "20px" }}>
+          <div style={{ fontSize: "14px", color: "#555", lineHeight: "20px", overflowWrap: "anywhere" }}>
             If your organization is already on Curki, ask an existing owner or
             admin to add your email (<strong>{email || "—"}</strong>) to the
             organization's admin list. Once added, sign out and back in to see

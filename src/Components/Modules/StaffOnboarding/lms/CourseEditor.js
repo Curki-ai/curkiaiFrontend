@@ -1,7 +1,9 @@
 import React, { useMemo, useState } from "react";
+import { FiArrowLeft, FiArrowRight, FiCheck } from "react-icons/fi";
 import InfoStep from "./InfoStep";
 import CurriculumStep from "./CurriculumStep";
 import PublishStep from "./PublishStep";
+import { UploadProgressProvider } from "./useUploadProgress";
 
 const STEPS = [
   { id: "info", label: "Course Info", num: "1" },
@@ -63,13 +65,17 @@ const CourseEditor = ({ course, onChange, onBack, saveStatus, organizationId }) 
     }));
   };
 
+  const saveDraft = () => {
+    onChange((c) => ({ ...c, status: "draft" }));
+  };
+
   return (
-    <>
+    <UploadProgressProvider>
       {/* Topbar */}
       <div className="ulms-topbar">
         <div className="ulms-topbar-left">
           <button className="ulms-back-btn" onClick={onBack}>
-            ← Back to Courses
+            <FiArrowLeft /> Back to Courses
           </button>
           <div className="ulms-course-title-bar">
             <span>{course.title || "Untitled Course"}</span>
@@ -94,7 +100,11 @@ const CourseEditor = ({ course, onChange, onBack, saveStatus, organizationId }) 
             }}
           >
             {saveStatus === "saving" && "Saving…"}
-            {saveStatus === "saved" && "✓ Saved"}
+            {saveStatus === "saved" && (
+              <>
+                <FiCheck style={{ verticalAlign: "-2px" }} /> Saved
+              </>
+            )}
             {saveStatus === "error" && "Save failed"}
             {(!saveStatus || saveStatus === "idle") && "Auto-save on"}
           </span>
@@ -120,7 +130,7 @@ const CourseEditor = ({ course, onChange, onBack, saveStatus, organizationId }) 
                 className={`ulms-nav-item ${step === s.id ? "active" : ""} ${done ? "done" : ""}`}
                 onClick={() => setStep(s.id)}
               >
-                <div className="ulms-nav-dot">{done ? "✓" : s.num}</div>
+                <div className="ulms-nav-dot">{done ? <FiCheck /> : s.num}</div>
                 <span>{s.label}</span>
               </div>
             );
@@ -145,11 +155,17 @@ const CourseEditor = ({ course, onChange, onBack, saveStatus, organizationId }) 
                 className="ulms-footer-back-btn"
                 onClick={isFirst ? onBack : goPrev}
               >
-                {isFirst ? "Cancel" : "← Back"}
+                {isFirst ? (
+                  "Cancel"
+                ) : (
+                  <>
+                    <FiArrowLeft /> Back
+                  </>
+                )}
               </button>
               {!isLast && (
                 <button className="ulms-footer-next-btn" onClick={goNext}>
-                  Next →
+                  Next <FiArrowRight />
                 </button>
               )}
             </div>
@@ -168,6 +184,8 @@ const CourseEditor = ({ course, onChange, onBack, saveStatus, organizationId }) 
               course={course}
               completion={completion}
               onPublishToggle={togglePublish}
+              onSaveDraft={saveDraft}
+              saveStatus={saveStatus}
             />
           )}
         </div>
@@ -186,7 +204,7 @@ const CourseEditor = ({ course, onChange, onBack, saveStatus, organizationId }) 
           </div>
         </div>
       </div>
-    </>
+    </UploadProgressProvider>
   );
 };
 

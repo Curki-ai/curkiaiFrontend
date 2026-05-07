@@ -196,13 +196,21 @@ const HomePage = () => {
   const { isConnected, sendHRChat } = useHRChat();
   const [hrScreenedCandidates, setHrScreenedCandidates] = useState([]);
   let eventQueue = [];
-  const fileToBase64 = (file) =>
-    new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result.split(",")[1]);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
+  function fileToBase64(f) {
+    return new Promise(function (resolve, reject) {
+      const r = new FileReader();
+      r.onload = function () {
+        const s = r.result;
+        if (typeof s === "string" && s.indexOf(",") >= 0) {
+          resolve(s.split(",", 2)[1]);
+        } else {
+          reject(new Error("read failed"));
+        }
+      };
+      r.onerror = function () { reject(new Error("read error")); };
+      r.readAsDataURL(f);
     });
+  }
   let isShowingEvent = false;
   // Add useEffect to sync refs
   const blockedAutoTopupDomains = [
@@ -349,9 +357,13 @@ const HomePage = () => {
 
           if (textareaRef.current) {
             textareaRef.current.value = text;
+            textareaRef.current.style.height = "auto";
+            const next = Math.min(textareaRef.current.scrollHeight, 200);
+            textareaRef.current.style.height = next + "px";
           }
 
           inputRef.current = text;
+          setIsInputEmpty(!text || !text.trim());
 
         });
 
@@ -966,7 +978,13 @@ const HomePage = () => {
           : "general",
 
       conversation_history: messages
-        .filter((m) => !m.temp)
+        .filter(
+          (m) =>
+            !m.temp &&
+            !m.isWelcomeMessage &&
+            !m.isUploadPrompt &&
+            !m.isFeedbackResponse
+        )
         .map((m) => ({
           role: m.sender === "user" ? "user" : "assistant",
           content: m.text

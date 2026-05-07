@@ -15,6 +15,32 @@
 }
 .ulrn-page * { box-sizing: border-box; }
 
+/* React-icons baseline alignment for inline icon+text patterns. */
+.ulrn-page svg { vertical-align: -0.15em; }
+
+.ulrn-back-btn,
+.ulrn-nav-btn,
+.ulrn-detail-cta,
+.ulrn-continue-cta,
+.ulrn-tile-cta,
+.ulrn-tile-badge,
+.ulrn-done-pill,
+.ulrn-file-dl {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ulrn-tile-meta > span,
+.ulrn-detail-meta > span,
+.ulrn-viewer-meta > span,
+.ulrn-quiz-cfg > span,
+.ulrn-completion-banner {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .ulrn-wrap {
   width: 100%;
   max-width: 1280px;
@@ -48,7 +74,7 @@
 .ulrn-brand-mark {
   width: 36px;
   height: 36px;
-  background: linear-gradient(135deg, #7c5cbf, #9d7adf);
+  background: #6C4CDC;
   border-radius: 10px;
   display: flex;
   align-items: center;
@@ -288,6 +314,7 @@
   justify-content: center;
   position: relative;
   color: #fff;
+  background: #6C4CDC;
 }
 .ulrn-tile-emoji { font-size: 44px; }
 .ulrn-tile-badge {
@@ -305,7 +332,7 @@
 .ulrn-tile-cat {
   font-size: 11px;
   font-weight: 700;
-  color: #7c5cbf;
+  color: #6C4CDC;
   text-transform: uppercase;
   letter-spacing: 0.4px;
 }
@@ -343,31 +370,45 @@
 }
 .ulrn-tile-prog-bar {
   height: 6px;
-  background: #f0f0f5;
+  background: #6C4CDC;
   border-radius: 4px;
   overflow: hidden;
 }
 .ulrn-tile-prog-fill {
   height: 100%;
-  background: linear-gradient(90deg, #7c5cbf, #a37ce0);
+  background: #6C4CDC;
   transition: width 0.3s;
 }
 .ulrn-tile-cta {
-  margin-top: 10px;
-  background: #f7f6fb;
-  border: 1px solid #d6cce9;
-  color: #7c5cbf;
-  padding: 9px 14px;
-  border-radius: 8px;
+  margin-top: 12px;
+  background: linear-gradient(135deg, #7c5cbf, #9d7adf);
+  border: none;
+  color: #fff;
+  padding: 11px 16px;
+  border-radius: 10px;
   font-weight: 600;
   font-size: 13px;
+  letter-spacing: 0.2px;
   cursor: pointer;
   align-self: stretch;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(124, 92, 191, 0.25);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
 }
 .ulrn-tile-cta:hover {
-  background: #7c5cbf;
-  color: #fff;
-  border-color: #7c5cbf;
+  filter: brightness(1.05);
+  box-shadow: 0 4px 14px rgba(124, 92, 191, 0.35);
+  transform: translateY(-1px);
+}
+.ulrn-tile-cta:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(124, 92, 191, 0.25);
+}
+.ulrn-tile-cta svg {
+  transition: transform 0.15s ease;
+}
+.ulrn-tile-cta:hover svg {
+  transform: translateX(2px);
 }
 
 .ulrn-empty {
@@ -395,6 +436,7 @@
   align-items: center;
   color: #fff;
   margin-bottom: 24px;
+  background: #6C4CDC;
 }
 .ulrn-detail-hero-emoji {
   font-size: 56px;

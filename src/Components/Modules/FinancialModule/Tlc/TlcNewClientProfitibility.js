@@ -203,14 +203,13 @@ const TlcNewClientProfitability = (props) => {
         "kbrennen@tenderlovingcaredisability.com.au": [
             "New South Wales",
         ],
+        "PEling@tenderlovingcaredisability.com.au": [
+            "South Australia",
+        ]
     };
     // Sync history when loading from history
 
     const userEmail = user?.email;
-    // const userEmail = "gjavier@tenderlovingcaredisability.com.au";
-    // const userEmail = "molley@tenderlovingcaredisability.com.au";
-    // const userEmail = "bastruc@tenderlovingcaredisability.com.au";
-    // const userEmail = "ilaurente@tenderlovingcaredisability.com.au";
     const RESTRICTED_USERS = [
         "jballares@tenderlovingcaredisability.com.au",
         "iaquino@tenderlovingcaredisability.com.au",
@@ -972,7 +971,7 @@ const TlcNewClientProfitability = (props) => {
                         onPrepareAiPayload({
                             table_data: statusData.result?.table,
                         });
-                        await incrementCareVoiceAnalysisCount(userEmail, "ai-analysis", statusData?.result?.llm_cost?.total_usd,"client-profitability",statusData?.result?.llm_cost?.token_usage);
+                        await incrementCareVoiceAnalysisCount(userEmail, "ai-analysis", statusData?.result?.llm_cost?.total_usd, "client-profitability", statusData?.result?.llm_cost?.token_usage);
                     }
 
                     if (statusData.status === "failed") {
@@ -1044,7 +1043,7 @@ const TlcNewClientProfitability = (props) => {
             const data = await res.json();
             console.log("data in client profitibility", data)
             if (data) {
-                await incrementCareVoiceAnalysisCount(userEmail, "report-generation", data?.llm_cost?.total_usd,"client-profitability",data?.llm_cost?.token_usage)
+                await incrementCareVoiceAnalysisCount(userEmail, "report-generation", data?.llm_cost?.total_usd, "client-profitability", data?.llm_cost?.token_usage)
             }
             clearInterval(aiProgressInterval);
             updateTab({
@@ -1214,7 +1213,7 @@ const TlcNewClientProfitability = (props) => {
                     table_data: record?.responseData?.table, // ✅ EXACT structure backend expects
                 });
             }
-            await incrementCareVoiceAnalysisCount(userEmail,"history-click",0,"client-profitability",0)
+            await incrementCareVoiceAnalysisCount(userEmail, "history-click", 0, "client-profitability", 0)
         } catch (err) {
             console.error("History load failed:", err);
             alert("Failed to load history");

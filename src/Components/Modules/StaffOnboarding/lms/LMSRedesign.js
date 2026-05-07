@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { FiClock, FiX } from "react-icons/fi";
 import "./LMSRedesign.css";
 // CoursePlayer markup uses .ulrn-* classes defined in LMSLearner.css; we
 // reuse the learner player for the admin's "Preview" flow.
@@ -258,7 +259,15 @@ const LMSRedesign = ({ user, organizationId }) => {
         adminEmail,
         course: draft,
       });
-      setCourses((prev) => [created, ...prev]);
+      // The server emits `lms:course:upserted` *before* sending the HTTP
+      // response, so the socket broadcast often beats this point and our
+      // sync handler has already prepended the new course. Dedupe by id
+      // instead of blindly adding it again.
+      setCourses((prev) =>
+        prev.some((c) => c.id === created.id)
+          ? prev.map((c) => (c.id === created.id ? created : c))
+          : [created, ...prev]
+      );
       openEditor(created.id);
     } catch (err) {
       console.error("[LMS v2][createCourse] failed", err);
@@ -298,7 +307,7 @@ const LMSRedesign = ({ user, organizationId }) => {
       <div className="ulms-page">
         <div className="ulms-wrap">
           <div className="ulms-empty-state">
-            <div className="ulms-empty-icon">⏳</div>
+            <div className="ulms-empty-icon"><FiClock /></div>
             <div className="ulms-empty-text">Resolving your organisation…</div>
           </div>
         </div>
@@ -326,14 +335,14 @@ const LMSRedesign = ({ user, organizationId }) => {
               onClick={() => setError("")}
               style={{ background: "none", border: 0, cursor: "pointer", color: "#c0392b" }}
             >
-              ✕
+              <FiX />
             </button>
           </div>
         )}
 
         {loading ? (
           <div className="ulms-empty-state">
-            <div className="ulms-empty-icon">⏳</div>
+            <div className="ulms-empty-icon"><FiClock /></div>
             <div className="ulms-empty-text">Loading courses…</div>
           </div>
         ) : view === "library" ? (

@@ -18,6 +18,36 @@
   box-sizing: border-box;
 }
 
+/* React-icons sit at text baseline by default; this nudges them onto
+   the visual centre line so they align cleanly next to text. Flex
+   parents already centre their children, so this only affects inline
+   icons (e.g. icon-prefixed labels in buttons, headings, meta lines). */
+.ulms-page svg {
+  vertical-align: -0.15em;
+}
+
+/* Inline icon + text patterns used across LMS chrome — keep the icon
+   sized to the surrounding text and give a small gap. */
+.ulms-back-btn,
+.ulms-footer-back-btn,
+.ulms-footer-next-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ulms-cpc-meta-item svg,
+.ulms-readiness-list svg,
+.ulms-ready-banner svg {
+  flex-shrink: 0;
+}
+
+.ulms-pub-card h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .ulms-wrap {
   width: 100%;
   max-width: 100%;
@@ -1036,6 +1066,25 @@
   background: #6348a8;
 }
 
+.ulms-upload-spinner {
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  display: inline-block;
+  animation: ulmsUploadSpin 0.7s linear infinite;
+}
+
+.ulms-upload-spinner.dark {
+  border-color: rgba(124, 92, 191, 0.25);
+  border-top-color: #7c5cbf;
+}
+
+@keyframes ulmsUploadSpin {
+  to { transform: rotate(360deg); }
+}
+
 .ulms-transcript-label {
   font-size: 13px;
   font-weight: 600;
@@ -1645,6 +1694,28 @@
 
 .ulms-save-draft-btn:hover {
   background: #f7f6fb;
+}
+
+.ulms-save-draft-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.75;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ulms-save-draft-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid #ccc;
+  border-top-color: #555;
+  border-radius: 50%;
+  display: inline-block;
+  animation: ulmsSaveDraftSpin 0.7s linear infinite;
+}
+
+@keyframes ulmsSaveDraftSpin {
+  to { transform: rotate(360deg); }
 }
 
 /* =========================================================

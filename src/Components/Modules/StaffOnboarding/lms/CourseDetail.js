@@ -1,6 +1,14 @@
 import React from "react";
-
-const TYPE_ICONS = { video: "🎬", text: "📝", quiz: "❓", file: "📎" };
+import {
+  FiArrowLeft,
+  FiArrowRight,
+  FiBookOpen,
+  FiCheck,
+  FiClock,
+  FiLock,
+  FiUser,
+} from "react-icons/fi";
+import { LessonTypeIcon } from "./lmsIcons";
 
 const CourseDetail = ({ course, progress, onBack, onEnter }) => {
   const lessons = (course.sections || []).flatMap((s) => s.lessons || []);
@@ -16,19 +24,25 @@ const CourseDetail = ({ course, progress, onBack, onEnter }) => {
   return (
     <div className="ulrn-detail">
       <button className="ulrn-back-btn ulrn-detail-back" onClick={onBack}>
-        ← Back to Courses
+        <FiArrowLeft /> Back to Courses
       </button>
 
-      <div className="ulrn-detail-hero" style={{ background: course.color }}>
+      <div className="ulrn-detail-hero">
         <div className="ulrn-detail-hero-emoji">{course.thumb}</div>
         <div className="ulrn-detail-hero-info">
           <span className="ulrn-detail-cat">{course.category}</span>
           <h1>{course.title}</h1>
           <p>{course.desc}</p>
           <div className="ulrn-detail-meta">
-            <span>📚 {total} lessons</span>
-            <span>⏱ {course.duration || "—"}</span>
-            <span>👤 {course.level || "All staff"}</span>
+            <span>
+              <FiBookOpen /> {total} lessons
+            </span>
+            <span>
+              <FiClock /> {course.duration || "—"}
+            </span>
+            <span>
+              <FiUser /> {course.level || "All staff"}
+            </span>
           </div>
         </div>
       </div>
@@ -41,7 +55,9 @@ const CourseDetail = ({ course, progress, onBack, onEnter }) => {
               <ul className="ulrn-detail-list ulrn-objs">
                 {objectives.map((o, i) => (
                   <li key={i}>
-                    <span className="ulrn-detail-bullet ok">✓</span>
+                    <span className="ulrn-detail-bullet ok">
+                      <FiCheck />
+                    </span>
                     {o}
                   </li>
                 ))}
@@ -93,7 +109,13 @@ const CourseDetail = ({ course, progress, onBack, onEnter }) => {
                           className={`ulrn-detail-les ${locked ? "locked" : ""} ${isDone ? "done" : ""}`}
                         >
                           <span className="ulrn-detail-les-icon">
-                            {locked ? "🔒" : isDone ? "✓" : TYPE_ICONS[l.type] || "📄"}
+                            {locked ? (
+                              <FiLock />
+                            ) : isDone ? (
+                              <FiCheck />
+                            ) : (
+                              <LessonTypeIcon type={l.type} />
+                            )}
                           </span>
                           <span className="ulrn-detail-les-name">{l.title}</span>
                           <span className="ulrn-detail-les-dur">{l.duration}</span>
@@ -125,7 +147,7 @@ const CourseDetail = ({ course, progress, onBack, onEnter }) => {
           </div>
 
           <button className="ulrn-detail-cta" onClick={onEnter}>
-            {ctaLabel} →
+            {ctaLabel} <FiArrowRight />
           </button>
 
           {(course.tags || []).length > 0 && (

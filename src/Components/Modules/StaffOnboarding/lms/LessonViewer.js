@@ -1,4 +1,17 @@
 import React, { useMemo, useState } from "react";
+import {
+  FiArrowLeft,
+  FiArrowRight,
+  FiAward,
+  FiCheck,
+  FiClock,
+  FiDownload,
+  FiLock,
+  FiPaperclip,
+  FiPlay,
+  FiRotateCw,
+  FiTarget,
+} from "react-icons/fi";
 
 const toEmbedUrl = (url) => {
   if (!url) return "";
@@ -23,7 +36,7 @@ const LessonViewer = ({
   if (!lesson.published) {
     return (
       <div className="ulrn-locked">
-        <div className="ulrn-locked-icon">🔒</div>
+        <div className="ulrn-locked-icon"><FiLock /></div>
         <h2>Coming soon</h2>
         <p>
           This lesson hasn't been released yet. Your trainer will let you
@@ -35,14 +48,14 @@ const LessonViewer = ({
             onClick={onPrev}
             disabled={!onPrev}
           >
-            ← Previous
+            <FiArrowLeft /> Previous
           </button>
           <button
             className="ulrn-nav-btn ulrn-next-btn"
             onClick={onNext}
             disabled={!onNext}
           >
-            Next →
+            Next <FiArrowRight />
           </button>
         </div>
       </div>
@@ -56,12 +69,18 @@ const LessonViewer = ({
       </div>
       <h1 className="ulrn-viewer-title">{lesson.title}</h1>
       <div className="ulrn-viewer-meta">
-        <span>⏱ {lesson.duration}</span>
+        <span>
+          <FiClock /> {lesson.duration}
+        </span>
         <span>·</span>
         <span>
           {lesson.type.charAt(0).toUpperCase() + lesson.type.slice(1)} lesson
         </span>
-        {isCompleted && <span className="ulrn-done-pill">✓ Completed</span>}
+        {isCompleted && (
+          <span className="ulrn-done-pill">
+            <FiCheck /> Completed
+          </span>
+        )}
       </div>
 
       {lesson.type === "video" && <VideoView lesson={lesson} />}
@@ -81,7 +100,7 @@ const LessonViewer = ({
           onClick={onPrev}
           disabled={!onPrev}
         >
-          ← Previous
+          <FiArrowLeft /> Previous
         </button>
         {lesson.type !== "quiz" && (
           <button
@@ -91,7 +110,13 @@ const LessonViewer = ({
             onClick={() => onComplete()}
             disabled={isCompleted}
           >
-            {isCompleted ? "✓ Marked Complete" : "Mark as Complete"}
+            {isCompleted ? (
+              <>
+                <FiCheck /> Marked Complete
+              </>
+            ) : (
+              "Mark as Complete"
+            )}
           </button>
         )}
         <button
@@ -99,7 +124,7 @@ const LessonViewer = ({
           onClick={onNext}
           disabled={!onNext}
         >
-          Next →
+          Next <FiArrowRight />
         </button>
       </div>
     </div>
@@ -133,7 +158,7 @@ const VideoView = ({ lesson }) => {
           />
         ) : (
           <div className="ulrn-video-empty">
-            <span className="ulrn-video-play">▶</span>
+            <span className="ulrn-video-play"><FiPlay /></span>
             <p>Video preview placeholder</p>
             <span className="ulrn-video-hint">
               Your trainer hasn't attached a video yet — but the lesson is still
@@ -167,7 +192,7 @@ const TextView = ({ lesson }) => (
 
 const FileView = ({ lesson }) => (
   <div className="ulrn-file-card">
-    <div className="ulrn-file-icon">📎</div>
+    <div className="ulrn-file-icon"><FiPaperclip /></div>
     <div className="ulrn-file-info">
       <div className="ulrn-file-name">
         {lesson.fileName || "No file attached"}
@@ -177,7 +202,9 @@ const FileView = ({ lesson }) => (
       )}
     </div>
     {lesson.fileName && (
-      <button className="ulrn-file-dl">⬇ Download</button>
+      <button className="ulrn-file-dl">
+        <FiDownload /> Download
+      </button>
     )}
   </div>
 );
@@ -251,9 +278,11 @@ const QuizView = ({ lesson, quizScore, onSubmit }) => {
   return (
     <div className="ulrn-quiz">
       <div className="ulrn-quiz-cfg">
-        <span>🎯 Pass score: {cfg.passScore}%</span>
         <span>
-          🔁 Attempts: {attempt}/{cfg.maxAttempts}
+          <FiTarget /> Pass score: {cfg.passScore}%
+        </span>
+        <span>
+          <FiRotateCw /> Attempts: {attempt}/{cfg.maxAttempts}
         </span>
       </div>
 
@@ -269,11 +298,17 @@ const QuizView = ({ lesson, quizScore, onSubmit }) => {
                 const picked = answers[q.id] === i;
                 const wasRightPick = showResult && picked && fb.correct;
                 const wasWrongPick = showResult && picked && !fb.correct;
+                // When the learner got the question wrong, highlight the
+                // correct option in green so they can see what they should
+                // have picked. fb.correctIndex comes from the backend and
+                // is only present when the quiz has showResults enabled.
+                const isTheCorrectAnswer =
+                  showResult && !fb.correct && fb.correctIndex === i;
                 return (
                   <label
                     key={i}
                     className={`ulrn-quiz-opt ${picked ? "picked" : ""} ${
-                      wasRightPick ? "correct" : ""
+                      wasRightPick || isTheCorrectAnswer ? "correct" : ""
                     } ${wasWrongPick ? "wrong" : ""}`}
                   >
                     <input
@@ -291,6 +326,9 @@ const QuizView = ({ lesson, quizScore, onSubmit }) => {
                     )}
                     {wasWrongPick && (
                       <span className="ulrn-opt-tag wrong">Your answer</span>
+                    )}
+                    {isTheCorrectAnswer && (
+                      <span className="ulrn-opt-tag">Correct answer</span>
                     )}
                   </label>
                 );
@@ -311,8 +349,14 @@ const QuizView = ({ lesson, quizScore, onSubmit }) => {
       ) : (
         <div className={`ulrn-quiz-result ${passed ? "pass" : "fail"}`}>
           <div className="ulrn-quiz-score">
-            {passed ? "🎉 You passed!" : "Almost there"} — Your score:{" "}
-            <strong>{score}%</strong>
+            {passed ? (
+              <>
+                <FiAward style={{ verticalAlign: "-2px" }} /> You passed!
+              </>
+            ) : (
+              "Almost there"
+            )}{" "}
+            — Your score: <strong>{score}%</strong>
           </div>
           {!passed && canRetry && (
             <button className="ulrn-quiz-submit" onClick={retry}>

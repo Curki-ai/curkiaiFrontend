@@ -1,7 +1,13 @@
 import React, { useMemo, useState } from "react";
+import {
+  FiArrowLeft,
+  FiAward,
+  FiBookOpen,
+  FiCheck,
+  FiLock,
+} from "react-icons/fi";
 import LessonViewer from "./LessonViewer";
-
-const TYPE_ICONS = { video: "🎬", text: "📝", quiz: "❓", file: "📎" };
+import { LessonTypeIcon } from "./lmsIcons";
 
 const CoursePlayer = ({ course, progress, onBack, onComplete }) => {
   const flatLessons = useMemo(() => {
@@ -62,7 +68,7 @@ const CoursePlayer = ({ course, progress, onBack, onComplete }) => {
     <div className="ulrn-player">
       <div className="ulrn-player-topbar">
         <button className="ulrn-back-btn" onClick={onBack}>
-          ← Course Overview
+          <FiArrowLeft /> Course Overview
         </button>
         <div className="ulrn-player-title">{course.title}</div>
         <div className="ulrn-player-prog">
@@ -78,7 +84,8 @@ const CoursePlayer = ({ course, progress, onBack, onComplete }) => {
 
       {isFullyComplete && (
         <div className="ulrn-completion-banner">
-          🎉 You've finished this course! Feel free to revisit any lesson.
+          <FiAward style={{ verticalAlign: "-2px" }} /> You've finished this
+          course! Feel free to revisit any lesson.
         </div>
       )}
 
@@ -126,11 +133,13 @@ const CoursePlayer = ({ course, progress, onBack, onComplete }) => {
                           title={locked ? "Coming soon" : ""}
                         >
                           <span className="ulrn-side-les-icon">
-                            {locked
-                              ? "🔒"
-                              : isDone
-                              ? "✓"
-                              : TYPE_ICONS[l.type] || "📄"}
+                            {locked ? (
+                              <FiLock />
+                            ) : isDone ? (
+                              <FiCheck />
+                            ) : (
+                              <LessonTypeIcon type={l.type} />
+                            )}
                           </span>
                           <div className="ulrn-side-les-text">
                             <span className="ulrn-side-les-name">{l.title}</span>
@@ -164,7 +173,7 @@ const CoursePlayer = ({ course, progress, onBack, onComplete }) => {
             />
           ) : (
             <div className="ulrn-empty">
-              <span className="ulrn-empty-icon">📚</span>
+              <span className="ulrn-empty-icon"><FiBookOpen /></span>
               <span>No lessons available yet.</span>
             </div>
           )}

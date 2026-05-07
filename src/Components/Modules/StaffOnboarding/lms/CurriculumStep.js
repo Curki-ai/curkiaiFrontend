@@ -1,13 +1,20 @@
 import React, { useEffect, useState } from "react";
+import {
+  FiBookOpen,
+  FiFolder,
+  FiFolderPlus,
+  FiX,
+} from "react-icons/fi";
 import LessonEditor from "./LessonEditor";
 import ConfirmDialog from "./ConfirmDialog";
-import { blankLesson } from "./lmsMockData";
+import { blankLesson, newId } from "./lmsMockData";
+import { LessonTypeIcon, LESSON_TYPE_KEYS } from "./lmsIcons";
 
-const TYPE_ICONS = {
-  video: "🎬",
-  text: "📝",
-  quiz: "❓",
-  file: "📎",
+const TYPE_LABELS = {
+  video: "Video",
+  text: "Text",
+  quiz: "Quiz",
+  file: "File",
 };
 
 const CurriculumStep = ({ course, onChange, organizationId }) => {
@@ -40,7 +47,7 @@ const CurriculumStep = ({ course, onChange, organizationId }) => {
   };
 
   const addSection = () => {
-    const id = `s${Date.now()}`;
+    const id = newId("s");
     updateSections((secs) => [
       ...secs,
       { id, title: `Section ${secs.length + 1}`, open: true, lessons: [] },
@@ -127,7 +134,9 @@ const CurriculumStep = ({ course, onChange, organizationId }) => {
           {(course.sections || []).map((sec) => (
             <div key={sec.id} className="ulms-sec">
               <div className="ulms-sec-header" onClick={() => toggleSection(sec.id)}>
-                <span className="ulms-sec-icon">{sec.open ? "📂" : "📁"}</span>
+                <span className="ulms-sec-icon">
+                  {sec.open ? <FiFolderPlus /> : <FiFolder />}
+                </span>
                 <input
                   className="ulms-sec-name-input"
                   value={sec.title}
@@ -143,7 +152,7 @@ const CurriculumStep = ({ course, onChange, organizationId }) => {
                   }}
                   title="Delete section"
                 >
-                  ✕
+                  <FiX />
                 </button>
               </div>
 
@@ -159,7 +168,7 @@ const CurriculumStep = ({ course, onChange, organizationId }) => {
                           onClick={() => setActiveKey(k)}
                         >
                           <span className="ulms-les-icon">
-                            {TYPE_ICONS[l.type] || "📄"}
+                            <LessonTypeIcon type={l.type} />
                           </span>
                           <span className="ulms-les-name">{l.title}</span>
                           <span
@@ -174,7 +183,7 @@ const CurriculumStep = ({ course, onChange, organizationId }) => {
                             }}
                             title="Delete lesson"
                           >
-                            ✕
+                            <FiX />
                           </button>
                         </div>
                       );
@@ -184,13 +193,13 @@ const CurriculumStep = ({ course, onChange, organizationId }) => {
                   <div className="ulms-add-les-wrap">
                     {openPicker === sec.id ? (
                       <div className="ulms-les-type-picker open">
-                        {Object.keys(TYPE_ICONS).map((t) => (
+                        {LESSON_TYPE_KEYS.map((t) => (
                           <button
                             key={t}
                             className="ulms-type-pick-btn"
                             onClick={() => addLesson(sec.id, t)}
                           >
-                            {TYPE_ICONS[t]} {t.charAt(0).toUpperCase() + t.slice(1)}
+                            <LessonTypeIcon type={t} /> {TYPE_LABELS[t]}
                           </button>
                         ))}
                       </div>
@@ -227,7 +236,7 @@ const CurriculumStep = ({ course, onChange, organizationId }) => {
             />
           ) : (
             <div className="ulms-empty-state">
-              <div className="ulms-empty-icon">📚</div>
+              <div className="ulms-empty-icon"><FiBookOpen /></div>
               <div className="ulms-empty-text">Select a lesson on the left to edit it</div>
             </div>
           )}
