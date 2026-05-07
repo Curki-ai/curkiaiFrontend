@@ -171,6 +171,24 @@ const SmartOnboardingAccessManagement = ({ onClose, userEmail, organizationId })
   const statusClass = (value) =>
     `so-access-badge so-access-status-${(value || "").toLowerCase()}`;
 
+  // The signed-in admin is always a member of the org they're managing —
+  // surface them in the table even before the API list is populated, so
+  // a fresh org never reads as "no users yet" to its own admin.
+  const selfEntry = userEmail
+    ? {
+        id: `self:${userEmail.toLowerCase()}`,
+        name: "You",
+        email: userEmail,
+        role: "admin",
+        status: "active",
+      }
+    : null;
+  const displayedUsers = (() => {
+    const list = Array.isArray(users) ? [...users] : [];
+    if (selfEntry && !list.some(isSelf)) list.unshift(selfEntry);
+    return list;
+  })();
+
   return (
     <div className="so-access-overlay" role="presentation" onClick={onClose}>
       <div
@@ -258,14 +276,14 @@ const SmartOnboardingAccessManagement = ({ onClose, userEmail, organizationId })
           <div className="so-access-list-section">
             <div className="so-access-section-title so-access-list-title">
               <span>Team Members</span>
-              {!loading && users.length > 0 && (
-                <span className="so-access-count">{users.length}</span>
+              {!loading && displayedUsers.length > 0 && (
+                <span className="so-access-count">{displayedUsers.length}</span>
               )}
             </div>
 
             {loading ? (
               <div className="so-access-state">Loading users...</div>
-            ) : users.length === 0 ? (
+            ) : displayedUsers.length === 0 ? (
               <div className="so-access-state">
                 No users in this organization yet
               </div>
@@ -279,7 +297,7 @@ const SmartOnboardingAccessManagement = ({ onClose, userEmail, organizationId })
                     <div>Status</div>
                     <div>Actions</div>
                   </div>
-                  {users.map((u) => (
+                  {displayedUsers.map((u) => (
                     <div key={u.id || u.email} className="so-access-table-row">
                       <div className="so-access-name-cell">{u.name}</div>
                       <div className="so-access-email">{u.email}</div>
