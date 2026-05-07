@@ -1,4 +1,12 @@
 import React, { useMemo, useState } from "react";
+import {
+  FiArrowRight,
+  FiBookOpen,
+  FiCheck,
+  FiClock,
+  FiInbox,
+  FiSearch,
+} from "react-icons/fi";
 
 // Stats are sourced from the catalog summary the backend returns
 // (lessonCount + progress% + status). The legacy mock-data shape is supported
@@ -74,7 +82,7 @@ const LearnerCatalog = ({ courses, displayName, onOpen }) => {
           <p>Pick up where you left off or explore something new today.</p>
         </div>
         <div className="ulrn-cat-search-wrap">
-          <span className="ulrn-cat-search-icon">🔍</span>
+          <span className="ulrn-cat-search-icon"><FiSearch /></span>
           <input
             className="ulrn-cat-search"
             placeholder="Search courses, tags…"
@@ -130,7 +138,9 @@ const LearnerCatalog = ({ courses, displayName, onOpen }) => {
               </span>
             </div>
           </div>
-          <button className="ulrn-continue-cta">Resume →</button>
+          <button className="ulrn-continue-cta">
+            Resume <FiArrowRight />
+          </button>
         </div>
       )}
 
@@ -153,7 +163,7 @@ const LearnerCatalog = ({ courses, displayName, onOpen }) => {
 
       {filtered.length === 0 ? (
         <div className="ulrn-empty">
-          <span className="ulrn-empty-icon">📭</span>
+          <span className="ulrn-empty-icon"><FiInbox /></span>
           <span>No courses match your filters.</span>
         </div>
       ) : (
@@ -178,10 +188,12 @@ const CourseTile = ({ course, stats, onOpen }) => {
 
   return (
     <div className="ulrn-tile" onClick={() => onOpen(course.id)}>
-      <div className="ulrn-tile-banner" style={{ background: course.color }}>
+      <div className="ulrn-tile-banner">
         <span className="ulrn-tile-emoji">{course.thumb}</span>
         {stats.pct === 100 && (
-          <span className="ulrn-tile-badge">✓ Completed</span>
+          <span className="ulrn-tile-badge">
+            <FiCheck /> Completed
+          </span>
         )}
       </div>
       <div className="ulrn-tile-body">
@@ -189,8 +201,14 @@ const CourseTile = ({ course, stats, onOpen }) => {
         <h3 className="ulrn-tile-title">{course.title}</h3>
         <p className="ulrn-tile-desc">{course.desc}</p>
         <div className="ulrn-tile-meta">
-          <span>📚 {stats.total} lessons</span>
-          {course.duration && <span>⏱ {course.duration}</span>}
+          <span>
+            <FiBookOpen /> {stats.total} lessons
+          </span>
+          {course.duration && (
+            <span>
+              <FiClock /> {course.duration}
+            </span>
+          )}
         </div>
         <div className="ulrn-tile-prog">
           <div className="ulrn-tile-prog-row">
@@ -213,7 +231,7 @@ const CourseTile = ({ course, stats, onOpen }) => {
             onOpen(course.id);
           }}
         >
-          {ctaLabel} →
+          {ctaLabel} <FiArrowRight />
         </button>
       </div>
     </div>

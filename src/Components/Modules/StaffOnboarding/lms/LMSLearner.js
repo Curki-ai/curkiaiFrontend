@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
+import { FiBell, FiBookOpen, FiClock, FiX } from "react-icons/fi";
 import "./LMSLearner.css";
 import LearnerCatalog from "./LearnerCatalog";
 import CourseDetail from "./CourseDetail";
@@ -178,11 +179,15 @@ const LMSLearner = ({ user }) => {
       <div className="ulrn-wrap">
         <div className="ulrn-topbar">
           <div className="ulrn-brand" onClick={backToCatalog}>
-            <span className="ulrn-brand-mark">🎓</span>
+            <span className="ulrn-brand-mark">
+              <FiBookOpen />
+            </span>
             <span className="ulrn-brand-text">My Learning</span>
           </div>
           <div className="ulrn-topbar-right">
-            <button className="ulrn-icon-btn" title="Notifications">🔔</button>
+            <button className="ulrn-icon-btn" title="Notifications">
+              <FiBell />
+            </button>
             <div className="ulrn-user">
               <div className="ulrn-avatar">{avatarText}</div>
               <div className="ulrn-user-meta">
@@ -210,14 +215,14 @@ const LMSLearner = ({ user }) => {
               onClick={() => setError("")}
               style={{ background: "none", border: 0, cursor: "pointer", color: "#c0392b" }}
             >
-              ✕
+              <FiX />
             </button>
           </div>
         )}
 
         {loading ? (
           <div className="ulrn-empty">
-            <span className="ulrn-empty-icon">⏳</span>
+            <span className="ulrn-empty-icon"><FiClock /></span>
             <span>Loading your courses…</span>
           </div>
         ) : view === "catalog" ? (
@@ -228,7 +233,7 @@ const LMSLearner = ({ user }) => {
           />
         ) : activeLoading || !activeCourse ? (
           <div className="ulrn-empty">
-            <span className="ulrn-empty-icon">⏳</span>
+            <span className="ulrn-empty-icon"><FiClock /></span>
             <span>Loading course…</span>
           </div>
         ) : view === "detail" ? (

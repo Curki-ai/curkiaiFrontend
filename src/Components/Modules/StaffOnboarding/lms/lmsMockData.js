@@ -231,8 +231,15 @@ export const initialCourses = [
   },
 ];
 
+// Plain `Date.now()` collides if the admin clicks Add twice within a
+// millisecond — two items end up with the same id, which corrupts every
+// id-keyed update (option picks, mutator targeting, answer maps). The
+// counter suffix guarantees uniqueness within a session.
+let _idCounter = 0;
+export const newId = (prefix) => `${prefix}${Date.now()}_${++_idCounter}`;
+
 export const blankCourse = () => ({
-  id: `c${Date.now()}`,
+  id: newId("c"),
   title: "Untitled Course",
   category: "",
   desc: "",
@@ -248,7 +255,7 @@ export const blankCourse = () => ({
   tags: [],
   sections: [
     {
-      id: `s${Date.now()}`,
+      id: newId("s"),
       title: "Section 1",
       open: true,
       lessons: [],
@@ -258,7 +265,7 @@ export const blankCourse = () => ({
 
 export const blankLesson = (type = "video") => {
   const base = {
-    id: `l${Date.now()}`,
+    id: newId("l"),
     title: "New Lesson",
     type,
     duration: "5 min",
@@ -278,7 +285,7 @@ export const blankLesson = (type = "video") => {
 };
 
 export const blankQuestion = () => ({
-  id: `q${Date.now()}`,
+  id: newId("q"),
   question: "New question",
   options: ["Option A", "Option B", "Option C", "Option D"],
   correct: 0,

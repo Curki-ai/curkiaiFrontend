@@ -86,8 +86,8 @@ const VoiceModule = (props) => {
     // console.log("userEmail", userEmail)
     // console.log("domain", domain)
     const organizationId = domain;
-    const API_BASE = "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net";
-    // const API_BASE = "http://localhost:5000";
+    // const API_BASE = "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net";
+    const API_BASE = "http://localhost:5000";
     const [role, setRole] = useState("Admin");
     const [currentUserRole, setCurrentUserRole] = useState(null);
     const [openAccessManagement, setOpenAccessManagement] = useState(false);

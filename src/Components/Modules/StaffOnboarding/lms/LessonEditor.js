@@ -1,13 +1,20 @@
 import React, { useState } from "react";
+import {
+  FiArrowRight,
+  FiHelpCircle,
+  FiPaperclip,
+  FiX,
+} from "react-icons/fi";
 import ConfirmDialog from "./ConfirmDialog";
 import { blankQuestion } from "./lmsMockData";
-import { uploadLessonFileApi } from "./api";
+import { useUploadProgress } from "./useUploadProgress";
+import { LessonTypeIcon } from "./lmsIcons";
 
 const TYPES = [
-  { id: "video", label: "Video", icon: "🎬" },
-  { id: "text", label: "Text", icon: "📝" },
-  { id: "quiz", label: "Quiz", icon: "❓" },
-  { id: "file", label: "File", icon: "📎" },
+  { id: "video", label: "Video" },
+  { id: "text", label: "Text" },
+  { id: "quiz", label: "Quiz" },
+  { id: "file", label: "File" },
 ];
 
 const LessonEditor = ({ section, lesson, onChange, courseTitle, organizationId, courseId }) => {
@@ -85,7 +92,7 @@ const LessonEditor = ({ section, lesson, onChange, courseTitle, organizationId, 
               className={`ulms-type-tab ${lesson.type === t.id ? "active" : ""}`}
               onClick={() => requestSwitchType(t.id)}
             >
-              {t.icon} {t.label}
+              <LessonTypeIcon type={t.id} /> {t.label}
             </button>
           ))}
         </div>
@@ -131,40 +138,25 @@ const LessonEditor = ({ section, lesson, onChange, courseTitle, organizationId, 
 };
 
 const VideoBody = ({ lesson, onChange, organizationId, courseId, sectionId }) => {
-  const [uploading, setUploading] = useState(false);
-  const [uploadPct, setUploadPct] = useState(0);
-  const [uploadErr, setUploadErr] = useState("");
+  const { state, startUpload } = useUploadProgress(lesson.id);
+  const { uploading, pct: uploadPct, err: uploadErr } = state;
   const [confirmRemove, setConfirmRemove] = useState(false);
 
-  const handleFile = async (e) => {
+  const handleFile = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!organizationId || !courseId) {
-      setUploadErr("Course not saved yet — please wait a moment and try again.");
-      return;
-    }
-    setUploading(true);
-    setUploadErr("");
-    setUploadPct(0);
-    try {
-      const attachment = await uploadLessonFileApi({
-        organizationId,
-        courseId,
-        sectionId,
-        lessonId: lesson.id,
-        file,
-        onProgress: (evt) => {
-          if (evt.total) setUploadPct(Math.round((evt.loaded / evt.total) * 100));
-        },
-      });
+    startUpload({
+      lessonId: lesson.id,
+      file,
+      organizationId,
+      courseId,
+      sectionId,
       // Clear any external URL — uploaded blob takes precedence.
-      onChange((l) => ({ ...l, attachment, videoUrl: "" }));
-    } catch (err) {
-      console.error("[LMS v2] video upload failed", err);
-      setUploadErr(err.response?.data?.error || "Upload failed");
-    } finally {
-      setUploading(false);
-    }
+      onComplete: (attachment) =>
+        onChange((l) => ({ ...l, attachment, videoUrl: "" })),
+    });
+    // Reset the input so re-selecting the same file still fires `change`.
+    e.target.value = "";
   };
 
   const requestRemoveUploaded = () => setConfirmRemove(true);
@@ -205,8 +197,25 @@ const VideoBody = ({ lesson, onChange, organizationId, courseId, sectionId }) =>
           disabled={!!lesson.attachment}
           onChange={(e) => onChange((l) => ({ ...l, videoUrl: e.target.value }))}
         />
-        <label className="ulms-embed-btn" style={{ cursor: "pointer", display: "inline-block" }}>
-          {uploading ? `Uploading ${uploadPct}%…` : lesson.attachment ? "Replace" : "Upload video"}
+        <label
+          className="ulms-embed-btn"
+          style={{
+            cursor: uploading ? "not-allowed" : "pointer",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 8,
+          }}
+        >
+          {uploading ? (
+            <>
+              <span>Uploading {uploadPct}%</span>
+              <span className="ulms-upload-spinner" aria-hidden="true" />
+            </>
+          ) : lesson.attachment ? (
+            "Replace"
+          ) : (
+            "Upload video"
+          )}
           <input type="file" accept="video/*" style={{ display: "none" }} onChange={handleFile} disabled={uploading} />
         </label>
         {lesson.attachment && (
@@ -222,7 +231,18 @@ const VideoBody = ({ lesson, onChange, organizationId, courseId, sectionId }) =>
       </div>
 
       {lesson.attachment?.name && (
-        <div style={{ fontSize: 12, color: "#666", marginBottom: 12 }}>📎 {lesson.attachment.name}</div>
+        <div
+          style={{
+            fontSize: 12,
+            color: "#666",
+            marginBottom: 12,
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 4,
+          }}
+        >
+          <FiPaperclip /> {lesson.attachment.name}
+        </div>
       )}
       {uploadErr && <div style={{ color: "#c0392b", fontSize: 12, marginBottom: 12 }}>{uploadErr}</div>}
 
@@ -353,7 +373,7 @@ const QuizBody = ({ lesson, onChange }) => {
       <div className="ulms-q-list">
         {questions.length === 0 && (
           <div className="ulms-empty-state ulms-empty-inline">
-            <div className="ulms-empty-icon">❓</div>
+            <div className="ulms-empty-icon"><FiHelpCircle /></div>
             <div className="ulms-empty-text">No questions yet — add your first one below.</div>
           </div>
         )}
@@ -393,7 +413,7 @@ const QuizBody = ({ lesson, onChange }) => {
               ))}
             </div>
             <button className="ulms-q-del" onClick={() => deleteQuestion(q.id)} title="Delete">
-              ✕
+              <FiX />
             </button>
           </div>
         ))}
@@ -407,50 +427,44 @@ const QuizBody = ({ lesson, onChange }) => {
 };
 
 const FileBody = ({ lesson, onChange, organizationId, courseId, sectionId }) => {
-  const [uploading, setUploading] = useState(false);
-  const [uploadPct, setUploadPct] = useState(0);
-  const [uploadErr, setUploadErr] = useState("");
+  const { state, startUpload } = useUploadProgress(lesson.id);
+  const { uploading, pct: uploadPct, err: uploadErr } = state;
 
-  const onPick = async (e) => {
+  const onPick = (e) => {
     const f = e.target.files?.[0];
     if (!f) return;
-    if (!organizationId || !courseId) {
-      setUploadErr("Course not saved yet — please wait and retry.");
-      return;
-    }
-    setUploading(true);
-    setUploadErr("");
-    setUploadPct(0);
-    try {
-      const attachment = await uploadLessonFileApi({
-        organizationId,
-        courseId,
-        sectionId,
-        lessonId: lesson.id,
-        file: f,
-        onProgress: (evt) => {
-          if (evt.total) setUploadPct(Math.round((evt.loaded / evt.total) * 100));
-        },
-      });
-      onChange((l) => ({ ...l, attachment, fileName: attachment.name }));
-    } catch (err) {
-      console.error("[LMS v2] file upload failed", err);
-      setUploadErr(err.response?.data?.error || "Upload failed");
-    } finally {
-      setUploading(false);
-    }
+    startUpload({
+      lessonId: lesson.id,
+      file: f,
+      organizationId,
+      courseId,
+      sectionId,
+      onComplete: (attachment) =>
+        onChange((l) => ({ ...l, attachment, fileName: attachment.name })),
+    });
+    e.target.value = "";
   };
 
   const inputId = `ulms-file-input-${lesson.id}`;
-  const label = uploading
-    ? `Uploading ${uploadPct}%…`
-    : lesson.attachment?.name || lesson.fileName || "Drop a file here or click to upload";
+  const idleLabel =
+    lesson.attachment?.name ||
+    lesson.fileName ||
+    "Drop a file here or click to upload";
 
   return (
     <>
       <label className="ulms-upload-zone" htmlFor={inputId}>
-        <div className="ulms-upload-icon">📎</div>
-        <div className="ulms-upload-text">{label}</div>
+        <div className="ulms-upload-icon"><FiPaperclip /></div>
+        <div className="ulms-upload-text">
+          {uploading ? (
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+              <span>Uploading {uploadPct}%</span>
+              <span className="ulms-upload-spinner dark" aria-hidden="true" />
+            </span>
+          ) : (
+            idleLabel
+          )}
+        </div>
         <div className="ulms-upload-hint">PDF, DOCX, slides, images — max 50MB</div>
         <input
           id={inputId}
@@ -463,8 +477,18 @@ const FileBody = ({ lesson, onChange, organizationId, courseId, sectionId }) => 
       {uploadErr && <div style={{ color: "#c0392b", fontSize: 12, marginTop: 8 }}>{uploadErr}</div>}
       {lesson.attachment?.sasUrl && (
         <div style={{ fontSize: 12, marginTop: 8 }}>
-          <a href={lesson.attachment.sasUrl} target="_blank" rel="noreferrer" style={{ color: "#7c5cbf" }}>
-            Open attachment →
+          <a
+            href={lesson.attachment.sasUrl}
+            target="_blank"
+            rel="noreferrer"
+            style={{
+              color: "#7c5cbf",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 4,
+            }}
+          >
+            Open attachment <FiArrowRight />
           </a>
         </div>
       )}

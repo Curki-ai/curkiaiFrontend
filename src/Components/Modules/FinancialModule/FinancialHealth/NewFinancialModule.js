@@ -239,9 +239,6 @@ const NewFinancialHealth = (props) => {
 
     const previewRef = useRef(null);
     const userEmail = props.user?.email;
-    // const userEmail = "gjavier@tenderlovingcaredisability.com.au";
-    // const userEmail = "q.benico@tenderlovingcaredisability.com.au";
-    // const userEmail = "iaquino@tenderlovingcaredisability.com.au";
     const RESTRICTED_USERS = [
         "jballares@tenderlovingcaredisability.com.au",
         "iaquino@tenderlovingcaredisability.com.au",
@@ -270,6 +267,9 @@ const NewFinancialHealth = (props) => {
         "kbrennen@tenderlovingcaredisability.com.au": [
             "New South Wales",
         ],
+        "PEling@tenderlovingcaredisability.com.au":[
+            "South Australia",
+        ]
     };
 
     const userStates = EMAIL_STATE_MAP[userEmail] || [];

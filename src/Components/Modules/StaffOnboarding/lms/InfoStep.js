@@ -1,4 +1,5 @@
 import React from "react";
+import { FiCheck, FiX } from "react-icons/fi";
 
 const InfoStep = ({ course, onChange }) => {
   const set = (key) => (e) =>
@@ -52,7 +53,7 @@ const InfoStep = ({ course, onChange }) => {
           <ListField
             items={course.objectives || []}
             placeholder="e.g. Understand company values…"
-            bullet="✓"
+            bullet={<FiCheck />}
             onChange={(objectives) => onChange((c) => ({ ...c, objectives }))}
             addLabel="+ Add objective"
           />
@@ -124,7 +125,7 @@ const ListField = ({ items, onChange, placeholder, bullet, addLabel }) => {
             onChange={(e) => update(i, e.target.value)}
           />
           <button className="ulms-obj-del" onClick={() => remove(i)} title="Remove">
-            ✕
+            <FiX />
           </button>
         </div>
       ))}

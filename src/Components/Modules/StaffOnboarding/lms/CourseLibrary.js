@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import { FiInbox, FiX } from "react-icons/fi";
 import ConfirmDialog from "./ConfirmDialog";
 
 const CourseLibrary = ({ courses, onOpen, onCreate, onDelete, onPreview }) => {
@@ -117,7 +118,7 @@ const CourseLibrary = ({ courses, onOpen, onCreate, onDelete, onPreview }) => {
 
       {filtered.length === 0 ? (
         <div className="ulms-empty-state">
-          <div className="ulms-empty-icon">📭</div>
+          <div className="ulms-empty-icon"><FiInbox /></div>
           <div className="ulms-empty-text">No courses match your filters</div>
         </div>
       ) : (
@@ -199,7 +200,7 @@ const CourseCard = ({ course, onOpen, onDelete, onPreview }) => {
           title="Delete"
           onClick={() => onDelete(course)}
         >
-          ✕
+          <FiX />
         </button>
       </div>
     </div>
