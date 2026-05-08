@@ -1,7 +1,5 @@
 import { io } from "socket.io-client";
-
-const API_BASE =
-  "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net";
+import { API_BASE } from "../../../config/apiBase";
 
 const socket = io(API_BASE, {
   transports: ["websocket"],

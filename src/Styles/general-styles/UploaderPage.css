@@ -907,14 +907,17 @@ html,
 .profile-panel {
   position: absolute;
   bottom: 0;
-  left: 311px;
+  left: calc(100% + 18px);
   width: 400px;
+  max-width: calc(100vw - 100% - 40px);
   height: 674px;
+  max-height: calc(100vh - 40px);
   background: white;
   border-radius: 14px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
   display: flex;
   flex-direction: column;
+  overflow-y: auto;
   z-index: 9999;
 }
 
@@ -981,7 +984,7 @@ html,
   display: flex;
   justify-content: center;
   align-items: center;
-  width: 400px;
+  width: 100%;
   height: 266px;
 }
 

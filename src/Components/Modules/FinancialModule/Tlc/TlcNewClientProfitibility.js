@@ -38,6 +38,7 @@ import TlcGraphRenderer from "./TlcGraphRenderer";
 import { MdOutlineFileDownload } from "react-icons/md";
 import incrementAnalysisCount from "./TLcAnalysisCount";
 import incrementCareVoiceAnalysisCount from "../../SupportAtHomeModule/careVoiceCostAnalysis";
+import { API_BASE as BASE_URL } from "../../../../config/apiBase";
 
 const TlcNewClientProfitability = (props) => {
     const onPrepareAiPayload = props.onPrepareAiPayload;
@@ -80,8 +81,6 @@ const TlcNewClientProfitability = (props) => {
     const [filteredHistoryList, setFilteredHistoryList] = useState([]);
     const [searchMode, setSearchMode] = useState(false); // To track if we're in search mode
     const displayedJsonTableArray = [];
-    const BASE_URL = "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net";
-    // const BASE_URL = "http://localhost:5000";
     // Add this function after handleDeleteHistory or similar
     const handleSearch = async () => {
         if (!searchQuery.trim()) {

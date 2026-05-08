@@ -1,18 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import io from "socket.io-client";
 
-// Host resolution mirrors the LMS v2 api.js pattern so that local dev hits
-// the local backend instead of production. WebSockets bypass the axios/fetch
-// interceptor in src/index.js, so we have to do this explicitly here.
-const PROD_HR_WS_HOST =
-  "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net";
-const LOCAL_HR_WS_HOST = "http://localhost:5000";
-
-const isLocalhost =
-  typeof window !== "undefined" &&
-  /^(localhost|127\.0\.0\.1|0\.0\.0\.0)$/.test(window.location.hostname);
-
-const HR_WS_HOST = isLocalhost ? LOCAL_HR_WS_HOST : PROD_HR_WS_HOST;
+// Host resolution flows through the central src/config/apiBase config,
+// which switches to localhost when REACT_APP_USE_LOCAL_API=true.
+import { API_BASE as HR_WS_HOST } from "../../../../config/apiBase";
 
 // Upstream backend events we never want to surface to the chat UI as visible
 // activity — these are connection-lifecycle / idle chatter.

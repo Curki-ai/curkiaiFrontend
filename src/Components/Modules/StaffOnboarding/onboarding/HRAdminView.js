@@ -13,6 +13,7 @@ import AdminCourseCreation from "./AdminCourseCreation";
 import AdminCourseCreation_v2 from "../lms/LMSRedesign";
 import incrementAnalysisCount from "../../FinancialModule/Tlc/TLcAnalysisCount";
 import incrementCareVoiceAnalysisCount from "../../SupportAtHomeModule/careVoiceCostAnalysis";
+import { API_BASE } from "../../../../config/apiBase";
 import SmartOnboardingAccessManagement from "./SmartOnboardingAccessManagement";
 
 const HRAdminView = ({
@@ -62,7 +63,7 @@ const HRAdminView = ({
       if (!email || cancelled) return;
       try {
         const res = await fetch(
-          `https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/organizations/by-email?email=${encodeURIComponent(email)}`
+          `${API_BASE}/api/organizations/by-email?email=${encodeURIComponent(email)}`
         );
         const data = await res.json();
         console.log(
@@ -97,7 +98,7 @@ const HRAdminView = ({
 
     try {
       const res = await fetch(
-        `https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/get-test-results?organisation_id=${encodeURIComponent(organizationId)}`,
+        `${API_BASE}/api/get-test-results?organisation_id=${encodeURIComponent(organizationId)}`,
         {
           headers: {
             "x-user-email": user?.email || "",
@@ -137,7 +138,7 @@ const HRAdminView = ({
         organization_id: organizationId,
       });
       const res = await fetch(
-        `https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/get-all-candidates?${params.toString()}`,
+        `${API_BASE}/api/get-all-candidates?${params.toString()}`,
         {
           headers: {
             "x-user-email": user?.email || "",
@@ -286,7 +287,7 @@ const HRAdminView = ({
       formData.append("jd_file", selectedJd[0]);
 
       const response = await fetch(
-        "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/process-zip",
+        `${API_BASE}/api/process-zip`,
         {
           method: "POST",
           body: formData,
@@ -393,7 +394,7 @@ const HRAdminView = ({
 
     try {
       const res = await fetch(
-        "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/delete-candidate",
+        `${API_BASE}/api/delete-candidate`,
         {
           method: "POST",
           headers: {

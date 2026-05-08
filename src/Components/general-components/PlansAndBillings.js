@@ -8,6 +8,7 @@ import pricingTooltip from "../../Images/pricingTooltipIcon.svg"
 import pricingExample from "../../Images/newPricingExample.svg"
 import ausDollar from "../../Images/AusDollar.svg"
 import crossIcon from "../../Images/ComparePriceCross.png"
+import { API_BASE } from "../../config/apiBase";
 import { toast, ToastContainer } from "react-toastify";
 const PlansAndBillings = ({ onClose, email: userEmail, firstName: firstName, setSubscriptionInfo, subscriptionInfo, isAdmin, setIsAdmin, adminDetails, setAdminDetails }) => {
     // console.log("User Email:", userEmail);
@@ -32,7 +33,7 @@ const PlansAndBillings = ({ onClose, email: userEmail, firstName: firstName, set
             };
 
             const res = await fetch(
-                "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/subscription/checkout",
+                `${API_BASE}/api/subscription/checkout`,
                 {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -414,7 +415,7 @@ const Plan = ({ title,
                 : "/api/subscription/downgrade";
 
             const res = await fetch(
-                `https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net${endpoint}`,
+                `${API_BASE}${endpoint}`,
                 {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -471,7 +472,7 @@ const Plan = ({ title,
         try {
             // 1️⃣ Start trial in your system
             const res = await fetch(
-                "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/subscription/start-trial",
+                `${API_BASE}/api/subscription/start-trial`,
                 {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },

@@ -13,6 +13,7 @@ import {
 } from "../../firebase";
 import "../../Styles/general-styles/SignIn.css";
 import emailjs from "@emailjs/browser";
+import { API_BASE } from "../../config/apiBase";
 import { FcGoogle } from "react-icons/fc";
 import { FaEnvelope, FaKey, FaUser } from "react-icons/fa";
 import { MdOutlineEmail } from "react-icons/md";
@@ -113,7 +114,7 @@ const SignIn = ({ show, onClose }) => {
   const startTrialForUser = async (userEmail, firstName) => {
     try {
       const res = await fetch(
-        "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/subscription/start-trial",
+        `${API_BASE}/api/subscription/start-trial`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -141,7 +142,7 @@ const SignIn = ({ show, onClose }) => {
   };
   const saveUserToDB = async ({ uid, userEmail, name, organization, provider }) => {
     try {
-      const response = await fetch("https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/user/create", {
+      const response = await fetch(`${API_BASE}/api/user/create`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -285,7 +286,7 @@ const SignIn = ({ show, onClose }) => {
       // Mailchimp Welcome flow
       try {
         const mailchimpRes = await fetch(
-          "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/mailchimp/contact",
+          `${API_BASE}/api/mailchimp/contact`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -416,7 +417,7 @@ const SignIn = ({ show, onClose }) => {
         // Mailchimp Welcome flow
         try {
           const mailchimpRes = await fetch(
-            "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/mailchimp/contact",
+            `${API_BASE}/api/mailchimp/contact`,
             {
               method: "POST",
               headers: { "Content-Type": "application/json" },

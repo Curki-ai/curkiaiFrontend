@@ -5,6 +5,7 @@ import UploadFiles from "../../../general-components/UploadFiles";
 import star from '../../../../Images/star.png';
 import SummaryReport from "../../../general-components/SummaryReportViewer";
 import '../../../../Styles/general-styles/UploaderPage.css'
+import { API_BASE } from "../../../../config/apiBase";
 
 const CustomReporting = (props) => {
     const [customReportFiles, setCustomReportFiles] = useState([]);
@@ -41,7 +42,7 @@ const CustomReporting = (props) => {
 
             console.log("Uploading to Google Drive API...",driveForm);
             const driveResponse = await axios.post(
-                "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/upload-to-drive",
+                `${API_BASE}/upload-to-drive`,
                 driveForm,
                 {
                     headers: { "Content-Type": "multipart/form-data" },

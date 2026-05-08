@@ -1,6 +1,5 @@
 import axios from "axios";
-
-const BASE_URL = "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net";
+import { API_BASE as BASE_URL } from "../../../../config/apiBase";
 
 // ✅ Create Module
 export const createModuleApi = async (title, AdminEmail) => {

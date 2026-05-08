@@ -3,8 +3,9 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import "../../../../Styles/general-styles/CandidateDocsUpload.css";
+import { API_BASE } from "../../../../config/apiBase";
 
-const BASE_URL = "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api";
+const BASE_URL = `${API_BASE}/api`;
 
 const DocumentVerification = ({ user }) => {
   const [candidateId, setCandidateId] = useState("");

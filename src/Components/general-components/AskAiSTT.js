@@ -1,4 +1,5 @@
 import * as SpeechSDK from "microsoft-cognitiveservices-speech-sdk";
+import { API_BASE } from "../../config/apiBase";
 
 const logWithTime = (message, data = "") => {
     const time = new Date().toISOString();
@@ -14,7 +15,7 @@ export const startSpeechRecognition = async (setTextCallback) => {
     try {
         logWithTime("Initializing Azure Speech Configuration");
 
-        const response = await fetch("https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/speech-token");
+        const response = await fetch(`${API_BASE}/api/speech-token`);
 
         const data = await response.json();
         // console.log("data", data)

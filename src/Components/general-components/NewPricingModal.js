@@ -8,7 +8,8 @@ import pricingTooltip from "../../Images/pricingTooltipIcon.svg"
 import pricingExample from "../../Images/newPricingExample.svg"
 import ausDollar from "../../Images/AusDollar.svg"
 import { toast, ToastContainer } from "react-toastify";
-const PricingPlansModal = ({ onClose, email: userEmail, firstName: firstName, setSubscriptionInfo, isAdmin, adminDetails }) => {
+import { API_BASE } from "../../config/apiBase";
+const PricingPlansModal =({ onClose, email: userEmail, firstName: firstName, setSubscriptionInfo, isAdmin, adminDetails }) => {
     console.log("User Email:", userEmail); // For debugging
     const [billing, setBilling] = useState("monthly");
     const [showCompare, setShowCompare] = useState(false);
@@ -28,7 +29,7 @@ const PricingPlansModal = ({ onClose, email: userEmail, firstName: firstName, se
             };
 
             const res = await fetch(
-                "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/subscription/checkout",
+                `${API_BASE}/api/subscription/checkout`,
                 {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -364,7 +365,7 @@ const Plan = ({ title,
         try {
             // 1️⃣ Start trial in your system
             const res = await fetch(
-                "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/subscription/start-trial",
+                `${API_BASE}/api/subscription/start-trial`,
                 {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },

@@ -37,6 +37,7 @@ import TlcGraphRenderer from "./TlcGraphRenderer";
 import MultiSelectCustom from "../MultiSelectCustom";
 import { MdOutlineFileDownload } from "react-icons/md";
 import incrementCareVoiceAnalysisCount from "../../SupportAtHomeModule/careVoiceCostAnalysis";
+import { API_BASE as BASE_URL } from "../../../../config/apiBase";
 
 const HtmlFigure = memo(function HtmlFigure({ htmlString }) {
     const parsed = useMemo(
@@ -247,8 +248,6 @@ export default function TlcNewCustomerReporting(props) {
     const [searchMode, setSearchMode] = useState(false); // To track if we're in search mode
 
     // Add this function to handle search
-    const BASE_URL = "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net";
-    // const BASE_URL = "http://localhost:5000";    
     const handleSearch = async () => {
         if (!searchQuery.trim()) {
             setSearchMode(false);

@@ -17,6 +17,7 @@ import { RiDeleteBin6Line } from "react-icons/ri";
 import { GoArrowLeft } from "react-icons/go";
 import incrementAnalysisCount from "../FinancialModule/Tlc/TLcAnalysisCount";
 import incrementCareVoiceAnalysisCount from "../SupportAtHomeModule/careVoiceCostAnalysis";
+import { API_BASE as BASE_URL } from "../../../config/apiBase";
 
 const TASK_QUEUE = [
     "Analysing data",
@@ -76,8 +77,6 @@ const IncidentAuditing = (props) => {
         "SGonzales@tenderlovingcaredisability.com.au",
         "mfarag@tenderlovingcare.com.au"
     ];
-    const BASE_URL = "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net";
-    // const BASE_URL = "http://localhost:5000";
     const isRestrictedUser = RESTRICTED_USERS.includes(
         (props?.user?.email || "").toLowerCase()
     );

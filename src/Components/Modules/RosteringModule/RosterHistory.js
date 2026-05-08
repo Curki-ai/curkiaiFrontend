@@ -10,8 +10,7 @@ import axios from "axios";
 import BroadcastMessage from "./BroadCastMessage";
 import socket from "./WebSocketClient";
 
-const API_BASE = "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net";
-// const API_BASE = "http://localhost:5000";
+import { API_BASE } from "../../../config/apiBase";
 
 const RosterHistory = (props) => {
     const userEmail = props?.userEmail

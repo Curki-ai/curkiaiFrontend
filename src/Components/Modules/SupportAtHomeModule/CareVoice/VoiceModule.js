@@ -58,10 +58,10 @@ import generatingDocAnimationVideo from "../../../../Images/generatingDocAnimati
 import { RiSettingsLine } from "react-icons/ri";
 import CareVoiceAccessManagement from "./CareVoiceAccessManagement";
 import CareVoiceNoOrgEmptyState from "./CareVoiceNoOrgEmptyState";
+import adminLottie from "../../../../Images/adminPageLottie.json"
+import { API_BASE } from "../../../../config/apiBase";
 const VoiceModule = (props) => {
     const userEmail = props?.user?.email;
-    // const userEmail = "admin@contemporarycoordination.com";
-    // const userEmail = "mboutros@tenderlovingcaredisability.com.au";
     const ALLOWED_USERS = [
         "mboutros@tenderlovingcaredisability.com.au",
         "rjodeh@tenderlovingcaredisability.com.au",
@@ -86,8 +86,6 @@ const VoiceModule = (props) => {
     // the v2d-user-access UUID we fetch from /api/care-voice/organizations/by-email.
     const domain = userEmail?.split("@")[1] || "";
 
-    const API_BASE = "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net";
-    // const API_BASE = "http://localhost:5000";
 
     // Organization resolution state. Drives the "no org → register" gate
     // below so a brand-new user lands on CareVoiceNoOrgEmptyState instead
@@ -2776,7 +2774,7 @@ const VoiceModule = (props) => {
                     )}
 
                     {/* ================= TEMPLATE LIST ================= */}
-                    {stage === "idle" && !activeTemplate && (
+                    {stage === "idle" && !activeTemplate && templates.length > 0 && (
                         <div className="vm-template-list">
                             <div className="vm-template-header">
                                 <div className="vm-template-list-title">
@@ -2862,27 +2860,6 @@ const VoiceModule = (props) => {
                                                                                     }
                                                                                 }}
                                                                             />
-
-                                                                            <button
-                                                                                className="vm-rename-yes"
-                                                                                onClick={(e) => {
-                                                                                    e.stopPropagation();
-                                                                                    saveTemplateName(tpl.id);
-                                                                                }}
-                                                                            >
-                                                                                <FiCheck size={14} strokeWidth={3} />
-                                                                            </button>
-
-                                                                            <button
-                                                                                className="vm-rename-no"
-                                                                                onClick={(e) => {
-                                                                                    e.stopPropagation();
-                                                                                    setEditingNameId(null);
-                                                                                    setTempName(tpl.templateName || "");
-                                                                                }}
-                                                                            >
-                                                                                <FiX size={14} strokeWidth={3} />
-                                                                            </button>
                                                                         </div>
                                                                     ) : (
                                                                         <>
@@ -2906,17 +2883,40 @@ const VoiceModule = (props) => {
                                                                     )}
                                                                 </div>
 
-                                                                {/* RIGHT : DOTS */}
-                                                                {editingNameId !== tpl.id && <div className="vm-template-actions">
-                                                                    <span
-                                                                        className="vm-dots"
-                                                                        onClick={(e) => openDropdown(e, tpl.id)}
-                                                                    >
-                                                                        ...
-                                                                    </span>
+                                                                {/* RIGHT : DOTS or RENAME ACTIONS */}
+                                                                {editingNameId === tpl.id ? (
+                                                                    <div className="vm-template-actions vm-template-rename-actions">
+                                                                        <button
+                                                                            className="vm-rename-yes"
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                saveTemplateName(tpl.id);
+                                                                            }}
+                                                                        >
+                                                                            <FiCheck size={14} strokeWidth={3} />
+                                                                        </button>
 
-
-                                                                </div>}
+                                                                        <button
+                                                                            className="vm-rename-no"
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                setEditingNameId(null);
+                                                                                setTempName(tpl.templateName || "");
+                                                                            }}
+                                                                        >
+                                                                            <FiX size={14} strokeWidth={3} />
+                                                                        </button>
+                                                                    </div>
+                                                                ) : (
+                                                                    <div className="vm-template-actions">
+                                                                        <span
+                                                                            className="vm-dots"
+                                                                            onClick={(e) => openDropdown(e, tpl.id)}
+                                                                        >
+                                                                            ...
+                                                                        </span>
+                                                                    </div>
+                                                                )}
 
                                                             </div>
 
@@ -3030,6 +3030,14 @@ const VoiceModule = (props) => {
 
                     {/* Upload Section - Hidden when analyze clicked OR during processing */}
                     {stage !== "processing" && stage !== "completed" && stage !== "review" && !activeTemplate && <div className="vm-admin-heading">
+                        <div className="vm-admin-lottie">
+                            <Lottie
+                                animationData={adminLottie}
+                                loop={true}
+                                autoplay={true}
+                                style={{ width: "260px", height: "260px" }}
+                            />
+                        </div>
                         <h2 className="vm-admin-title">
                             Make Care Voice Template
                         </h2>

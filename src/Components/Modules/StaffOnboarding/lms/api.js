@@ -8,20 +8,10 @@
 //  - Otherwise we hit the deployed Azure backend.
 import axios from "axios";
 import { io } from "socket.io-client";
-
-const PROD_HOST =
-  "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net";
-const LOCAL_HOST = "http://localhost:5000";
-
-const isLocalhost =
-  typeof window !== "undefined" &&
-  /^(localhost|127\.0\.0\.1|0\.0\.0\.0)$/.test(window.location.hostname);
-
-const SOCKET_HOST = isLocalhost ? LOCAL_HOST : PROD_HOST;
+import { API_BASE as SOCKET_HOST } from "../../../../config/apiBase";
 
 const BASE_URL =
-  process.env.REACT_APP_LMS_V2_BASE_URL ||
-  `${isLocalhost ? LOCAL_HOST : PROD_HOST}/api/lms-v2`;
+  process.env.REACT_APP_LMS_V2_BASE_URL || `${SOCKET_HOST}/api/lms-v2`;
 
 console.log("[LMS v2] API base:", BASE_URL);
 

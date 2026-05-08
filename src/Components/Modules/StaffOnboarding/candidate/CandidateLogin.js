@@ -11,8 +11,9 @@ import { PiEyeLight, PiEyeSlash } from "react-icons/pi";
 import { HiOutlineOfficeBuilding } from "react-icons/hi";
 import curkiLogo from "../../../../Images/Black_logo.png";
 import "../../../../Styles/general-styles/CandidateLogin.css";
+import { API_BASE } from "../../../../config/apiBase";
 
-const HR_CANDIDATE_AUTH_BASE = "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/hr-candidate";
+const HR_CANDIDATE_AUTH_BASE = `${API_BASE}/api/hr-candidate`;
 
 const CandidateLogin = () => {
   const navigate = useNavigate();

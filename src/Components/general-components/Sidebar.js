@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import "../../Styles/general-styles/UploaderPage.css";
+import { API_BASE } from "../../config/apiBase";
 import logo from "../../../src/Images/CurkiAiLogo.png";
 import purpleFinanicial from "../../Images/purple_financial.png";
 import whiteFinancial from "../../Images/white_financial.png";
@@ -98,7 +99,7 @@ const Sidebar = ({
     const fetchUser = async () => {
       try {
         const res = await axios.get(
-          `https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/user/get?userEmail=${user?.email}`,
+          `${API_BASE}/api/user/get?userEmail=${user?.email}`,
         );
 
         console.log("User fetch:", res.data);
@@ -121,7 +122,7 @@ const Sidebar = ({
         setUsageLoading(true);
 
         const res = await axios.get(
-          `https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/analysis/${domain}?range=year`,
+          `${API_BASE}/api/analysis/${domain}?range=year`,
         );
         console.log("Usage summary response:", res);
         setUsageSummary(res.data);
@@ -621,6 +622,7 @@ const Sidebar = ({
                     className="usage-details"
                     onClick={() => {
                       setShowProfilePanel(false);
+                      setActiveItem("");
                       openUsageDetails();
                     }}
                     style={{ cursor: "pointer" }}
@@ -646,6 +648,7 @@ const Sidebar = ({
                   <div
                     onClick={() => {
                       setShowProfilePanel(false);
+                      setActiveItem("");
                       openPlansBilling();
                     }}
                   >
@@ -659,6 +662,7 @@ const Sidebar = ({
                   <div
                     onClick={() => {
                       setShowProfilePanel(false);
+                      setActiveItem("");
                       openTeamMembers();
                     }}
                   >
@@ -673,6 +677,7 @@ const Sidebar = ({
                   <div
                     onClick={() => {
                       setShowProfilePanel(false);
+                      setActiveItem("");
                       openSettings();
                     }}
                   >

@@ -7,6 +7,7 @@ import UploaderCSVBox from "../../../general-components/UploaderCSVBox";
 import star from "../../../../Images/star.png";
 import "../../../../Styles/FinancialModule/FinancialHealth.css";
 import "../../../../Styles/general-styles/UploaderPage.css";
+import { API_BASE } from "../../../../config/apiBase";
 import NewReportIcon from "../../../../Images/NewReportIcon.png";
 import Toggle from "react-toggle";
 import "react-toggle/style.css";
@@ -211,7 +212,7 @@ const FinancialHealth = (props) => {
       }
 
       // --- Step 1: Call Analysis API ---
-      const reportEndpoint = "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/report-middleware"
+      const reportEndpoint = `${API_BASE}/report-middleware`
       let analysisData = null;
 
       // Normal flow
@@ -245,7 +246,7 @@ const FinancialHealth = (props) => {
       let vizData = null;
       // console.log("vizpayload", vizPayload)
       const vizRes = await axios.post(
-        "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/vizualize-reports",
+        `${API_BASE}/vizualize-reports`,
         vizPayload,
         { headers: { "Content-Type": "application/json" } }
       );

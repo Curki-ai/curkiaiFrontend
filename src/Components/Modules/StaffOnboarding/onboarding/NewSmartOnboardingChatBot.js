@@ -6,6 +6,7 @@ import "../../../../Styles/general-styles/NewSmartOnboardingChatBot.css";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import TlcUploadBox from "../../FinancialModule/Tlc/TlcUploadBox";
+import { API_BASE } from "../../../../config/apiBase";
 
 const SmartOnboardingChat = ({
     open,
@@ -70,7 +71,7 @@ const SmartOnboardingChat = ({
                 admin_name: user?.displayName || "HR Admin"
             };
             console.log("Payload being sent:", payload);
-            const res = await axios.post("https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/hr-chat", payload);
+            const res = await axios.post(`${API_BASE}/api/hr-chat`, payload);
             console.log("res.data:", res.data);
             if (res.data?.ok) {
                 const completedEvent = res.data.events?.find(
@@ -126,7 +127,7 @@ const SmartOnboardingChat = ({
                 }
             });
 
-            const res = await axios.post("https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/screen-bulk", formData, {
+            const res = await axios.post(`${API_BASE}/api/screen-bulk`, formData, {
                 headers: { "Content-Type": "multipart/form-data" }
             });
 
@@ -171,7 +172,7 @@ const SmartOnboardingChat = ({
                 selected_indices: selectedCandidates
             };
 
-            await axios.post("https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/shortlist-screened", payload);
+            await axios.post(`${API_BASE}/api/shortlist-screened`, payload);
             appendBot(`${shortlisted.length} candidates shortlisted successfully.`);
             setStep("IDLE");
         } catch (error) {

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import "../../Styles/general-styles/DetailedUsage.css";
+import { API_BASE } from "../../config/apiBase";
 import AiSideBarIcon from "../../Images/AiSideBarIcon.svg";
 import AiSmsSideBarIcon from "../../Images/SmsSideBarIcon.svg";
 import {
@@ -148,7 +149,7 @@ const DetailedUsage = ({ user, onBack }) => {
             setError(null);
 
             const res = await axios.get(
-                `https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/analysis/${domain}`,
+                `${API_BASE}/api/analysis/${domain}`,
                 {
                     params: {
                         range,

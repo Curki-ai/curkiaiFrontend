@@ -728,7 +728,6 @@
   border-radius: 12px;
   padding: 24px;
   /* margin-bottom: 24px; */
-  height: 199px;
   width: 100%;
 }
 
@@ -759,6 +758,13 @@
   height: 98px;
   position: relative;
   cursor: pointer;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.vm-template-card:hover {
+  transition: all 0.2s ease;
+  border: 0.6px solid #6C4CDC;
+  transform: scale(1);
 }
 
 /* Only when exactly 2 templates */
@@ -837,12 +843,34 @@
   display: flex;
   align-items: center;
   gap: 6px;
+  width: 100%;
+  margin-right: 12px;
+}
+
+.vm-template-name-input {
+  flex: 1;
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+}
+
+.vm-template-name-input:focus {
+  border-color: #6c4cdc;
 }
 
 .vm-template-actions {
   margin-left: auto;
   position: relative;
   flex-shrink: 0;
+}
+
+.vm-template-rename-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 
@@ -1749,7 +1777,15 @@
 
 .vm-admin-heading {
   text-align: center;
-  margin: 52px 0 32px;
+  margin: 52px 0 48px;
+}
+
+.vm-admin-lottie {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: -80px;
+  margin-bottom: -40px;
 }
 
 .vm-admin-title {
@@ -2040,6 +2076,7 @@
   margin-top: 28px;
   flex-wrap: wrap;
 }
+
 .generate-doc-btns {
   padding: 10px 20px;
   border-radius: 44px;
@@ -2060,6 +2097,7 @@
 .generate-doc-btns:hover {
   background-color: #EAE8F2;
 }
+
 .start-with-new-template-btn {
   padding: 10px 20px;
   border-radius: 44px;
@@ -2080,6 +2118,7 @@
 .start-with-new-template-btn:hover {
   background-color: #6243CF;
 }
+
 /* Responsive Adjustments */
 @media (max-width: 768px) {
 
@@ -2372,6 +2411,7 @@
   box-shadow: 0px 2px 4px rgba(108, 76, 220, 0.06);
   border: 1px solid #e2e8f0;
 }
+
 .genratingDocLottieDiv {
   display: flex;
   justify-content: center;
@@ -2392,7 +2432,7 @@
    (.data-upload-filename) keep their original behaviour.
    ============================================================ */
 .voice-upload-col .data-upload-fileinfo,
-.voice-upload-col .data-upload-fileinfo > div {
+.voice-upload-col .data-upload-fileinfo>div {
   min-width: 0;
   flex: 1 1 auto;
 }
@@ -2489,10 +2529,6 @@
     width: 100% !important;
     max-width: 520px;
     margin: 0 auto;
-  }
-
-  .vm-admin-heading {
-    margin: 32px 0 20px;
   }
 
   .vm-admin-title {

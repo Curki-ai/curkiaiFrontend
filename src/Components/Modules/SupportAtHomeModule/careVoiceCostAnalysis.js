@@ -1,5 +1,4 @@
-const COUNT_API_BASE =
-  "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net";
+import { API_BASE as COUNT_API_BASE } from "../../../config/apiBase";
 
 const incrementCareVoiceAnalysisCount = async (userEmail, buttonType, AiAnalysisCost, moduleName,tokenDeducted) => {
   try {

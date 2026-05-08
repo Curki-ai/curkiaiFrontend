@@ -3,8 +3,7 @@ import "../../Styles/general-styles/AutoPaymentPopup.css";
 import autoPaymentGif from "../../Images/autopaymentPopup.gif";
 import { toast, ToastContainer } from "react-toastify";
 
-const API_BASE =
-  "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net";
+import { API_BASE } from "../../config/apiBase";
 
 const AutoPaymentPopup = ({ onClose, userEmail, isAdmin, adminDetails }) => {
   const [loading, setLoading] = useState(false);
