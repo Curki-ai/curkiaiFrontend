@@ -34,6 +34,9 @@ const initials = (str = "") =>
 
 const LMSLearner = ({ user }) => {
   const email = user?.email || "";
+  // The candidate's active organisation. May be empty for legacy callers
+  // that don't pass it — in that case the backend falls back to "latest org".
+  const organizationId = user?.organizationId || "";
 
   const [candidate, setCandidate] = useState(null);
   const [courses, setCourses] = useState([]);
@@ -58,7 +61,7 @@ const LMSLearner = ({ user }) => {
     let cancelled = false;
     setLoading(true);
     setError("");
-    myCoursesApi(email)
+    myCoursesApi(email, organizationId)
       .then((data) => {
         if (cancelled) return;
         setCandidate(data?.candidate || null);
@@ -73,7 +76,7 @@ const LMSLearner = ({ user }) => {
     return () => {
       cancelled = true;
     };
-  }, [email]);
+  }, [email, organizationId]);
 
   const refreshCourseSummary = useCallback((courseId, progress, status) => {
     setCourses((prev) =>
@@ -87,7 +90,11 @@ const LMSLearner = ({ user }) => {
     setActiveCourse(null);
     setActiveProgress({ completed: {}, quizScores: {} });
     try {
-      const data = await getLearnerCourseApi({ courseId: id, email });
+      const data = await getLearnerCourseApi({
+        courseId: id,
+        email,
+        organizationId,
+      });
       setActiveCourse(data.course);
       setActiveProgress(lessonStatesToProgress(data.enrollment?.lessonStates));
     } catch (err) {
@@ -116,6 +123,7 @@ const LMSLearner = ({ user }) => {
       try {
         const resp = await submitQuizAttemptApi({
           email,
+          organizationId,
           courseId: activeCourse.id,
           lessonId,
           answers: extra.quizAnswers,
@@ -150,6 +158,7 @@ const LMSLearner = ({ user }) => {
     try {
       const enrollment = await updateLearnerProgressApi({
         email,
+        organizationId,
         courseId: activeCourse.id,
         lessonId,
         completed: true,

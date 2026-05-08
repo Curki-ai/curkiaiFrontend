@@ -56,7 +56,8 @@ import { HiOutlineDocumentAdd } from "react-icons/hi";
 import generatingDocAnimation from "../../../../Images/generatingDocAnimation.json"
 import generatingDocAnimationVideo from "../../../../Images/generatingDocAnimationVideo.mp4"
 import { RiSettingsLine } from "react-icons/ri";
-import AccessManagementForm from "../../../general-components/AccessManagementForm";
+import CareVoiceAccessManagement from "./CareVoiceAccessManagement";
+import CareVoiceNoOrgEmptyState from "./CareVoiceNoOrgEmptyState";
 const VoiceModule = (props) => {
     const userEmail = props?.user?.email;
     // const userEmail = "admin@contemporarycoordination.com";
@@ -80,14 +81,25 @@ const VoiceModule = (props) => {
     const setTotalCareVoiceDocsToGenerate = props?.setTotalCareVoiceDocsToGenerate;
     const setGeneratedCareVoiceDocsCount = props?.setGeneratedCareVoiceDocsCount;
     const setIsCareVoiceLocked = props?.setIsCareVoiceLocked;
+    // Email domain is still useful for the TLC allow-list checks above; it is
+    // NOT used as the organization id anymore. Templates are now scoped by
+    // the v2d-user-access UUID we fetch from /api/care-voice/organizations/by-email.
     const domain = userEmail?.split("@")[1] || "";
 
-    // console.log("props.careVoiceFiles", props.careVoiceFiles)
-    // console.log("userEmail", userEmail)
-    // console.log("domain", domain)
-    const organizationId = domain;
-    // const API_BASE = "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net";
-    const API_BASE = "http://localhost:5000";
+    const API_BASE = "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net";
+    // const API_BASE = "http://localhost:5000";
+
+    // Organization resolution state. Drives the "no org → register" gate
+    // below so a brand-new user lands on CareVoiceNoOrgEmptyState instead
+    // of an empty/broken Care Voice screen.
+    //   idle      — initial render, before useEffect kicks in
+    //   loading   — fetch in flight
+    //   found     — organizationId resolved, render the dashboard
+    //   not_found — caller has no v2d-user-access row, render NoOrgEmptyState
+    const [organizationId, setOrganizationId] = useState(null);
+    const [organizationName, setOrganizationName] = useState("");
+    const [orgLookupStatus, setOrgLookupStatus] = useState("idle");
+
     const [role, setRole] = useState("Admin");
     const [currentUserRole, setCurrentUserRole] = useState(null);
     const [openAccessManagement, setOpenAccessManagement] = useState(false);
@@ -922,12 +934,12 @@ const VoiceModule = (props) => {
     };
 
     const fetchTemplates = async () => {
+        if (!organizationId) return;
         try {
             const res = await fetch(
-                `${API_BASE}/api/voiceModuleTemplate?email=${userEmail}`
+                `${API_BASE}/api/voiceModuleTemplate?organizationId=${encodeURIComponent(organizationId)}`
             );
             const data = await res.json();
-            // console.log("fetched templates", data?.data)
             if (data.success) setTemplates(data?.data);
         } catch (err) {
             console.error("[UI] Fetch templates failed", err);
@@ -936,7 +948,8 @@ const VoiceModule = (props) => {
 
     useEffect(() => {
         fetchTemplates();
-    }, [domain]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [organizationId]);
     const handleDeleteClick = (template) => {
         setDeleteTarget(template);
         setOpenMenuId(null);
@@ -1409,7 +1422,6 @@ const VoiceModule = (props) => {
             const formData = new FormData();
 
             formData.append("organizationId", organizationId);
-            formData.append("domain", domain);
             formData.append("userEmail", userEmail);
             formData.append("prompt", rawPrompt);
             const updatedMapper = {
@@ -2177,29 +2189,48 @@ const VoiceModule = (props) => {
         }
     }, [props.isMobileOrTablet]);
 
-    useEffect(() => {
+    // Resolve the caller's organization on mount (or whenever userEmail
+    // changes). The same lookup feeds three things:
+    //   - organizationId (UUID)  → used by every template endpoint below
+    //   - organizationName        → display label (Access Management modal etc.)
+    //   - currentUserRole         → drives the role-switcher options
+    // If the lookup returns an empty `organizations` array we set
+    // orgLookupStatus="not_found"; the render below then shows
+    // CareVoiceNoOrgEmptyState instead of the dashboard.
+    const fetchOrganization = async () => {
         if (!userEmail) return;
-
-        const fetchCurrentUserRole = async () => {
-            try {
-                const res = await fetch(
-                    `${API_BASE}/api/v2d/users/${encodeURIComponent(userEmail)}`,
-                    { headers: { "x-user-email": userEmail } }
-                );
-                const data = await res.json();
-                const apiRole = (data?.data?.role || "").toLowerCase();
+        setOrgLookupStatus("loading");
+        try {
+            const res = await fetch(
+                `${API_BASE}/api/care-voice/organizations/by-email?email=${encodeURIComponent(userEmail)}`
+            );
+            const data = await res.json();
+            const first = data?.organizations?.[0];
+            if (res.ok && data?.ok && first?.organizationId) {
+                setOrganizationId(first.organizationId);
+                setOrganizationName(first.organizationName || "");
+                const apiRole = String(first.role || "").toLowerCase();
                 if (apiRole === "staff") {
                     setCurrentUserRole("staff");
                     setRole("Staff");
                 } else if (apiRole === "admin") {
                     setCurrentUserRole("admin");
                 }
-            } catch (err) {
-                console.error("[VoiceModule] failed to fetch current user role", err);
+                setOrgLookupStatus("found");
+            } else {
+                setOrganizationId(null);
+                setOrganizationName("");
+                setOrgLookupStatus("not_found");
             }
-        };
+        } catch (err) {
+            console.error("[VoiceModule] org lookup failed", err);
+            setOrgLookupStatus("not_found");
+        }
+    };
 
-        fetchCurrentUserRole();
+    useEffect(() => {
+        fetchOrganization();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [userEmail]);
 
     const transcriptInputRef = useRef(null);
@@ -2273,6 +2304,21 @@ const VoiceModule = (props) => {
             </div>
         )
     }
+
+    // No org → show the create-organization screen. Mirrors the Smart
+    // Onboarding "no org → register" flow. We render this AFTER the
+    // access-restricted check so blocked users still see the right copy,
+    // and before the main return so none of the dashboard code runs
+    // against a null organizationId.
+    if (orgLookupStatus === "not_found") {
+        return (
+            <CareVoiceNoOrgEmptyState
+                userEmail={userEmail}
+                onRegistered={() => fetchOrganization()}
+            />
+        );
+    }
+
     console.log("props.careVoice files", props?.careVoiceFiles)
     const handleDownloadAllDocs = () => {
         const filteredFiles = (props.careVoiceFiles || []).filter((file) => {
@@ -3908,7 +3954,7 @@ const VoiceModule = (props) => {
             />
 
             {openAccessManagement && (
-                <AccessManagementForm
+                <CareVoiceAccessManagement
                     onClose={() => setOpenAccessManagement(false)}
                     userEmail={userEmail}
                 />
