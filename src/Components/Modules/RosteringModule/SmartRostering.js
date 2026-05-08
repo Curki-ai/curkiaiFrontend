@@ -16,8 +16,8 @@ import { RiSettingsLine } from "react-icons/ri";
 import { FiCheck } from "react-icons/fi";
 import incrementCareVoiceAnalysisCount from "../SupportAtHomeModule/careVoiceCostAnalysis";
 
-const API_BASE = "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net";
-// const API_BASE = "http://localhost:5000";
+import { API_BASE } from "../../../config/apiBase";
+
 const SmartRostering = (props) => {
     const userEmail = props?.user?.email;
     // const userEmail = "kris@curki.ai";

@@ -40,6 +40,7 @@ import TlcGraphRenderer from "../Tlc/TlcGraphRenderer.js";
 import { MdOutlineFileDownload } from "react-icons/md";
 import incrementAnalysisCount from "../Tlc/TLcAnalysisCount.js";
 import incrementCareVoiceAnalysisCount from "../../SupportAtHomeModule/careVoiceCostAnalysis.js";
+import { API_BASE as BASE_URL } from "../../../../config/apiBase";
 
 const NewFinancialHealth = (props) => {
 
@@ -74,8 +75,6 @@ const NewFinancialHealth = (props) => {
     const [searching, setSearching] = useState(false);
     const [filteredHistoryList, setFilteredHistoryList] = useState([]);
     const [searchMode, setSearchMode] = useState(false); // To track if we're in search mode
-    const BASE_URL = "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net";
-    // const BASE_URL = "http://localhost:5000";
     // Add this function after handleDeleteHistory
     const handleSearch = async () => {
         if (!searchQuery.trim()) {

@@ -9,6 +9,7 @@ import { GoArrowLeft } from "react-icons/go";
 import { RiDeleteBin6Line } from "react-icons/ri";
 import incrementAnalysisCount from "../FinancialModule/Tlc/TLcAnalysisCount";
 import incrementCareVoiceAnalysisCount from "../SupportAtHomeModule/careVoiceCostAnalysis";
+import { API_BASE } from "../../../config/apiBase";
 const BASE_URL =
   "https://curki-backend-api-container.yellowflower-c21bea82.australiaeast.azurecontainerapps.io";
 
@@ -76,7 +77,7 @@ const Client_Event_Reporting = (props) => {
         setLoadingHistory(true);
 
         const res = await fetch(
-          `https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/clientEventIncidentMgmt?email=${props.user.email}`
+          `${API_BASE}/api/clientEventIncidentMgmt?email=${props.user.email}`
         );
 
         const json = await res.json();
@@ -119,7 +120,7 @@ const Client_Event_Reporting = (props) => {
       };
 
       const res = await fetch(
-        "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/clientEventIncidentMgmt/save",
+        `${API_BASE}/api/clientEventIncidentMgmt/save`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -133,7 +134,7 @@ const Client_Event_Reporting = (props) => {
 
       // 🔁 refresh history list immediately
       const historyRes = await fetch(
-        `https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/clientEventIncidentMgmt?email=${props.user.email}`
+        `${API_BASE}/api/clientEventIncidentMgmt?email=${props.user.email}`
       );
       const historyJson = await historyRes.json();
       setHistoryList(historyJson.data || []);
@@ -148,7 +149,7 @@ const Client_Event_Reporting = (props) => {
   const handleClientEventHistoryClick = async (item) => {
     try {
       const res = await fetch(
-        `https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/clientEventIncidentMgmt/${item.id}`
+        `${API_BASE}/api/clientEventIncidentMgmt/${item.id}`
       );
 
       if (!res.ok) throw new Error("Failed to fetch history item");
@@ -193,7 +194,7 @@ const Client_Event_Reporting = (props) => {
       setDeleting(true);
 
       const res = await fetch(
-        "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/clientEventIncidentMgmt/delete",
+        `${API_BASE}/api/clientEventIncidentMgmt/delete`,
         {
           method: "DELETE",
           headers: {

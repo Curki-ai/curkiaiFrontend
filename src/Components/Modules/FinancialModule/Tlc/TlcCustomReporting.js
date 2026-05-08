@@ -10,6 +10,7 @@ import { RiDeleteBin6Line } from "react-icons/ri";
 import star from '../../../../Images/star.png';
 import AIAnalysisReportViewer from "./TlcAiAnalysisReport";
 import incrementAnalysisCount from "./TLcAnalysisCount";
+import { API_BASE } from "../../../../config/apiBase";
 
 export default function TlcCustomerReporting(props) {
   // -------------------- MULTI TAB SUPPORT --------------------
@@ -315,7 +316,7 @@ export default function TlcCustomerReporting(props) {
           });
 
           const uploadRes = await fetch(
-            "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/payroll/upload-latest",
+            `${API_BASE}/payroll/upload-latest`,
             { method: "POST", body: formData }
           );
 
@@ -358,7 +359,7 @@ export default function TlcCustomerReporting(props) {
 
       const userEmail = props?.user?.email?.trim()?.toLowerCase();
       // const userEmail = "kris@curki.ai"
-      const url = `https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/payroll/filter?${query.toString()}&${userEmail}`;
+      const url = `${API_BASE}/payroll/filter?${query.toString()}&${userEmail}`;
 
       const analyzeRes = await fetch(url);
       const analyzeData = await analyzeRes.json();
@@ -528,7 +529,7 @@ export default function TlcCustomerReporting(props) {
 
       // console.log("markdown in save history", markdownReport)
       const response = await fetch(
-        "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/payroll/save",
+        `${API_BASE}/payroll/save`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -564,7 +565,7 @@ export default function TlcCustomerReporting(props) {
     try {
       setDeleting(true);
       const res = await fetch(
-        "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/deleteById",
+        `${API_BASE}/deleteById`,
         {
           method: "DELETE",
           headers: { "Content-Type": "application/json" },
@@ -595,7 +596,7 @@ export default function TlcCustomerReporting(props) {
       if (!email) return;
       try {
         setLoadingHistory(true);
-        const res = await fetch(`https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/payroll/history?email=${email}`);
+        const res = await fetch(`${API_BASE}/payroll/history?email=${email}`);
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Failed to fetch history");
         setHistoryList(data.data);
@@ -683,7 +684,7 @@ export default function TlcCustomerReporting(props) {
     try {
 
       const res = await fetch(
-        `https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/getById/${item.id}`
+        `${API_BASE}/getById/${item.id}`
       );
       const data = await res.json();
       updateTab({ tlcAskAiHistoryPayload: data.data.analysisResult });

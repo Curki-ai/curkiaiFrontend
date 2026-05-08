@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { FiX, FiDownload, FiSave, FiRefreshCw, FiMail } from "react-icons/fi";
 import "superdoc/style.css";
 import "../../../../Styles/SupportAtHomeModule/CareVoice/FilePreviewModal.css"
+import { API_BASE } from "../../../../config/apiBase";
 const FilePreviewModal = ({
   doc,
   fileIndex,
@@ -123,7 +124,7 @@ const FilePreviewModal = ({
       reader.onloadend = async () => {
         const base64 = reader.result.split(",")[1];
         const res = await fetch(
-          "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/send-email",
+          `${API_BASE}/api/send-email`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },

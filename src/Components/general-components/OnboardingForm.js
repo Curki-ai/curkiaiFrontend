@@ -5,9 +5,9 @@ import 'tippy.js/dist/tippy.css';
 import { IoMdInformationCircleOutline } from "react-icons/io";
 import { GoPlus } from "react-icons/go";
 import axios from "axios";
+import { API_BASE } from "../../config/apiBase";
 
 const OnboardingForm = ({ onClose, userEmail }) => {
-    const API_BASE = "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net";
     const MAX_CHARS = 150;
     console.log("userEmail in OnboardingForm", userEmail)
     const [providerName, setProviderName] = useState('');

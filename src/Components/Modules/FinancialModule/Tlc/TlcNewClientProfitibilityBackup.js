@@ -26,6 +26,7 @@ import MultiSelectCustom from "../MultiSelectCustom";
 import TlcUploadBox from "./TlcUploadBox";
 import WhoAreYouToggle from "../WhoAreYouToggle";
 import "../../../../Styles/FinancialModule/TlcNewCustomReporting.css";
+import { API_BASE as BASE_URL } from "../../../../config/apiBase";
 const TlcNewClientProfitability = (props) => {
     const onPrepareAiPayload = props.onPrepareAiPayload;
     const user = props.user
@@ -69,7 +70,6 @@ const TlcNewClientProfitability = (props) => {
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [selectedHistoryId, setSelectedHistoryId] = useState(null);
 
-    const BASE_URL = "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net";
     // 🔹 MOCK FILTER OPTIONS (SHOWCASE ONLY)
     const optionsState = [
         { label: "NSW", value: "NSW" },

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { API_BASE as ROOT_API_BASE } from "../../../../config/apiBase";
 
 // Rendered inside VoiceModule when the by-email lookup confirms the
 // signed-in user has no organization linked in v2d-user-access. Visual
@@ -9,15 +10,7 @@ import React, { useState } from "react";
 //      by-email and transition to the normal Care Voice dashboard.
 //   2. Ask your admin/owner to invite you → informational only.
 
-const PROD_HOST =
-  "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net";
-const LOCAL_HOST = "http://localhost:5000";
-const isLocalhost =
-  typeof window !== "undefined" &&
-  /^(localhost|127\.0\.0\.1|0\.0\.0\.0)$/.test(window.location.hostname);
-const API_BASE =
-  process.env.REACT_APP_CV_ORGS_BASE_URL ||
-  `${isLocalhost ? LOCAL_HOST : PROD_HOST}`;
+const API_BASE = process.env.REACT_APP_CV_ORGS_BASE_URL || ROOT_API_BASE;
 
 const CareVoiceNoOrgEmptyState = ({ userEmail, onRegistered }) => {
   const [showModal, setShowModal] = useState(false);

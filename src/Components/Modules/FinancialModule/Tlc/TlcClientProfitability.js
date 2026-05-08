@@ -12,6 +12,7 @@ import 'tippy.js/dist/tippy.css';
 import { IoMdInformationCircleOutline } from "react-icons/io";
 import TooltipPlaceholder from '../../../../Images/TooltipPlaceholder.png';
 import ClientProfitabilityAIAnalysisReportViewer from "./TlcClientProfitibilityReport";
+import { API_BASE as BASE_URL } from "../../../../config/apiBase";
 const TlcClientProfitability = (props) => {
     const onPrepareAiPayload = props.onPrepareAiPayload;
     const user = props.user
@@ -36,7 +37,6 @@ const TlcClientProfitability = (props) => {
     const [payload, setPayload] = useState(null);
     const [isAllowed, setIsAllowed] = useState(null);
 
-    const BASE_URL = "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net";
     useEffect(() => {
         const userEmail = user?.email?.toLowerCase().trim();
         if (!userEmail) {

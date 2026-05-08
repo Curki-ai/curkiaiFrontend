@@ -5,8 +5,9 @@ import axios from "axios";
 import "../../../../Styles/general-styles/ScreenTest.css";
 import { useParams } from "react-router-dom";
 import { getAuth } from "firebase/auth";
+import { API_BASE } from "../../../../config/apiBase";
 
-const BASE_URL = "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api";
+const BASE_URL = `${API_BASE}/api`;
 
 export default function CandidateScreeningTest() {
   const [stage, setStage] = useState("loading");

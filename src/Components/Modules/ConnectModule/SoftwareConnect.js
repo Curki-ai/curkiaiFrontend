@@ -13,9 +13,9 @@ import GoogledriveIcon from "../../../Images/GoogleDriveIcon.png";
 import SharePointIcon from "../../../Images/SharePointIcon.png";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { API_BASE as XERO_URL } from "../../../config/apiBase";
 
 const SoftwareConnect = (props) => {
-  const XERO_URL = "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net"; 
 
   const softwareList = [
     // { name: "AlayaCare", logo: AlayaCare },
@@ -46,7 +46,7 @@ const SoftwareConnect = (props) => {
 
       try {
         const response = await axios.get(
-          `https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/getSoftwares`,
+          `${XERO_URL}/getSoftwares`,
           {
             params: { userEmail: props.user.email },
           }
@@ -150,7 +150,7 @@ const SoftwareConnect = (props) => {
         // console.log("selected software in non Xero", payload);
 
         const response = await axios.post(
-          "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/integrationCredsCheck",
+          `${XERO_URL}/integrationCredsCheck`,
           payload
         );
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import "../../Styles/general-styles/UploaderPage.css";
+import { API_BASE } from "../../config/apiBase";
 import BlackExpandIcon from "../../../src/Images/BlackExpandIcon.png";
 import axios from "axios";
 import { FaMicrophone, FaPaperPlane, FaPlus, FaTimes, FaFileAlt, FaStop } from "react-icons/fa";
@@ -59,6 +60,7 @@ import NewSubscriptionStatus from "./NewSubscriptionStatus";
 import VoiceModule from "../Modules/SupportAtHomeModule/CareVoice/VoiceModule";
 import dummyLogo from "../../Images/tlcDummyLogo.svg";
 import SettingsPage from "./Settings";
+import SupportModal from "./SupportModal";
 import TeamMembers from "./TeamMembers";
 import TrialStartedPopup from "./TrialPopup";
 import useSubscriptionStatus from "./NewSubscriptionStatus";
@@ -129,6 +131,7 @@ const HomePage = () => {
   const [isMobileOrTablet, setIsMobileOrTablet] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showSupportFormInChat, setShowSupportFormInChat] = useState(false);
   const [showTeamMembers, setShowTeamMembers] = useState(false);
   const [showTrialPopup, setShowTrialPopup] = useState(false);
   const [formattedTrialEnd, setFormattedTrialEnd] = useState("");
@@ -257,7 +260,7 @@ const HomePage = () => {
         [key]: { ...prev[key], submitting: true }
       }));
 
-      await fetch("https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/askAiFeedback/shareFeedback", {
+      await fetch(`${API_BASE}/api/askAiFeedback/shareFeedback`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -309,8 +312,7 @@ const HomePage = () => {
     const handleTabClose = () => {
       if (!careVoiceSessionId || !careVoiceUserId) return;
 
-      const url =
-        "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/careVoiceAskAI/delete-session";
+      const url = `${API_BASE}/api/careVoiceAskAI/delete-session`;
 
       const payload = JSON.stringify({
         session_id: careVoiceSessionId,
@@ -336,7 +338,7 @@ const HomePage = () => {
 
       try {
         const res = await fetch(
-          `https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/user/get?userEmail=${encodeURIComponent(user.email)}`
+          `${API_BASE}/api/user/get?userEmail=${encodeURIComponent(user.email)}`
         );
 
         const data = await res.json();
@@ -473,7 +475,7 @@ const HomePage = () => {
         `Fetching organizationId for: ${email} (attempt ${attempt}/${MAX_ATTEMPTS})`
       );
       const res = await fetch(
-        `https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/organizations/by-email?email=${encodeURIComponent(email)}`
+        `${API_BASE}/api/organizations/by-email?email=${encodeURIComponent(email)}`
       );
       const data = await res.json();
       console.log("Organizations by-email response:", data);
@@ -509,7 +511,7 @@ const HomePage = () => {
       });
 
       const res = await axios.get(
-        "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/get-all-candidates",
+        `${API_BASE}/api/get-all-candidates`,
         {
           params: {
             admin_email: user.email,
@@ -641,7 +643,7 @@ const HomePage = () => {
       const email = 'utkarsh@curki.ai'
 
       const response = await fetch(
-        `https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/getManifestByEmail/${user?.email}`
+        `${API_BASE}/getManifestByEmail/${user?.email}`
       );
 
       const result = await response.json();
@@ -705,7 +707,7 @@ const HomePage = () => {
       });
 
       const res = await fetch(
-        "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/careVoiceAskAI/start",
+        `${API_BASE}/api/careVoiceAskAI/start`,
         {
           method: "POST",
           body: formData
@@ -761,7 +763,7 @@ const HomePage = () => {
       });
 
       const res = await axios.post(
-        "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/screen-bulk",
+        `${API_BASE}/api/screen-bulk`,
         formData,
         { headers: { "Content-Type": "multipart/form-data" } }
       );
@@ -814,7 +816,7 @@ const HomePage = () => {
       setShortlistLoading(true);
 
       const data = await axios.post(
-        "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/shortlist-screened",
+        `${API_BASE}/api/shortlist-screened`,
         {
           organisation_id: organizationId,
           admin_email: user?.email,
@@ -1300,7 +1302,7 @@ const HomePage = () => {
 
         try {
           const response = await fetch(
-            "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/careVoiceAskAI/query",
+            `${API_BASE}/api/careVoiceAskAI/query`,
             {
               method: "POST",
               headers: {
@@ -1354,7 +1356,7 @@ const HomePage = () => {
         try {
           // ✅ Send the FULL history, don't remove anything
           const response = await axios.post(
-            "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/financial-v2/askAi",
+            `${API_BASE}/api/financial-v2/askAi`,
             {
               question: finalQuery,
               dataframes: financialAiPayload,
@@ -1393,7 +1395,7 @@ const HomePage = () => {
         try {
 
           const response = await axios.post(
-            "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/dialogflow",
+            `${API_BASE}/api/dialogflow`,
             {
               event: eventName
             }
@@ -1462,7 +1464,7 @@ const HomePage = () => {
           form.append("files", manualAskAiFile);
           form.append("question", finalQuery);
           const response = await axios.post(
-            "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/manualSmartRostering",
+            `${API_BASE}/api/manualSmartRostering`,
             form,
             { headers: { "Content-Type": "multipart/form-data" } }
           );
@@ -1595,7 +1597,7 @@ const HomePage = () => {
           const cleanHistory = localHistory.filter(msg => !msg.content.includes('Generating response...'));
           // console.log("cleanHistory", cleanHistory);
           const response = await axios.post(
-            "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/payroll-askai",
+            `${API_BASE}/api/payroll-askai`,
             {
               tlcAskAiPayload,
               tlcAskAiHistoryPayload,  // existing parameter
@@ -1790,7 +1792,7 @@ const HomePage = () => {
     try {
       if (careVoiceSessionId && careVoiceUserId) {
         await fetch(
-          "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/careVoiceAskAI/delete-session",
+          `${API_BASE}/api/careVoiceAskAI/delete-session`,
           {
             method: "POST",
             headers: {
@@ -1847,17 +1849,27 @@ const HomePage = () => {
                   setShowFinalZipReport={setShowFinalZipReport}
                   showUploadedReport={showUploadedReport}
                   setShowUploadReport={setShowUploadReport}
-                  openSettings={() => setShowSettings(true)}
+                  openSettings={() => {
+                    setShowSettings(true);
+                    setShowTeamMembers(false);
+                    setShowUsageDetails(false);
+                  }}
                   openTeamMembers={() => {
                     setShowTeamMembers(true);
                     setShowSettings(false);
+                    setShowUsageDetails(false);
                   }}
                   openUsageDetails={() => {
                     setShowUsageDetails(true);
                     setShowSettings(false);
                     setShowTeamMembers(false);
                   }}
-                  openPlansBilling={() => setShowPlansBillingModal(true)}
+                  openPlansBilling={() => {
+                    setShowPlansBillingModal(true);
+                    setShowUsageDetails(false);
+                    setShowSettings(false);
+                    setShowTeamMembers(false);
+                  }}
                   closeAllPanels={() => {
                     setShowSettings(false);
                     setShowTeamMembers(false);
@@ -2922,10 +2934,23 @@ const HomePage = () => {
                                           }
 
                                           if (item.type === "button") {
+                                            const isAssistanceButton =
+                                              typeof item.text === "string" &&
+                                              item.text.toLowerCase().includes("need assistance");
+
                                             return (
                                               <button
                                                 key={i}
                                                 onClick={() => {
+                                                  if (isAssistanceButton) {
+                                                    setMessages(prev => [
+                                                      ...prev,
+                                                      { sender: "user", text: item.text }
+                                                    ]);
+                                                    setShowSupportFormInChat(true);
+                                                    return;
+                                                  }
+
                                                   if (item.event?.name) {
                                                     setMessages(prev => [
                                                       ...prev,
@@ -3582,6 +3607,22 @@ const HomePage = () => {
           />
         )
       }
+      {showSupportFormInChat && (
+        <SupportModal
+          user={user}
+          firstName={user?.displayName}
+          onClose={() => setShowSupportFormInChat(false)}
+          onSubmitted={() => {
+            setMessages(prev => [
+              ...prev,
+              {
+                sender: "bot",
+                text: "Thanks for reaching out! Your support request has been submitted. We'll get back to you as soon as possible."
+              }
+            ]);
+          }}
+        />
+      )}
       {showSourceModal && (
         <div
           style={{

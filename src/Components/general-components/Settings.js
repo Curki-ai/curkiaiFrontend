@@ -8,8 +8,8 @@ import { sendPasswordResetEmail, deleteUser } from "firebase/auth";
 import supportSettingsDown from "../../Images/supportSettingsDownIcon.svg"
 import supportSettingsRight from "../../Images/supportSettingsUpIcon.svg"
 import supportSettingsUploadIcon from "../../Images/supportSettingsUpload.svg"
-import TlcUploadBox from "../Modules/FinancialModule/Tlc/TlcUploadBox";
-import crossIcon from "../../Images/ComparePriceCross.png"
+import { API_BASE } from "../../config/apiBase";
+import SupportModal from "./SupportModal";
 const SettingsPage = ({ user, onBack }) => {
     const [firstName, setFirstName] = useState(user?.displayName || "Deepak");
     const [lastName, setLastName] = useState(user?.displayName || "uday");
@@ -22,12 +22,6 @@ const SettingsPage = ({ user, onBack }) => {
     const [isSupportOpen, setIsSupportOpen] = useState(false);
     const [showSupportModal, setShowSupportModal] = useState(false);
     const [tickets, setTickets] = useState([]);
-    const [issueType, setIssueType] = useState("Technical issue");
-    const [description, setDescription] = useState("");
-    const [screenshotFile, setScreenshotFile] = useState(null);
-    const [isSubmittingSupport, setIsSubmittingSupport] = useState(false);
-    const [previewUrl, setPreviewUrl] = useState(null);
-    const [fileError, setFileError] = useState("");
     const [openStatusId, setOpenStatusId] = useState(null);
     const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
     const [statusModalTicket, setStatusModalTicket] = useState(null);
@@ -52,7 +46,7 @@ const SettingsPage = ({ user, onBack }) => {
             }
 
             await axios.delete(
-                `https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/user/delete?id=${currentUser.uid}`
+                `${API_BASE}/api/user/delete?id=${currentUser.uid}`
             );
 
             await deleteUser(currentUser);
@@ -84,7 +78,7 @@ const SettingsPage = ({ user, onBack }) => {
                         : newStatus; // fallback (optional)
 
             await axios.put(
-                `https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/need-help/update-status/${ticketId}`,
+                `${API_BASE}/api/need-help/update-status/${ticketId}`,
                 {
                     status: formattedStatus,
                     userEmail: user.email
@@ -104,7 +98,7 @@ const SettingsPage = ({ user, onBack }) => {
             setIsSaving(true);
 
             await axios.put(
-                "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/user/update",
+                `${API_BASE}/api/user/update`,
                 {
                     id: user?.uid,
                     name: firstName
@@ -127,7 +121,7 @@ const SettingsPage = ({ user, onBack }) => {
             if (!user?.email) return;
 
             const res = await axios.get(
-                `https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/user/get?userEmail=${user?.email}`
+                `${API_BASE}/api/user/get?userEmail=${user?.email}`
             );
 
             const dbUser = res.data.user;
@@ -140,53 +134,12 @@ const SettingsPage = ({ user, onBack }) => {
             console.error("Failed to fetch user:", error);
         }
     };
-    const handleSubmitSupport = async () => {
-        try {
-            if (!description.trim()) {
-                alert("Please describe your issue.");
-                return;
-            }
-
-            setIsSubmittingSupport(true);
-
-            const formData = new FormData();
-            formData.append("firstName", firstName);
-            formData.append("userEmail", user.email);
-            formData.append("issueType", issueType);
-            formData.append("description", description);
-
-            if (screenshotFile) {
-                formData.append("issue_screenshot", screenshotFile);
-            }
-
-            const res = await axios.post(
-                "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/need-help/create",
-                formData,
-                {
-                    headers: { "Content-Type": "multipart/form-data" },
-                }
-            );
-
-            if (res.data.success) {
-                setShowSupportModal(false);
-                setDescription("");
-                setScreenshotFile(null);
-                fetchSupportTickets();
-            }
-
-        } catch (error) {
-            console.error("Support submission failed:", error);
-            alert("Failed to submit request.");
-        } finally {
-            setIsSubmittingSupport(false);
-        }
-    };
     const fetchSupportTickets = async () => {
         try {
             if (!user?.email) return;
 
             const res = await axios.get(
-                `https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/need-help/list?userEmail=${user.email}`
+                `${API_BASE}/api/need-help/list?userEmail=${user.email}`
             );
 
             if (res.data.success) {
@@ -446,108 +399,12 @@ const SettingsPage = ({ user, onBack }) => {
                 </div>
             )}
             {showSupportModal && (
-                <div className="support-modal-overlay">
-                    <div className="support-modal">
-
-                        <div className="support-modal-header">
-                            <h3>Raise a Support Request</h3>
-                            <img
-                                src={crossIcon}
-                                alt="close"
-                                className="support-close"
-                                onClick={() => setShowSupportModal(false)}
-                            />
-                        </div>
-
-                        <div className="support-form-group">
-                            <label>Issue Related To</label>
-                            <select
-                                value={issueType}
-                                onChange={(e) => setIssueType(e.target.value)}
-                            >
-                                <option>Technical Issue</option>
-                                <option>Billing Question</option>
-                                <option>Account access</option>
-                                <option>Feature request</option>
-                                <option>Integration support</option>
-                                <option>General Query</option>
-                            </select>
-                        </div>
-
-                        <div className="support-form-group">
-                            <div className="label-row">
-                                <label>Briefly Describe The Issue</label>
-                            </div>
-
-                            <textarea
-                                value={description}
-                                onChange={(e) => setDescription(e.target.value)}
-                                placeholder="What happened? What were you experiencing's?"
-                                maxLength="150"
-                                className="support-textarea"
-                            />
-                            <div className="char-limit">
-                                {150 - description.length} characters left
-                            </div>
-                        </div>
-
-                        <div className="support-form-group">
-
-                            <TlcUploadBox
-                                id="supportScreenshotUpload"
-                                title="Upload Screenshot"
-                                subtitle="JPG, PNG, WEBP • Max 5MB"
-                                accept="image/jpeg,image/png,image/webp"
-                                files={screenshotFile ? [screenshotFile] : []}
-                                multiple={false}
-                                setFiles={(selectedFiles) => {
-                                    if (!selectedFiles || !selectedFiles.length) {
-                                        setScreenshotFile(null);
-                                        return;
-                                    }
-
-                                    const file = selectedFiles[0];
-
-                                    const allowedTypes = [
-                                        "image/jpeg",
-                                        "image/png",
-                                        "image/webp"
-                                    ];
-
-                                    if (!allowedTypes.includes(file.type)) {
-                                        setFileError("Only JPG, PNG, or WEBP images are allowed.");
-                                        setScreenshotFile(null);
-                                        return;
-                                    }
-
-                                    const maxSize = 5 * 1024 * 1024; // 5MB
-                                    if (file.size > maxSize) {
-                                        setFileError("Image size must be less than 5MB.");
-                                        setScreenshotFile(null);
-                                        return;
-                                    }
-
-                                    setFileError("");
-                                    setScreenshotFile(file);
-                                }}
-                            />
-
-                            {fileError && <div className="file-error">{fileError}</div>}
-                        </div>
-                        <button
-                            className="submit-support-btn"
-                            onClick={handleSubmitSupport}
-                            disabled={isSubmittingSupport}
-                        >
-                            {isSubmittingSupport ? "Submitting..." : "Submit Request"}
-                        </button>
-
-                        <div className="support-response-note">
-                            We'll respond within 24 - 42 business hours.
-                        </div>
-
-                    </div>
-                </div>
+                <SupportModal
+                    user={user}
+                    firstName={firstName}
+                    onClose={() => setShowSupportModal(false)}
+                    onSubmitted={() => fetchSupportTickets()}
+                />
             )}
             {/* CONFIRM MODAL */}
             {showConfirmModal && (

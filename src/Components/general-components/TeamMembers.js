@@ -6,6 +6,7 @@ import StatusDropdown from "./TeamMembersStatusDropdown";
 import MultiSelectCustom from "../Modules/FinancialModule/MultiSelectCustom";
 import voiceRoleIcon from "../../Images/VoiceRoleIcon.png";
 import TlcPayrollDownArrow from "../../Images/tlc_payroll_down_button.png"
+import { API_BASE } from "../../config/apiBase";
 const TeamMembers = ({ onBack, loggedInUserEmail }) => {
   const [members, setMembers] = useState([]);
   const [showInviteModal, setShowInviteModal] = useState(false);
@@ -22,8 +23,7 @@ const TeamMembers = ({ onBack, loggedInUserEmail }) => {
     { label: "Active", value: "Active" },
     { label: "Restricted", value: "Restricted" },
   ];
-  const BASE_URL =
-    "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/teamMembers";
+  const BASE_URL = `${API_BASE}/api/teamMembers`;
 
   const fetchMembers = async () => {
     try {
@@ -38,7 +38,7 @@ const TeamMembers = ({ onBack, loggedInUserEmail }) => {
 
       // Fetch logged-in user
       const userRes = await fetch(
-        `https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/user/get?userEmail=${encodeURIComponent(
+        `${API_BASE}/api/user/get?userEmail=${encodeURIComponent(
           loggedInUserEmail
         )}`
       );

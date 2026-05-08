@@ -1,3 +1,5 @@
+import { API_BASE } from "../../config/apiBase";
+
 const isBillingPeriodOver = (subscription) => {
     if (!subscription) return true;
 
@@ -39,7 +41,7 @@ export const checkSubscriptionStatus = async (email) => {
 
     try {
         const res = await fetch(
-            `https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/subscription/getSubscription?email=${email}`
+            `${API_BASE}/api/subscription/getSubscription?email=${email}`
         );
 
         const data = await res.json();

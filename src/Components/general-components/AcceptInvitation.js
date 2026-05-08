@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import curkiLogo from "../../Images/Black_logo.png";
+import { API_BASE } from "../../config/apiBase";
 
 const InvitePage = () => {
   const [searchParams] = useSearchParams();
@@ -13,8 +14,7 @@ const InvitePage = () => {
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
 
-  const BASE_URL =
-    "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net/api/teamMembers";
+  const BASE_URL = `${API_BASE}/api/teamMembers`;
 
   /* =============================
      Fetch Invite Details

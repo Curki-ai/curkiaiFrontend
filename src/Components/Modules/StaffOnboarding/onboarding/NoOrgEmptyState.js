@@ -8,8 +8,7 @@ import React, { useState } from "react";
 //      and transition to the normal admin dashboard.
 //   2. Ask your admin/owner to invite you → informational only.
 
-const API_BASE =
-  "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net";
+import { API_BASE } from "../../../../config/apiBase";
 
 const NoOrgEmptyState = ({ user, onRegistered }) => {
   const [showModal, setShowModal] = useState(false);

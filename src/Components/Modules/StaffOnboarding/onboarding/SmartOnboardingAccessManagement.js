@@ -1,5 +1,6 @@
 ﻿import React, { useEffect, useState } from "react";
 import "../../../../Styles/general-styles/SmartOnboardingAccessManagement.css";
+import { API_BASE as ROOT_API_BASE } from "../../../../config/apiBase";
 
 // Only "admin" is supported on this surface. The previous "staff" role was
 // never enforced server-side, so the dropdown was replaced with a static
@@ -11,15 +12,9 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 // Smart Onboarding has its own access-management namespace on the
 // middleware so it can evolve independently of VoiceModule's
 // /api/v2d/users/* routes. Override with REACT_APP_SO_ACCESS_BASE_URL.
-const PROD_HOST =
-  "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net";
-const LOCAL_HOST = "http://localhost:5000";
-const isLocalhost =
-  typeof window !== "undefined" &&
-  /^(localhost|127\.0\.0\.1|0\.0\.0\.0)$/.test(window.location.hostname);
 const API_BASE =
   process.env.REACT_APP_SO_ACCESS_BASE_URL ||
-  `${isLocalhost ? LOCAL_HOST : PROD_HOST}/api/staff-onboarding/access`;
+  `${ROOT_API_BASE}/api/staff-onboarding/access`;
 
 const SmartOnboardingAccessManagement = ({ onClose, userEmail, organizationId }) => {
   const [name, setName] = useState("");

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import "../../../../Styles/general-styles/CareVoiceAccessManagement.css";
+import { API_BASE as ROOT_API_BASE } from "../../../../config/apiBase";
 
 // Care Voice supports two roles. Staff can use the product but cannot
 // manage access — only admins reach this surface (the API enforces it).
@@ -13,15 +14,9 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 // Care Voice has its own access-management namespace on the middleware so
 // it can evolve independently of the older /api/v2d/users/* routes.
 // Override with REACT_APP_CV_ACCESS_BASE_URL.
-const PROD_HOST =
-  "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net";
-const LOCAL_HOST = "http://localhost:5000";
-const isLocalhost =
-  typeof window !== "undefined" &&
-  /^(localhost|127\.0\.0\.1|0\.0\.0\.0)$/.test(window.location.hostname);
 const API_BASE =
   process.env.REACT_APP_CV_ACCESS_BASE_URL ||
-  `${isLocalhost ? LOCAL_HOST : PROD_HOST}/api/care-voice/access`;
+  `${ROOT_API_BASE}/api/care-voice/access`;
 
 const CareVoiceAccessManagement = ({ onClose, userEmail }) => {
   const [name, setName] = useState("");
