@@ -171,21 +171,29 @@ export const deleteAttachmentApi = async ({ organizationId, courseId, blobName }
 };
 
 // ── Learner ───────────────────────────────────────────────────────────
+// Every learner call accepts an optional `organizationId`. The backend uses
+// it to disambiguate candidates who are shortlisted in more than one org —
+// without it, the server falls back to the candidate's most recent org.
 
-export const myCoursesApi = async (email) => {
-  const res = await axios.get(`${BASE_URL}/learner/my-courses`, { params: { email } });
+export const myCoursesApi = async (email, organizationId) => {
+  const params = { email };
+  if (organizationId) params.organizationId = organizationId;
+  const res = await axios.get(`${BASE_URL}/learner/my-courses`, { params });
   return res.data;
 };
 
-export const getLearnerCourseApi = async ({ courseId, email }) => {
+export const getLearnerCourseApi = async ({ courseId, email, organizationId }) => {
+  const params = { email };
+  if (organizationId) params.organizationId = organizationId;
   const res = await axios.get(`${BASE_URL}/learner/courses/${courseId}`, {
-    params: { email },
+    params,
   });
   return res.data;
 };
 
 export const updateLearnerProgressApi = async ({
   email,
+  organizationId,
   courseId,
   lessonId,
   completed,
@@ -193,6 +201,7 @@ export const updateLearnerProgressApi = async ({
 }) => {
   const res = await axios.put(`${BASE_URL}/learner/progress`, {
     email,
+    organizationId,
     courseId,
     lessonId,
     completed,
@@ -201,9 +210,16 @@ export const updateLearnerProgressApi = async ({
   return res.data?.enrollment;
 };
 
-export const submitQuizAttemptApi = async ({ email, courseId, lessonId, answers }) => {
+export const submitQuizAttemptApi = async ({
+  email,
+  organizationId,
+  courseId,
+  lessonId,
+  answers,
+}) => {
   const res = await axios.post(`${BASE_URL}/learner/quiz-attempt`, {
     email,
+    organizationId,
     courseId,
     lessonId,
     answers,

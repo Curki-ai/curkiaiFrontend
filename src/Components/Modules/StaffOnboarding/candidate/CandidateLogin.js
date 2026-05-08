@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import {
@@ -8,6 +8,7 @@ import {
 import { MdOutlineEmail } from "react-icons/md";
 import { FiLock } from "react-icons/fi";
 import { PiEyeLight, PiEyeSlash } from "react-icons/pi";
+import { HiOutlineOfficeBuilding } from "react-icons/hi";
 import curkiLogo from "../../../../Images/Black_logo.png";
 import "../../../../Styles/general-styles/CandidateLogin.css";
 
@@ -24,6 +25,11 @@ const CandidateLogin = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
+
+  // Once auth succeeds and the candidate has memberships in 2+ orgs we hold
+  // the auth payload here and render the picker instead of the form. Picking
+  // an org persists the session and redirects.
+  const [pendingOrgChoice, setPendingOrgChoice] = useState(null);
 
   useEffect(() => {
     if (isCandidateAuthenticated()) {
@@ -46,15 +52,39 @@ const CandidateLogin = () => {
     setShowConfirmPassword(false);
   };
 
-  const persistAndRedirect = (data, fallbackEmail) => {
+  // Persist the chosen membership and route to the dashboard.
+  const completeLogin = ({ data, fallbackEmail, organizationId }) => {
     saveCandidateSession({
       email: data.email || fallbackEmail,
-      organisationId: data.organisation_id,
-      candidateId: data.candidate?.candidateId || "",
-      candidateName: data.candidate?.candidateName || "",
+      organizations: data.organizations || [],
+      currentOrganizationId: organizationId,
       token: data.sessionToken || "",
     });
     navigate("/hr-candidate/dashboard", { replace: true });
+  };
+
+  const handleAuthSuccess = (data, fallbackEmail) => {
+    const organizations = Array.isArray(data.organizations)
+      ? data.organizations
+      : [];
+
+    if (!organizations.length) {
+      setError(
+        "Your account is not linked to any organisation. Please contact your administrator."
+      );
+      return;
+    }
+
+    if (organizations.length === 1) {
+      completeLogin({
+        data,
+        fallbackEmail,
+        organizationId: organizations[0].organizationId,
+      });
+      return;
+    }
+
+    setPendingOrgChoice({ data, fallbackEmail, organizations });
   };
 
   const handleSubmit = async (e) => {
@@ -98,7 +128,7 @@ const CandidateLogin = () => {
         return;
       }
 
-      persistAndRedirect(data, trimmedEmail);
+      handleAuthSuccess(data, trimmedEmail);
     } catch (err) {
       const serverMsg = err?.response?.data?.message;
       setError(
@@ -110,7 +140,79 @@ const CandidateLogin = () => {
     }
   };
 
+  const handlePickOrganization = (organizationId) => {
+    if (!pendingOrgChoice) return;
+    completeLogin({
+      data: pendingOrgChoice.data,
+      fallbackEmail: pendingOrgChoice.fallbackEmail,
+      organizationId,
+    });
+  };
+
+  const cancelOrgChoice = () => {
+    setPendingOrgChoice(null);
+    resetMessages();
+    setPassword("");
+    setConfirmPassword("");
+    setShowPassword(false);
+    setShowConfirmPassword(false);
+  };
+
   const isSignup = mode === "signup";
+
+  if (pendingOrgChoice) {
+    return (
+      <div className="candidate-login-page">
+        <div className="candidate-login-card">
+          <div className="candidate-login-logo">
+            <img src={curkiLogo} alt="Curki AI" />
+          </div>
+          <div className="candidate-login-header">
+            <h1>Choose an organisation</h1>
+            <p>
+              You're shortlisted in more than one organisation. Pick the one
+              you want to access right now — you can switch from the dashboard
+              later.
+            </p>
+          </div>
+
+          <ul className="candidate-org-list">
+            {pendingOrgChoice.organizations.map((org) => (
+              <li key={org.organizationId}>
+                <button
+                  type="button"
+                  className="candidate-org-option"
+                  onClick={() => handlePickOrganization(org.organizationId)}
+                >
+                  <span className="candidate-org-option-icon">
+                    <HiOutlineOfficeBuilding />
+                  </span>
+                  <span className="candidate-org-option-text">
+                    <span className="candidate-org-option-name">
+                      {org.organizationName || org.organizationId}
+                    </span>
+                    {org.candidateName && (
+                      <span className="candidate-org-option-meta">
+                        as {org.candidateName}
+                      </span>
+                    )}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+
+          <button
+            type="button"
+            className="candidate-login-switch-link"
+            onClick={cancelOrgChoice}
+          >
+            Use a different account
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="candidate-login-page">

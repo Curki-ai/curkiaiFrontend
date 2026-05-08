@@ -26,25 +26,36 @@ useEffect(() => {
   }
 
   setCandidateEmail(email);
-  fetchOrganisation(email);
+
+  // Preferred path: the dashboard passes the active org's ids on the user
+  // prop (sourced from candidateAuth session). This is what makes
+  // multi-org candidates work — `get-organization-by-candidate` would
+  // otherwise return whichever org happens to be most recent.
+  if (user?.organizationId && user?.candidateId) {
+    setOrganisationId(user.organizationId);
+    setCandidateId(user.candidateId);
+    setFetchingOrg(false);
+    return;
+  }
+
+  fetchOrganisation(email, user?.organizationId);
 }, [user]);
 
-const fetchOrganisation = async (email) => {
+const fetchOrganisation = async (email, preferredOrgId) => {
   try {
     setFetchingOrg(true);
 
+    const params = { candidate_email: email };
+    if (preferredOrgId) params.organisation_id = preferredOrgId;
+
     const res = await axios.get(
       `${BASE_URL}/get-organization-by-candidate`,
-      {
-        params: {
-          candidate_email: email
-        }
-      }
+      { params }
     );
     console.log("Organisation fetch response:", res.data);
     if (res.data?.ok) {
       setOrganisationId(
-        res.data.organisation_id 
+        res.data.organisation_id
       );
 
       setCandidateId(
