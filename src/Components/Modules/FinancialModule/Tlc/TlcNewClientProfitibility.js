@@ -39,6 +39,9 @@ import { MdOutlineFileDownload } from "react-icons/md";
 import incrementAnalysisCount from "./TLcAnalysisCount";
 import incrementCareVoiceAnalysisCount from "../../SupportAtHomeModule/careVoiceCostAnalysis";
 import { API_BASE as BASE_URL } from "../../../../config/apiBase";
+import FinancialHealthNoOrgEmptyState from "../FinancialHealth/FinancialHealthNoOrgEmptyState";
+import FinancialHealthAccessManagement from "../FinancialHealth/FinancialHealthAccessManagement";
+import { RiSettingsLine } from "react-icons/ri";
 
 const TlcNewClientProfitability = (props) => {
     const onPrepareAiPayload = props.onPrepareAiPayload;
@@ -188,42 +191,53 @@ const TlcNewClientProfitability = (props) => {
         return () => clearTimeout(delayDebounce);
     }, [searchQuery]);
     const reportRef = useRef(null);
-    const EMAIL_STATE_MAP = {
-        "molley@tenderlovingcaredisability.com.au": [
-            "South Australia",
-            "Queensland",
-        ],
-
-        "ilaurente@tenderlovingcaredisability.com.au": [
-            "Victoria",
-            "Queensland",
-        ],
-
-        "kbrennen@tenderlovingcaredisability.com.au": [
-            "New South Wales",
-        ],
-        "PEling@tenderlovingcaredisability.com.au": [
-            "South Australia",
-        ]
-    };
     // Sync history when loading from history
 
     const userEmail = user?.email;
-    const RESTRICTED_USERS = [
-        "jballares@tenderlovingcaredisability.com.au",
-        "iaquino@tenderlovingcaredisability.com.au",
-        "kperu@tenderlovingcaredisability.com.au",
-        "mboutros@tenderlovingcaredisability.com.au",
-        "rjodeh@tenderlovingcaredisability.com.au",
-        "ryounes@tenderlovingcaredisability.com.au",
-        "stickner@tenderlovingcaredisability.com.au",
-        "q.benico@tenderlovingcaredisability.com.au"
-    ];
+    // const userEmail = "ilaurente@tenderlovingcaredisability.com.au";
 
-    const isRestrictedUser = RESTRICTED_USERS.includes(
-        (userEmail || "").toLowerCase()
-    );
-    const userStates = EMAIL_STATE_MAP[userEmail] || [];
+    // Access-management driven state. Mirrors NewFinancialModule.js — the
+    // org lookup feeds organizationId (history scope), currentUserRole (Access
+    // Management button), and userStates (state filter).
+    const [organizationId, setOrganizationId] = useState(null);
+    const [organizationName, setOrganizationName] = useState("");
+    const [currentUserRole, setCurrentUserRole] = useState(null);
+    const [userStates, setUserStates] = useState([]);
+    const [orgLookupStatus, setOrgLookupStatus] = useState("loading");
+    const [openAccessManagement, setOpenAccessManagement] = useState(false);
+
+    const fetchOrganization = async () => {
+        if (!userEmail) return;
+        setOrgLookupStatus("loading");
+        try {
+            const res = await fetch(
+                `${BASE_URL}/api/client-profitability/organizations/by-email?email=${encodeURIComponent(userEmail)}`
+            );
+            const data = await res.json();
+            const first = data?.organizations?.[0];
+            if (res.ok && data?.ok && first?.organizationId) {
+                setOrganizationId(first.organizationId);
+                setOrganizationName(first.organizationName || "");
+                setCurrentUserRole(String(first.role || "").toLowerCase());
+                setUserStates(Array.isArray(first.states) ? first.states : []);
+                setOrgLookupStatus("found");
+            } else {
+                setOrganizationId(null);
+                setOrganizationName("");
+                setCurrentUserRole(null);
+                setUserStates([]);
+                setOrgLookupStatus("not_found");
+            }
+        } catch (err) {
+            console.error("[TlcClientProfitability] org lookup failed", err);
+            setOrgLookupStatus("not_found");
+        }
+    };
+
+    useEffect(() => {
+        fetchOrganization();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [userEmail]);
     const [tabs, setTabs] = useState([
         {
             id: 1,
@@ -1063,6 +1077,7 @@ const TlcNewClientProfitability = (props) => {
             // console.log("endDate in save history", endDate.toISOString())
             const payload = {
                 email: userEmail,
+                organizationId: organizationId || null,
                 responseData: activeTabData.responseData,
                 filters: {
                     start: startDate
@@ -1658,8 +1673,16 @@ const TlcNewClientProfitability = (props) => {
 
             try {
                 setLoadingHistory(true);
+                // Prefer organizationId scoping (Access Management) when
+                // available, but keep email as a fallback for older clients
+                // and records that predate the orgId migration.
+                const params = new URLSearchParams();
+                params.set("email", email);
+                if (organizationId) {
+                    params.set("organizationId", organizationId);
+                }
                 const res = await fetch(
-                    `${BASE_URL}/api/clients-profitability/history?email=${email}`
+                    `${BASE_URL}/api/clients-profitability/history?${params.toString()}`
                 );
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error || "Failed to fetch history");
@@ -1682,8 +1705,10 @@ const TlcNewClientProfitability = (props) => {
             }
         };
 
-        fetchHistory();
-    }, [props.user]);
+        if (orgLookupStatus !== "loading") {
+            fetchHistory();
+        }
+    }, [props.user, organizationId, orgLookupStatus]);
 
     // if (isAllowed === false) {
     //     return (
@@ -1712,7 +1737,7 @@ const TlcNewClientProfitability = (props) => {
     // }
 
     // console.log("activeTabData", activeTabData)
-    if (isRestrictedUser) {
+    if (orgLookupStatus === "loading") {
         return (
             <div style={{
                 textAlign: "center",
@@ -1720,22 +1745,20 @@ const TlcNewClientProfitability = (props) => {
                 fontFamily: "Inter, sans-serif",
                 color: "#1f2937"
             }}>
-                {/* <img
-                    src={TlcLogo}
-                    alt="Access Denied"
-                    style={{ width: "80px", opacity: 0.8, marginBottom: "20px" }}
-                /> */}
-
-                <h2 style={{ fontSize: "24px", marginBottom: "12px", color: "#6C4CDC" }}>
-                    Access Restricted 🚫
-                </h2>
-
-                <p style={{ fontSize: "16px", color: "#555" }}>
-                    Sorry, your account (<strong>{userEmail}</strong>)
-                    is not authorized to view this page.
-                </p>
+                <p style={{ fontSize: "15px", color: "#555" }}>Loading…</p>
             </div>
-        )
+        );
+    }
+
+    if (orgLookupStatus === "not_found") {
+        return (
+            <FinancialHealthNoOrgEmptyState
+                userEmail={userEmail}
+                moduleLabel="Client Profitability"
+                registerUrl={`${BASE_URL}/api/client-profitability/organizations/register`}
+                onRegistered={() => fetchOrganization()}
+            />
+        );
     }
     return (
         <div className="page-containersss tlc-cp-page" ref={pageRef}>
@@ -1804,6 +1827,16 @@ const TlcNewClientProfitability = (props) => {
                     />
                 </div> */}
                 <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                    {currentUserRole === "admin" && (
+                        <button
+                            type="button"
+                            className="access-mgmt-trigger-btn"
+                            onClick={() => setOpenAccessManagement(true)}
+                        >
+                            <RiSettingsLine size={18} color="#707493" />
+                            Access Management
+                        </button>
+                    )}
                     <span style={{ fontSize: "13px", fontWeight: 500 }}>
                         Sync With Your System
                     </span>
@@ -2330,6 +2363,15 @@ const TlcNewClientProfitability = (props) => {
                         </div>
                     </div>
                 </div>
+            )}
+
+            {openAccessManagement && (
+                <FinancialHealthAccessManagement
+                    onClose={() => setOpenAccessManagement(false)}
+                    userEmail={userEmail}
+                    moduleLabel="Client Profitability"
+                    apiBase={`${BASE_URL}/api/client-profitability/access`}
+                />
             )}
         </div>
     );

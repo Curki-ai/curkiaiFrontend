@@ -7,7 +7,7 @@ import { GoPlus } from "react-icons/go";
 import axios from "axios";
 import { API_BASE } from "../../config/apiBase";
 
-const OnboardingForm = ({ onClose, userEmail }) => {
+const OnboardingForm = ({ onClose, userEmail, organizationId }) => {
     const MAX_CHARS = 150;
     console.log("userEmail in OnboardingForm", userEmail)
     const [providerName, setProviderName] = useState('');
@@ -30,14 +30,13 @@ const OnboardingForm = ({ onClose, userEmail }) => {
     const [existingId, setExistingId] = useState(null);
     const [isEdit, setIsEdit] = useState(false);
     useEffect(() => {
-        if (!userEmail) return;
+        if (!userEmail || !organizationId) return;
 
-        const domain = userEmail.split("@")[1];
-        console.log("[UI] Checking existing settings for domain:", domain);
+        console.log("[UI] Checking existing settings for organizationId:", organizationId);
 
         const fetchExisting = async () => {
             try {
-                const url = `${API_BASE}/api/rosteringSettings/${domain}`;
+                const url = `${API_BASE}/api/rosteringSettings/by-org/${encodeURIComponent(organizationId)}`;
                 console.log("[UI] Prefill fetch URL:", url);
 
                 const res = await axios.get(url);
@@ -81,7 +80,7 @@ const OnboardingForm = ({ onClose, userEmail }) => {
         };
 
         fetchExisting();
-    }, [userEmail]);
+    }, [userEmail, organizationId]);
 
 
     const handleSave = async () => {
@@ -93,6 +92,7 @@ const OnboardingForm = ({ onClose, userEmail }) => {
 
         const payload = {
             userEmail,
+            organizationId,
             providerName,
             days,
             rosteringManagers,

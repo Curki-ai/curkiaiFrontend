@@ -18,6 +18,12 @@ import { GoArrowLeft } from "react-icons/go";
 import incrementAnalysisCount from "../FinancialModule/Tlc/TLcAnalysisCount";
 import incrementCareVoiceAnalysisCount from "../SupportAtHomeModule/careVoiceCostAnalysis";
 import { API_BASE as BASE_URL } from "../../../config/apiBase";
+import useModuleOrgLookup from "../../../hooks/useModuleOrgLookup";
+import FinancialHealthNoOrgEmptyState from "../FinancialModule/FinancialHealth/FinancialHealthNoOrgEmptyState";
+import FinancialHealthAccessManagement from "../FinancialModule/FinancialHealth/FinancialHealthAccessManagement";
+import { RiSettingsLine } from "react-icons/ri";
+
+const IA_API_BASE = `${BASE_URL}/api/incident-auditing`;
 
 const TASK_QUEUE = [
     "Analysing data",
@@ -60,26 +66,14 @@ const IncidentAuditing = (props) => {
     const [deleting, setDeleting] = useState(false);
 
     const [isFromHistory, setIsFromHistory] = useState(false);
-    const RESTRICTED_USERS = [
-        "iaquino@tenderlovingcaredisability.com.au",
-        "jballares@tenderlovingcaredisability.com.au",
-        "kperu@tenderlovingcaredisability.com.au",
-        "q.benico@tenderlovingcaredisability.com.au",
-        "mboutros@tenderlovingcaredisability.com.au",
-        "rjodeh@tenderlovingcaredisability.com.au",
-        "ryounes@tenderlovingcaredisability.com.au",
-        "stickner@tenderlovingcaredisability.com.au",
-        "mtalukder@tenderlovingcaredisability.com.au",
-        "kbrennen@tenderlovingcaredisability.com.au",
-        "ilaurente@tenderlovingcaredisability.com.au",
-        "gjavier@tenderlovingcaredisability.com.au",
-        "molley@tenderlovingcaredisability.com.au",
-        "SGonzales@tenderlovingcaredisability.com.au",
-        "mfarag@tenderlovingcare.com.au"
-    ];
-    const isRestrictedUser = RESTRICTED_USERS.includes(
-        (props?.user?.email || "").toLowerCase()
-    );
+    const [openAccessManagement, setOpenAccessManagement] = useState(false);
+    const userEmail = props?.user?.email;
+
+    const { currentUserRole, orgLookupStatus, refresh: refetchOrg } =
+        useModuleOrgLookup({
+            userEmail,
+            orgsApiBase: `${IA_API_BASE}/organizations`,
+        });
     const formatIncidentHistoryDateRange = (filters) => {
         const from = filters?.fromDate;
         const to = filters?.toDate;
@@ -588,7 +582,7 @@ const IncidentAuditing = (props) => {
         });
     }
 
-    if (isRestrictedUser) {
+    if (orgLookupStatus === "loading") {
         return (
             <div style={{
                 textAlign: "center",
@@ -596,25 +590,34 @@ const IncidentAuditing = (props) => {
                 fontFamily: "Inter, sans-serif",
                 color: "#1f2937"
             }}>
-                {/* <img
-                    src={TlcLogo}
-                    alt="Access Denied"
-                    style={{ width: "80px", opacity: 0.8, marginBottom: "20px" }}
-                /> */}
-
-                <h2 style={{ fontSize: "24px", marginBottom: "12px", color: "#6C4CDC" }}>
-                    Access Restricted 🚫
-                </h2>
-
-                <p style={{ fontSize: "16px", color: "#555" }}>
-                    Sorry, your account (<strong>{props?.user?.email}</strong>)
-                    is not authorized to view this page.
-                </p>
+                <p style={{ fontSize: "15px", color: "#555" }}>Loading…</p>
             </div>
-        )
+        );
+    }
+    if (orgLookupStatus === "not_found") {
+        return (
+            <FinancialHealthNoOrgEmptyState
+                userEmail={userEmail}
+                moduleLabel="Incident Auditing"
+                registerUrl={`${IA_API_BASE}/organizations/register`}
+                onRegistered={refetchOrg}
+            />
+        );
     }
     return (
         <>
+            {currentUserRole === "admin" && (
+                <div style={{ display: "flex", justifyContent: "flex-end", padding: "12px 16px 0" }}>
+                    <button
+                        type="button"
+                        className="access-mgmt-trigger-btn"
+                        onClick={() => setOpenAccessManagement(true)}
+                    >
+                        <RiSettingsLine size={18} color="#707493" />
+                        Access Management
+                    </button>
+                </div>
+            )}
             {/* 🌀 Show loader while processing */}
             {isIncidentAuditingProcessing ? (
                 <div style={{ display: "flex", justifyContent: "center", alignItems: "center", }}>
@@ -1067,6 +1070,14 @@ const IncidentAuditing = (props) => {
                 </div>
             )}
             {renderHistorySection()}
+            {openAccessManagement && (
+                <FinancialHealthAccessManagement
+                    onClose={() => setOpenAccessManagement(false)}
+                    userEmail={userEmail}
+                    moduleLabel="Incident Auditing"
+                    apiBase={`${IA_API_BASE}/access`}
+                />
+            )}
         </>
     );
 

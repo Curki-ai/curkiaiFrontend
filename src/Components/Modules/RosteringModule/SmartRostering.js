@@ -17,31 +17,51 @@ import { FiCheck } from "react-icons/fi";
 import incrementCareVoiceAnalysisCount from "../SupportAtHomeModule/careVoiceCostAnalysis";
 
 import { API_BASE } from "../../../config/apiBase";
+import FinancialHealthNoOrgEmptyState from "../FinancialModule/FinancialHealth/FinancialHealthNoOrgEmptyState";
 
 const SmartRostering = (props) => {
     const userEmail = props?.user?.email;
     // const userEmail = "kris@curki.ai";
-    const RESTRICTED_USERS = [
-        "iaquino@tenderlovingcaredisability.com.au",
-        "jballares@tenderlovingcaredisability.com.au",
-        "kperu@tenderlovingcaredisability.com.au",
-        "q.benico@tenderlovingcaredisability.com.au",
-        "mboutros@tenderlovingcaredisability.com.au",
-        "rjodeh@tenderlovingcaredisability.com.au",
-        "ryounes@tenderlovingcaredisability.com.au",
-        "stickner@tenderlovingcaredisability.com.au",
-        "mtalukder@tenderlovingcaredisability.com.au",
-        "kbrennen@tenderlovingcaredisability.com.au",
-        "ilaurente@tenderlovingcaredisability.com.au",
-        "gjavier@tenderlovingcaredisability.com.au",
-        "molley@tenderlovingcaredisability.com.au",
-        "SGonzales@tenderlovingcaredisability.com.au",
-        "mfarag@tenderlovingcare.com.au"
-    ];
 
-    const isRestrictedUser = RESTRICTED_USERS.includes(
-        (userEmail || "").toLowerCase()
-    );
+    // Access-management driven gate. Replaces the prior hardcoded
+    // RESTRICTED_USERS list — visibility is now controlled by whether the
+    // signed-in email has a row in the rostering/user_access container.
+    //   orgLookupStatus: "loading" | "found" | "not_found"
+    const [organizationId, setOrganizationId] = useState(null);
+    const [organizationName, setOrganizationName] = useState("");
+    const [currentUserRole, setCurrentUserRole] = useState(null);
+    const [orgLookupStatus, setOrgLookupStatus] = useState("loading");
+
+    const fetchOrganization = async () => {
+        if (!userEmail) return;
+        setOrgLookupStatus("loading");
+        try {
+            const res = await fetch(
+                `${API_BASE}/api/rostering/organizations/by-email?email=${encodeURIComponent(userEmail)}`
+            );
+            const data = await res.json();
+            const first = data?.organizations?.[0];
+            if (res.ok && data?.ok && first?.organizationId) {
+                setOrganizationId(first.organizationId);
+                setOrganizationName(first.organizationName || "");
+                setCurrentUserRole(String(first.role || "").toLowerCase());
+                setOrgLookupStatus("found");
+            } else {
+                setOrganizationId(null);
+                setOrganizationName("");
+                setCurrentUserRole(null);
+                setOrgLookupStatus("not_found");
+            }
+        } catch (err) {
+            console.error("[SmartRostering] org lookup failed", err);
+            setOrgLookupStatus("not_found");
+        }
+    };
+
+    useEffect(() => {
+        fetchOrganization();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [userEmail]);
     const [screen, setScreen] = useState(1);
     const [query, setQuery] = useState("");
     const [selectedFile, setSelectedFile] = useState([]);
@@ -66,14 +86,12 @@ const SmartRostering = (props) => {
     const [processingId, setProcessingId] = useState(null);
     // console.log("unallocatedClients", unallocatedClients)
     useEffect(() => {
-        if (!userEmail) return;
-
-        const domain = userEmail.split("@")[1];
+        if (!userEmail || !organizationId) return;
 
         const fetchRosteringSettings = async () => {
             try {
                 const res = await axios.get(
-                    `${API_BASE}/api/rosteringSettings/${domain}`
+                    `${API_BASE}/api/rosteringSettings/by-org/${encodeURIComponent(organizationId)}`
                 );
 
                 if (res.data?.data?.length) {
@@ -85,7 +103,7 @@ const SmartRostering = (props) => {
         };
 
         fetchRosteringSettings();
-    }, [userEmail]);
+    }, [userEmail, organizationId]);
     // console.log("rostering settings in smart rostering main page", rosteringSettings)
     const handleScroll = () => {
         const container = document.getElementById("unallocated-scroll-container");
@@ -580,7 +598,7 @@ const SmartRostering = (props) => {
     //         </div>
     //     );
     // }
-    if (isRestrictedUser) {
+    if (orgLookupStatus === "loading") {
         return (
             <div style={{
                 textAlign: "center",
@@ -588,22 +606,20 @@ const SmartRostering = (props) => {
                 fontFamily: "Inter, sans-serif",
                 color: "#1f2937"
             }}>
-                {/* <img
-                    src={TlcLogo}
-                    alt="Access Denied"
-                    style={{ width: "80px", opacity: 0.8, marginBottom: "20px" }}
-                /> */}
-
-                <h2 style={{ fontSize: "24px", marginBottom: "12px", color: "#6C4CDC" }}>
-                    Access Restricted 🚫
-                </h2>
-
-                <p style={{ fontSize: "16px", color: "#555" }}>
-                    Sorry, your account (<strong>{userEmail}</strong>)
-                    is not authorized to view this page.
-                </p>
+                <p style={{ fontSize: "15px", color: "#555" }}>Loading…</p>
             </div>
-        )
+        );
+    }
+
+    if (orgLookupStatus === "not_found") {
+        return (
+            <FinancialHealthNoOrgEmptyState
+                userEmail={userEmail}
+                moduleLabel="Smart Rostering"
+                registerUrl={`${API_BASE}/api/rostering/organizations/register`}
+                onRegistered={() => fetchOrganization()}
+            />
+        );
     }
     return (
         <>
@@ -1062,7 +1078,11 @@ const SmartRostering = (props) => {
                 </div>
             )}
             {openRosterSetting && (
-                <OnboardingForm onClose={() => setOpenRosterSetting(false)} userEmail={userEmail} />
+                <OnboardingForm
+                    onClose={() => setOpenRosterSetting(false)}
+                    userEmail={userEmail}
+                    organizationId={organizationId}
+                />
             )}
         </>
     );

@@ -93,6 +93,17 @@ const Sidebar = ({
       ? text.slice(0, maxLength) + "..."
       : text;
   };
+
+  // Compact number formatter for the Plan Usage Overview when there's no
+  // plan limit to compute a percentage against. e.g. 21993204 → "22M".
+  const formatCompact = (n) => {
+    const x = Number(n || 0);
+    if (!Number.isFinite(x) || x === 0) return "0";
+    if (x >= 1e9) return `${(x / 1e9).toFixed(1).replace(/\.0$/, "")}B`;
+    if (x >= 1e6) return `${(x / 1e6).toFixed(1).replace(/\.0$/, "")}M`;
+    if (x >= 1e3) return `${(x / 1e3).toFixed(1).replace(/\.0$/, "")}K`;
+    return String(x);
+  };
   useEffect(() => {
     if (!user?.email) return;
 
@@ -572,7 +583,13 @@ const Sidebar = ({
                     </div>
 
                     <div className="usage-percent">
-                      {usageSummary?.tokenUsagePercent || 0}%
+                      {/* Percent is only meaningful when the domain has a
+                          plan with a token limit. Otherwise show the raw
+                          count (compactly) so the user sees actual usage
+                          instead of a useless "0%". */}
+                      {usageSummary?.planTokenLimit > 0
+                        ? `${usageSummary?.tokenUsagePercent || 0}%`
+                        : formatCompact(usageSummary?.totalTokensUsed)}
                     </div>
 
                   </div>
@@ -581,7 +598,14 @@ const Sidebar = ({
                     <div
                       className="usage-bar-fill"
                       style={{
-                        width: `${usageSummary?.tokenUsagePercent || 0}%`
+                        width: `${
+                          usageSummary?.planTokenLimit > 0
+                            ? Math.min(usageSummary?.tokenUsagePercent || 0, 100)
+                            : usageSummary?.totalTokensUsed > 0
+                            ? 100
+                            : 0
+                        }%`,
+                        opacity: usageSummary?.planTokenLimit > 0 ? 1 : 0.45,
                       }}
                     />
                   </div>
@@ -603,7 +627,9 @@ const Sidebar = ({
                     </div>
 
                     <div className="usage-percent">
-                      {usageSummary?.smsUsagePercent || 0}%
+                      {usageSummary?.planSmsLimit > 0
+                        ? `${usageSummary?.smsUsagePercent || 0}%`
+                        : formatCompact(usageSummary?.totalSmsUsed)}
                     </div>
 
                   </div>
@@ -612,7 +638,14 @@ const Sidebar = ({
                     <div
                       className="usage-bar-fill"
                       style={{
-                        width: `${usageSummary?.smsUsagePercent || 0}%`
+                        width: `${
+                          usageSummary?.planSmsLimit > 0
+                            ? Math.min(usageSummary?.smsUsagePercent || 0, 100)
+                            : usageSummary?.totalSmsUsed > 0
+                            ? 100
+                            : 0
+                        }%`,
+                        opacity: usageSummary?.planSmsLimit > 0 ? 1 : 0.45,
                       }}
                     />
                   </div>

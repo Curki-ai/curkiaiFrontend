@@ -642,7 +642,7 @@ const HRAdminView = ({
 
                   const score = item.candidateResumeScore || 0;
                   const testResult = testResultsById[item.candidateId];
-                  console.log("test result", testResult);
+                  // console.log("test result", testResult);
                   const testScore = testResult?.candidate_test_score;
                   const testStatusRaw = testResult?.candidate_test_status;
                   const testStatusLabel = testStatusRaw
