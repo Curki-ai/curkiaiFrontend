@@ -26,6 +26,40 @@ Build for production:
 npm run build
 ```
 
+## API config: switching between local and prod
+
+The API base URL is resolved in [src/config/apiBase.js](src/config/apiBase.js) from a single environment variable:
+
+```js
+const USE_LOCAL_API = process.env.REACT_APP_USE_LOCAL_API === "true";
+export const API_BASE = USE_LOCAL_API
+  ? "http://localhost:5000"
+  : "https://curki-test-prod-auhyhehcbvdmh3ef.canadacentral-01.azurewebsites.net";
+```
+
+The toggle is `REACT_APP_USE_LOCAL_API`, set in [.env](.env):
+
+| Value | `API_BASE` resolves to | When to use |
+| --- | --- | --- |
+| `true` | `http://localhost:5000` | Local dev against a backend running on your machine |
+| `false` (or unset) | `https://curki-test-prod-…azurewebsites.net` | Local dev against the deployed backend, and all production builds |
+
+### To switch
+
+Edit [.env](.env) and restart the dev server (CRA only reads env vars at startup):
+
+```
+# hit the local backend
+REACT_APP_USE_LOCAL_API=true
+
+# hit the deployed backend
+REACT_APP_USE_LOCAL_API=false
+```
+
+### Production builds
+
+Production deploys must build with `REACT_APP_USE_LOCAL_API=false` (or unset) — otherwise the bundle ships with `http://localhost:5000` baked in and every API call from the live site will fail. Set this in your hosting platform's build environment, not by committing it to `.env`.
+
 ## Dev-only API host redirect
 
 `src/index.js` contains a localhost-only interceptor that transparently rewrites all calls from the production backend host to `http://localhost:5000`. This exists because most modules in this app hardcode the production URL — without the interceptor, running `npm start` would still hit the deployed backend.
