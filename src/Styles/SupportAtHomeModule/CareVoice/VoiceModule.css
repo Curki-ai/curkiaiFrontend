@@ -2426,6 +2426,13 @@
   display: block;
 }
 
+.vm-admin-loading-video {
+  width: 420px;
+  height: auto;
+  object-fit: contain;
+  display: block;
+}
+
 /* ============================================================
    CARE VOICE — UPLOAD FILENAME TRUNCATION
    Scoped to .voice-upload-col so other modules using TlcUploadBox

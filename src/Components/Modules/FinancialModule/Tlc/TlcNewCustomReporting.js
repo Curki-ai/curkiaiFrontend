@@ -38,6 +38,9 @@ import MultiSelectCustom from "../MultiSelectCustom";
 import { MdOutlineFileDownload } from "react-icons/md";
 import incrementCareVoiceAnalysisCount from "../../SupportAtHomeModule/careVoiceCostAnalysis";
 import { API_BASE as BASE_URL } from "../../../../config/apiBase";
+import FinancialHealthNoOrgEmptyState from "../FinancialHealth/FinancialHealthNoOrgEmptyState";
+import FinancialHealthAccessManagement from "../FinancialHealth/FinancialHealthAccessManagement";
+import { RiSettingsLine } from "react-icons/ri";
 
 const HtmlFigure = memo(function HtmlFigure({ htmlString }) {
     const parsed = useMemo(
@@ -135,41 +138,53 @@ export default function TlcNewCustomerReporting(props) {
             props.setTlcAskAiHistoryPayload(active.tlcAskAiHistoryPayload || "");
         }
     }, [activeTab, tabs]);
-    const EMAIL_STATE_MAP = {
-        "molley@tenderlovingcaredisability.com.au": [
-            "South Australia",
-            "Queensland",
-        ],
-
-        "ilaurente@tenderlovingcaredisability.com.au": [
-            "Victoria",
-            "Queensland",
-        ],
-
-        "kbrennen@tenderlovingcaredisability.com.au": [
-            "New South Wales",
-        ],
-        "PEling@tenderlovingcaredisability.com.au": [
-            "South Australia",
-        ]
-    };
     const userEmail = props?.user?.email?.trim();
-    const RESTRICTED_USERS = [
-        "jballares@tenderlovingcaredisability.com.au",
-        "iaquino@tenderlovingcaredisability.com.au",
-        "kperu@tenderlovingcaredisability.com.au",
-        "mboutros@tenderlovingcaredisability.com.au",
-        "rjodeh@tenderlovingcaredisability.com.au",
-        "ryounes@tenderlovingcaredisability.com.au",
-        "stickner@tenderlovingcaredisability.com.au"
-    ];
-
-    const isRestrictedUser = RESTRICTED_USERS.includes(
-        (userEmail || "").toLowerCase()
-    );
     const setTlcPayrollAskAiConversationHistory = props.setTlcPayrollAskAiConversationHistory; // ✅ NEW
     const tlcPayrollAskAiConversationHistory = props.tlcPayrollAskAiConversationHistory; // ✅ NEW
-    const userStates = EMAIL_STATE_MAP[userEmail] || [];
+
+    // Access-management driven state. Mirrors NewFinancialModule.js — the
+    // /api/payroll/organizations/by-email lookup feeds organizationId
+    // (history scope), currentUserRole (Access Management button), and
+    // userStates (state filter).
+    const [organizationId, setOrganizationId] = useState(null);
+    const [organizationName, setOrganizationName] = useState("");
+    const [currentUserRole, setCurrentUserRole] = useState(null);
+    const [userStates, setUserStates] = useState([]);
+    const [orgLookupStatus, setOrgLookupStatus] = useState("loading");
+    const [openAccessManagement, setOpenAccessManagement] = useState(false);
+
+    const fetchOrganization = async () => {
+        if (!userEmail) return;
+        setOrgLookupStatus("loading");
+        try {
+            const res = await fetch(
+                `${BASE_URL}/api/payroll/organizations/by-email?email=${encodeURIComponent(userEmail)}`
+            );
+            const data = await res.json();
+            const first = data?.organizations?.[0];
+            if (res.ok && data?.ok && first?.organizationId) {
+                setOrganizationId(first.organizationId);
+                setOrganizationName(first.organizationName || "");
+                setCurrentUserRole(String(first.role || "").toLowerCase());
+                setUserStates(Array.isArray(first.states) ? first.states : []);
+                setOrgLookupStatus("found");
+            } else {
+                setOrganizationId(null);
+                setOrganizationName("");
+                setCurrentUserRole(null);
+                setUserStates([]);
+                setOrgLookupStatus("not_found");
+            }
+        } catch (err) {
+            console.error("[TlcCustomReporting] org lookup failed", err);
+            setOrgLookupStatus("not_found");
+        }
+    };
+
+    useEffect(() => {
+        fetchOrganization();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [userEmail]);
     const handleNewTab = () => {
         const newId = tabs.length ? Math.max(...tabs.map((t) => t.id)) + 1 : 1;
         const newTab = {
@@ -1127,6 +1142,7 @@ export default function TlcNewCustomerReporting(props) {
                     body: JSON.stringify({
                         analysisData: enrichedAnalysis,
                         email,
+                        organizationId: organizationId || null,
                         markdown: markdownReport
                     }),
                 }
@@ -1205,7 +1221,12 @@ export default function TlcNewCustomerReporting(props) {
             if (!userEmail) return;
             try {
                 setLoadingHistory(true);
-                const res = await fetch(`${BASE_URL}/payroll/history?email=${userEmail}`);
+                const params = new URLSearchParams();
+                params.set("email", userEmail);
+                if (organizationId) {
+                    params.set("organizationId", organizationId);
+                }
+                const res = await fetch(`${BASE_URL}/payroll/history?${params.toString()}`);
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error || "Failed to fetch history");
                 const filteredHistory = userStates.length
@@ -1225,8 +1246,10 @@ export default function TlcNewCustomerReporting(props) {
             }
         };
 
-        fetchHistory();
-    }, [props.user]);
+        if (orgLookupStatus !== "loading") {
+            fetchHistory();
+        }
+    }, [props.user, organizationId, orgLookupStatus]);
 
     const handleAiAnalysis = async () => {
         let aiProgressInterval;
@@ -1649,7 +1672,7 @@ export default function TlcNewCustomerReporting(props) {
         }
     }
     // console.log("displayedHtmlArray:", displayedHtmlArray);
-    if (isRestrictedUser) {
+    if (orgLookupStatus === "loading") {
         return (
             <div style={{
                 textAlign: "center",
@@ -1657,21 +1680,19 @@ export default function TlcNewCustomerReporting(props) {
                 fontFamily: "Inter, sans-serif",
                 color: "#1f2937"
             }}>
-                {/* <img
-                    src={TlcLogo}
-                    alt="Access Denied"
-                    style={{ width: "80px", opacity: 0.8, marginBottom: "20px" }}
-                /> */}
-
-                <h2 style={{ fontSize: "24px", marginBottom: "12px", color: "#6C4CDC" }}>
-                    Access Restricted 🚫
-                </h2>
-
-                <p style={{ fontSize: "16px", color: "#555" }}>
-                    Sorry, your account (<strong>{userEmail}</strong>)
-                    is not authorized to view this page.
-                </p>
+                <p style={{ fontSize: "15px", color: "#555" }}>Loading…</p>
             </div>
+        );
+    }
+
+    if (orgLookupStatus === "not_found") {
+        return (
+            <FinancialHealthNoOrgEmptyState
+                userEmail={userEmail}
+                moduleLabel="Payroll Analysis"
+                registerUrl={`${BASE_URL}/api/payroll/organizations/register`}
+                onRegistered={() => fetchOrganization()}
+            />
         );
     }
     return (
@@ -1770,6 +1791,16 @@ export default function TlcNewCustomerReporting(props) {
 
                     {/* RIGHT SIDE – SYNC */}
                     <div className="tlc-new-sync-group" style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                        {currentUserRole === "admin" && (
+                            <button
+                                type="button"
+                                className="access-mgmt-trigger-btn"
+                                onClick={() => setOpenAccessManagement(true)}
+                            >
+                                <RiSettingsLine size={18} color="#707493" />
+                                Access Management
+                            </button>
+                        )}
                         <span style={{ fontSize: "13px", fontWeight: 500 }}>
                             Sync With Your System
                         </span>
@@ -2787,6 +2818,14 @@ export default function TlcNewCustomerReporting(props) {
                 </div>
             )}
 
+            {openAccessManagement && (
+                <FinancialHealthAccessManagement
+                    onClose={() => setOpenAccessManagement(false)}
+                    userEmail={userEmail}
+                    moduleLabel="Payroll Analysis"
+                    apiBase={`${BASE_URL}/api/payroll/access`}
+                />
+            )}
 
         </div>
     );

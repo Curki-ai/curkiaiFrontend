@@ -10,10 +10,17 @@ import { RiDeleteBin6Line } from "react-icons/ri";
 import incrementAnalysisCount from "../FinancialModule/Tlc/TLcAnalysisCount";
 import incrementCareVoiceAnalysisCount from "../SupportAtHomeModule/careVoiceCostAnalysis";
 import { API_BASE } from "../../../config/apiBase";
+import useModuleOrgLookup from "../../../hooks/useModuleOrgLookup";
+import FinancialHealthNoOrgEmptyState from "../FinancialModule/FinancialHealth/FinancialHealthNoOrgEmptyState";
+import FinancialHealthAccessManagement from "../FinancialModule/FinancialHealth/FinancialHealthAccessManagement";
+import { RiSettingsLine } from "react-icons/ri";
+
 const BASE_URL =
   "https://curki-backend-api-container.yellowflower-c21bea82.australiaeast.azurecontainerapps.io";
+const CEIM_API_BASE = `${API_BASE}/api/client-event-incident-mgmt`;
 
 const Client_Event_Reporting = (props) => {
+  const userEmail = props?.user?.email;
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [reportMode, setReportMode] = useState("one-time");
   const [loading, setLoading] = useState(false);
@@ -37,27 +44,13 @@ const Client_Event_Reporting = (props) => {
   const [deleting, setDeleting] = useState(false);
 
   const [isFromHistory, setIsFromHistory] = useState(false);
-  const RESTRICTED_USERS = [
-    "iaquino@tenderlovingcaredisability.com.au",
-    "jballares@tenderlovingcaredisability.com.au",
-    "kperu@tenderlovingcaredisability.com.au",
-    "q.benico@tenderlovingcaredisability.com.au",
-    "mboutros@tenderlovingcaredisability.com.au",
-    "rjodeh@tenderlovingcaredisability.com.au",
-    "ryounes@tenderlovingcaredisability.com.au",
-    "stickner@tenderlovingcaredisability.com.au",
-    "mtalukder@tenderlovingcaredisability.com.au",
-    "kbrennen@tenderlovingcaredisability.com.au",
-    "ilaurente@tenderlovingcaredisability.com.au",
-    "gjavier@tenderlovingcaredisability.com.au",
-    "molley@tenderlovingcaredisability.com.au",
-    "SGonzales@tenderlovingcaredisability.com.au",
-    "mfarag@tenderlovingcare.com.au"
-  ];
+  const [openAccessManagement, setOpenAccessManagement] = useState(false);
 
-  const isRestrictedUser = RESTRICTED_USERS.includes(
-    (props?.user?.email || "").toLowerCase()
-  );
+  const { currentUserRole, orgLookupStatus, refresh: refetchOrg } =
+    useModuleOrgLookup({
+      userEmail,
+      orgsApiBase: `${CEIM_API_BASE}/organizations`,
+    });
   const formatClientEventDateRange = (dateRange) => {
     if (!dateRange?.startDate || !dateRange?.endDate) return "–";
 
@@ -517,7 +510,7 @@ const Client_Event_Reporting = (props) => {
 
     </section>
   );
-  if (isRestrictedUser) {
+  if (orgLookupStatus === "loading") {
     return (
       <div style={{
         textAlign: "center",
@@ -525,25 +518,34 @@ const Client_Event_Reporting = (props) => {
         fontFamily: "Inter, sans-serif",
         color: "#1f2937"
       }}>
-        {/* <img
-                    src={TlcLogo}
-                    alt="Access Denied"
-                    style={{ width: "80px", opacity: 0.8, marginBottom: "20px" }}
-                /> */}
-
-        <h2 style={{ fontSize: "24px", marginBottom: "12px", color: "#6C4CDC" }}>
-          Access Restricted 🚫
-        </h2>
-
-        <p style={{ fontSize: "16px", color: "#555" }}>
-          Sorry, your account (<strong>{props?.user?.email}</strong>)
-          is not authorized to view this page.
-        </p>
+        <p style={{ fontSize: "15px", color: "#555" }}>Loading…</p>
       </div>
-    )
+    );
+  }
+  if (orgLookupStatus === "not_found") {
+    return (
+      <FinancialHealthNoOrgEmptyState
+        userEmail={userEmail}
+        moduleLabel="Participant Events & Incident Management"
+        registerUrl={`${CEIM_API_BASE}/organizations/register`}
+        onRegistered={refetchOrg}
+      />
+    );
   }
   return (
     <div className="ce-page">
+      {currentUserRole === "admin" && (
+        <div style={{ display: "flex", justifyContent: "flex-end", padding: "12px 16px 0" }}>
+          <button
+            type="button"
+            className="access-mgmt-trigger-btn"
+            onClick={() => setOpenAccessManagement(true)}
+          >
+            <RiSettingsLine size={18} color="#707493" />
+            Access Management
+          </button>
+        </div>
+      )}
       {/* Toggle */}
       <div className="ce-header">
 
@@ -819,6 +821,14 @@ const Client_Event_Reporting = (props) => {
           )} */}
       </>
       {renderHistorySection()}
+      {openAccessManagement && (
+        <FinancialHealthAccessManagement
+          onClose={() => setOpenAccessManagement(false)}
+          userEmail={userEmail}
+          moduleLabel="Participant Events & Incident Management"
+          apiBase={`${CEIM_API_BASE}/access`}
+        />
+      )}
     </div>
   );
 };

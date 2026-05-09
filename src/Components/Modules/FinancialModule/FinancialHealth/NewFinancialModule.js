@@ -41,6 +41,9 @@ import { MdOutlineFileDownload } from "react-icons/md";
 import incrementAnalysisCount from "../Tlc/TLcAnalysisCount.js";
 import incrementCareVoiceAnalysisCount from "../../SupportAtHomeModule/careVoiceCostAnalysis.js";
 import { API_BASE as BASE_URL } from "../../../../config/apiBase";
+import FinancialHealthNoOrgEmptyState from "./FinancialHealthNoOrgEmptyState";
+import FinancialHealthAccessManagement from "./FinancialHealthAccessManagement";
+import { RiSettingsLine } from "react-icons/ri";
 
 const NewFinancialHealth = (props) => {
 
@@ -238,40 +241,59 @@ const NewFinancialHealth = (props) => {
 
     const previewRef = useRef(null);
     const userEmail = props.user?.email;
-    const RESTRICTED_USERS = [
-        "jballares@tenderlovingcaredisability.com.au",
-        "iaquino@tenderlovingcaredisability.com.au",
-        "kperu@tenderlovingcaredisability.com.au",
-        "mboutros@tenderlovingcaredisability.com.au",
-        "rjodeh@tenderlovingcaredisability.com.au",
-        "ryounes@tenderlovingcaredisability.com.au",
-        "stickner@tenderlovingcaredisability.com.au",
-        "q.benico@tenderlovingcaredisability.com.au"
-    ];
+    // const userEmail = "gjavier@tenderlovingcaredisability.com.au";
 
-    const isRestrictedUser = RESTRICTED_USERS.includes(
-        (userEmail || "").toLowerCase()
-    );
-    const EMAIL_STATE_MAP = {
-        "molley@tenderlovingcaredisability.com.au": [
-            "South Australia",
-            "Queensland",
-        ],
+    // Access-management driven state.
+    //   orgLookupStatus: "loading" | "found" | "not_found"
+    //   userStates:      empty array means "All States" (no scoping)
+    //   currentUserRole: "admin" | "staff" — drives the Access Management button
+    const [organizationId, setOrganizationId] = useState(null);
+    const [organizationName, setOrganizationName] = useState("");
+    const [currentUserRole, setCurrentUserRole] = useState(null);
+    const [userStates, setUserStates] = useState([]);
+    const [orgLookupStatus, setOrgLookupStatus] = useState("loading");
+    const [openAccessManagement, setOpenAccessManagement] = useState(false);
 
-        "ilaurente@tenderlovingcaredisability.com.au": [
-            "Victoria",
-            "Queensland",
-        ],
-
-        "kbrennen@tenderlovingcaredisability.com.au": [
-            "New South Wales",
-        ],
-        "PEling@tenderlovingcaredisability.com.au":[
-            "South Australia",
-        ]
+    // Resolve the caller's organization on mount (or whenever userEmail
+    // changes). The same lookup feeds three things:
+    //   - organizationId         → scopes history fetch + analysis save
+    //   - currentUserRole        → drives the Access Management trigger
+    //   - userStates             → drives the State filter inside this module
+    // If the lookup returns an empty `organizations` array we set
+    // orgLookupStatus="not_found"; the render below then shows
+    // FinancialHealthNoOrgEmptyState instead of the dashboard.
+    const fetchOrganization = async () => {
+        if (!userEmail) return;
+        setOrgLookupStatus("loading");
+        try {
+            const res = await fetch(
+                `${BASE_URL}/api/financial-health/organizations/by-email?email=${encodeURIComponent(userEmail)}`
+            );
+            const data = await res.json();
+            const first = data?.organizations?.[0];
+            if (res.ok && data?.ok && first?.organizationId) {
+                setOrganizationId(first.organizationId);
+                setOrganizationName(first.organizationName || "");
+                setCurrentUserRole(String(first.role || "").toLowerCase());
+                setUserStates(Array.isArray(first.states) ? first.states : []);
+                setOrgLookupStatus("found");
+            } else {
+                setOrganizationId(null);
+                setOrganizationName("");
+                setCurrentUserRole(null);
+                setUserStates([]);
+                setOrgLookupStatus("not_found");
+            }
+        } catch (err) {
+            console.error("[NewFinancialModule] org lookup failed", err);
+            setOrgLookupStatus("not_found");
+        }
     };
 
-    const userStates = EMAIL_STATE_MAP[userEmail] || [];
+    useEffect(() => {
+        fetchOrganization();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [userEmail]);
     const handleNewTab = () => {
         const newId = tabs.length
             ? Math.max(...tabs.map(t => t.id)) + 1
@@ -746,10 +768,18 @@ const NewFinancialHealth = (props) => {
             try {
                 setLoadingHistory(true);
 
-                const email = userEmail;
+                // Scope the history list by organizationId now that Access
+                // Management owns the user-to-org mapping. The backend still
+                // accepts ?email= as a fallback so users invited but not yet
+                // active in the new container don't lose history access.
+                const params = new URLSearchParams();
+                params.set("email", userEmail);
+                if (organizationId) {
+                    params.set("organizationId", organizationId);
+                }
 
                 const res = await fetch(
-                    `${BASE_URL}/api/financial-module?email=${email}`
+                    `${BASE_URL}/api/financial-module?${params.toString()}`
                 );
 
                 if (!res.ok) {
@@ -778,11 +808,13 @@ const NewFinancialHealth = (props) => {
             }
         };
 
-        if (userEmail) {
+        // Wait until the org lookup has finished so the request always carries
+        // the right scope (or the right "no org yet" signal).
+        if (userEmail && orgLookupStatus !== "loading") {
             fetchFinancialHistory();
         }
 
-    }, [props.user]);
+    }, [props.user, organizationId, orgLookupStatus]);
 
     const handleSaveFinancialHistory = async () => {
         // guard: already saving OR no analysis
@@ -794,6 +826,7 @@ const NewFinancialHealth = (props) => {
 
             const payload = {
                 email: userEmail || "",
+                organizationId: organizationId || null,
 
                 // 🔴 CORE DATA (THIS WAS MISSING)
                 responseData: activeTabData.responseData,
@@ -1754,29 +1787,31 @@ const NewFinancialHealth = (props) => {
         );
     };
     // console.log("activeTabData in financial health", activeTabData)
-    if (isRestrictedUser) {
+
+    // Org-lookup gate. While we don't know yet, render a quiet loader instead
+    // of the dashboard — otherwise the State filter would briefly populate
+    // with no scoping and history would fetch with the wrong/missing orgId.
+    if (orgLookupStatus === "loading") {
         return (
-            <div style={{
-                textAlign: "center",
-                padding: "120px 20px",
-                fontFamily: "Inter, sans-serif",
-                color: "#1f2937"
-            }}>
-                {/* <img
-                    src={TlcLogo}
-                    alt="Access Denied"
-                    style={{ width: "80px", opacity: 0.8, marginBottom: "20px" }}
-                /> */}
-
-                <h2 style={{ fontSize: "24px", marginBottom: "12px", color: "#6C4CDC" }}>
-                    Access Restricted 🚫
-                </h2>
-
-                <p style={{ fontSize: "16px", color: "#555" }}>
-                    Sorry, your account (<strong>{userEmail}</strong>)
-                    is not authorized to view this page.
-                </p>
+            <div
+                style={{
+                    textAlign: "center",
+                    padding: "120px 20px",
+                    fontFamily: "Inter, sans-serif",
+                    color: "#1f2937",
+                }}
+            >
+                <p style={{ fontSize: "15px", color: "#555" }}>Loading…</p>
             </div>
+        );
+    }
+
+    if (orgLookupStatus === "not_found") {
+        return (
+            <FinancialHealthNoOrgEmptyState
+                userEmail={userEmail}
+                onRegistered={() => fetchOrganization()}
+            />
         );
     }
     return (
@@ -1843,6 +1878,16 @@ const NewFinancialHealth = (props) => {
                             />
                         </div> */}
                         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                            {currentUserRole === "admin" && (
+                                <button
+                                    type="button"
+                                    className="access-mgmt-trigger-btn"
+                                    onClick={() => setOpenAccessManagement(true)}
+                                >
+                                    <RiSettingsLine size={18} color="#707493" />
+                                    Access Management
+                                </button>
+                            )}
                             <span style={{ fontSize: "13px", fontWeight: 500, fontFamily: "Inter" }}>
                                 Sync With Your System
                             </span>
@@ -2145,6 +2190,16 @@ const NewFinancialHealth = (props) => {
                             />
                         </div> */}
                         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                            {currentUserRole === "admin" && (
+                                <button
+                                    type="button"
+                                    className="access-mgmt-trigger-btn"
+                                    onClick={() => setOpenAccessManagement(true)}
+                                >
+                                    <RiSettingsLine size={18} color="#707493" />
+                                    Access Management
+                                </button>
+                            )}
                             <span style={{ fontSize: "13px", fontWeight: 500, fontFamily: "Inter" }}>
                                 Sync With Your System
                             </span>
@@ -2625,6 +2680,13 @@ const NewFinancialHealth = (props) => {
                 </>
             )}
             {renderHistorySection()}
+
+            {openAccessManagement && (
+                <FinancialHealthAccessManagement
+                    onClose={() => setOpenAccessManagement(false)}
+                    userEmail={userEmail}
+                />
+            )}
 
         </div>
 

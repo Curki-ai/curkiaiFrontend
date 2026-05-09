@@ -1,181 +1,791 @@
-.detailed-usage-container {
-    padding: 32px 48px;
-    background: #f7f8fb;
-    min-height: 100vh;
-    font-family: "Inter", sans-serif;
+/* Detailed AI Utilisation — v2 (refined).
+   All classes namespaced with du2-. Designed against a soft purple-tinted
+   neutral background; cards float with subtle shadows. Fully responsive:
+   stat row collapses to a 2-up grid then 1-up; tabs scroll horizontally
+   with fading edges; the per-user table reflows into card rows on small
+   screens so nothing gets cropped. */
+
+/* ===== Layout ===== */
+
+.du2-container {
+  padding: 28px 36px 56px;
+  font-family: 'Inter', system-ui, sans-serif;
+  color: #1f1f40;
+  background:
+    radial-gradient(1200px 600px at 0% 0%, rgba(108, 76, 220, 0.08) 0%, transparent 60%),
+    radial-gradient(900px 500px at 100% 0%, rgba(22, 199, 154, 0.05) 0%, transparent 55%),
+    #f6f5fb;
+  min-height: 100vh;
 }
 
-.du-back {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 14px;
-    color: #4b5563;
-    cursor: pointer;
-    margin-bottom: 24px;
-    width: 70px;
-    height: 34px;
+.du2-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px 8px 10px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #4f5273;
+  background: #ffffff;
+  border: 1px solid #ecebf3;
+  border-radius: 999px;
+  cursor: pointer;
+  margin-bottom: 22px;
+  font-family: inherit;
+  transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
 }
 
-.du-header-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+.du2-back:hover {
+  background: #f6f5fb;
+  color: #1f1f40;
+  transform: translateX(-2px);
 }
 
-.du-title {
+/* ===== Hero ===== */
+
+.du2-hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+  margin-bottom: 22px;
+  padding: 26px 28px;
+  background:
+    linear-gradient(135deg, rgba(108, 76, 220, 0.07) 0%, rgba(22, 199, 154, 0.05) 100%),
+    #ffffff;
+  border: 1px solid #ecebf3;
+  border-radius: 20px;
+  box-shadow: 0 8px 30px -16px rgba(31, 31, 64, 0.18);
+  flex-wrap: wrap;
+}
+
+.du2-hero-eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #6c4cdc;
+  margin-bottom: 6px;
+}
+
+.du2-hero-title {
+  font-size: 26px;
+  font-weight: 700;
+  color: #1f1f40;
+  letter-spacing: -0.02em;
+  margin-bottom: 10px;
+}
+
+.du2-hero-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: #6b6f8d;
+}
+
+.du2-hero-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: rgba(108, 76, 220, 0.1);
+  color: #6c4cdc;
+  border-radius: 999px;
+  font-weight: 500;
+  font-size: 12px;
+}
+
+.du2-hero-divider {
+  display: inline-block;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #c8c2e8;
+}
+
+.du2-hero-org span {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  color: #6c4cdc;
+  font-weight: 500;
+}
+
+.du2-hero-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* ===== ViewModeSelect (custom dropdown) ===== */
+
+.du2-vm {
+  position: relative;
+  font-family: inherit;
+}
+
+.du2-vm-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: #ffffff;
+  border: 1px solid #dcdce5;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #1f1f40;
+  cursor: pointer;
+  font-family: inherit;
+  min-width: 180px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.05s ease;
+}
+
+.du2-vm-trigger:hover {
+  border-color: #c8c2e8;
+}
+
+.du2-vm-open .du2-vm-trigger {
+  border-color: #6c4cdc;
+  box-shadow: 0 0 0 4px rgba(108, 76, 220, 0.12);
+}
+
+.du2-vm-icon {
+  color: #6c4cdc;
+}
+
+.du2-vm-label {
+  flex: 1;
+  text-align: left;
+}
+
+.du2-vm-chevron {
+  color: #6b6f8d;
+  transition: transform 0.18s ease;
+}
+
+.du2-vm-chevron-open {
+  transform: rotate(180deg);
+}
+
+.du2-vm-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  background: #ffffff;
+  border: 1px solid #ecebf3;
+  border-radius: 12px;
+  box-shadow: 0 14px 40px -12px rgba(31, 31, 64, 0.2);
+  padding: 4px;
+  z-index: 30;
+  animation: du2-pop 120ms ease-out;
+}
+
+@keyframes du2-pop {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.du2-vm-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 12px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #1f1f40;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.du2-vm-item:hover {
+  background: #f6f5fb;
+}
+
+.du2-vm-item-active,
+.du2-vm-item-active:hover {
+  background: rgba(108, 76, 220, 0.1);
+  color: #6c4cdc;
+}
+
+.du2-vm-item svg {
+  color: inherit;
+  opacity: 0.85;
+}
+
+/* ===== Module tabs ===== */
+
+.du2-tabs-wrap {
+  position: relative;
+  background: #ffffff;
+  border: 1px solid #ecebf3;
+  border-radius: 16px;
+  padding: 6px;
+  margin-bottom: 22px;
+  box-shadow: 0 4px 18px -10px rgba(31, 31, 64, 0.1);
+  overflow: hidden;
+}
+
+.du2-tabs-wrap::before,
+.du2-tabs-wrap::after {
+  content: "";
+  position: absolute;
+  top: 6px;
+  bottom: 6px;
+  width: 36px;
+  pointer-events: none;
+  z-index: 2;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.du2-tabs-wrap::before {
+  left: 6px;
+  background: linear-gradient(to right, #ffffff, rgba(255, 255, 255, 0));
+  border-radius: 10px 0 0 10px;
+}
+
+.du2-tabs-wrap::after {
+  right: 6px;
+  background: linear-gradient(to left, #ffffff, rgba(255, 255, 255, 0));
+  border-radius: 0 10px 10px 0;
+}
+
+.du2-tabs-fade-left::before {
+  opacity: 1;
+}
+
+.du2-tabs-fade-right::after {
+  opacity: 1;
+}
+
+.du2-tabs {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  scroll-behavior: smooth;
+}
+
+.du2-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.du2-tab {
+  flex: 0 0 auto;
+  padding: 10px 16px;
+  border: none;
+  background: transparent;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: #6b6f8d;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s ease, color 0.15s ease, transform 0.05s ease;
+}
+
+.du2-tab:hover {
+  background: #f6f5fb;
+  color: #1f1f40;
+}
+
+.du2-tab-active,
+.du2-tab-active:hover {
+  background: linear-gradient(135deg, #6c4cdc 0%, #5a3fc4 100%);
+  color: #ffffff;
+  box-shadow: 0 6px 18px -8px rgba(108, 76, 220, 0.55);
+}
+
+/* ===== Stat cards ===== */
+
+.du2-stat-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.du2-stat-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: #ffffff;
+  border: 1px solid #ecebf3;
+  border-radius: 16px;
+  padding: 18px 18px;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.du2-stat-card::after {
+  content: "";
+  position: absolute;
+  top: -40%;
+  right: -40%;
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  opacity: 0.08;
+  filter: blur(8px);
+  pointer-events: none;
+}
+
+.du2-stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 32px -16px rgba(31, 31, 64, 0.22);
+}
+
+.du2-stat-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  font-size: 20px;
+  flex-shrink: 0;
+  color: #ffffff;
+}
+
+.du2-stat-meta {
+  min-width: 0;
+}
+
+.du2-stat-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #6b6f8d;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 4px;
+}
+
+.du2-stat-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1f1f40;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.du2-stat-purple .du2-stat-icon {
+  background: linear-gradient(135deg, #a78bfa, #6c4cdc);
+}
+.du2-stat-purple::after { background: #6c4cdc; }
+
+.du2-stat-indigo .du2-stat-icon {
+  background: linear-gradient(135deg, #818cf8, #4f46e5);
+}
+.du2-stat-indigo::after { background: #4f46e5; }
+
+.du2-stat-green .du2-stat-icon {
+  background: linear-gradient(135deg, #5eead4, #16c79a);
+}
+.du2-stat-green::after { background: #16c79a; }
+
+.du2-stat-amber .du2-stat-icon {
+  background: linear-gradient(135deg, #fcd34d, #f59e0b);
+}
+.du2-stat-amber::after { background: #f59e0b; }
+
+.du2-stat-slate .du2-stat-icon {
+  background: linear-gradient(135deg, #94a3b8, #475569);
+}
+.du2-stat-slate::after { background: #475569; }
+
+/* ===== Chart card ===== */
+
+.du2-chart-card {
+  background: #ffffff;
+  border: 1px solid #ecebf3;
+  border-radius: 18px;
+  padding: 18px 20px 22px;
+  margin-bottom: 22px;
+  box-shadow: 0 8px 30px -18px rgba(31, 31, 64, 0.18);
+}
+
+.du2-chart-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.du2-chart-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1f1f40;
+  margin-bottom: 2px;
+}
+
+.du2-chart-sub {
+  font-size: 12px;
+  color: #6b6f8d;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+.du2-chart-canvas {
+  height: 320px;
+  width: 100%;
+}
+
+/* ===== Per-user table ===== */
+
+.du2-table-card {
+  background: #ffffff;
+  border: 1px solid #ecebf3;
+  border-radius: 18px;
+  padding: 20px 20px 18px;
+  box-shadow: 0 8px 30px -18px rgba(31, 31, 64, 0.18);
+}
+
+.du2-table-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #1f1f40;
+  margin-bottom: 14px;
+}
+
+.du2-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 22px;
+  padding: 0 9px;
+  border-radius: 999px;
+  background: #efeafd;
+  color: #6c4cdc;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.du2-table {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #ecebf3;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.du2-thead,
+.du2-trow {
+  display: grid;
+  grid-template-columns: 2.4fr 0.9fr 1fr 1fr 0.9fr 0.95fr;
+  gap: 14px;
+  padding: 12px 16px;
+  align-items: center;
+  font-size: 13px;
+}
+
+.du2-table-cv .du2-thead,
+.du2-table-cv .du2-trow {
+  grid-template-columns: 2.4fr 0.9fr 1fr 1fr 0.9fr 0.85fr 0.95fr;
+}
+
+.du2-thead {
+  background: #f8f7fc;
+  color: #6b6f8d;
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.du2-trow {
+  border-top: 1px solid #ecebf3;
+  color: #1f1f40;
+  transition: background 0.1s ease;
+}
+
+.du2-trow:hover {
+  background: #fafaff;
+}
+
+.du2-trow-self {
+  background: linear-gradient(90deg, rgba(108, 76, 220, 0.08) 0%, rgba(108, 76, 220, 0.02) 100%);
+}
+
+.du2-trow-self:hover {
+  background: linear-gradient(90deg, rgba(108, 76, 220, 0.14) 0%, rgba(108, 76, 220, 0.04) 100%);
+}
+
+.du2-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.du2-mobile-label {
+  display: none;
+}
+
+.du2-user-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.du2-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px -6px rgba(31, 31, 64, 0.4);
+}
+
+.du2-user-text {
+  min-width: 0;
+}
+
+.du2-user-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+
+.du2-user-name {
+  font-weight: 600;
+  color: #1f1f40;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.du2-user-email {
+  font-size: 12px;
+  color: #6b6f8d;
+  word-break: break-all;
+}
+
+.du2-self-badge {
+  background: linear-gradient(135deg, #a78bfa, #6c4cdc);
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.du2-role {
+  display: flex;
+}
+
+.du2-role-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: capitalize;
+  background: #f1f1f4;
+  color: #6b6f8d;
+}
+
+.du2-role-admin {
+  background: #efeafd;
+  color: #6c4cdc;
+}
+
+.du2-role-staff {
+  background: #eaf3ff;
+  color: #2e6bd1;
+}
+
+/* ===== Empty / loading / error states ===== */
+
+.du2-state {
+  background: #ffffff;
+  border: 1px dashed #dcd9ec;
+  border-radius: 14px;
+  padding: 36px 24px;
+  text-align: center;
+  color: #6b6f8d;
+  font-size: 14px;
+}
+
+.du2-state-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  border-style: solid;
+  border-color: #ecebf3;
+  background: #ffffff;
+  font-weight: 500;
+  color: #4f5273;
+}
+
+.du2-state-empty {
+  background: #ffffff;
+}
+
+.du2-state-emoji {
+  font-size: 36px;
+  margin-bottom: 8px;
+}
+
+.du2-state-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f1f40;
+  margin-bottom: 6px;
+}
+
+.du2-state-body {
+  font-size: 13px;
+  color: #6b6f8d;
+  max-width: 460px;
+  margin: 0 auto;
+}
+
+.du2-state-error {
+  border-color: #f4c5c5;
+  background: #fdecec;
+  color: #b53b3b;
+  border-style: solid;
+}
+
+.du2-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #d9d6ee;
+  border-top-color: #6c4cdc;
+  border-radius: 50%;
+  animation: du2-spin 0.7s linear infinite;
+}
+
+@keyframes du2-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ===== Responsive ===== */
+
+@media (max-width: 980px) {
+  .du2-container {
+    padding: 22px 18px 40px;
+  }
+
+  .du2-hero {
+    padding: 22px 20px;
+  }
+
+  .du2-hero-title {
     font-size: 22px;
-    font-weight: 600;
-    color: #111827;
-}
+  }
 
-.du-range-select {
-    padding: 8px 42px 8px 16px;
-    /* extra right padding for arrow */
-    border-radius: 22px;
-    border: 1px solid #E5E7EB;
-    background-color: #F3F4F6;
-    font-size: 14px;
-    font-family: "Inter", sans-serif;
-    cursor: pointer;
-    appearance: none;
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    min-width: 150px;
-
-    /* custom arrow */
-    background-image: url("data:image/svg+xml;utf8,<svg fill='%23111827' height='10' viewBox='0 0 20 20' width='10' xmlns='http://www.w3.org/2000/svg'><path d='M5.5 7.5l4.5 4 4.5-4'/></svg>");
-    background-repeat: no-repeat;
-    background-position: right 16px center;
-    /* spacing from right */
-    background-size: 10px;
-}
-
-.du-tabs {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin-top: 18px;
-}
-
-.du-tab {
-    padding: 8px 14px;
-    border-radius: 20px;
-    background: #f3f4f6;
-    font-size: 12px;
-    cursor: pointer;
-    transition: 0.2s ease;
-}
-
-.du-tab.active {
-    background: #000;
-    color: #fff;
-}
-
-.du-chart-card {
-    margin-top: 28px;
-    padding: 28px;
-    border-radius: 20px;
-    height: 450px;
-}
-
-.du-summary-wrapper {
-    margin-top: 32px;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
+  .du2-hero-controls {
     width: 100%;
-}
+  }
 
-.du-summary-row {
-    display: flex;
-    align-items: center;
-    gap: 18px;
-    width: 50%;
-}
-
-.du-icon-box {
-    width: 51px;
-    height: 51px;
-    border-radius: 14px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.du-icon-box img {
-    width: 51px;
-    height: 51px;
-}
-
-.du-summary-content {
+  .du2-vm,
+  .du2-vm-trigger {
     flex: 1;
+    min-width: 0;
+  }
+
+  .du2-stat-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* Per-user list reflows from a grid into stacked card rows so every
+     metric stays visible without horizontal scrolling. */
+  .du2-table {
+    border: none;
+    background: transparent;
+    gap: 12px;
+  }
+
+  .du2-thead {
+    display: none;
+  }
+
+  .du2-trow,
+  .du2-table-cv .du2-trow {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 16px;
+    padding: 14px 16px;
+    background: #ffffff;
+    border: 1px solid #ecebf3;
+    border-radius: 14px;
+    border-top: 1px solid #ecebf3;
+  }
+
+  .du2-user-cell {
+    grid-column: 1 / -1;
+    padding-bottom: 10px;
+    border-bottom: 1px dashed #ecebf3;
+  }
+
+  .du2-role {
+    grid-column: 1 / -1;
+    padding-bottom: 4px;
+  }
+
+  .du2-num {
+    text-align: left;
     display: flex;
     flex-direction: column;
+    gap: 2px;
+    font-weight: 600;
+    color: #1f1f40;
+  }
+
+  .du2-mobile-label {
+    display: block;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #6b6f8d;
+  }
 }
 
-.du-summary-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
+@media (max-width: 560px) {
+  .du2-stat-row {
+    grid-template-columns: 1fr;
+  }
 
-.du-summary-label {
-    font-size: 13px;
-    color: #6b7280;
-}
+  .du2-hero-title {
+    font-size: 20px;
+  }
 
-.du-summary-value {
-    font-size: 14px;
-    font-weight: 500;
-    color: #111827;
-    margin-top: 4px;
-}
-
-.du-progress-bar {
-    margin-top: 10px;
-    height: 8px;
-    background: #e5e7eb;
-    border-radius: 20px;
-    overflow: hidden;
-}
-
-.du-progress-fill {
-    height: 100%;
-    background: #4b5563;
-    border-radius: 20px;
-    transition: width 0.3s ease;
-}
-
-.du-percent {
-    font-size: 14px;
-    font-weight: 500;
-    color: #111827;
-}
-
-.du-loader-wrapper {
-    margin-top: 40px;
-    display: flex;
-    justify-content: center;
-}
-
-.du-loader {
-    width: 40px;
-    height: 40px;
-    border: 4px solid #e5e7eb;
-    border-top: 4px solid #6c4cdc;
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-    to {
-        transform: rotate(360deg);
-    }
-}
-
-.du-error {
-    margin-top: 24px;
-    color: #dc2626;
-    font-size: 14px;
+  .du2-chart-canvas {
+    height: 260px;
+  }
 }

@@ -63,7 +63,7 @@
     "xlsx": "^0.18.5"
   },
   "scripts": {
-    "start": "react-scripts start",
+    "start": "node --max-old-space-size=8192 node_modules/react-scripts/scripts/start.js",
     "build": "NODE_OPTIONS=--max_old_space_size=8192 CI=false GENERATE_SOURCEMAP=false react-scripts build",
     "test": "echo \"Skipping tests during deployment\" && exit 0",
     "eject": "react-scripts eject"

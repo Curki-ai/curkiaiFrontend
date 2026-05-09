@@ -19,7 +19,6 @@ import careVoiceRight from "../../../../Images/careVoiceRight.png"
 import { FiDownload, FiFileText, FiMail, FiUploadCloud } from "react-icons/fi";
 import MapperGrid from "./VoiceModuleMapper";
 import { RiDeleteBin6Line } from "react-icons/ri";
-import PulsatingLoader from "../../../general-components/PulsatingLoader";
 import FinancialAnalysisReportViewer from "../../FinancialModule/FinancialAnalysisReportViewer";
 import { parseVoiceExplanation } from "./ParseVoiceExplanation";
 import TlcPayrollDownArrow from "../../../../Images/tlc_payroll_down_button.png"
@@ -55,11 +54,13 @@ import beforeRecordingAnimation from "../../../../Images/beforeRecordingAnimatio
 import { HiOutlineDocumentAdd } from "react-icons/hi";
 import generatingDocAnimation from "../../../../Images/generatingDocAnimation.json"
 import generatingDocAnimationVideo from "../../../../Images/generatingDocAnimationVideo.mp4"
+import adminLoadingAnimation from "../../../../Images/adminLoading.mp4"
 import { RiSettingsLine } from "react-icons/ri";
 import CareVoiceAccessManagement from "./CareVoiceAccessManagement";
 import CareVoiceNoOrgEmptyState from "./CareVoiceNoOrgEmptyState";
 import adminLottie from "../../../../Images/adminPageLottie.json"
 import { API_BASE } from "../../../../config/apiBase";
+import adminLoading from "../../../../Images/adminLoading.mp4"
 const VoiceModule = (props) => {
     const userEmail = props?.user?.email;
     const ALLOWED_USERS = [
@@ -3104,10 +3105,15 @@ const VoiceModule = (props) => {
                     {/* ================= PROCESSING ================= */}
                     {stage === "processing" && (
                         <div style={{ display: "flex", justifyContent: "center", marginTop: "40px" }}>
-                            <PulsatingLoader
-                                currentTask={currentTask || "Processing document"}
-                                progress={processingProgress}
-                            />
+                            <video
+                                className="vm-admin-loading-video"
+                                autoPlay
+                                loop
+                                muted
+                                playsInline
+                            >
+                                <source src={adminLoading} type="video/mp4" />
+                            </video>
                         </div>
                     )}
 

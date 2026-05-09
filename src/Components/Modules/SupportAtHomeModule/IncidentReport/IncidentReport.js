@@ -9,8 +9,16 @@ import SummaryReport from "../../../general-components/SummaryReportViewer";
 import '../../../../Styles/general-styles/UploaderPage.css'
 import incrementAnalysisCount from "../../FinancialModule/Tlc/TLcAnalysisCount";
 import incrementCareVoiceAnalysisCount from "../careVoiceCostAnalysis";
+import { API_BASE } from "../../../../config/apiBase";
+import useModuleOrgLookup from "../../../../hooks/useModuleOrgLookup";
+import FinancialHealthNoOrgEmptyState from "../../FinancialModule/FinancialHealth/FinancialHealthNoOrgEmptyState";
+import FinancialHealthAccessManagement from "../../FinancialModule/FinancialHealth/FinancialHealthAccessManagement";
+import { RiSettingsLine } from "react-icons/ri";
+
+const IR_API_BASE = `${API_BASE}/api/incident-report`;
 
 const IncidentReport = (props) => {
+    const userEmail = props?.user?.email;
     const [incidentreportFiles, setIncidentReportFiles] = useState([]);
     const [isAnalysingIncidentReportLoading, setIsAnalysingIncidentReportLoading] = useState(false);
     const [isAnalysedIncidentReportProgress, setIsAnalysedIncidentReportProgress] = useState(0);
@@ -18,27 +26,13 @@ const IncidentReport = (props) => {
     const [incidentdatatoDownload, setIncidentDatatoDownload] = useState([]);
     const [isConsentChecked, setIsConsentChecked] = useState(false);
     const [showDownloadButton, setShowDownloadButton] = useState(false);
-    const RESTRICTED_USERS = [
-        "iaquino@tenderlovingcaredisability.com.au",
-        "jballares@tenderlovingcaredisability.com.au",
-        "kperu@tenderlovingcaredisability.com.au",
-        "q.benico@tenderlovingcaredisability.com.au",
-        "mboutros@tenderlovingcaredisability.com.au",
-        "rjodeh@tenderlovingcaredisability.com.au",
-        "ryounes@tenderlovingcaredisability.com.au",
-        "stickner@tenderlovingcaredisability.com.au",
-        "mtalukder@tenderlovingcaredisability.com.au",
-        "kbrennen@tenderlovingcaredisability.com.au",
-        "ilaurente@tenderlovingcaredisability.com.au",
-        "gjavier@tenderlovingcaredisability.com.au",
-        "molley@tenderlovingcaredisability.com.au",
-        "SGonzales@tenderlovingcaredisability.com.au",
-        "mfarag@tenderlovingcare.com.au"
-    ];
+    const [openAccessManagement, setOpenAccessManagement] = useState(false);
 
-    const isRestrictedUser = RESTRICTED_USERS.includes(
-        (props?.user?.email || "").toLowerCase()
-    );
+    const { currentUserRole, orgLookupStatus, refresh: refetchOrg } =
+        useModuleOrgLookup({
+            userEmail,
+            orgsApiBase: `${IR_API_BASE}/organizations`,
+        });
     const handleButtonClick = () => {
         setIsConsentChecked(true);
     };
@@ -146,7 +140,7 @@ const IncidentReport = (props) => {
         setIsConsentChecked(false);
         setShowDownloadButton(false);
     };
-    if (isRestrictedUser) {
+    if (orgLookupStatus === "loading") {
         return (
             <div style={{
                 textAlign: "center",
@@ -154,25 +148,34 @@ const IncidentReport = (props) => {
                 fontFamily: "Inter, sans-serif",
                 color: "#1f2937"
             }}>
-                {/* <img
-                    src={TlcLogo}
-                    alt="Access Denied"
-                    style={{ width: "80px", opacity: 0.8, marginBottom: "20px" }}
-                /> */}
-
-                <h2 style={{ fontSize: "24px", marginBottom: "12px", color: "#6C4CDC" }}>
-                    Access Restricted 🚫
-                </h2>
-
-                <p style={{ fontSize: "16px", color: "#555" }}>
-                    Sorry, your account (<strong>{props?.user?.email}</strong>)
-                    is not authorized to view this page.
-                </p>
+                <p style={{ fontSize: "15px", color: "#555" }}>Loading…</p>
             </div>
-        )
+        );
+    }
+    if (orgLookupStatus === "not_found") {
+        return (
+            <FinancialHealthNoOrgEmptyState
+                userEmail={userEmail}
+                moduleLabel="Incident Report"
+                registerUrl={`${IR_API_BASE}/organizations/register`}
+                onRegistered={refetchOrg}
+            />
+        );
     }
     return (
         <div className="ir-page">
+            {currentUserRole === "admin" && (
+                <div style={{ display: "flex", justifyContent: "flex-end", padding: "12px 16px 0" }}>
+                    <button
+                        type="button"
+                        className="access-mgmt-trigger-btn"
+                        onClick={() => setOpenAccessManagement(true)}
+                    >
+                        <RiSettingsLine size={18} color="#707493" />
+                        Access Management
+                    </button>
+                </div>
+            )}
             {analysedIncidentReportdata.length === 0 ? (
                 <>
                     <div className="selectedModule">{props.selectedRole}</div>
@@ -226,6 +229,14 @@ const IncidentReport = (props) => {
                         </div>
                     </div>
                 </div>
+            )}
+            {openAccessManagement && (
+                <FinancialHealthAccessManagement
+                    onClose={() => setOpenAccessManagement(false)}
+                    userEmail={userEmail}
+                    moduleLabel="Incident Report"
+                    apiBase={`${IR_API_BASE}/access`}
+                />
             )}
         </div>
     );
