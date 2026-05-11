@@ -1259,9 +1259,38 @@ const VoiceModule = (props) => {
 
 
     const pollLatest = (id) => {
-        // console.log("[UI] Polling latest event:", id);
+        console.log("[UI] pollLatest started for session:", id);
+
+        // Abort if no NEW event arrives within this window (engine truly hung).
+        // While the engine keeps heartbeating (status/processing), the deadline resets.
+        const STALL_TIMEOUT_MS = 2 * 60 * 1000; // 2 minutes of silence
+        let lastProgressAt = Date.now();
+        let lastSeenSeq = 0;
+        let done = false; // guards against late-arriving fetches after completion
+
+        const finish = () => {
+            done = true;
+            clearInterval(interval);
+        };
 
         const interval = setInterval(async () => {
+            if (done) return;
+
+            if (Date.now() - lastProgressAt > STALL_TIMEOUT_MS) {
+                console.error(
+                    "[UI] pollLatest stalled — no new events for",
+                    STALL_TIMEOUT_MS,
+                    "ms"
+                );
+                stopProgress();
+                finish();
+                setStage("review");
+                alert(
+                    "The AI engine stopped responding. Please try again or check backend logs."
+                );
+                return;
+            }
+
             try {
                 const res = await fetch(`${API_BASE}/api/onboarding/respond`, {
                     method: "POST",
@@ -1272,8 +1301,44 @@ const VoiceModule = (props) => {
                     })
                 });
 
+                // Polling completed (or aborted) while this request was in flight — ignore.
+                if (done) return;
+
                 const data = await res.json();
-                // console.log("[UI] Latest event:", data);
+                console.log("[UI] poll response:", data?.type, data);
+
+                if (done) return;
+
+                // Reset the stall watchdog whenever a NEW WS event arrives
+                // (backend tags every event with an incrementing `seq`)
+                if (typeof data?.seq === "number" && data.seq > lastSeenSeq) {
+                    lastProgressAt = Date.now();
+                    lastSeenSeq = data.seq;
+                }
+
+                if (!res.ok || data?.error) {
+                    console.error("[UI] poll returned error:", data);
+                    stopProgress();
+                    finish();
+                    setStage("review");
+                    alert(
+                        `Backend error: ${data?.error || res.status}. Please try again.`
+                    );
+                    return;
+                }
+
+                // ❌ WS / ENGINE ERROR
+                if (data.type === "error") {
+                    console.error("[UI] Engine reported error:", data?.payload);
+                    stopProgress();
+                    finish();
+                    setStage("review");
+                    alert(
+                        `AI engine error: ${data?.payload?.message || "Unknown error"
+                        }. Please try again.`
+                    );
+                    return;
+                }
 
                 // ✅ PROCESSING STATES (INCLUDING FEEDBACK)
                 if (
@@ -1281,7 +1346,16 @@ const VoiceModule = (props) => {
                     data.type === "status" ||
                     data.type === "processing_feedback"
                 ) {
-                    pushEvent("Processing document", 2);
+                    const detail =
+                        data?.payload?.message ||
+                        data?.payload?.status ||
+                        data?.payload?.step ||
+                        data?.message ||
+                        "";
+                    pushEvent(
+                        detail ? `Processing: ${detail}` : "Processing document",
+                        2
+                    );
                     return;
                 }
 
@@ -1302,10 +1376,11 @@ const VoiceModule = (props) => {
 
                     setProcessingProgress(100);
                     stopProgress();
+                    finish();
                     setStage("review");
-                    clearInterval(interval);
+                    return;
                 }
-                // console.log("data in poll latest", data);
+
                 if (data.type === "final_result") {
                     setEditingTemplateId(null);
                     setActiveTemplate(null);
@@ -1319,6 +1394,10 @@ const VoiceModule = (props) => {
                     // ✅ ONLY mapper.mapper flatten
                     setMapperRows(mapperToRows(data?.mapper));
                     console.log("data?.llm_cost?.total_usd", data?.llm_cost?.total_usd)
+                    // Stop further polling immediately — the backend deletes the
+                    // session on final_result, so any in-flight follow-up poll
+                    // would otherwise hit "Invalid sessionId".
+                    finish();
                     if (userEmail) {
                         await incrementCareVoiceAnalysisCount(
                             userEmail,
@@ -1331,10 +1410,11 @@ const VoiceModule = (props) => {
                     setProcessingProgress(100);
                     stopProgress();
                     setStage("completed");
-                    clearInterval(interval);
+                    return;
                 }
 
-
+                // Unknown type — log it so we can see exactly what the WS engine sent
+                console.warn("[UI] Unknown event type from backend:", data?.type, data);
             } catch (error) {
                 console.error("[UI] Polling error:", error);
             }
