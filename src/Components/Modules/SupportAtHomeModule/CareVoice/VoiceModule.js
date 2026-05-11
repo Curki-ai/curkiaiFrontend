@@ -54,15 +54,15 @@ import beforeRecordingAnimation from "../../../../Images/beforeRecordingAnimatio
 import { HiOutlineDocumentAdd } from "react-icons/hi";
 import generatingDocAnimation from "../../../../Images/generatingDocAnimation.json"
 import generatingDocAnimationVideo from "../../../../Images/generatingDocAnimationVideo.mp4"
-import adminLoadingAnimation from "../../../../Images/adminLoading.mp4"
+import PulsatingLoader from "../../../general-components/PulsatingLoader";
 import { RiSettingsLine } from "react-icons/ri";
 import CareVoiceAccessManagement from "./CareVoiceAccessManagement";
 import CareVoiceNoOrgEmptyState from "./CareVoiceNoOrgEmptyState";
 import adminLottie from "../../../../Images/adminPageLottie.json"
 import { API_BASE } from "../../../../config/apiBase";
-import adminLoading from "../../../../Images/adminLoading.mp4"
 const VoiceModule = (props) => {
     const userEmail = props?.user?.email;
+    // const userEmail = "admin@contemporarycoordination.com";
     const ALLOWED_USERS = [
         "mboutros@tenderlovingcaredisability.com.au",
         "rjodeh@tenderlovingcaredisability.com.au",
@@ -142,6 +142,7 @@ const VoiceModule = (props) => {
     const [isPlaying, setIsPlaying] = useState(false);
     const [playTime, setPlayTime] = useState(0);
     const [audioBlob, setAudioBlob] = useState(null);
+    const [isDownloadingRecording, setIsDownloadingRecording] = useState(false);
     const [transcriptData, setTranscriptData] = useState(null);
     const [transcribing, setTranscribing] = useState(false);
     const [selectedTemplate, setSelectedTemplate] = useState(null);
@@ -289,20 +290,44 @@ const VoiceModule = (props) => {
             }
         );
     };
-    const downloadRecording = () => {
-        if (!audioBlob) return;
+    const downloadRecording = async () => {
+        if (!audioBlob || isDownloadingRecording) return;
 
-        const url = window.URL.createObjectURL(audioBlob);
+        const filename = `recording_${Date.now()}`;
 
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = `recording_${Date.now()}.webm`;
+        try {
+            setIsDownloadingRecording(true);
 
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+            const formData = new FormData();
+            formData.append("audio", audioBlob, `${filename}.webm`);
+            formData.append("filename", filename);
 
-        window.URL.revokeObjectURL(url);
+            const res = await fetch(`${API_BASE}/api/care-voice/convert-to-mp3`, {
+                method: "POST",
+                body: formData,
+            });
+
+            if (!res.ok) {
+                throw new Error(`Conversion failed (${res.status})`);
+            }
+
+            const mp3Blob = await res.blob();
+            const url = window.URL.createObjectURL(mp3Blob);
+
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = `${filename}.mp3`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            window.URL.revokeObjectURL(url);
+        } catch (err) {
+            console.error("Failed to download recording as mp3:", err);
+            alert("Failed to download recording. Please try again.");
+        } finally {
+            setIsDownloadingRecording(false);
+        }
     };
     const getPlatformType = () => {
         const ua = navigator.userAgent;
@@ -3105,15 +3130,10 @@ const VoiceModule = (props) => {
                     {/* ================= PROCESSING ================= */}
                     {stage === "processing" && (
                         <div style={{ display: "flex", justifyContent: "center", marginTop: "40px" }}>
-                            <video
-                                className="vm-admin-loading-video"
-                                autoPlay
-                                loop
-                                muted
-                                playsInline
-                            >
-                                <source src={adminLoading} type="video/mp4" />
-                            </video>
+                            <PulsatingLoader
+                                currentTask={currentTask || "Processing document"}
+                                progress={processingProgress}
+                            />
                         </div>
                     )}
 
@@ -3464,12 +3484,14 @@ const VoiceModule = (props) => {
                                     </button>
                                     <button
                                         onClick={downloadRecording}
+                                        disabled={isDownloadingRecording}
                                         style={{
                                             background: "#6c4cdc",
                                             border: "1px solid #ddd",
                                             borderRadius: "999px",
                                             padding: "8px 12px",
-                                            cursor: "pointer",
+                                            cursor: isDownloadingRecording ? "not-allowed" : "pointer",
+                                            opacity: isDownloadingRecording ? 0.6 : 1,
                                             display: "flex",
                                             alignItems: "center",
                                             gap: "6px",
@@ -3477,7 +3499,8 @@ const VoiceModule = (props) => {
                                             fontWeight: 500,
                                         }}
                                     >
-                                        <FiDownload size={20} /> Download
+                                        <FiDownload size={20} />
+                                        {isDownloadingRecording ? "Downloading..." : "Download"}
                                     </button>
                                 </>
                             )}
