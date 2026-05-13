@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from "react";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import * as XLSX from "xlsx";
 import axios from "axios";
 import SummaryReport from "../../../general-components/SummaryReportViewer";
@@ -170,7 +172,7 @@ const NewFinancialHealth = (props) => {
 
         } catch (err) {
             console.error("❌ Search error:", err);
-            alert("Search failed: " + err.message);
+            toast.error("Search failed: " + err.message);
             setSearchMode(false);
             setFilteredHistoryList([]);
         } finally {
@@ -262,6 +264,13 @@ const NewFinancialHealth = (props) => {
     // If the lookup returns an empty `organizations` array we set
     // orgLookupStatus="not_found"; the render below then shows
     // FinancialHealthNoOrgEmptyState instead of the dashboard.
+    // Set by fetchOrganization when /by-email returns justActivated=true.
+    // We don't call toast.success directly in the fetch because at that
+    // moment the component is still in the "loading" early return —
+    // ToastContainer hasn't mounted yet, so the emit is lost. The
+    // useEffect below fires the toast once the main return is rendered.
+    const [pendingWelcomeToast, setPendingWelcomeToast] = useState(false);
+
     const fetchOrganization = async () => {
         if (!userEmail) return;
         setOrgLookupStatus("loading");
@@ -277,6 +286,9 @@ const NewFinancialHealth = (props) => {
                 setCurrentUserRole(String(first.role || "").toLowerCase());
                 setUserStates(Array.isArray(first.states) ? first.states : []);
                 setOrgLookupStatus("found");
+                if (data.justActivated) {
+                    setPendingWelcomeToast(true);
+                }
             } else {
                 setOrganizationId(null);
                 setOrganizationName("");
@@ -294,6 +306,20 @@ const NewFinancialHealth = (props) => {
         fetchOrganization();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [userEmail]);
+
+    // Fire the welcome toast only once the main return has actually
+    // rendered (i.e. orgLookupStatus === "found"), so the ToastContainer
+    // is in the DOM when toast.success runs. Otherwise the emit happens
+    // during the loading-state render and there's nothing to display it.
+    useEffect(() => {
+        if (orgLookupStatus === "found" && pendingWelcomeToast) {
+            toast.success(
+                "Welcome! Your invitation to Curki Financial Health has been accepted."
+            );
+            setPendingWelcomeToast(false);
+        }
+    }, [orgLookupStatus, pendingWelcomeToast]);
+
     const handleNewTab = () => {
         const newId = tabs.length
             ? Math.max(...tabs.map(t => t.id)) + 1
@@ -303,7 +329,7 @@ const NewFinancialHealth = (props) => {
             ...prev,
             {
                 id: newId,
-                name: `Tab ${newId}`,
+                name: `Tab ${prev.length + 1}`,
 
                 selectedFiles: [],
 
@@ -390,7 +416,13 @@ const NewFinancialHealth = (props) => {
         );
     };
     const handleCloseTab = (id) => {
-        const remaining = tabs.filter(t => t.id !== id);
+        const remaining = tabs.filter(t => t.id !== id).map((t, idx) => {
+            if (/^Tab \d+$/.test(t.name)) {
+                const newName = `Tab ${idx + 1}`;
+                return t.name === newName ? t : { ...t, name: newName };
+            }
+            return t;
+        });
         setTabs(remaining);
 
         if (id === activeTab && remaining.length > 0) {
@@ -557,6 +589,7 @@ const NewFinancialHealth = (props) => {
                                 cursor: "pointer",
                                 fontWeight: "bold",
                                 fontSize: "18px",
+                                lineHeight: 1,
                             }}
                         >
                             ×
@@ -681,7 +714,7 @@ const NewFinancialHealth = (props) => {
 
     const handleDownloadUploadedExcel = () => {
         if (!uploadedFinancialExcelFile) {
-            alert("No Uploaded Excel file to download.");
+            toast.warn("No uploaded Excel file to download.");
             return;
         }
 
@@ -716,7 +749,7 @@ const NewFinancialHealth = (props) => {
             !Array.isArray(standardFinancialExcelFile) ||
             standardFinancialExcelFile.length === 0
         ) {
-            alert("No Standard Excel files to download.");
+            toast.warn("No standard Excel files to download.");
             return;
         }
 
@@ -870,13 +903,13 @@ const NewFinancialHealth = (props) => {
                 },
                 ...prev,
             ]);
-            alert("Saved successfully");
+            toast.success("Saved successfully");
             updateTab({
                 savedToHistory: true,
             });
         } catch (error) {
             console.error("Save history failed:", error);
-            alert("Failed to save history");
+            toast.error("Failed to save history");
         } finally {
             // 🔹 END saving (PER TAB)
             updateTab({ savingHistory: false });
@@ -1009,10 +1042,10 @@ const NewFinancialHealth = (props) => {
             setShowDeleteModal(false);
             setSelectedHistoryId(null);
 
-            alert("History deleted successfully");
+            toast.success("History deleted successfully");
         } catch (error) {
             console.error("Delete history failed:", error);
-            alert("Failed to delete history");
+            toast.error("Failed to delete history");
         } finally {
             setDeleting(false);
         }
@@ -1036,7 +1069,7 @@ const NewFinancialHealth = (props) => {
             );
 
             if (isInvalid) {
-                alert(`You are allowed to analyse only: ${userStates.join(", ")}`);
+                toast.warn(`You are allowed to analyse only: ${userStates.join(", ")}`);
                 return;
             }
         }
@@ -1045,17 +1078,17 @@ const NewFinancialHealth = (props) => {
 
         if (!syncEnabled && !hasFiles) {
             console.log("Please turn on sync or select file.")
-            alert("Please turn on sync or select file.");
+            toast.warn("Please turn on sync or select file.");
             return;
         }
 
         if (hasFiles && !hasDateRange) {
-            alert("Please select a date range.");
+            toast.warn("Please select a date range.");
             return;
         }
 
         if (syncEnabled && !hasDateRange) {
-            alert("Please select a date range.");
+            toast.warn("Please select a date range.");
             return;
         }
 
@@ -1089,7 +1122,7 @@ const NewFinancialHealth = (props) => {
                 toDate = endDate.toISOString();
 
                 if (!fromDate || !toDate) {
-                    alert("Please select valid start and end dates for sync mode.");
+                    toast.warn("Please select valid start and end dates for sync mode.");
                     updateTab({
                         loading: false,
                     });
@@ -1102,7 +1135,7 @@ const NewFinancialHealth = (props) => {
             }
             // Validate user email
             if (!userEmail) {
-                alert("User email is required. Please log in again.");
+                toast.error("User email is required. Please log in again.");
                 updateTab({
                     loading: false,
                 });
@@ -1117,7 +1150,7 @@ const NewFinancialHealth = (props) => {
             formData.append("toDate", toDate);
             if (type === "upload") {
                 if (activeTabData.selectedFiles.length === 0) {
-                    alert("No files selected for upload.");
+                    toast.warn("No files selected for upload.");
                     updateTab({
                         loading: false,
                     });
@@ -1415,11 +1448,11 @@ const NewFinancialHealth = (props) => {
             console.error("Error in analysis pipeline:", err);
             if (err.response) {
                 const { status, data } = err.response;
-                alert(`Error ${status}: ${data?.error || data?.message || "Unknown server error"}`);
+                toast.error(`Error ${status}: ${data?.error || data?.message || "Unknown server error"}`);
             } else if (err.request) {
-                alert("Network error. Please check your internet connection.");
+                toast.error("Network error. Please check your internet connection.");
             } else {
-                alert(`Unexpected error: ${err.message}`);
+                toast.error(`Unexpected error: ${err.message}`);
             }
         } finally {
             updateTab({
@@ -1712,77 +1745,6 @@ const NewFinancialHealth = (props) => {
                         ))}
                     </div>
                 )}
-                {showDeleteModal && (
-                    <div
-                        className="delete-history-modal-overlay"
-                        style={{
-                            position: "fixed",
-                            inset: 0,
-                            background: "rgba(0,0,0,0.35)",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            zIndex: 9999,
-                        }}
-                    >
-                        <div
-                            className="delete-history-modal"
-                            style={{
-                                background: "#fff",
-                                borderRadius: "12px",
-                                padding: "20px 24px",
-                                minWidth: "360px",
-                                textAlign: "center",
-                            }}
-                        >
-                            <div
-                                style={{
-                                    fontSize: "16px",
-                                    fontWeight: 600,
-                                    color: "#1f2937",
-                                    marginBottom: "20px",
-                                }}
-                            >
-                                Are you sure you want to delete history?
-                            </div>
-
-                            <div style={{ display: "flex", justifyContent: "center", gap: "12px" }}>
-                                <button
-                                    onClick={() => {
-                                        setShowDeleteModal(false);
-                                        setSelectedHistoryId(null);
-                                    }}
-                                    style={{
-                                        padding: "8px 22px",
-                                        borderRadius: "6px",
-                                        border: "none",
-                                        background: "#e5e7eb",
-                                        cursor: "pointer",
-                                        fontWeight: "500",
-                                    }}
-                                >
-                                    No
-                                </button>
-
-                                <button
-                                    onClick={handleDeleteHistory}
-                                    disabled={deleting}
-                                    style={{
-                                        padding: "8px 22px",
-                                        borderRadius: "6px",
-                                        border: "none",
-                                        background: "#6C4CDC",
-                                        color: "#fff",
-                                        cursor: "pointer",
-                                        fontWeight: "500",
-                                    }}
-                                >
-                                    {deleting ? "..." : "Yes"}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )}
             </section>
         );
     };
@@ -1820,6 +1782,9 @@ const NewFinancialHealth = (props) => {
             ref={pageRef}
             className="financial-main-container"
         >
+            {/* ToastContainer is mounted once globally in HomePage. A second
+                container here would intercept dismiss-click events for the
+                wrong instance and toasts wouldn't close on X. */}
             {historyLoading && (
                 <div className="full-screen-loader">
                     <div className="history-loader"></div>
@@ -1845,7 +1810,7 @@ const NewFinancialHealth = (props) => {
                                 }}
                             />
 
-                            <div style={{ minWidth: "180px" }}>
+                            {/* <div style={{ minWidth: "180px" }}>
                                 <MultiSelectCustom
                                     options={optionsRole}
                                     selected={activeTabData.selectedRole}
@@ -1855,7 +1820,7 @@ const NewFinancialHealth = (props) => {
                                     rightIcon={TlcPayrollRoleDownArrowIcon}
                                 />
 
-                            </div>
+                            </div> */}
                         </div>
 
 
@@ -1956,7 +1921,7 @@ const NewFinancialHealth = (props) => {
                         >
                             <button
                                 onClick={handleAnalyse} // existing financial analyse fn
-                                disabled={activeTabData.loading || activeTabData.uploading}
+                                disabled={true}
                                 style={{
                                     background: "var(--Curki-2nd-Portal-1, #14C8A8)",
                                     color: "#fff",
@@ -1965,13 +1930,12 @@ const NewFinancialHealth = (props) => {
                                     borderRadius: "8px",
                                     fontSize: "14px",
                                     fontWeight: 400,
-                                    cursor: activeTabData.loading || activeTabData.uploading ? "not-allowed" : "pointer",
+                                    cursor: "not-allowed",
                                     display: "flex",
                                     alignItems: "center",
                                     gap: "8px",
                                     marginTop: "17px",
-                                    opacity:
-                                        activeTabData?.loading || activeTabData?.uploading ? 0.6 : 1,
+                                    opacity: 0.6,
                                 }}
                             >
                                 <img
@@ -2268,7 +2232,7 @@ const NewFinancialHealth = (props) => {
                         >
                             <button
                                 onClick={handleAnalyse} // existing financial analyse fn
-                                disabled={activeTabData?.loading || activeTabData?.uploading}
+                                disabled={true}
                                 style={{
                                     background: "var(--Curki-2nd-Portal-1, #14C8A8)",
                                     color: "#fff",
@@ -2277,13 +2241,12 @@ const NewFinancialHealth = (props) => {
                                     borderRadius: "8px",
                                     fontSize: "14px",
                                     fontWeight: 400,
-                                    cursor: activeTabData?.loading || activeTabData?.uploading ? "not-allowed" : "pointer",
+                                    cursor: "not-allowed",
                                     display: "flex",
                                     alignItems: "center",
                                     gap: "8px",
                                     marginTop: "17px",
-                                    opacity:
-                                        activeTabData?.loading || activeTabData?.uploading ? 0.6 : 1,
+                                    opacity: 0.6,
                                 }}
                             >
                                 <img
@@ -2685,7 +2648,85 @@ const NewFinancialHealth = (props) => {
                 <FinancialHealthAccessManagement
                     onClose={() => setOpenAccessManagement(false)}
                     userEmail={userEmail}
+                    allowStaffRole={false}
                 />
+            )}
+
+            {/* Delete-history modal lives at the top level so its
+                position:fixed overlay centers on the viewport. Rendering it
+                inside .history-container failed because that container has
+                `backdrop-filter`, which creates a new containing block and
+                traps fixed-positioned descendants. */}
+            {showDeleteModal && (
+                <div
+                    className="delete-history-modal-overlay"
+                    style={{
+                        position: "fixed",
+                        inset: 0,
+                        background: "rgba(0,0,0,0.35)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        zIndex: 9999,
+                    }}
+                >
+                    <div
+                        className="delete-history-modal"
+                        style={{
+                            background: "#fff",
+                            borderRadius: "12px",
+                            padding: "20px 24px",
+                            minWidth: "360px",
+                            textAlign: "center",
+                        }}
+                    >
+                        <div
+                            style={{
+                                fontSize: "16px",
+                                fontWeight: 600,
+                                color: "#1f2937",
+                                marginBottom: "20px",
+                            }}
+                        >
+                            Are you sure you want to delete history?
+                        </div>
+
+                        <div style={{ display: "flex", justifyContent: "center", gap: "12px" }}>
+                            <button
+                                onClick={() => {
+                                    setShowDeleteModal(false);
+                                    setSelectedHistoryId(null);
+                                }}
+                                style={{
+                                    padding: "8px 22px",
+                                    borderRadius: "6px",
+                                    border: "none",
+                                    background: "#e5e7eb",
+                                    cursor: "pointer",
+                                    fontWeight: "500",
+                                }}
+                            >
+                                No
+                            </button>
+
+                            <button
+                                onClick={handleDeleteHistory}
+                                disabled={deleting}
+                                style={{
+                                    padding: "8px 22px",
+                                    borderRadius: "6px",
+                                    border: "none",
+                                    background: "#6C4CDC",
+                                    color: "#fff",
+                                    cursor: "pointer",
+                                    fontWeight: "500",
+                                }}
+                            >
+                                {deleting ? "..." : "Yes"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
 
         </div>

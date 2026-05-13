@@ -269,7 +269,7 @@ export const blankLesson = (type = "video") => {
     title: "New Lesson",
     type,
     duration: "5 min",
-    published: false,
+    published: true,
   };
   if (type === "video") return { ...base, videoUrl: "", transcript: "" };
   if (type === "text") return { ...base, content: "" };

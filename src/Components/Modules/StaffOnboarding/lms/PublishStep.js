@@ -41,11 +41,6 @@ const PublishStep = ({ course, completion, onPublishToggle, onSaveDraft, saveSta
       ok: (course.objectives || []).filter((o) => o && o.trim()).length >= 1,
       label: "At least one learning objective",
     },
-    {
-      id: "lessons-published",
-      ok: stats.published >= 1,
-      label: "At least one lesson is published",
-    },
   ];
 
   const allReady = checks.every((c) => c.ok);

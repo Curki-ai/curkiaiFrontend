@@ -1,6 +1,7 @@
 ﻿// SmartOnboardingChat.jsx
 import React, { useState, useRef } from "react";
 import { FiSend, FiX } from "react-icons/fi";
+import { toast } from "react-toastify";
 import axios from "axios";
 import "../../../../Styles/general-styles/NewSmartOnboardingChatBot.css";
 import ReactMarkdown from "react-markdown";
@@ -108,7 +109,7 @@ const SmartOnboardingChat = ({
         console.log("handleBulkScreening started");
 
         if (uploadedFiles.length === 0) {
-            alert("Please upload files");
+            toast.warn("Please upload files");
             return;
         }
 

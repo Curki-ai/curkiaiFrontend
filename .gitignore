@@ -21,3 +21,6 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# claude code workspace (local skills, settings, scratch data — not for production)
+.claude/

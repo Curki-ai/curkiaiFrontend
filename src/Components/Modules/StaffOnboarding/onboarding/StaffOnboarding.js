@@ -1,4 +1,5 @@
 ﻿import React, { useEffect, useState } from "react";
+import { toast } from "react-toastify";
 import "../../../../Styles/general-styles/StaffOnboarding.css";
 import { FaRegEdit } from "react-icons/fa";
 import { ReactSortable } from "react-sortablejs"; // ✅ new package
@@ -55,7 +56,7 @@ const StaffOnboarding = (props) => {
         setModules(normalizedModules);
       } catch (err) {
         console.error("❌ Error fetching modules:", err);
-        alert("Failed to load modules");
+        toast.error("Failed to load modules");
       }
     };
 

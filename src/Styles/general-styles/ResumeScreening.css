@@ -72,6 +72,13 @@
 
 .content-areasss {
   width: 100%;
+  /* .top-nav above is shared with the other tabs and has a 60px bottom
+     margin that suits the wider Resume Screening / Screening Test layouts.
+     Inside the LMS every internal gap is 12-28px, so 60px reads as a
+     loud asymmetric gap above "Back to Courses". Pull this wrapper up so
+     the effective gap matches the LMS's own rhythm; other tabs are
+     unaffected because they sit in `.content-area`, not here. */
+  margin-top: -16px;
 }
 
 .page-title {

@@ -1,23 +1,129 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import "../../../../Styles/general-styles/CareVoiceAccessManagement.css";
 import { API_BASE as ROOT_API_BASE } from "../../../../config/apiBase";
+import { HiOutlineChevronDown, HiOutlineShieldCheck, HiOutlineUser } from "react-icons/hi";
+import { RiAdminLine } from "react-icons/ri";
+import { FiUserPlus, FiUsers } from "react-icons/fi";
 
 // Care Voice supports two roles. Staff can use the product but cannot
 // manage access — only admins reach this surface (the API enforces it).
 const ROLE_OPTIONS = [
-  { label: "Admin", value: "admin" },
-  { label: "Staff", value: "staff" },
+  {
+    label: "Admin",
+    value: "admin",
+    description: "Full access — manage templates & users",
+    Icon: RiAdminLine,
+  },
+  {
+    label: "Staff",
+    value: "staff",
+    description: "Can record & generate documents",
+    Icon: HiOutlineUser,
+  },
 ];
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-// Care Voice has its own access-management namespace on the middleware so
-// it can evolve independently of the older /api/v2d/users/* routes.
-// Override with REACT_APP_CV_ACCESS_BASE_URL.
 const API_BASE =
   process.env.REACT_APP_CV_ACCESS_BASE_URL ||
   `${ROOT_API_BASE}/api/care-voice/access`;
 
+// ─── Helpers ───────────────────────────────────────────────────────────────
+const initialsOf = (email = "", name = "") => {
+  const source = (name || email).trim();
+  if (!source) return "?";
+  const parts = source.split(/[\s.@_-]+/).filter(Boolean);
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+  return source.slice(0, 2).toUpperCase();
+};
+
+const AVATAR_PALETTE = [
+  ["#a78bfa", "#6c4cdc"],
+  ["#60a5fa", "#2563eb"],
+  ["#34d399", "#0d9488"],
+  ["#f59e0b", "#d97706"],
+  ["#f472b6", "#db2777"],
+  ["#fb923c", "#ea580c"],
+  ["#22d3ee", "#0891b2"],
+  ["#a3e635", "#65a30d"],
+];
+
+const avatarGradient = (key = "") => {
+  let hash = 0;
+  for (let i = 0; i < key.length; i++)
+    hash = (hash << 5) - hash + key.charCodeAt(i);
+  const [a, b] = AVATAR_PALETTE[Math.abs(hash) % AVATAR_PALETTE.length];
+  return `linear-gradient(135deg, ${a} 0%, ${b} 100%)`;
+};
+
+// ─── Custom Role Select ─────────────────────────────────────────────────────
+const RoleSelect = ({ value, onChange }) => {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  const current = ROLE_OPTIONS.find((o) => o.value === value) || ROLE_OPTIONS[1];
+  const CurrentIcon = current.Icon;
+
+  useEffect(() => {
+    const onClick = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, []);
+
+  return (
+    <div className={`cva-role-select ${open ? "cva-role-open" : ""}`} ref={ref}>
+      <button
+        type="button"
+        className="cva-role-trigger"
+        onClick={() => setOpen((v) => !v)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+      >
+        <span className={`cva-role-icon-wrap cva-role-icon-${value}`}>
+          <CurrentIcon size={14} />
+        </span>
+        <span className="cva-role-label">{current.label}</span>
+        <HiOutlineChevronDown
+          className={`cva-role-chevron ${open ? "cva-role-chevron-open" : ""}`}
+          size={15}
+        />
+      </button>
+
+      {open && (
+        <div className="cva-role-menu" role="listbox">
+          {ROLE_OPTIONS.map(({ value: v, label, description, Icon }) => (
+            <button
+              type="button"
+              key={v}
+              className={`cva-role-item ${value === v ? "cva-role-item-active" : ""}`}
+              role="option"
+              aria-selected={value === v}
+              onClick={() => {
+                onChange(v);
+                setOpen(false);
+              }}
+            >
+              <span className={`cva-role-item-icon cva-role-icon-${v}`}>
+                <Icon size={15} />
+              </span>
+              <span className="cva-role-item-text">
+                <span className="cva-role-item-label">{label}</span>
+                <span className="cva-role-item-desc">{description}</span>
+              </span>
+              {value === v && (
+                <span className="cva-role-item-check">✓</span>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ─── Main Component ─────────────────────────────────────────────────────────
 const CareVoiceAccessManagement = ({ onClose, userEmail }) => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -45,14 +151,9 @@ const CareVoiceAccessManagement = ({ onClose, userEmail }) => {
         headers: requestHeaders(),
       });
       const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data?.error || "Failed to load users");
-      }
-      const list = Array.isArray(data?.data) ? data.data : [];
-      console.log("[CareVoice/Access] users", list);
-      setUsers(list);
+      if (!res.ok) throw new Error(data?.error || "Failed to load users");
+      setUsers(Array.isArray(data?.data) ? data.data : []);
     } catch (err) {
-      console.error("[CareVoice/Access] fetch users failed", err);
       setError(err.message || "Failed to load users for this organization");
     } finally {
       setLoading(false);
@@ -67,57 +168,29 @@ const CareVoiceAccessManagement = ({ onClose, userEmail }) => {
   const handleInvite = async () => {
     setError("");
     setSuccess("");
-
     const trimmedName = name.trim();
     const trimmedEmail = email.trim().toLowerCase();
-
-    if (!trimmedName) {
-      setError("Name is required");
-      return;
-    }
-    if (!EMAIL_REGEX.test(trimmedEmail)) {
-      setError("A valid email is required");
-      return;
-    }
-    if (!ROLE_OPTIONS.some((r) => r.value === role)) {
-      setError("Select a valid role");
-      return;
-    }
+    if (!trimmedName) { setError("Name is required"); return; }
+    if (!EMAIL_REGEX.test(trimmedEmail)) { setError("A valid email is required"); return; }
+    if (!ROLE_OPTIONS.some((r) => r.value === role)) { setError("Select a valid role"); return; }
 
     setInviting(true);
     try {
-      console.log("[CareVoice/Access] invite", {
-        name: trimmedName,
-        email: trimmedEmail,
-        role,
-      });
       const res = await fetch(`${API_BASE}/invite`, {
         method: "POST",
         headers: requestHeaders(),
-        body: JSON.stringify({
-          name: trimmedName,
-          email: trimmedEmail,
-          role,
-        }),
+        body: JSON.stringify({ name: trimmedName, email: trimmedEmail, role }),
       });
       const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data?.error || "Failed to invite user");
-      }
-
+      if (!res.ok) throw new Error(data?.error || "Failed to invite user");
       setSuccess(
         data?.already_invited
           ? "User already invited to this organization"
           : "Invite created successfully"
       );
-
-      setName("");
-      setEmail("");
-      setRole("staff");
-
+      setName(""); setEmail(""); setRole("staff");
       await fetchUsers();
     } catch (err) {
-      console.error("[CareVoice/Access] invite failed", err);
       setError(err.message || "Failed to invite user");
     } finally {
       setInviting(false);
@@ -128,35 +201,21 @@ const CareVoiceAccessManagement = ({ onClose, userEmail }) => {
     if (!user?.id) return;
     const isActive = user.status === "active";
     const confirmMessage = isActive
-      ? `Remove access for ${user.email}? They will lose access immediately and need to be re-invited to come back.`
-      : `Revoke invite for ${user.email}? They will lose access until re-invited.`;
+      ? `Remove access for ${user.email}? They will lose access immediately.`
+      : `Revoke invite for ${user.email}?`;
     if (!window.confirm(confirmMessage)) return;
 
-    setError("");
-    setSuccess("");
-    setRevokingId(user.id);
+    setError(""); setSuccess(""); setRevokingId(user.id);
     try {
-      console.log("[CareVoice/Access] remove", {
-        id: user.id,
-        email: user.email,
-        status: user.status,
+      const res = await fetch(`${API_BASE}/users/${encodeURIComponent(user.id)}`, {
+        method: "DELETE",
+        headers: requestHeaders(),
       });
-      const res = await fetch(
-        `${API_BASE}/users/${encodeURIComponent(user.id)}`,
-        { method: "DELETE", headers: requestHeaders() }
-      );
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        throw new Error(data?.error || "Failed to remove user");
-      }
-      setSuccess(
-        isActive
-          ? `Removed access for ${user.email}`
-          : `Invite revoked for ${user.email}`
-      );
+      if (!res.ok) throw new Error(data?.error || "Failed to remove user");
+      setSuccess(isActive ? `Removed access for ${user.email}` : `Invite revoked for ${user.email}`);
       await fetchUsers();
     } catch (err) {
-      console.error("[CareVoice/Access] remove failed", err);
       setError(err.message || "Failed to remove user");
     } finally {
       setRevokingId("");
@@ -168,28 +227,19 @@ const CareVoiceAccessManagement = ({ onClose, userEmail }) => {
     !!user?.email &&
     user.email.trim().toLowerCase() === userEmail.trim().toLowerCase();
 
-  const roleClass = (value) =>
-    `cv-access-badge cv-access-role-${(value || "").toLowerCase()}`;
-  const statusClass = (value) =>
-    `cv-access-badge cv-access-status-${(value || "").toLowerCase()}`;
-
-  // The signed-in admin is always a member of the org they're managing —
-  // surface them in the table even before the API list is populated, so a
-  // fresh org never reads as "no users yet" to its own admin.
   const selfEntry = userEmail
-    ? {
-        id: `self:${userEmail.toLowerCase()}`,
-        name: "You",
-        email: userEmail,
-        role: "admin",
-        status: "active",
-      }
+    ? { id: `self:${userEmail.toLowerCase()}`, name: "You", email: userEmail, role: "admin", status: "active" }
     : null;
+
   const displayedUsers = (() => {
     const list = Array.isArray(users) ? [...users] : [];
     if (selfEntry && !list.some(isSelf)) list.unshift(selfEntry);
     return list;
   })();
+
+  // Stats
+  const activeCount = displayedUsers.filter((u) => u.status === "active").length;
+  const pendingCount = displayedUsers.filter((u) => u.status === "invited" || u.status === "pending").length;
 
   return (
     <div className="cv-access-overlay" role="presentation" onClick={onClose}>
@@ -200,154 +250,191 @@ const CareVoiceAccessManagement = ({ onClose, userEmail }) => {
         aria-labelledby="cv-access-title"
         onClick={(e) => e.stopPropagation()}
       >
+        {/* ── MODAL HEADER ── */}
+        <div className="cv-access-modal-header">
+          <div className="cv-access-header-icon">
+            <HiOutlineShieldCheck size={22} />
+          </div>
+          <div className="cv-access-header-text">
+            <div id="cv-access-title" className="cv-access-title">
+              Access Management
+            </div>
+            <div className="cv-access-subtitle">
+              Invite teammates and manage who can access Care Voice for this organization.
+            </div>
+          </div>
+          <button type="button" className="cv-access-close" onClick={onClose} aria-label="Close">
+            ×
+          </button>
+        </div>
+
         <div className="cv-access-scroll">
-          <div className="cv-access-header">
-            <div>
-              <div id="cv-access-title" className="cv-access-title">
-                Access Management
+
+
+          {/* ── INVITE SECTION ── */}
+          <div className="cv-access-invite-card">
+            <div className="cv-access-invite-card-header">
+              <FiUserPlus size={15} />
+              <span>Invite a new member</span>
+            </div>
+
+            <div className="cv-access-invite-grid">
+              {/* Name */}
+              <div className="cv-access-field">
+                <label className="cv-access-label">
+                  Full Name <sup className="cv-access-required">*</sup>
+                </label>
+                <input
+                  className="cv-access-input"
+                  type="text"
+                  placeholder="e.g. Jane Smith"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
               </div>
-              <div className="cv-access-subtitle">
-                Invite teammates and manage who can access Care Voice for this
-                organization.
+
+              {/* Email */}
+              <div className="cv-access-field">
+                <label className="cv-access-label">
+                  Email Address <sup className="cv-access-required">*</sup>
+                </label>
+                <input
+                  className="cv-access-input"
+                  type="email"
+                  placeholder="user@company.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
+
+              {/* Role */}
+              <div className="cv-access-field">
+                <label className="cv-access-label">
+                  Role <sup className="cv-access-required">*</sup>
+                </label>
+                <RoleSelect value={role} onChange={setRole} />
+              </div>
+
+              {/* Invite Button */}
+              <div className="cv-access-field cv-access-invite-action-field">
+                <label className="cv-access-label cv-access-label-invisible">Action</label>
+                <button
+                  type="button"
+                  className="cv-access-invite-btn"
+                  onClick={handleInvite}
+                  disabled={inviting}
+                >
+                  {inviting ? (
+                    <><span className="cv-access-spinner" /> Inviting…</>
+                  ) : (
+                    <><FiUserPlus size={15} /> Invite User</>
+                  )}
+                </button>
               </div>
             </div>
-            <button
-              type="button"
-              className="cv-access-close"
-              onClick={onClose}
-              aria-label="Close"
-            >
-              ×
-            </button>
+
+            {error && <div className="cv-access-error"><span>⚠</span> {error}</div>}
+            {success && <div className="cv-access-success"><span>✓</span> {success}</div>}
           </div>
 
-          <div className="cv-access-section-title">Invite a new member</div>
-
-          <div className="cv-access-row">
-            <div className="cv-access-field">
-              <label className="cv-access-label">
-                Name <sup className="cv-access-required">*</sup>
-              </label>
-              <input
-                className="cv-access-input"
-                type="text"
-                placeholder="Full name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-              />
-            </div>
-
-            <div className="cv-access-field">
-              <label className="cv-access-label">
-                Email <sup className="cv-access-required">*</sup>
-              </label>
-              <input
-                className="cv-access-input"
-                type="email"
-                placeholder="user@company.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
-          </div>
-
-          <div className="cv-access-row cv-access-row-invite">
-            <div className="cv-access-field">
-              <label className="cv-access-label">
-                Role <sup className="cv-access-required">*</sup>
-              </label>
-              <select
-                className="cv-access-select"
-                value={role}
-                onChange={(e) => setRole(e.target.value)}
-              >
-                {ROLE_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="cv-access-invite-cell">
-              <button
-                type="button"
-                className="cv-access-invite-btn"
-                onClick={handleInvite}
-                disabled={inviting}
-              >
-                {inviting ? "Inviting..." : "Invite User"}
-              </button>
-            </div>
-          </div>
-
-          {error && <div className="cv-access-error">{error}</div>}
-          {success && <div className="cv-access-success">{success}</div>}
-
+          {/* ── TEAM MEMBERS TABLE ── */}
           <div className="cv-access-list-section">
-            <div className="cv-access-section-title cv-access-list-title">
-              <span>Team Members</span>
-              {!loading && displayedUsers.length > 0 && (
-                <span className="cv-access-count">{displayedUsers.length}</span>
-              )}
+            <div className="cv-access-list-header">
+              <div className="cv-access-list-title-row">
+                <FiUsers size={15} />
+                <span>Team Members</span>
+                {!loading && displayedUsers.length > 0 && (
+                  <span className="cv-access-count">{displayedUsers.length}</span>
+                )}
+                {/* ── STAT PILLS ── */}
+                <div className="cv-access-stats-row">
+                  <div className="cv-access-stat-pill cv-access-stat-green">
+                    <span className="cv-access-stat-dot cv-access-stat-dot-green" />
+                    <span><strong>{activeCount}</strong> active</span>
+                  </div>
+                  {pendingCount > 0 && (
+                    <div className="cv-access-stat-pill cv-access-stat-amber">
+                      <span className="cv-access-stat-dot cv-access-stat-dot-amber" />
+                      <span><strong>{pendingCount}</strong> pending</span>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
 
             {loading ? (
-              <div className="cv-access-state">Loading users...</div>
-            ) : displayedUsers.length === 0 ? (
               <div className="cv-access-state">
-                No users in this organization yet
+                <span className="cv-access-spinner cv-access-spinner-lg" />
+                <span>Loading members…</span>
+              </div>
+            ) : displayedUsers.length === 0 ? (
+              <div className="cv-access-state cv-access-state-empty">
+                <FiUsers size={28} style={{ color: "#c5c0e0", marginBottom: 8 }} />
+                <div className="cv-access-state-title">No members yet</div>
+                <div className="cv-access-state-sub">Invite your first team member above.</div>
               </div>
             ) : (
               <div className="cv-access-table-wrapper">
                 <div className="cv-access-table">
                   <div className="cv-access-table-header">
-                    <div>Name</div>
-                    <div>Email</div>
+                    <div>Member</div>
                     <div>Role</div>
                     <div>Status</div>
                     <div>Actions</div>
                   </div>
+
                   {displayedUsers.map((u) => (
                     <div key={u.id || u.email} className="cv-access-table-row">
-                      <div className="cv-access-name-cell">{u.name}</div>
-                      <div className="cv-access-email">{u.email}</div>
-                      <div>
-                        <span className={roleClass(u.role)}>{u.role}</span>
+                      {/* Avatar + Name + Email */}
+                      <div className="cv-access-user-cell">
+                        <div
+                          className="cv-access-avatar"
+                          style={{ background: avatarGradient(u.email) }}
+                          aria-hidden="true"
+                        >
+                          {initialsOf(u.email, u.name)}
+                        </div>
+                        <div className="cv-access-user-info">
+                          <div className="cv-access-user-name-row">
+                            <span className="cv-access-name-cell">{u.name}</span>
+                            {isSelf(u) && <span className="cv-access-you-badge">You</span>}
+                          </div>
+                          <div className="cv-access-email">{u.email}</div>
+                        </div>
                       </div>
+
+                      {/* Role badge */}
                       <div>
-                        <span className={statusClass(u.status)}>{u.status}</span>
+                        <span className={`cv-access-badge cv-access-role-${(u.role || "").toLowerCase()}`}>
+                          {u.role}
+                        </span>
                       </div>
+
+                      {/* Status badge */}
+                      <div>
+                        <span className={`cv-access-badge cv-access-status-${(u.status || "").toLowerCase()}`}>
+                          {u.status}
+                        </span>
+                      </div>
+
+                      {/* Actions */}
                       <div className="cv-access-actions-cell">
-                        {(u.status === "invited" || u.status === "active") &&
-                        !isSelf(u) ? (
+                        {(u.status === "invited" || u.status === "active") && !isSelf(u) ? (
                           <button
                             type="button"
                             className="cv-access-revoke-btn"
                             onClick={() => handleRemove(u)}
                             disabled={revokingId === u.id}
-                            aria-label={
-                              u.status === "active"
-                                ? `Remove access for ${u.email}`
-                                : `Revoke invite for ${u.email}`
-                            }
+                            aria-label={u.status === "active" ? `Remove access for ${u.email}` : `Revoke invite for ${u.email}`}
                           >
                             {revokingId === u.id
-                              ? u.status === "active"
-                                ? "Removing..."
-                                : "Revoking..."
-                              : u.status === "active"
-                              ? "Remove"
-                              : "Revoke"}
+                              ? u.status === "active" ? "Removing…" : "Revoking…"
+                              : u.status === "active" ? "Remove" : "Revoke"}
                           </button>
                         ) : (
                           <span
                             className="cv-access-actions-empty"
-                            title={
-                              isSelf(u)
-                                ? "You cannot remove your own access"
-                                : undefined
-                            }
+                            title={isSelf(u) ? "You cannot remove your own access" : undefined}
                           >
                             —
                           </span>

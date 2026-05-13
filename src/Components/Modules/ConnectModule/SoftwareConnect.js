@@ -11,7 +11,7 @@ import MyOB from "../../../Images/myobNewImage.png";
 import CareVision from "../../../Images/careVisionNewImage.png";
 import GoogledriveIcon from "../../../Images/GoogleDriveIcon.png";
 import SharePointIcon from "../../../Images/SharePointIcon.png";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { API_BASE as XERO_URL } from "../../../config/apiBase";
 
@@ -217,7 +217,7 @@ const SoftwareConnect = (props) => {
 
   return (
     <div className="software-connect-container">
-      <ToastContainer position="top-right" autoClose={3000} />
+      {/* ToastContainer is mounted once globally in HomePage. */}
 
       {/* Software Grid */}
       <div className="software-grid">

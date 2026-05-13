@@ -1,0 +1,155 @@
+/* Access-management invitation landing page.
+   Renders when a freshly-invited user clicks the "Accept invitation" link
+   from their email. POSTs the token to the matching module's accept-invite
+   endpoint, shows the result inline, and surfaces a toast on success. */
+
+.aai-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: linear-gradient(135deg, #f6f4ff 0%, #f8fafc 100%);
+  font-family: 'Inter', sans-serif;
+}
+
+.aai-card {
+  background: #ffffff;
+  width: min(480px, 100%);
+  padding: 40px 36px;
+  border-radius: 18px;
+  box-shadow: 0 24px 64px rgba(31, 31, 64, 0.12),
+    0 0 0 1px rgba(108, 76, 220, 0.06);
+  text-align: center;
+  animation: aai-slide-up 0.3s ease;
+}
+
+@keyframes aai-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.aai-logo {
+  width: 140px;
+  margin: 0 auto 24px;
+  display: block;
+}
+
+.aai-icon-wrap {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+}
+
+.aai-icon-wrap-loading {
+  background: linear-gradient(135deg, #efeafd 0%, #ddd5fa 100%);
+  color: #6c4cdc;
+}
+
+.aai-icon-wrap-success {
+  background: linear-gradient(135deg, #d8f5e3 0%, #b3eccc 100%);
+  color: #16803c;
+}
+
+.aai-icon-wrap-error {
+  background: linear-gradient(135deg, #fde2e2 0%, #fbc7c7 100%);
+  color: #b3261e;
+}
+
+.aai-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1f1f40;
+  margin-bottom: 8px;
+}
+
+.aai-message {
+  font-size: 14px;
+  color: #4f5273;
+  line-height: 1.55;
+  margin-bottom: 24px;
+}
+
+.aai-meta {
+  background: #faf9ff;
+  border: 1px solid #ecebf3;
+  border-radius: 12px;
+  padding: 14px 16px;
+  text-align: left;
+  margin-bottom: 24px;
+  font-size: 13px;
+  color: #4f5273;
+}
+
+.aai-meta-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 0;
+}
+
+.aai-meta-label {
+  color: #9295ad;
+  font-weight: 500;
+}
+
+.aai-meta-value {
+  color: #1f1f40;
+  font-weight: 500;
+  text-align: right;
+  word-break: break-word;
+}
+
+.aai-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: #6c4cdc;
+  color: #ffffff;
+  border: none;
+  padding: 12px 26px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.08s ease,
+    box-shadow 0.15s ease;
+  text-decoration: none;
+}
+
+.aai-cta:hover {
+  background: #5a3fc4;
+  box-shadow: 0 4px 12px rgba(108, 76, 220, 0.25);
+}
+
+.aai-cta:active {
+  transform: scale(0.97);
+}
+
+.aai-spinner {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  border: 3px solid #e6e0f7;
+  border-top-color: #6c4cdc;
+  border-radius: 50%;
+  animation: aai-spin 0.7s linear infinite;
+}
+
+@keyframes aai-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

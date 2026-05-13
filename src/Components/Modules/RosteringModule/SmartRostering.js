@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from "react";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import "../../../Styles/RosteringModule/SmartRostering.css";
 import { FiUploadCloud } from "react-icons/fi";
 import SearchIcon from '../../../Images/SearchIcon.png';
@@ -31,6 +33,9 @@ const SmartRostering = (props) => {
     const [organizationName, setOrganizationName] = useState("");
     const [currentUserRole, setCurrentUserRole] = useState(null);
     const [orgLookupStatus, setOrgLookupStatus] = useState("loading");
+    // Welcome toast trigger — deferred via useEffect below so the toast
+    // fires only after ToastContainer is mounted in the main return.
+    const [pendingWelcomeToast, setPendingWelcomeToast] = useState(false);
 
     const fetchOrganization = async () => {
         if (!userEmail) return;
@@ -46,6 +51,9 @@ const SmartRostering = (props) => {
                 setOrganizationName(first.organizationName || "");
                 setCurrentUserRole(String(first.role || "").toLowerCase());
                 setOrgLookupStatus("found");
+                if (data.justActivated) {
+                    setPendingWelcomeToast(true);
+                }
             } else {
                 setOrganizationId(null);
                 setOrganizationName("");
@@ -62,6 +70,20 @@ const SmartRostering = (props) => {
         fetchOrganization();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [userEmail]);
+
+    // Fire the welcome toast only after the main return has rendered
+    // (i.e. ToastContainer is in the DOM). Emitting from inside the
+    // fetch's then-block runs during the "loading"/transition render
+    // when no ToastContainer is mounted and the message is dropped.
+    useEffect(() => {
+        if (orgLookupStatus === "found" && pendingWelcomeToast) {
+            toast.success(
+                "Welcome! Your invitation to Curki Smart Rostering has been accepted."
+            );
+            setPendingWelcomeToast(false);
+        }
+    }, [orgLookupStatus, pendingWelcomeToast]);
+
     const [screen, setScreen] = useState(1);
     const [query, setQuery] = useState("");
     const [selectedFile, setSelectedFile] = useState([]);
@@ -623,6 +645,7 @@ const SmartRostering = (props) => {
     }
     return (
         <>
+            {/* ToastContainer is mounted once globally in HomePage. */}
             {screen === 1 && (
                 <div className="rostering-dashboard">
                     <div className="info-table">

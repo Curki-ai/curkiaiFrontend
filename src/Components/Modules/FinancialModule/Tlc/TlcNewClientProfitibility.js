@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import '../../../../Styles/FinancialModule/TlcClientProfitability.css';
 import TlcLogo from '../../../../Images/TLCLogo.png';
 import UploadTlcIcon from '../../../../Images/UploadTlcIcon.png';
@@ -170,7 +172,7 @@ const TlcNewClientProfitability = (props) => {
 
         } catch (err) {
             console.error("❌ Search error:", err);
-            alert("Search failed: " + err.message);
+            toast.error("Search failed: " + err.message);
             setSearchMode(false);
             setFilteredHistoryList([]);
         } finally {
@@ -205,6 +207,9 @@ const TlcNewClientProfitability = (props) => {
     const [userStates, setUserStates] = useState([]);
     const [orgLookupStatus, setOrgLookupStatus] = useState("loading");
     const [openAccessManagement, setOpenAccessManagement] = useState(false);
+    // Welcome toast trigger — deferred via useEffect below so the toast
+    // fires only after ToastContainer is mounted in the main return.
+    const [pendingWelcomeToast, setPendingWelcomeToast] = useState(false);
 
     const fetchOrganization = async () => {
         if (!userEmail) return;
@@ -221,6 +226,9 @@ const TlcNewClientProfitability = (props) => {
                 setCurrentUserRole(String(first.role || "").toLowerCase());
                 setUserStates(Array.isArray(first.states) ? first.states : []);
                 setOrgLookupStatus("found");
+                if (data.justActivated) {
+                    setPendingWelcomeToast(true);
+                }
             } else {
                 setOrganizationId(null);
                 setOrganizationName("");
@@ -238,6 +246,20 @@ const TlcNewClientProfitability = (props) => {
         fetchOrganization();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [userEmail]);
+
+    // Fire the welcome toast only after the main return has rendered
+    // (i.e. ToastContainer is in the DOM). Emitting from inside the
+    // fetch's then-block runs during the "loading"/transition render
+    // when no ToastContainer is mounted and the message is dropped.
+    useEffect(() => {
+        if (orgLookupStatus === "found" && pendingWelcomeToast) {
+            toast.success(
+                "Welcome! Your invitation to Curki Client Profitability has been accepted."
+            );
+            setPendingWelcomeToast(false);
+        }
+    }, [orgLookupStatus, pendingWelcomeToast]);
+
     const [tabs, setTabs] = useState([
         {
             id: 1,
@@ -531,7 +553,7 @@ const TlcNewClientProfitability = (props) => {
             ...prev,
             {
                 id: newId,
-                name: `Tab ${newId}`,
+                name: `Tab ${prev.length + 1}`,
 
                 responseData: null,
                 selectedFiles: [],
@@ -590,7 +612,13 @@ const TlcNewClientProfitability = (props) => {
         }
 
         // ✅ REMOVE TAB
-        const remaining = tabs.filter(t => t.id !== id);
+        const remaining = tabs.filter(t => t.id !== id).map((t, idx) => {
+            if (/^Tab \d+$/.test(t.name)) {
+                const newName = `Tab ${idx + 1}`;
+                return t.name === newName ? t : { ...t, name: newName };
+            }
+            return t;
+        });
         setTabs(remaining);
 
         // ✅ HANDLE ACTIVE TAB
@@ -745,7 +773,7 @@ const TlcNewClientProfitability = (props) => {
     const handleUpload = async () => {
         try {
             if (!activeTabData.selectedFiles.length) {
-                alert("Please upload files first");
+                toast.warn("Please upload files first");
                 return null;
             }
 
@@ -756,7 +784,7 @@ const TlcNewClientProfitability = (props) => {
             });
 
             if (activeTabData.selectedState.length > 1) {
-                alert("Please select only one state while uploading data.");
+                toast.warn("Please select only one state while uploading data.");
                 return null;
             }
 
@@ -793,7 +821,7 @@ const TlcNewClientProfitability = (props) => {
 
         } catch (err) {
             console.error("Upload error:", err);
-            alert(err.message);
+            toast.error(err.message);
             return null;
         }
     };
@@ -833,7 +861,7 @@ const TlcNewClientProfitability = (props) => {
     const handleAnalyse = async () => {
         try {
             if (!activeTabData.startDate || !activeTabData.endDate) {
-                alert("Please select date range");
+                toast.warn("Please select date range");
                 return;
             }
             if (userStates.length > 0 && activeTabData.selectedState.length > 0) {
@@ -848,7 +876,7 @@ const TlcNewClientProfitability = (props) => {
                 );
 
                 if (isInvalid) {
-                    alert(`You are allowed to analyse only: ${userStates.join(", ")}`);
+                    toast.warn(`You are allowed to analyse only: ${userStates.join(", ")}`);
                     return;
                 }
             }
@@ -925,7 +953,7 @@ const TlcNewClientProfitability = (props) => {
             const startResponse = await res.json();
 
             if (!res.ok) {
-                alert(startResponse.error || "Failed to start job");
+                toast.error(startResponse.error || "Failed to start job");
 
                 updateTab({
                     loading: false,
@@ -990,7 +1018,7 @@ const TlcNewClientProfitability = (props) => {
                     if (statusData.status === "failed") {
                         clearInterval(pollInterval);
 
-                        alert("Analysis failed");
+                        toast.error("Analysis failed");
 
                         updateTab({
                             loading: false,
@@ -1007,7 +1035,7 @@ const TlcNewClientProfitability = (props) => {
         } catch (err) {
             console.error("Analyse failed:", err);
 
-            alert(err.message || "No data available");
+            toast.error(err.message || "No data available");
 
             updateTab({
                 loading: false,
@@ -1110,7 +1138,7 @@ const TlcNewClientProfitability = (props) => {
 
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || "Save failed");
-            alert("Saved successfully");
+            toast.success("Saved successfully");
 
             // 🔑 IMPORTANT: sirf current tab mark karo
             updateTab({ saving: false, savedToHistory: true, });
@@ -1230,7 +1258,7 @@ const TlcNewClientProfitability = (props) => {
             await incrementCareVoiceAnalysisCount(userEmail, "history-click", 0, "client-profitability", 0)
         } catch (err) {
             console.error("History load failed:", err);
-            alert("Failed to load history");
+            toast.error("Failed to load history");
         }
         finally {
             setHistoryLoading(false);
@@ -1581,84 +1609,6 @@ const TlcNewClientProfitability = (props) => {
                             </div>
                         ))}
 
-                        {showDeleteModal && (
-                            <div
-                                className="tlc-cp-delete-modal-overlay"
-                                style={{
-                                    position: "fixed",
-                                    inset: 0,
-                                    background: "rgba(0,0,0,0.35)",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    zIndex: 9999,
-                                }}
-                            >
-                                <div
-                                    className="tlc-cp-delete-modal"
-                                    style={{
-                                        background: "#fff",
-                                        borderRadius: "12px",
-                                        padding: "20px 24px",
-                                        minWidth: "360px",
-                                        textAlign: "center",
-                                    }}
-                                >
-                                    <div
-                                        style={{
-                                            fontSize: "16px",
-                                            fontWeight: 600,
-                                            fontFamily: "inherit",
-                                            color: "#1f2937",
-                                            marginBottom: "20px",
-                                        }}
-                                    >
-                                        Are you sure you want to delete history?
-                                    </div>
-
-                                    <div
-                                        style={{
-                                            display: "flex",
-                                            justifyContent: "center",
-                                            gap: "12px",
-                                        }}
-                                    >
-                                        <button
-                                            onClick={() => {
-                                                setShowDeleteModal(false);
-                                                setSelectedHistoryId(null);
-                                            }}
-                                            style={{
-                                                padding: "8px 22px",
-                                                borderRadius: "6px",
-                                                border: "none",
-                                                background: "#e5e7eb",
-                                                cursor: "pointer",
-                                                fontWeight: "500"
-                                            }}
-                                        >
-                                            No
-                                        </button>
-
-                                        <button
-                                            onClick={handleDeleteHistory}
-                                            disabled={deleting}
-                                            style={{
-                                                padding: "8px 22px",
-                                                borderRadius: "6px",
-                                                border: "none",
-                                                background: "#6C4CDC",
-                                                color: "#fff",
-                                                cursor: "pointer",
-                                                fontWeight: "500"
-                                            }}
-                                        >
-                                            {deleting ? "..." : "Yes"}
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
                     </div>
                 )}
             </section>
@@ -1762,6 +1712,7 @@ const TlcNewClientProfitability = (props) => {
     }
     return (
         <div className="page-containersss tlc-cp-page" ref={pageRef}>
+            {/* ToastContainer is mounted once globally in HomePage. */}
             {historyLoading && (
                 <div className="full-screen-loader">
                     <div className="history-loader"></div>
@@ -1779,7 +1730,7 @@ const TlcNewClientProfitability = (props) => {
                         }}
                     />
 
-                    <div style={{ minWidth: "180px" }}>
+                    {/* <div style={{ minWidth: "180px" }}>
                         <MultiSelectCustom
                             options={optionsRole}
                             selected={activeTabData.selectedRole}
@@ -1788,7 +1739,7 @@ const TlcNewClientProfitability = (props) => {
                             leftIcon={TlcPayrollRoleIcon}
                             rightIcon={TlcPayrollRoleDownArrowIcon}
                         />
-                    </div>
+                    </div> */}
                 </div>
                 <div style={{ display: 'flex', gap: '6px', alignItems: 'center', justifyContent: 'center' }}>
                     {/* <h1 className="titless">CLIENTS PROFITABILITY</h1> */}
@@ -1972,7 +1923,7 @@ const TlcNewClientProfitability = (props) => {
                     >
                         <button
                             onClick={handleAnalyse} // keep your existing function
-                            disabled={activeTabData?.loading || activeTabData?.uploading}
+                            disabled={true}
                             style={{
                                 background: "var(--Curki-2nd-Portal-1, #14C8A8)",
                                 color: "#fff",
@@ -1981,13 +1932,12 @@ const TlcNewClientProfitability = (props) => {
                                 borderRadius: "8px",
                                 fontSize: "14px",
                                 fontWeight: 400,
-                                cursor: "pointer",
+                                cursor: "not-allowed",
                                 display: "flex",
                                 alignItems: "center",
                                 gap: "8px",
                                 marginTop: "17px",
-                                opacity:
-                                    activeTabData?.loading || activeTabData?.uploading ? 0.6 : 1,
+                                opacity: 0.6,
                             }}
                         >
                             <img
@@ -2171,7 +2121,7 @@ const TlcNewClientProfitability = (props) => {
                                     chartsAccordionOpen: false,
                                     jsonTableAccordionOpen: false,
                                     // 🏷️ reset tab name
-                                    name: `Tab ${activeTab}`,
+                                    name: `Tab ${tabs.findIndex(t => t.id === activeTab) + 1}`,
                                 });
                             }}
                         >
@@ -2371,7 +2321,92 @@ const TlcNewClientProfitability = (props) => {
                     userEmail={userEmail}
                     moduleLabel="Client Profitability"
                     apiBase={`${BASE_URL}/api/client-profitability/access`}
+                    allowStaffRole={false}
                 />
+            )}
+
+            {/* Delete-history modal lives at the top level so its
+                position:fixed overlay centers on the viewport. Rendering it
+                inside .history-container failed because that container has
+                `backdrop-filter`, which creates a new containing block and
+                traps fixed-positioned descendants. */}
+            {showDeleteModal && (
+                <div
+                    className="tlc-cp-delete-modal-overlay"
+                    style={{
+                        position: "fixed",
+                        inset: 0,
+                        background: "rgba(0,0,0,0.35)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        zIndex: 9999,
+                    }}
+                >
+                    <div
+                        className="tlc-cp-delete-modal"
+                        style={{
+                            background: "#fff",
+                            borderRadius: "12px",
+                            padding: "20px 24px",
+                            minWidth: "360px",
+                            textAlign: "center",
+                        }}
+                    >
+                        <div
+                            style={{
+                                fontSize: "16px",
+                                fontWeight: 600,
+                                fontFamily: "inherit",
+                                color: "#1f2937",
+                                marginBottom: "20px",
+                            }}
+                        >
+                            Are you sure you want to delete history?
+                        </div>
+
+                        <div
+                            style={{
+                                display: "flex",
+                                justifyContent: "center",
+                                gap: "12px",
+                            }}
+                        >
+                            <button
+                                onClick={() => {
+                                    setShowDeleteModal(false);
+                                    setSelectedHistoryId(null);
+                                }}
+                                style={{
+                                    padding: "8px 22px",
+                                    borderRadius: "6px",
+                                    border: "none",
+                                    background: "#e5e7eb",
+                                    cursor: "pointer",
+                                    fontWeight: "500",
+                                }}
+                            >
+                                No
+                            </button>
+
+                            <button
+                                onClick={handleDeleteHistory}
+                                disabled={deleting}
+                                style={{
+                                    padding: "8px 22px",
+                                    borderRadius: "6px",
+                                    border: "none",
+                                    background: "#6C4CDC",
+                                    color: "#fff",
+                                    cursor: "pointer",
+                                    fontWeight: "500",
+                                }}
+                            >
+                                {deleting ? "..." : "Yes"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );

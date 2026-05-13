@@ -55,7 +55,7 @@ export default function PulsatingLoader({ currentTask,progress }) {
           transition={{ duration: 0.05, ease: "linear" }}
         />
       </div>
-      <div style={{ display: 'flex', justifyContent: 'center' }}>
+      <div className="task-timeline-wrap">
         <div className="task-timeline">
           <AnimatePresence>
             {tasks.map((task, index) => (

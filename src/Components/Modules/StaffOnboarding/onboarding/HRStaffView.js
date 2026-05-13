@@ -1,4 +1,5 @@
 ﻿import React, { useState } from "react";
+import { toast } from "react-toastify";
 import "../../../../Styles/general-styles/SmartOnboarding.enhanced.css";
 import "../../../../Styles/general-styles/ResumeScreening.css";
 import DocumentVerification from "./DocumentVerification";
@@ -36,7 +37,7 @@ const HRStaffView = ({
     if (file && (file.name.endsWith(".zip") || file.name.endsWith(".rar"))) {
       setSelectedFile(file);
     } else {
-      alert("Please upload only .zip or .rar files");
+      toast.warn("Please upload only .zip or .rar files");
     }
   };
 
@@ -53,13 +54,13 @@ const HRStaffView = ({
     if (file && (file.name.endsWith(".zip") || file.name.endsWith(".rar"))) {
       setSelectedFile(file);
     } else {
-      alert("Please drop only .zip or .rar files");
+      toast.warn("Please drop only .zip or .rar files");
     }
   };
 
   const handleAnalyze = async () => {
     if (!selectedFile) {
-      alert("Please select a file first!");
+      toast.warn("Please select a file first!");
       return;
     }
     setIsAnalyzing(true);
@@ -81,7 +82,7 @@ const HRStaffView = ({
     } catch (error) {
       console.error("Analysis failed:", error);
       setIsAnalyzing(false);
-      alert("Analysis failed. Please try again.");
+      toast.error("Analysis failed. Please try again.");
     }
   };
 
@@ -109,10 +110,10 @@ const HRStaffView = ({
 
   const handleSendScreeningTest = () => {
     if (selectedCandidates.size === 0) {
-      alert("Please select at least one candidate to send screening test.");
+      toast.warn("Please select at least one candidate to send screening test.");
       return;
     }
-    alert(
+    toast.success(
       `Screening test link sent to ${selectedCandidates.size} selected candidate(s)!`
     );
     setSelectedCandidates(new Set());

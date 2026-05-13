@@ -1080,6 +1080,33 @@
     flex-shrink: 0;
 }
 
+.stc_back_btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #fff;
+    border: 1px solid #e5e0f5;
+    color: #6c4cdc;
+    font-weight: 600;
+    font-size: 13px;
+    font-family: inherit;
+    padding: 6px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.stc_back_btn:hover {
+    background: #f5f2ff;
+    border-color: #c5b8ff;
+    color: #5b21b6;
+}
+
+.stc_back_btn svg {
+    color: inherit;
+    flex-shrink: 0;
+}
+
 /* ---- Top action bar (Preview + Save) ---- */
 .stc_top_action_bar {
     display: flex;

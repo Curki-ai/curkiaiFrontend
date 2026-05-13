@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { toast } from "react-toastify";
 import "../../Styles/general-styles/UploaderPage.css";
 import { API_BASE } from "../../config/apiBase";
 import BlackExpandIcon from "../../../src/Images/BlackExpandIcon.png";
@@ -483,6 +484,11 @@ const HomePage = () => {
       if (res.ok && firstOrgId) {
         setOrganizationId(firstOrgId);
         setOrgLookupStatus("found");
+        if (data.justActivated) {
+          toast.success(
+            "Welcome! Your invitation to Curki Smart Onboarding has been accepted."
+          );
+        }
         console.log("organizationId set:", firstOrgId);
         return;
       }
@@ -1819,6 +1825,7 @@ const HomePage = () => {
 
   return (
     <>
+      {/* ToastContainer lives at the App root — see App.js. */}
       {showSignIn ?
 
         <SignIn show={showSignIn} onClose={() => setShowSignIn(false)} />

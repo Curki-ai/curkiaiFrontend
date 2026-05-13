@@ -7,7 +7,7 @@ import pricingExampleIcon from "../../Images/PricingExampleIcon.svg"
 import pricingTooltip from "../../Images/pricingTooltipIcon.svg"
 import pricingExample from "../../Images/newPricingExample.svg"
 import ausDollar from "../../Images/AusDollar.svg"
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 import { API_BASE } from "../../config/apiBase";
 const PricingPlansModal =({ onClose, email: userEmail, firstName: firstName, setSubscriptionInfo, isAdmin, adminDetails }) => {
     console.log("User Email:", userEmail); // For debugging
@@ -92,7 +92,7 @@ const PricingPlansModal =({ onClose, email: userEmail, firstName: firstName, set
     };
     return (
         <div className="pricing-overlay">
-            <ToastContainer position="top-right" />
+            {/* ToastContainer is mounted once globally in HomePage. */}
             <div className="pricing-container">
                 {/* Top bar */}
                 {/* <div className="pricing-top">

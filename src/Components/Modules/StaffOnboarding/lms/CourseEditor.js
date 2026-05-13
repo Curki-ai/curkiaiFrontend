@@ -47,6 +47,17 @@ const CourseEditor = ({ course, onChange, onBack, saveStatus, organizationId }) 
     return { info: infoOk, curriculum: curriculumOk };
   }, [course]);
 
+  const allReady = useMemo(() => {
+    const objectivesOk =
+      (course.objectives || []).filter((o) => o && o.trim()).length >= 1;
+    return (
+      completion.info &&
+      completion.curriculum &&
+      !!course.thumb &&
+      objectivesOk
+    );
+  }, [completion, course.objectives, course.thumb]);
+
   const idx = STEPS.findIndex((s) => s.id === step);
   const isLast = idx === STEPS.length - 1;
   const isFirst = idx === 0;
@@ -111,6 +122,12 @@ const CourseEditor = ({ course, onChange, onBack, saveStatus, organizationId }) 
           <button
             className={`ulms-btn-publish ${course.status === "published" ? "published" : ""}`}
             onClick={togglePublish}
+            disabled={course.status !== "published" && !allReady}
+            title={
+              course.status !== "published" && !allReady
+                ? "Resolve the readiness warnings before publishing."
+                : undefined
+            }
           >
             {course.status === "published" ? "Unpublish" : "Publish"}
           </button>

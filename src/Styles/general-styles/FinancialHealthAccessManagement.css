@@ -1,76 +1,84 @@
 /* Financial Health — Access Management
-   Self-contained styles. All class names are namespaced with `fh-access-`
-   so this stylesheet does not collide with any other module. The visual
-   language deliberately matches Care Voice's cv-access-* surface so admins
-   moving between modules don't have to relearn the UI. */
+   Visual language mirrors Care Voice's cv-access-* surface so admins
+   moving between modules don't have to relearn the UI. All class names
+   are namespaced with `fh-access-` (and `fha-` for role-select internals)
+   so this stylesheet does not collide with any other module. Shared by
+   FinancialHealth, TLC Client Profitability, TLC Custom Reporting, and
+   the NDIS/Compliance/Quality incident surfaces (different apiBase). */
 
-.access-mgmt-trigger-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin-left: auto;
-  padding: 8px 14px;
-  border-radius: 10px;
-  border: 1px solid #e2e0ef;
-  background: #ffffff;
-  font-family: 'Inter', sans-serif;
-  font-size: 14px;
-  font-weight: 500;
-  color: #707493;
-  cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease;
-}
-
-.access-mgmt-trigger-btn:hover {
-  background: #f6f5fb;
-  border-color: #c8c2e8;
-}
-
+/* ── OVERLAY ── */
 .fh-access-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(17, 19, 39, 0.45);
+  background: rgba(17, 19, 39, 0.5);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 24px;
   z-index: 1000;
   font-family: 'Inter', sans-serif;
+  animation: fha-fade-in 0.2s ease;
 }
 
+@keyframes fha-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fha-slide-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fha-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── MODAL ── */
 .fh-access-modal {
   background: #ffffff;
-  width: min(880px, 100%);
+  width: min(920px, 100%);
   max-height: 90vh;
   border-radius: 16px;
-  box-shadow: 0 22px 60px rgba(31, 31, 64, 0.22);
+  box-shadow: 0 24px 64px rgba(31, 31, 64, 0.18),
+    0 0 0 1px rgba(108, 76, 220, 0.06);
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  animation: fha-slide-up 0.3s ease;
 }
 
-.fh-access-scroll {
-  padding: 28px 32px 32px;
-  overflow-y: auto;
-}
-
-.fh-access-header {
+/* ── MODAL HEADER ── */
+.fh-access-modal-header {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 24px;
+  align-items: center;
+  gap: 14px;
+  padding: 22px 28px;
+  border-bottom: 1px solid #ecebf3;
+  background: linear-gradient(180deg, #faf9ff 0%, #ffffff 100%);
   position: relative;
 }
 
-.fh-access-header > div:first-child {
+.fh-access-header-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #efeafd 0%, #ddd5fa 100%);
+  color: #6c4cdc;
+  flex-shrink: 0;
+}
+
+.fh-access-header-text {
   flex: 1;
-  text-align: center;
   min-width: 0;
 }
 
 .fh-access-title {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 600;
   color: #1f1f40;
   text-align: left;
@@ -79,22 +87,21 @@
 .fh-access-subtitle {
   font-size: 13px;
   color: #6b6f8d;
-  margin: 4px auto 0;
+  margin-top: 2px;
   text-align: left;
 }
 
 .fh-access-close {
   background: transparent;
   border: none;
-  font-size: 24px;
+  font-size: 22px;
   line-height: 1;
   color: #6b6f8d;
   cursor: pointer;
-  padding: 4px 8px;
+  padding: 6px 10px;
   border-radius: 8px;
-  position: absolute;
-  right: 0;
-  top: 0;
+  transition: background 0.15s ease, color 0.15s ease;
+  flex-shrink: 0;
 }
 
 .fh-access-close:hover {
@@ -102,30 +109,100 @@
   color: #1f1f40;
 }
 
-.fh-access-section-title {
+/* ── SCROLL BODY ── */
+.fh-access-scroll {
+  padding: 24px 28px 28px;
+  overflow-y: auto;
+}
+
+/* ── STAT PILLS ── */
+.fh-access-stats-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.fh-access-stat-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #4f5273;
+  background: #f6f5fb;
+  border: 1px solid #ecebf3;
+}
+
+.fh-access-stat-pill strong {
+  font-weight: 600;
+  color: #1f1f40;
+}
+
+.fh-access-stat-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.fh-access-stat-dot-green { background: #22c55e; }
+.fh-access-stat-dot-amber { background: #f59e0b; }
+
+.fh-access-stat-green {
+  background: #f0faf3;
+  border-color: #d1edd8;
+}
+
+.fh-access-stat-amber {
+  background: #fffbf0;
+  border-color: #f5e6c0;
+}
+
+/* ── INVITE CARD ── */
+.fh-access-invite-card {
+  background: #faf9ff;
+  border: 1px solid #ecebf3;
+  border-radius: 12px;
+  padding: 20px 22px 22px;
+  margin-bottom: 24px;
+}
+
+.fh-access-invite-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 14px;
   font-weight: 600;
   color: #1f1f40;
-  margin-bottom: 12px;
-}
-
-.fh-access-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
   margin-bottom: 16px;
 }
 
-.fh-access-row-invite {
-  grid-template-columns: 1fr 1fr auto;
-  align-items: end;
-  margin-bottom: 8px;
+.fh-access-invite-card-header svg {
+  color: #6c4cdc;
+}
+
+.fh-access-invite-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
 }
 
 .fh-access-field {
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+
+.fh-access-field-full {
+  grid-column: 1 / -1;
+}
+
+.fh-access-invite-action-field {
+  display: flex;
+  flex-direction: column;
+  margin-top: 4px;
 }
 
 .fh-access-label {
@@ -135,15 +212,19 @@
   text-align: left;
 }
 
+.fh-access-label-invisible {
+  visibility: hidden;
+}
+
 .fh-access-required {
   color: #d04a4a;
   margin-left: 2px;
 }
 
-.fh-access-input,
-.fh-access-select {
+.fh-access-input {
   width: 100%;
-  padding: 10px 12px;
+  height: 40px;
+  padding: 0 12px;
   font-size: 14px;
   font-family: inherit;
   color: #1f1f40;
@@ -155,30 +236,300 @@
   box-sizing: border-box;
 }
 
-.fh-access-input:focus,
-.fh-access-select:focus {
+.fh-access-input:focus {
   border-color: #6c4cdc;
-  box-shadow: 0 0 0 3px rgba(108, 76, 220, 0.15);
+  box-shadow: 0 0 0 3px rgba(108, 76, 220, 0.12);
 }
 
+.fh-access-input::placeholder {
+  color: #b0b3c6;
+}
+
+/* Static role badge used when allowStaffRole is false. Matches input height
+   so the row aligns visually with Name/Email/Invite controls. */
+.fh-access-role-static {
+  display: flex;
+  align-items: center;
+  height: 40px;
+  padding: 0 12px;
+  background: #ffffff;
+  border: 1px dashed #dcdce5;
+  border-radius: 10px;
+  box-sizing: border-box;
+  gap: 8px;
+  color: #1f1f40;
+  font-size: 13px;
+}
+
+.fh-access-role-static-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background: #efeafd;
+  color: #6c4cdc;
+  flex-shrink: 0;
+}
+
+.fh-access-role-static-text {
+  font-weight: 500;
+  color: #1f1f40;
+}
+
+.fh-access-role-static-hint {
+  margin-left: auto;
+  font-size: 11px;
+  color: #9295ad;
+}
+
+/* ── INVITE BUTTON ── */
+.fh-access-invite-btn {
+  height: 40px;
+  padding: 0 20px;
+  border-radius: 10px;
+  border: none;
+  background: #6c4cdc;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.08s ease, box-shadow 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  white-space: nowrap;
+}
+
+.fh-access-invite-btn:hover:not(:disabled) {
+  background: #5a3fc4;
+  box-shadow: 0 4px 12px rgba(108, 76, 220, 0.25);
+}
+
+.fh-access-invite-btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.fh-access-invite-btn:disabled {
+  background: #b6a9e5;
+  cursor: not-allowed;
+}
+
+/* ── SPINNER ── */
+.fh-access-spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: fha-spin 0.6s linear infinite;
+}
+
+.fh-access-spinner-lg {
+  width: 22px;
+  height: 22px;
+  border: 2.5px solid #e6e0f7;
+  border-top-color: #6c4cdc;
+}
+
+/* ── ERROR / SUCCESS ── */
+.fh-access-error,
+.fh-access-success {
+  margin-top: 14px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  animation: fha-slide-up 0.25s ease;
+}
+
+.fh-access-error {
+  background: #fef2f2;
+  color: #b53b3b;
+  border: 1px solid #fecaca;
+}
+
+.fh-access-success {
+  background: #f0faf3;
+  color: #16803c;
+  border: 1px solid #bbf7d0;
+}
+
+/* ── CUSTOM ROLE SELECT (mirrors CareVoice's `cva-role-*`) ── */
+.fha-role-select {
+  position: relative;
+}
+
+.fha-role-trigger {
+  width: 100%;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  background: #ffffff;
+  border: 1px solid #dcdce5;
+  border-radius: 10px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 14px;
+  color: #1f1f40;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  box-sizing: border-box;
+}
+
+.fha-role-trigger:hover {
+  border-color: #c5bde8;
+}
+
+.fha-role-open .fha-role-trigger {
+  border-color: #6c4cdc;
+  box-shadow: 0 0 0 3px rgba(108, 76, 220, 0.12);
+}
+
+.fha-role-icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.fha-role-icon-admin {
+  background: #efeafd;
+  color: #6c4cdc;
+}
+
+.fha-role-icon-staff {
+  background: #eaf3ff;
+  color: #2e6bd1;
+}
+
+.fha-role-label {
+  flex: 1;
+  text-align: left;
+  font-weight: 500;
+}
+
+.fha-role-chevron {
+  color: #9ca3af;
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.fha-role-chevron-open {
+  transform: rotate(180deg);
+}
+
+.fha-role-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  background: #ffffff;
+  border: 1px solid #ecebf3;
+  border-radius: 12px;
+  box-shadow: 0 10px 32px rgba(31, 31, 64, 0.12),
+    0 2px 8px rgba(0, 0, 0, 0.06);
+  z-index: 100;
+  padding: 6px;
+  animation: fha-slide-up 0.15s ease;
+}
+
+.fha-role-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  color: #1f1f40;
+  text-align: left;
+  transition: background 0.12s ease;
+}
+
+.fha-role-item:hover {
+  background: #f6f5fb;
+}
+
+.fha-role-item-active {
+  background: #f0edfc;
+}
+
+.fha-role-item-active:hover {
+  background: #ebe7fa;
+}
+
+.fha-role-item-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  flex-shrink: 0;
+}
+
+.fha-role-item-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
+}
+
+.fha-role-item-label {
+  font-weight: 600;
+  font-size: 13px;
+  color: #1f1f40;
+}
+
+.fha-role-item-desc {
+  font-size: 11px;
+  color: #6b6f8d;
+  font-weight: 400;
+}
+
+.fha-role-item-check {
+  color: #6c4cdc;
+  font-weight: 700;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+/* ── STATES CHIPS (multi-select for invite form) ── */
 .fh-access-states {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  padding: 8px;
+  padding: 10px 12px;
+  background: #ffffff;
   border: 1px solid #dcdce5;
   border-radius: 10px;
-  background: #ffffff;
+  min-height: 40px;
+  box-sizing: border-box;
 }
 
 .fh-access-state-chip {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 10px;
+  padding: 5px 12px;
   border-radius: 999px;
-  border: 1px solid #dcdce5;
-  background: #ffffff;
+  background: #f6f5fb;
+  border: 1px solid #ecebf3;
   color: #4f5273;
   font-size: 12px;
   font-weight: 500;
@@ -188,12 +539,14 @@
 }
 
 .fh-access-state-chip:hover {
-  border-color: #c8c2e8;
+  background: #efeafd;
+  border-color: #d8d0f3;
+  color: #1f1f40;
 }
 
 .fh-access-state-chip-selected {
   background: #efeafd;
-  border-color: #6c4cdc;
+  border-color: #c5bde8;
   color: #6c4cdc;
 }
 
@@ -201,62 +554,27 @@
   font-weight: 600;
 }
 
-.fh-access-invite-cell {
-  display: flex;
-  align-items: end;
-}
-
-.fh-access-invite-btn {
-  height: 40px;
-  padding: 0 18px;
-  border-radius: 10px;
-  border: none;
-  background: #6c4cdc;
-  color: #ffffff;
-  font-size: 14px;
-  font-weight: 600;
-  font-family: inherit;
-  cursor: pointer;
-  transition: background 0.15s ease, transform 0.05s ease;
-}
-
-.fh-access-invite-btn:hover:not(:disabled) {
-  background: #5a3fc4;
-}
-
-.fh-access-invite-btn:disabled {
-  background: #b6a9e5;
-  cursor: not-allowed;
-}
-
-.fh-access-error,
-.fh-access-success {
-  margin-top: 12px;
-  padding: 10px 12px;
-  border-radius: 8px;
-  font-size: 13px;
-}
-
-.fh-access-error {
-  background: #fdecec;
-  color: #b53b3b;
-  border: 1px solid #f4c5c5;
-}
-
-.fh-access-success {
-  background: #e7f7ed;
-  color: #1f7a3f;
-  border: 1px solid #b9e4c8;
-}
-
+/* ── TEAM MEMBERS LIST ── */
 .fh-access-list-section {
-  margin-top: 28px;
+  margin-top: 4px;
 }
 
-.fh-access-list-title {
+.fh-access-list-header {
+  margin-bottom: 12px;
+}
+
+.fh-access-list-title-row {
   display: flex;
   align-items: center;
   gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f1f40;
+  margin-left: 10px;
+}
+
+.fh-access-list-title-row svg {
+  color: #6c4cdc;
 }
 
 .fh-access-count {
@@ -273,16 +591,39 @@
   font-weight: 600;
 }
 
+/* Empty / loading states */
 .fh-access-state {
-  padding: 18px;
+  padding: 28px 18px;
   font-size: 13px;
   color: #6b6f8d;
-  background: #f8f7fc;
+  background: #faf9ff;
   border: 1px dashed #dcd9ec;
-  border-radius: 10px;
+  border-radius: 12px;
   text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
 }
 
+.fh-access-state-icon {
+  color: #c5c0e0;
+  margin-bottom: 8px;
+}
+
+.fh-access-state-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f1f40;
+}
+
+.fh-access-state-sub {
+  font-size: 12px;
+  color: #9295ad;
+}
+
+/* ── TABLE ── */
 .fh-access-table-wrapper {
   border: 1px solid #ecebf3;
   border-radius: 12px;
@@ -297,15 +638,15 @@
 .fh-access-table-header,
 .fh-access-table-row {
   display: grid;
-  grid-template-columns: 1.2fr 1.6fr 0.7fr 0.8fr 1.2fr 0.9fr;
+  grid-template-columns: 2fr 0.7fr 0.8fr 1.2fr 0.8fr;
   gap: 12px;
-  padding: 12px 16px;
+  padding: 12px 18px;
   align-items: center;
 }
 
 .fh-access-table-header {
   background: #f6f5fb;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   color: #6b6f8d;
   text-transform: uppercase;
@@ -313,47 +654,79 @@
 }
 
 .fh-access-table-row {
-  border-top: 1px solid #ecebf3;
+  border-top: 1px solid #f0eff5;
   font-size: 13px;
   color: #1f1f40;
+  transition: background 0.12s ease;
 }
 
 .fh-access-table-row:hover {
-  background: #fafaff;
+  background: #faf9ff;
+}
+
+/* ── USER CELL (avatar + name + email) ── */
+.fh-access-user-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.fh-access-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  flex-shrink: 0;
+}
+
+.fh-access-user-info {
+  min-width: 0;
+}
+
+.fh-access-user-name-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .fh-access-name-cell {
   font-weight: 500;
+  font-size: 13px;
+  color: #1f1f40;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fh-access-you-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: #efeafd;
+  color: #6c4cdc;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  flex-shrink: 0;
 }
 
 .fh-access-email {
-  color: #4f5273;
-  word-break: break-all;
-}
-
-.fh-access-states-cell {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
   font-size: 12px;
-  color: #4f5273;
+  color: #9295ad;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.fh-access-state-pill {
-  display: inline-flex;
-  align-items: center;
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: #f1efff;
-  color: #5a3fc4;
-  font-size: 11px;
-}
-
-.fh-access-state-pill-all {
-  background: #e7f7ed;
-  color: #1f7a3f;
-}
-
+/* ── BADGES ── */
 .fh-access-badge {
   display: inline-flex;
   align-items: center;
@@ -391,6 +764,33 @@
   color: #6b6f8d;
 }
 
+/* ── STATES CELL (read-only, inside table rows) ── */
+.fh-access-states-cell {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.fh-access-state-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #f6f5fb;
+  border: 1px solid #ecebf3;
+  color: #4f5273;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.fh-access-state-pill-all {
+  background: #efeafd;
+  border-color: #d8d0f3;
+  color: #6c4cdc;
+  font-weight: 600;
+}
+
+/* ── ACTION BUTTONS ── */
 .fh-access-actions-cell {
   display: flex;
   justify-content: flex-start;
@@ -410,12 +810,16 @@
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
-  transition: background 120ms ease, border-color 120ms ease;
+  transition: background 0.12s ease, border-color 0.12s ease, transform 0.08s ease;
 }
 
 .fh-access-revoke-btn:hover:not(:disabled) {
-  background: #ffe9e9;
-  border-color: #e89898;
+  background: #fee2e2;
+  border-color: #fca5a5;
+}
+
+.fh-access-revoke-btn:active:not(:disabled) {
+  transform: scale(0.97);
 }
 
 .fh-access-revoke-btn:disabled {
@@ -423,18 +827,45 @@
   cursor: not-allowed;
 }
 
+/* ── TRIGGER BUTTON (used by consumer modules to open the modal) ── */
+.fh-access-trigger-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1px solid #e2e0ef;
+  background: #ffffff;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: #707493;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.fh-access-trigger-btn:hover {
+  background: #f6f5fb;
+  border-color: #c8c2e8;
+}
+
+/* ── RESPONSIVE ── */
 @media (max-width: 720px) {
-  .fh-access-scroll {
-    padding: 22px 20px 24px;
+  .fh-access-modal-header {
+    padding: 18px 20px;
   }
 
-  .fh-access-row,
-  .fh-access-row-invite {
+  .fh-access-scroll {
+    padding: 20px;
+  }
+
+  .fh-access-invite-grid {
     grid-template-columns: 1fr;
   }
 
-  .fh-access-invite-cell {
-    justify-content: stretch;
+  .fh-access-label-invisible {
+    display: none;
   }
 
   .fh-access-invite-btn {
@@ -444,10 +875,20 @@
   .fh-access-table-header,
   .fh-access-table-row {
     grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    padding: 12px 14px;
   }
 
-  .fh-access-table-header > div:nth-child(n+3),
-  .fh-access-table-row > div:nth-child(n+3) {
+  .fh-access-table-header > div:nth-child(3),
+  .fh-access-table-header > div:nth-child(4),
+  .fh-access-table-header > div:nth-child(5),
+  .fh-access-table-row > div:nth-child(3),
+  .fh-access-table-row > div:nth-child(4),
+  .fh-access-table-row > div:nth-child(5) {
     grid-column: span 1;
+  }
+
+  .fh-access-stats-row {
+    gap: 8px;
   }
 }

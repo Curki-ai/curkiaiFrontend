@@ -67,7 +67,6 @@
   align-items: center;
   justify-content: space-between;
   padding: 12px 18px;
-  border-bottom: 1px solid #ebebf0;
   background: #fff;
   gap: 12px;
 }
@@ -171,6 +170,15 @@
   background: #fff5f5;
 }
 
+.ulms-btn-publish:disabled,
+.ulms-btn-publish:disabled:hover {
+  background: #c9bfe1;
+  border-color: #c9bfe1;
+  color: #fff;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
 /* =========================================================
    EDITOR LAYOUT
    ========================================================= */
@@ -191,14 +199,14 @@
   flex-shrink: 0;
   height: 56px;
   align-items: stretch;
-  border-bottom: 2px solid rgba(108, 76, 220, 0.18);
+  border-radius: 11px;
 }
 
 .ulms-editor-main {
   flex: 1;
   overflow-y: auto;
   background: #ffffff;
-  padding: 28px 0px;
+  padding: 28px 8px;
 }
 
 /* NAV ITEMS */
@@ -282,13 +290,13 @@
    STEP CONTENT
    ========================================================= */
 .ulms-step-content {
-  max-width: 880px;
+  max-width: 1200px;
   margin: 0 auto;
 }
 
 .ulms-step-content.ulms-curric-step,
 .ulms-step-content.ulms-publish-wrap {
-  max-width: 1100px;
+  max-width: 1400px;
 }
 
 .ulms-step-header {
@@ -304,7 +312,7 @@
   position: sticky;
   top: 0;
   z-index: 5;
-  max-width: 880px;
+  max-width: 1200px;
   margin: 0 auto 24px;
   padding: 12px 0;
   background: #ffffff;
@@ -316,7 +324,7 @@
 }
 
 .ulms-step-actionbar.wide {
-  max-width: 1100px;
+  max-width: 1400px;
 }
 
 .ulms-step-actionbar .ulms-step-header {
@@ -1731,7 +1739,7 @@
 
 .ulms-footer-inner {
   width: 100%;
-  max-width: 880px;
+  max-width: 1200px;
   margin: 0 auto;
   display: flex;
   align-items: center;
@@ -1741,7 +1749,7 @@
 }
 
 .ulms-footer-inner.wide {
-  max-width: 1100px;
+  max-width: 1400px;
 }
 
 .ulms-footer-info {
