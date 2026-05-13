@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import star from "../../../../Images/star.png";
 import "../../../../Styles/SupportAtHomeModule/CareVoice/VoiceModule.css";
 import voiceRoleIcon from "../../../../Images/VoiceRoleIcon.png";
@@ -98,6 +100,9 @@ const VoiceModule = (props) => {
     const [organizationId, setOrganizationId] = useState(null);
     const [organizationName, setOrganizationName] = useState("");
     const [orgLookupStatus, setOrgLookupStatus] = useState("idle");
+    // Welcome toast trigger — deferred via useEffect below so the toast
+    // fires only after ToastContainer is mounted in the main return.
+    const [pendingWelcomeToast, setPendingWelcomeToast] = useState(false);
 
     const [role, setRole] = useState("Admin");
     const [currentUserRole, setCurrentUserRole] = useState(null);
@@ -135,6 +140,8 @@ const VoiceModule = (props) => {
     // STAFF TEMPLATE DRAWER
     // const [showTemplateDrawer, setShowTemplateDrawer] = useState(false);
     const mediaRecorderRef = useRef(null);
+    const mediaStreamRef = useRef(null);
+    const audioContextRef = useRef(null);
     const audioChunksRef = useRef([]);
     const audioRef = useRef(null);
     const [audioURL, setAudioURL] = useState(null);
@@ -293,7 +300,32 @@ const VoiceModule = (props) => {
     const downloadRecording = async () => {
         if (!audioBlob || isDownloadingRecording) return;
 
-        const filename = `recording_${Date.now()}`;
+        const sanitize = (s) =>
+            String(s || "")
+                .replace(/\.[a-zA-Z0-9]{1,5}$/, "")
+                .replace(/[<>:"/\\|?*\x00-\x1F]/g, "_")
+                .replace(/\s+/g, "_")
+                .replace(/_+/g, "_")
+                .replace(/^_+|_+$/g, "")
+                .slice(0, 80);
+
+        let baseName = "";
+        if (
+            selectedTemplate?.isMulti &&
+            Array.isArray(selectedTemplate.templates) &&
+            selectedTemplate.templates.length > 0
+        ) {
+            baseName = selectedTemplate.templates
+                .map((t) => sanitize(t.templateName))
+                .filter(Boolean)
+                .join("_");
+        } else if (selectedTemplate?.templateName) {
+            baseName = sanitize(selectedTemplate.templateName);
+        }
+
+        const filename = baseName
+            ? `${baseName}_${Date.now()}`
+            : `recording_${Date.now()}`;
 
         try {
             setIsDownloadingRecording(true);
@@ -324,7 +356,7 @@ const VoiceModule = (props) => {
             window.URL.revokeObjectURL(url);
         } catch (err) {
             console.error("Failed to download recording as mp3:", err);
-            alert("Failed to download recording. Please try again.");
+            toast.error("Failed to download recording. Please try again.");
         } finally {
             setIsDownloadingRecording(false);
         }
@@ -508,6 +540,9 @@ const VoiceModule = (props) => {
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
+    // Re-runs when the slider mounts/unmounts (templates count changes),
+    // so the scroll listener is actually attached once the slider element
+    // exists in the DOM.
     useEffect(() => {
         const slider = sliderRef.current;
         if (!slider) return;
@@ -516,18 +551,18 @@ const VoiceModule = (props) => {
             const card = slider.querySelector(".vm-template-card");
             if (!card) return;
 
-            const cardWidth = card.offsetWidth + 12; // same gap
-            const index = Math.floor(
-                (slider.scrollLeft + cardWidth / 2) / cardWidth
-            );
+            const cardWidth = card.offsetWidth + 12; // card + gap
+            const index = Math.round(slider.scrollLeft / cardWidth);
 
             setTemplateIndex(index);
         };
 
-        slider.addEventListener("scroll", handleScroll);
+        slider.addEventListener("scroll", handleScroll, { passive: true });
+        // Run once on attach so the active dot reflects current scroll
+        handleScroll();
 
         return () => slider.removeEventListener("scroll", handleScroll);
-    }, []);
+    }, [templates.length, stage, activeTemplate]);
 
     useEffect(() => {
         if (role === "Admin") {
@@ -571,7 +606,7 @@ const VoiceModule = (props) => {
             editedPrompt?.trim() ? editedPrompt : activeTemplate?.prompt || "";
 
         if (!promptToSave.trim()) {
-            alert("Prompt cannot be empty");
+            toast.warn("Prompt cannot be empty");
             return;
         }
 
@@ -608,7 +643,7 @@ const VoiceModule = (props) => {
             setTimeout(() => setPromptSavedToast(false), 1500);
         } catch (err) {
             console.error("Save prompt failed", err);
-            alert("Failed to save prompt");
+            toast.error("Failed to save prompt");
         } finally {
             setSavingPrompt(false);
         }
@@ -616,52 +651,30 @@ const VoiceModule = (props) => {
 
 
     const AccordionHeader = ({ icon, title, subtitle, isOpen, onClick }) => (
-        <div
+        <button
+            type="button"
             onClick={onClick}
-            style={{
-                padding: "14px 18px",
-                background:
-                    "linear-gradient(180deg, #6C4CDC -65.32%, #FFFFFF 157.07%, #FFFFFF 226.61%)",
-                borderRadius: "8px",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                // justifyContent: "space-between",
-                marginBottom: "12px",
-                gap: "10px"
-            }}
+            className="vm-accordion-header"
+            aria-expanded={isOpen}
         >
             <img
                 src={TlcPayrollDownArrow}
-                alt="toggle"
-                style={{
-                    width: "18px",
-                    height: "10px",
-                    transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
-                    transition: "transform 0.2s ease",
-                }}
+                alt=""
+                aria-hidden="true"
+                className={`vm-accordion-toggle ${isOpen ? "vm-accordion-toggle-open" : ""}`}
             />
-            {/* LEFT SIDE */}
-            <div style={{ display: "flex", alignItems: "flex-start", gap: "10px" }}>
-                {/* ICON */}
-
-
-                {/* TITLE + SUBTITLE */}
-                <div style={{ display: "flex", flexDirection: "column", textAlign: "left" }}>
-                    <span style={{ fontSize: "16px", fontWeight: 600, color: "#000" }}>{title}</span>
-                </div>
+            <div className="vm-accordion-header-text">
+                <span className="vm-accordion-header-title">{title}</span>
                 {icon === TlcPayrollInsightIcon && (
                     <img
                         src={icon}
-                        alt="accordion-icon"
-                        style={{ width: "20px", height: "20px" }}
+                        alt=""
+                        aria-hidden="true"
+                        className="vm-accordion-header-icon"
                     />
                 )}
             </div>
-
-            {/* RIGHT ARROW */}
-
-        </div>
+        </button>
     );
 
 
@@ -684,8 +697,24 @@ const VoiceModule = (props) => {
         const s = String(total % 60).padStart(2, "0");
         return `${h}:${m}:${s}`;
     };
+    const releaseMicResources = () => {
+        try {
+            mediaStreamRef.current?.getTracks().forEach((t) => t.stop());
+        } catch (e) {
+            console.warn("Failed to stop mic tracks:", e);
+        }
+        mediaStreamRef.current = null;
+
+        const ctx = audioContextRef.current;
+        if (ctx && ctx.state !== "closed") {
+            ctx.close().catch(() => { });
+        }
+        audioContextRef.current = null;
+    };
+
     const startRecording = async () => {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaStreamRef.current = stream;
 
         const mediaRecorder = new MediaRecorder(stream);
         mediaRecorderRef.current = mediaRecorder;
@@ -700,10 +729,12 @@ const VoiceModule = (props) => {
             setAudioBlob(blob);
             setAudioURL(URL.createObjectURL(blob));
             setIsSpeaking(false);
+            releaseMicResources();
         };
 
         // 🎤 voice detect
         const audioContext = new window.AudioContext();
+        audioContextRef.current = audioContext;
         const analyser = audioContext.createAnalyser();
         const source = audioContext.createMediaStreamSource(stream);
 
@@ -747,6 +778,13 @@ const VoiceModule = (props) => {
         setRecordMode("preview");
     };
     const discardRecording = () => {
+        const recorder = mediaRecorderRef.current;
+        if (recorder && recorder.state !== "inactive") {
+            try {
+                recorder.stop();
+            } catch (e) { /* noop */ }
+        }
+        releaseMicResources();
         setAudioURL(null);
         setRecordTime(0);
         audioChunksRef.current = [];
@@ -780,12 +818,25 @@ const VoiceModule = (props) => {
     }, [audioURL]);
 
     useEffect(() => {
+        return () => {
+            const recorder = mediaRecorderRef.current;
+            if (recorder && recorder.state !== "inactive") {
+                try {
+                    recorder.stop();
+                } catch (e) { /* noop */ }
+            }
+            releaseMicResources();
+        };
+    }, []);
+
+    useEffect(() => {
         if (!audioRef.current) return;
 
         const audio = audioRef.current;
 
         const handleEnded = () => {
             setIsPlaying(false);
+            setPlayTime(0);
         };
 
         audio.addEventListener("ended", handleEnded);
@@ -886,7 +937,7 @@ const VoiceModule = (props) => {
     const acceptRecording = async () => {
         if (!audioBlob) return;
         if (recordTime < 10) {
-            alert("Audio must be at least 10 seconds long.");
+            toast.warn("Audio must be at least 10 seconds long.");
             return;
         }
         if (setIsCareVoiceLocked) setIsCareVoiceLocked(true);
@@ -1285,7 +1336,7 @@ const VoiceModule = (props) => {
                 stopProgress();
                 finish();
                 setStage("review");
-                alert(
+                toast.error(
                     "The AI engine stopped responding. Please try again or check backend logs."
                 );
                 return;
@@ -1321,7 +1372,7 @@ const VoiceModule = (props) => {
                     stopProgress();
                     finish();
                     setStage("review");
-                    alert(
+                    toast.error(
                         `Backend error: ${data?.error || res.status}. Please try again.`
                     );
                     return;
@@ -1333,7 +1384,7 @@ const VoiceModule = (props) => {
                     stopProgress();
                     finish();
                     setStage("review");
-                    alert(
+                    toast.error(
                         `AI engine error: ${data?.payload?.message || "Unknown error"
                         }. Please try again.`
                     );
@@ -1584,7 +1635,7 @@ const VoiceModule = (props) => {
             const data = await res.json();
             if (!data.success) throw new Error("Save failed");
             savePromptDirectly()
-            alert(editingTemplateId ? "Template updated successfully" : "Template saved successfully");
+            toast.success(editingTemplateId ? "Template updated successfully" : "Template saved successfully");
             if (!editingTemplateId) {
                 resetToTemplateList();
             }
@@ -1592,7 +1643,7 @@ const VoiceModule = (props) => {
 
         } catch (err) {
             console.error("[UI][SAVE] Failed", err);
-            alert("Failed to save template");
+            toast.error("Failed to save template");
         } finally {
             setIsSaving(false);
         }
@@ -1609,6 +1660,12 @@ const VoiceModule = (props) => {
             "sampleBlobs",
             JSON.stringify(tpl.sampleBlobs || [])
         );
+
+        // templateId + organizationId let the middleware look up a cached
+        // question_set and skip the (expensive) Stage-2 question generation
+        // in Python. Falls back to prompt/mapper when the cache is empty.
+        if (tpl.id) formData.append("templateId", tpl.id);
+        if (organizationId) formData.append("organizationId", organizationId);
 
         formData.append("prompt", tpl.prompt);
 
@@ -1759,7 +1816,7 @@ const VoiceModule = (props) => {
             !selectedTemplate ||
             (selectedTemplate.isMulti && selectedTemplate.templates.length === 0)
         ) {
-            alert("please select atleast one template")
+            toast.warn("Please select at least one template");
             return;
         }
 
@@ -1779,6 +1836,10 @@ const VoiceModule = (props) => {
             );
             // console.log("[STAFF][DOC] Using RAW prompt:", selectedTemplate.prompt);
             // console.log("[STAFF][DOC] Using RAW mapper:", selectedTemplate.mappings);
+
+            // Cached question_set lookup keys.
+            if (selectedTemplate.id) formData.append("templateId", selectedTemplate.id);
+            if (organizationId) formData.append("organizationId", organizationId);
 
             formData.append("prompt", selectedTemplate.prompt);
             const parsedJson = JSON.parse(selectedTemplate.mappings);
@@ -1841,7 +1902,7 @@ const VoiceModule = (props) => {
 
         } catch (err) {
             console.error("Document generation failed", err);
-            alert("Failed to generate document");
+            toast.error("Failed to generate document");
         } finally {
             setIsGeneratingFile(false);
             setTranscribing(false);
@@ -1911,22 +1972,27 @@ const VoiceModule = (props) => {
     const scrollSlider = (dir) => {
         if (!sliderRef.current) return;
 
-        const card = sliderRef.current.querySelector(".vm-template-card");
+        const slider = sliderRef.current;
+        const card = slider.querySelector(".vm-template-card");
         if (!card) return;
 
-        const cardWidth = card.offsetWidth;
-        const gap = 12; // same as padding-right / gap
-        const scrollAmount = (cardWidth + gap) * 0.6;
+        const cardWidth = card.offsetWidth + 12; // card + gap
+        const start = slider.scrollLeft;
+        const distance = dir === "left" ? -cardWidth : cardWidth;
+        const maxScroll = slider.scrollWidth - slider.clientWidth;
+        const target = Math.max(0, Math.min(maxScroll, start + distance));
+        const duration = 520;
+        const startTime = performance.now();
+        const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
 
-        sliderRef.current.scrollBy({
-            left: dir === "left" ? -scrollAmount : scrollAmount,
-            behavior: "smooth",
-        });
-        // setTemplateIndex(prev =>
-        //     dir === "left"
-        //         ? Math.max(prev - CARDS_PER_VIEW, 0)
-        //         : Math.min(prev + CARDS_PER_VIEW, (totalPages - 1) * CARDS_PER_VIEW)
-        // );
+        const step = (now) => {
+            const elapsed = now - startTime;
+            const t = Math.min(elapsed / duration, 1);
+            slider.scrollLeft = start + (target - start) * easeOutCubic(t);
+            if (t < 1) requestAnimationFrame(step);
+        };
+
+        requestAnimationFrame(step);
     };
 
 
@@ -1941,6 +2007,11 @@ const VoiceModule = (props) => {
             "sampleBlobs",
             JSON.stringify(tpl.sampleBlobs || [])
         );
+
+        // Cached question_set lookup keys (middleware skips prompt/mapper
+        // gen when these resolve to a populated questions array).
+        if (tpl.id) formData.append("templateId", tpl.id);
+        if (organizationId) formData.append("organizationId", organizationId);
 
         formData.append("prompt", tpl.prompt);
 
@@ -2223,11 +2294,11 @@ const VoiceModule = (props) => {
             setFileStage("emailing");
             setFileProgress(90);
             // await sendGeneratedDocsEmail(docsToSend);
-            alert(`Successfully generated ${docsToSend.length} document(s)!`);
+            toast.success(`Successfully generated ${docsToSend.length} document(s)!`);
         } else {
             console.log("No documents were generated");
             if (!hasError) {
-                alert("No documents were generated. Please check your audio files and templates.");
+                toast.warn("No documents were generated. Please check your audio files and templates.");
             }
         }
 
@@ -2281,7 +2352,7 @@ const VoiceModule = (props) => {
 
         } catch (err) {
             console.error("[DOWNLOAD ERROR]", err);
-            alert("Failed to download file");
+            toast.error("Failed to download file");
         } finally {
             setDownloadingFileKey(null);
         }
@@ -2321,6 +2392,9 @@ const VoiceModule = (props) => {
                     setCurrentUserRole("admin");
                 }
                 setOrgLookupStatus("found");
+                if (data.justActivated) {
+                    setPendingWelcomeToast(true);
+                }
             } else {
                 setOrganizationId(null);
                 setOrganizationName("");
@@ -2336,6 +2410,19 @@ const VoiceModule = (props) => {
         fetchOrganization();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [userEmail]);
+
+    // Fire the welcome toast only after the main return has rendered
+    // (i.e. ToastContainer is in the DOM). Emitting from inside the
+    // fetch's then-block runs during the "loading"/transition render
+    // when no ToastContainer is mounted and the message is dropped.
+    useEffect(() => {
+        if (orgLookupStatus === "found" && pendingWelcomeToast) {
+            toast.success(
+                "Welcome! Your invitation to Curki Care Voice has been accepted."
+            );
+            setPendingWelcomeToast(false);
+        }
+    }, [orgLookupStatus, pendingWelcomeToast]);
 
     const transcriptInputRef = useRef(null);
     const resetStaffUI = () => {
@@ -2465,7 +2552,7 @@ const VoiceModule = (props) => {
     const handleEmailAllDocs = async () => {
         if (isEmailingDocs) return;
         setIsEmailingDocs(true);
-        alert("Sending email... Please wait");
+        toast.info("Sending email… please wait");
 
         try {
             const filteredFiles = (props.careVoiceFiles || []).filter((file) => {
@@ -2512,9 +2599,9 @@ const VoiceModule = (props) => {
             );
 
             await sendGeneratedDocsEmail(docs);
-            alert("Email sent successfully");
+            toast.success("Email sent successfully");
         } catch (error) {
-            alert("Failed to send email");
+            toast.error("Failed to send email");
             console.error(error);
         } finally {
             setIsEmailingDocs(false);
@@ -2522,6 +2609,7 @@ const VoiceModule = (props) => {
     };
     return (
         <div className="voice-container">
+            {/* ToastContainer is mounted once globally in HomePage. */}
             {/* ================= TOP ROW ================= */}
             {props.isMobileOrTablet &&
                 <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: '16px', gap: '2px' }}>
@@ -2611,17 +2699,17 @@ const VoiceModule = (props) => {
                                 animationData={selectTemplateAnimation}
                                 loop={true}
                                 autoplay={true}
-                                style={{ width: "200px", height: "200px" }}
                             />
                         </div>
 
                         {/* Text Content */}
                         <div className="staff-landing-text">
                             <h2 className="staff-landing-title">
-                                Select a template to populate
+                                Select A Template To Populate
                             </h2>
                             <p className="staff-landing-description">
-                                Choose a template to get started. We'll automatically structure and populate your transcript or recording.
+                                <span className="staff-landing-description-line">Choose a template to get started. We'll automatically</span>
+                                <span className="staff-landing-description-line">structure and populate your transcript or recording.</span>
                             </p>
                         </div>
 
@@ -2643,26 +2731,11 @@ const VoiceModule = (props) => {
                     {role === "Admin" && activeTemplate && (
                         <div className="vm-template-details">
 
-                            {/* BACK */}
                             {/* BACK + SAVE */}
-                            <div
-                                style={{
-                                    display: "flex",
-                                    justifyContent: "space-between",
-                                    alignItems: "center",
-                                    marginBottom: "35px"
-                                }}
-                            >
-                                <div
-                                    className="vm-back"
-                                    style={{
-                                        cursor: "pointer",
-                                        display: "flex",
-                                        fontSize: "14px",
-                                        color: "#6C4CDC",
-                                        alignItems: "center",
-                                        gap: "2px"
-                                    }}
+                            <div className="vm-template-details-topbar">
+                                <button
+                                    type="button"
+                                    className="vm-back-btn"
                                     onClick={() => {
                                         setActiveTemplate(null);
                                         setEditingTemplateId(null);
@@ -2675,9 +2748,10 @@ const VoiceModule = (props) => {
                                         setEditedPrompt("");
                                         setIsPromptEditing(false);
                                     }}
+                                    aria-label="Back to template list"
                                 >
                                     <GoArrowLeft size={22} color="#6C4CDC" /> Back
-                                </div>
+                                </button>
 
                                 <button
                                     className="analysis-accept-btn"
@@ -2700,21 +2774,17 @@ const VoiceModule = (props) => {
 
                             {/* UPLOADED DOCUMENTS */}
                             <div className="vm-uploaded-docs">
-                                <div style={{ display: "flex", alignItems: "flex-start", gap: "10px" }}>
-                                    <img
-                                        src={careVoiceTemplateViewDoc}
-                                        alt="doc"
-                                        style={{ width: "24px", height: "24px", marginBottom: "8px" }}
-                                    />
-                                    <h4 style={{ marginTop: "2px" }}>Uploaded Documents</h4>
-
+                                <div className="vm-uploaded-docs-title-row">
+                                    <img src={careVoiceTemplateViewDoc} alt="" aria-hidden="true" />
+                                    <h4>Uploaded Documents</h4>
                                 </div>
-                                <div className="vm-file-list" style={{ display: "flex", gap: "10px" }}>
+                                <div className="vm-file-list vm-uploaded-docs-list">
                                     <div
-                                        className="vm-file-item"
+                                        className="vm-file-item vm-file-item-doc"
+                                        role="button"
+                                        tabIndex={downloadingFileKey ? -1 : 0}
+                                        aria-disabled={!!downloadingFileKey}
                                         style={{
-                                            width: "435px",
-                                            height: "78px",
                                             cursor: downloadingFileKey ? "not-allowed" : "pointer",
                                             opacity: downloadingFileKey ? 0.6 : 1,
                                         }}
@@ -2726,72 +2796,85 @@ const VoiceModule = (props) => {
                                                 originalName: activeTemplate.templateOriginalName,
                                             })
                                         }
+                                        onKeyDown={(e) => {
+                                            if (downloadingFileKey) return;
+                                            if (e.key === "Enter" || e.key === " ") {
+                                                e.preventDefault();
+                                                handleDownloadBlob({
+                                                    fileKey: `template-${activeTemplate.id}`,
+                                                    templateId: activeTemplate.id,
+                                                    originalName: activeTemplate.templateOriginalName,
+                                                });
+                                            }
+                                        }}
                                     >
-                                        <div className="vm-file-left" style={{ flexDirection: "column", alignItems: "flex-start" }}>
-                                            {/* DOC ICON ADD HERE */}
-                                            <div style={{ display: "flex", gap: "10px" }}>
-                                                <img
-                                                    src={careVoiceDocIcon}
-                                                    alt="doc"
-                                                    style={{ width: "24px", height: "24px", marginBottom: "8px" }}
-                                                />
-                                                <div style={{ display: "flex", flexDirection: "column" }}>
-                                                    <div className="vm-file-name">
-                                                        {downloadingFileKey === `template-${activeTemplate.id}`
-                                                            ? "Downloading..."
-                                                            : "Template Structure"}
-                                                    </div>
-                                                    <div className="vm-file-status">
-                                                        {downloadingFileKey === `template-${activeTemplate.id}`
-                                                            ? "Please wait"
-                                                            : activeTemplate.templateOriginalName}
-                                                    </div>
+                                        <div className="vm-file-item-doc-inner">
+                                            <img
+                                                src={careVoiceDocIcon}
+                                                alt=""
+                                                aria-hidden="true"
+                                                className="vm-file-doc-icon"
+                                            />
+                                            <div className="vm-file-item-doc-text">
+                                                <div className="vm-file-name">
+                                                    {downloadingFileKey === `template-${activeTemplate.id}`
+                                                        ? "Downloading..."
+                                                        : "Template Structure"}
+                                                </div>
+                                                <div className="vm-file-status">
+                                                    {downloadingFileKey === `template-${activeTemplate.id}`
+                                                        ? "Please wait"
+                                                        : activeTemplate.templateOriginalName}
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
 
                                     {activeTemplate.sampleBlobs?.map((file, i) => {
-                                        // Check file extension for icon
                                         const fileExt = file.originalName?.split('.').pop()?.toLowerCase();
                                         const isPDF = fileExt === 'pdf';
                                         const fileKey = `sample-${activeTemplate.id}-${i}`;
                                         const isDownloading = downloadingFileKey === fileKey;
+                                        const triggerDownload = () =>
+                                            handleDownloadBlob({
+                                                fileKey,
+                                                templateId: activeTemplate.id,
+                                                blobName: file.blobName,
+                                                originalName: file.originalName,
+                                            });
                                         return (
                                             <div
                                                 key={i}
-                                                className="vm-file-item"
+                                                className="vm-file-item vm-file-item-doc"
+                                                role="button"
+                                                tabIndex={downloadingFileKey ? -1 : 0}
+                                                aria-disabled={!!downloadingFileKey}
                                                 style={{
-                                                    width: "435px",
-                                                    height: "78px",
                                                     cursor: downloadingFileKey ? "not-allowed" : "pointer",
                                                     opacity: isDownloading ? 0.6 : 1,
                                                 }}
-                                                onClick={() =>
-                                                    !downloadingFileKey &&
-                                                    handleDownloadBlob({
-                                                        fileKey,
-                                                        templateId: activeTemplate.id,
-                                                        blobName: file.blobName,
-                                                        originalName: file.originalName,
-                                                    })
-                                                }
+                                                onClick={() => !downloadingFileKey && triggerDownload()}
+                                                onKeyDown={(e) => {
+                                                    if (downloadingFileKey) return;
+                                                    if (e.key === "Enter" || e.key === " ") {
+                                                        e.preventDefault();
+                                                        triggerDownload();
+                                                    }
+                                                }}
                                             >
-                                                <div className="vm-file-left" style={{ flexDirection: "column", alignItems: "flex-start" }}>
-                                                    {/* PDF/DOC ICON BASED ON FILE TYPE */}
-                                                    <div style={{ display: "flex", gap: "10px" }}>
-                                                        <img
-                                                            src={isPDF ? careVoicePdfIcon : careVoiceDocIcon}
-                                                            alt={isPDF ? "pdf" : "doc"}
-                                                            style={{ width: "24px", height: "24px", marginBottom: "8px" }}
-                                                        />
-                                                        <div style={{ display: "flex", flexDirection: "column" }}>
-                                                            <div className="vm-file-name">
-                                                                {isDownloading ? "Downloading..." : "Sample Document"}
-                                                            </div>
-                                                            <div className="vm-file-status">
-                                                                {isDownloading ? "Please wait" : file.originalName}
-                                                            </div>
+                                                <div className="vm-file-item-doc-inner">
+                                                    <img
+                                                        src={isPDF ? careVoicePdfIcon : careVoiceDocIcon}
+                                                        alt=""
+                                                        aria-hidden="true"
+                                                        className="vm-file-doc-icon"
+                                                    />
+                                                    <div className="vm-file-item-doc-text">
+                                                        <div className="vm-file-name">
+                                                            {isDownloading ? "Downloading..." : "Sample Document"}
+                                                        </div>
+                                                        <div className="vm-file-status">
+                                                            {isDownloading ? "Please wait" : file.originalName}
                                                         </div>
                                                     </div>
                                                 </div>
@@ -2823,16 +2906,8 @@ const VoiceModule = (props) => {
                                         onChange={(val) => setEditedPrompt(val)}
                                         rightSlot={
                                             <button
-                                                style={{
-                                                    background: "#6C4CDC",
-                                                    color: "#fff",
-                                                    border: "none",
-                                                    padding: "10px 24px",
-                                                    borderRadius: "10px",
-                                                    fontWeight: 600,
-                                                    cursor: savingPrompt ? "not-allowed" : "pointer",
-                                                    opacity: savingPrompt ? 0.7 : 1,
-                                                }}
+                                                type="button"
+                                                className="vm-prompt-save-btn"
                                                 disabled={savingPrompt}
                                                 onClick={savePromptDirectly}
                                             >
@@ -2841,9 +2916,8 @@ const VoiceModule = (props) => {
                                         }
                                     />
 
-
                                     {promptSavedToast && (
-                                        <div style={{ marginTop: "12px", color: "#16a34a", fontWeight: 600 }}>
+                                        <div className="vm-prompt-saved-toast">
                                             ✅ Saved
                                         </div>
                                     )}
@@ -2925,128 +2999,138 @@ const VoiceModule = (props) => {
                                 >
 
                                     <div className="vm-template-track">
-                                        {templates.map((tpl, index) => (
-                                            <div key={tpl.id} className="vm-template-slide">
-                                                <div className={`vm-template-card ${templates.length === 2 ? "vm-template-card-two" : ""
-                                                    }`} onClick={() => {
-                                                        if (openMenuId) return;
-                                                        if (editingNameId === tpl.id) return;
-                                                        setActiveTemplate(tpl);
-                                                        setMapperMode("edit");
+                                        {templates.map((tpl, index) => {
+                                            const openTemplate = () => {
+                                                if (openMenuId) return;
+                                                if (editingNameId === tpl.id) return;
+                                                setActiveTemplate(tpl);
+                                                setMapperMode("edit");
+                                                setEditingTemplateId(tpl.id);
+                                                setRawPrompt(tpl.prompt || "");
+                                                setRawMapper(tpl.mappings || null);
+                                                setMapperRows(mapperToRows(tpl.mappings));
+                                            };
+                                            return (
+                                                <div key={tpl.id} className="vm-template-slide">
+                                                    <div
+                                                        className={`vm-template-card ${templates.length === 2 ? "vm-template-card-two" : ""}`}
+                                                        role="button"
+                                                        tabIndex={editingNameId === tpl.id ? -1 : 0}
+                                                        aria-label={`Open template ${tpl.templateName || `Voice Template ${index + 1}`}`}
+                                                        onClick={openTemplate}
+                                                        onKeyDown={(e) => {
+                                                            if (e.target !== e.currentTarget) return;
+                                                            if (e.key === "Enter" || e.key === " ") {
+                                                                e.preventDefault();
+                                                                openTemplate();
+                                                            }
+                                                        }}
+                                                    >
+                                                        <div className="vm-template-left">
+                                                            <div className="vm-template-icon">
+                                                                <img src={templateIcon} alt="template" />
+                                                            </div>
 
-                                                        // ✅ Needed for save API
-                                                        setEditingTemplateId(tpl.id);
-                                                        setRawPrompt(tpl.prompt || "");
-                                                        setRawMapper(tpl.mappings || null);
+                                                            <div className="vm-template-info">
+                                                                {/* ===== TOP ROW (NAME + DOTS) ===== */}
+                                                                <div className="vm-template-top-row">
+                                                                    {/* LEFT : NAME */}
+                                                                    <div className="vm-template-name">
+                                                                        {editingNameId === tpl.id ? (
+                                                                            <div className="vm-template-rename-row">
+                                                                                <input
+                                                                                    className="vm-template-name-input"
+                                                                                    value={tempName}
+                                                                                    autoFocus
+                                                                                    onChange={(e) => setTempName(e.target.value)}
+                                                                                    onKeyDown={(e) => {
+                                                                                        if (e.key === "Escape") {
+                                                                                            setEditingNameId(null);
+                                                                                            setTempName(tpl.templateName || "");
+                                                                                        }
+                                                                                    }}
+                                                                                />
+                                                                            </div>
+                                                                        ) : (
+                                                                            <>
+                                                                                <span className="vm-template-name-text">
+                                                                                    {(tpl.templateName || `Voice Template ${index + 1}`).length > 30
+                                                                                        ? (tpl.templateName || `Voice Template ${index + 1}`).slice(0, 30) + "..."
+                                                                                        : (tpl.templateName || `Voice Template ${index + 1}`)}
+                                                                                </span>
 
-                                                        setMapperRows(mapperToRows(tpl.mappings));
-                                                    }}
-                                                >
-                                                    <div className="vm-template-left">
-                                                        <div className="vm-template-icon">
-                                                            <img src={templateIcon} alt="template" />
-                                                        </div>
-
-                                                        <div className="vm-template-info">
-                                                            {/* ===== TOP ROW (NAME + DOTS) ===== */}
-                                                            <div className="vm-template-top-row">
-                                                                {/* LEFT : NAME */}
-                                                                <div className="vm-template-name">
-                                                                    {editingNameId === tpl.id ? (
-                                                                        <div className="vm-template-rename-row">
-                                                                            <input
-                                                                                className="vm-template-name-input"
-                                                                                value={tempName}
-                                                                                autoFocus
-                                                                                onChange={(e) => setTempName(e.target.value)}
-                                                                                onKeyDown={(e) => {
-                                                                                    if (e.key === "Escape") {
-                                                                                        setEditingNameId(null);
+                                                                                <span
+                                                                                    className="vm-template-edit-icon"
+                                                                                    onClick={(e) => {
+                                                                                        e.stopPropagation();
+                                                                                        setEditingNameId(tpl.id);
                                                                                         setTempName(tpl.templateName || "");
-                                                                                    }
-                                                                                }}
-                                                                            />
-                                                                        </div>
-                                                                    ) : (
-                                                                        <>
-                                                                            <span className="vm-template-name-text">
-                                                                                {(tpl.templateName || `Voice Template ${index + 1}`).length > 30
-                                                                                    ? (tpl.templateName || `Voice Template ${index + 1}`).slice(0, 30) + "..."
-                                                                                    : (tpl.templateName || `Voice Template ${index + 1}`)}
-                                                                            </span>
+                                                                                    }}
+                                                                                >
+                                                                                    <GoPencil size={14} />
+                                                                                </span>
+                                                                            </>
+                                                                        )}
+                                                                    </div>
 
-                                                                            <span
-                                                                                className="vm-template-edit-icon"
+                                                                    {/* RIGHT : DOTS or RENAME ACTIONS */}
+                                                                    {editingNameId === tpl.id ? (
+                                                                        <div className="vm-template-actions vm-template-rename-actions">
+                                                                            <button
+                                                                                className="vm-rename-yes"
                                                                                 onClick={(e) => {
                                                                                     e.stopPropagation();
-                                                                                    setEditingNameId(tpl.id);
+                                                                                    saveTemplateName(tpl.id);
+                                                                                }}
+                                                                            >
+                                                                                <FiCheck size={14} strokeWidth={3} />
+                                                                            </button>
+
+                                                                            <button
+                                                                                className="vm-rename-no"
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    setEditingNameId(null);
                                                                                     setTempName(tpl.templateName || "");
                                                                                 }}
                                                                             >
-                                                                                <GoPencil size={14} />
+                                                                                <FiX size={14} strokeWidth={3} />
+                                                                            </button>
+                                                                        </div>
+                                                                    ) : (
+                                                                        <div className="vm-template-actions">
+                                                                            <span
+                                                                                className="vm-dots"
+                                                                                onClick={(e) => openDropdown(e, tpl.id)}
+                                                                            >
+                                                                                ...
                                                                             </span>
-                                                                        </>
+                                                                        </div>
                                                                     )}
+
                                                                 </div>
 
-                                                                {/* RIGHT : DOTS or RENAME ACTIONS */}
-                                                                {editingNameId === tpl.id ? (
-                                                                    <div className="vm-template-actions vm-template-rename-actions">
-                                                                        <button
-                                                                            className="vm-rename-yes"
-                                                                            onClick={(e) => {
-                                                                                e.stopPropagation();
-                                                                                saveTemplateName(tpl.id);
-                                                                            }}
-                                                                        >
-                                                                            <FiCheck size={14} strokeWidth={3} />
-                                                                        </button>
+                                                                {/* DATE */}
+                                                                <div className="vm-template-date">
+                                                                    <img
+                                                                        src={careVoiceTimeIcon}
+                                                                        alt="time"
+                                                                        style={{ width: "20px", height: "20px" }}
+                                                                    />
+                                                                    {timeAgo(tpl.createdAt)}
+                                                                </div>
 
-                                                                        <button
-                                                                            className="vm-rename-no"
-                                                                            onClick={(e) => {
-                                                                                e.stopPropagation();
-                                                                                setEditingNameId(null);
-                                                                                setTempName(tpl.templateName || "");
-                                                                            }}
-                                                                        >
-                                                                            <FiX size={14} strokeWidth={3} />
-                                                                        </button>
-                                                                    </div>
-                                                                ) : (
-                                                                    <div className="vm-template-actions">
-                                                                        <span
-                                                                            className="vm-dots"
-                                                                            onClick={(e) => openDropdown(e, tpl.id)}
-                                                                        >
-                                                                            ...
-                                                                        </span>
-                                                                    </div>
-                                                                )}
 
                                                             </div>
-
-                                                            {/* DATE */}
-                                                            <div className="vm-template-date">
-                                                                <img
-                                                                    src={careVoiceTimeIcon}
-                                                                    alt="time"
-                                                                    style={{ width: "20px", height: "20px" }}
-                                                                />
-                                                                {timeAgo(tpl.createdAt)}
-                                                            </div>
-
-
                                                         </div>
-                                                    </div>
 
-                                                    <div className="vm-template-right">
-                                                        {/* <button className="vm-share-btn">
+                                                        <div className="vm-template-right">
+                                                            {/* <button className="vm-share-btn">
                                                             <img src={careVoiceShare} alt="share" />
                                                             Share Template
                                                         </button> */}
 
-                                                        {/* <span
+                                                            {/* <span
                                                             className="vm-dots"
                                                             onClick={() =>
                                                                 setOpenMenuId(openMenuId === tpl.id ? null : tpl.id)
@@ -3074,10 +3158,11 @@ const VoiceModule = (props) => {
                                                                 </div>
                                                             </div>
                                                         )} */}
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            </div>
-                                        ))}
+                                            );
+                                        })}
                                     </div>
                                 </div>
 
@@ -3135,27 +3220,29 @@ const VoiceModule = (props) => {
 
 
                     {/* Upload Section - Hidden when analyze clicked OR during processing */}
-                    {stage !== "processing" && stage !== "completed" && stage !== "review" && !activeTemplate && <div className="vm-admin-heading">
-                        <div className="vm-admin-lottie">
-                            <Lottie
-                                animationData={adminLottie}
-                                loop={true}
-                                autoplay={true}
-                                style={{ width: "260px", height: "260px" }}
-                            />
+                    {stage !== "processing" && stage !== "completed" && stage !== "review" && !activeTemplate && (
+                        <div className="vm-admin-heading">
+                            <div className="vm-admin-lottie">
+                                <Lottie
+                                    animationData={adminLottie}
+                                    loop={true}
+                                    autoplay={true}
+                                    className="vm-admin-lottie-anim"
+                                />
+                            </div>
+                            <h2 className="vm-admin-title">
+                                Make Care Voice Template
+                            </h2>
+                            <p className="vm-admin-subtitle">
+                                Turn your document structure into a template you can reuse anytime.
+                            </p>
                         </div>
-                        <h2 className="vm-admin-title">
-                            Make Care Voice Template
-                        </h2>
-                        <p className="vm-admin-subtitle">
-                            Turn your document structure into a template you can reuse anytime.
-                        </p>
-                    </div>}
+                    )}
                     {showUploadSection && stage !== "processing" && !activeTemplate && (
                         <>
-                            <div className="voice-upload-row">
+                            <div className="voice-upload-row voice-upload-row-admin">
                                 {/* ================= TEMPLATE COLUMN ================= */}
-                                <div className="voice-upload-col" style={{ width: "35%" }}>
+                                <div className="voice-upload-col">
                                     <TlcUploadBox
                                         id="admin-template-upload"
                                         title="Upload Templates*"
@@ -3169,9 +3256,8 @@ const VoiceModule = (props) => {
                                     />
                                 </div>
 
-
                                 {/* ================= SAMPLES COLUMN ================= */}
-                                <div className="voice-upload-col" style={{ width: "35%" }}>
+                                <div className="voice-upload-col">
                                     <TlcUploadBox
                                         id="admin-sample-upload"
                                         title="Upload Samples*"
@@ -3182,7 +3268,6 @@ const VoiceModule = (props) => {
                                         setFiles={setSampleFiles}
                                     />
                                 </div>
-
                             </div>
 
                             {/* Save & Analyze Button */}
@@ -3206,10 +3291,9 @@ const VoiceModule = (props) => {
                         </>
                     )}
 
-                    {/* Processing Animation */}
                     {/* ================= PROCESSING ================= */}
                     {stage === "processing" && (
-                        <div style={{ display: "flex", justifyContent: "center", marginTop: "40px" }}>
+                        <div className="vm-admin-processing">
                             <PulsatingLoader
                                 currentTask={currentTask || "Processing document"}
                                 progress={processingProgress}
@@ -3223,71 +3307,90 @@ const VoiceModule = (props) => {
                         <div className="analysis-review-container">
 
                             {/* ===== ACTION BUTTONS (TOP) ===== */}
-                            <div className="analysis-actions" style={{ marginBottom: "16px" }}>
+                            <div className="analysis-actions analysis-actions-row">
 
                                 {/* Only show Request Changes button when NOT requesting changes */}
                                 {!isRequestingChanges && (
                                     <button
+                                        type="button"
                                         onClick={() => {
-                                            // Request changes - show textarea
                                             setShowFeedbackBox(true);
                                             setIsRequestingChanges(true);
                                         }}
                                         className="analysis-feedback-request-btn"
                                     >
+                                        <FiEdit size={15} />
                                         Request Changes
                                     </button>
                                 )}
                                 {!isRequestingChanges && (
                                     <button
+                                        type="button"
                                         onClick={acceptAnalysis}
-                                        className="analysis-accept-btn"
+                                        className="analysis-accept-btn analysis-accept-btn-primary"
                                     >
                                         Accept and analyse
+                                        <img src={star} alt="" aria-hidden="true" className="voice-star" />
                                     </button>
                                 )}
                             </div>
 
-                            {/* ===== ANALYSIS CONTENT ===== */}
+                            {/* ===== FEEDBACK / REQUEST CHANGES ===== */}
                             {showFeedbackBox && (
                                 <div className="analysis-feedback-section">
-                                    <div className="analysis-feedback-label">
-                                        What would you like to change?
+                                    <div className="analysis-feedback-header">
+                                        {/* <div className="analysis-feedback-header-icon">
+                                            <FiEdit size={15} />
+                                        </div> */}
+                                        <div className="analysis-feedback-header-text">
+                                            <div className="analysis-feedback-title">
+                                                Request changes
+                                            </div>
+                                            <div className="analysis-feedback-subtitle">
+                                                Tell the AI what to adjust — the more specific, the better the result.
+                                            </div>
+                                        </div>
                                     </div>
 
                                     <textarea
                                         ref={feedbackTextareaRef}
                                         className="analysis-feedback-input"
-                                        placeholder="Provide your feedback here..."
+                                        placeholder="e.g. Please rephrase section 2 in a more formal tone…"
                                         value={feedbackText}
                                         onChange={(e) => setFeedbackText(e.target.value)}
-                                        rows="4"
+                                        rows="5"
                                     />
 
-                                    <div className="analysis-actions" style={{ marginTop: "16px", display: "flex", gap: "12px" }}>
-                                        <button
-                                            onClick={() => {
-                                                // Discard changes - hide textarea and reset
-                                                setShowFeedbackBox(false);
-                                                setIsRequestingChanges(false);
-                                                setFeedbackText("");
-                                            }}
-                                            className="analysis-feedback-discard-btn"
-                                        >
-                                            Discard Changes
-                                        </button>
-                                        <button
-                                            onClick={sendFeedback}
-                                            className="analysis-feedback-submit-btn"
-                                            disabled={!feedbackText.trim()}
-                                        >
-                                            Submit Changes
-                                        </button>
+                                    <div className="analysis-feedback-footer">
+                                        <span className="analysis-feedback-count">
+                                            {feedbackText.length} {feedbackText.length === 1 ? "character" : "characters"}
+                                        </span>
+                                        <div className="analysis-actions analysis-actions-row-feedback">
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setShowFeedbackBox(false);
+                                                    setIsRequestingChanges(false);
+                                                    setFeedbackText("");
+                                                }}
+                                                className="analysis-feedback-discard-btn"
+                                            >
+                                                Discard Changes
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={sendFeedback}
+                                                className="analysis-feedback-submit-btn"
+                                                disabled={!feedbackText.trim()}
+                                            >
+                                                Submit Changes
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             )}
 
-                            <div className="analysis-box" style={{ padding: "2rem" }}>
+                            <div className="analysis-box analysis-box-review">
                                 <div className="voice-explanation-section">
                                     <CareVoiceExplainationMarkdown content={analysisText} />
                                 </div>
@@ -3299,7 +3402,7 @@ const VoiceModule = (props) => {
                     {/* Completed */}
                     {stage === "completed" && (
                         <div className="analysis-completed">
-                            <div style={{ marginTop: "20px", textAlign: "right" }}>
+                            <div className="analysis-completed-actions">
                                 <button
                                     className="analysis-accept-btn"
                                     onClick={saveTemplate}
@@ -3498,9 +3601,9 @@ const VoiceModule = (props) => {
                                     </div>
                                 </div>
 
-                                {/* TIME */}
+                                {/* TIME — counts down from full duration to 00:00:00 */}
                                 <span className="staff-audio-time">
-                                    {formatTime(playTime)}
+                                    {formatTime(Math.max(0, recordTime - playTime))}
                                 </span>
                             </div>
                         )}
@@ -3565,21 +3668,9 @@ const VoiceModule = (props) => {
                                     <button
                                         onClick={downloadRecording}
                                         disabled={isDownloadingRecording}
-                                        style={{
-                                            background: "#6c4cdc",
-                                            border: "1px solid #ddd",
-                                            borderRadius: "999px",
-                                            padding: "8px 12px",
-                                            cursor: isDownloadingRecording ? "not-allowed" : "pointer",
-                                            opacity: isDownloadingRecording ? 0.6 : 1,
-                                            display: "flex",
-                                            alignItems: "center",
-                                            gap: "6px",
-                                            color: "#fff",
-                                            fontWeight: 500,
-                                        }}
+                                        className="staff-primary"
                                     >
-                                        <FiDownload size={20} />
+                                        <FiDownload size={18} />
                                         {isDownloadingRecording ? "Downloading..." : "Download"}
                                     </button>
                                 </>

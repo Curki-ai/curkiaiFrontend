@@ -1,7 +1,7 @@
 ﻿import React, { useState } from "react";
 import "../../Styles/general-styles/AutoPaymentPopup.css";
 import autoPaymentGif from "../../Images/autopaymentPopup.gif";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 
 import { API_BASE } from "../../config/apiBase";
 
@@ -59,7 +59,7 @@ const AutoPaymentPopup = ({ onClose, userEmail, isAdmin, adminDetails }) => {
 
   return (
     <div className="autopay-overlay">
-      <ToastContainer position="top-right" />
+      {/* ToastContainer is mounted once globally in HomePage. */}
       <div className="autopay-popup">
 
         <div className="autopay-icon">

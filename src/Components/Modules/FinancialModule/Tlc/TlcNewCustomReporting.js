@@ -1,4 +1,6 @@
 import React, { useState, useRef, useEffect, memo, useMemo } from "react";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import "../../../../Styles/FinancialModule/TlcNewCustomReporting.css";
@@ -152,6 +154,9 @@ export default function TlcNewCustomerReporting(props) {
     const [userStates, setUserStates] = useState([]);
     const [orgLookupStatus, setOrgLookupStatus] = useState("loading");
     const [openAccessManagement, setOpenAccessManagement] = useState(false);
+    // Welcome toast trigger — deferred via useEffect below so the toast
+    // fires only after ToastContainer is mounted in the main return.
+    const [pendingWelcomeToast, setPendingWelcomeToast] = useState(false);
 
     const fetchOrganization = async () => {
         if (!userEmail) return;
@@ -168,6 +173,9 @@ export default function TlcNewCustomerReporting(props) {
                 setCurrentUserRole(String(first.role || "").toLowerCase());
                 setUserStates(Array.isArray(first.states) ? first.states : []);
                 setOrgLookupStatus("found");
+                if (data.justActivated) {
+                    setPendingWelcomeToast(true);
+                }
             } else {
                 setOrganizationId(null);
                 setOrganizationName("");
@@ -185,11 +193,25 @@ export default function TlcNewCustomerReporting(props) {
         fetchOrganization();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [userEmail]);
+
+    // Fire the welcome toast only after the main return has rendered
+    // (i.e. ToastContainer is in the DOM). Emitting from inside the
+    // fetch's then-block runs during the "loading"/transition render
+    // when no ToastContainer is mounted and the message is dropped.
+    useEffect(() => {
+        if (orgLookupStatus === "found" && pendingWelcomeToast) {
+            toast.success(
+                "Welcome! Your invitation to Curki Payroll Analysis has been accepted."
+            );
+            setPendingWelcomeToast(false);
+        }
+    }, [orgLookupStatus, pendingWelcomeToast]);
+
     const handleNewTab = () => {
         const newId = tabs.length ? Math.max(...tabs.map((t) => t.id)) + 1 : 1;
         const newTab = {
             id: newId,
-            name: `Tab ${newId}`,
+            name: `Tab ${tabs.length + 1}`,
             startDate: null,
             endDate: null,
             selectedState: [],
@@ -230,7 +252,13 @@ export default function TlcNewCustomerReporting(props) {
 
     const handleCloseTab = (id) => {
         // console.log("Closing tab:", id);
-        const remainingTabs = tabs.filter((t) => t.id !== id);
+        const remainingTabs = tabs.filter((t) => t.id !== id).map((t, idx) => {
+            if (/^Tab \d+$/.test(t.name)) {
+                const newName = `Tab ${idx + 1}`;
+                return t.name === newName ? t : { ...t, name: newName };
+            }
+            return t;
+        });
         setTabs(remainingTabs);
         if (id === activeTab && remainingTabs.length > 0) {
             setActiveTab(remainingTabs[0].id);
@@ -358,7 +386,7 @@ export default function TlcNewCustomerReporting(props) {
 
         } catch (err) {
             console.error("❌ Search error:", err);
-            alert("Search failed: " + err.message);
+            toast.error("Search failed: " + err.message);
             setSearchMode(false);
             setFilteredHistoryList([]);
         } finally {
@@ -684,7 +712,7 @@ export default function TlcNewCustomerReporting(props) {
         });
 
         if (validFiles.length === 0) {
-            alert(`⚠️ Invalid file uploaded in ${type.toUpperCase()} section.`)
+            toast.warn(`Invalid file uploaded in ${type.toUpperCase()} section.`);
             e.target.value = "";
             return;
         }
@@ -724,7 +752,7 @@ export default function TlcNewCustomerReporting(props) {
 
         // ✅ Basic check for date range
         if (!startDate || !endDate) {
-            alert("Please select a date range first!");
+            toast.warn("Please select a date range first!");
             return;
         }
         if (userStates.length > 0 && selectedState.length > 0) {
@@ -739,7 +767,7 @@ export default function TlcNewCustomerReporting(props) {
             );
 
             if (isInvalid) {
-                alert(`You are allowed to analyse only: ${userStates.join(", ")}`);
+                toast.warn(`You are allowed to analyse only: ${userStates.join(", ")}`);
                 return;
             }
         }
@@ -808,7 +836,7 @@ export default function TlcNewCustomerReporting(props) {
                     if (invalidUploads.length > 0)
                         message += "\n" + invalidUploads.join("\n");
 
-                    alert(message);
+                    toast.warn(message);
                     return;
                 }
 
@@ -836,7 +864,7 @@ export default function TlcNewCustomerReporting(props) {
                     updateTab({ progressStage: "analysing" });
                 } catch (uploadErr) {
                     console.error("❌ Upload failed:", uploadErr);
-                    alert("Some files failed to upload. Continuing with existing data...");
+                    toast.error("Some files failed to upload. Continuing with existing data…");
                 } finally {
                     updateTab({ uploading: false });
                 }
@@ -957,14 +985,14 @@ export default function TlcNewCustomerReporting(props) {
 
             // 🧩 Handle invalid date range
             if (analyzeData.message && analyzeData.message.includes("Invalid date range")) {
-                alert("⚠️ Invalid date range selected. Please choose correct start and end dates.");
+                toast.warn("Invalid date range selected. Please choose correct start and end dates.");
                 updateTab({ loading: false, uploading: false, stage: "filters", progressStage: "idle" });
                 return;
             }
 
             // 🧩 Handle no data found
             if (analyzeData.analysisResult?.message === "No data found for given filters.") {
-                alert("⚠️ No data found for the selected filters. Please adjust your filters and try again.");
+                toast.warn("No data found for the selected filters. Please adjust your filters and try again.");
                 updateTab({ loading: false, uploading: false, stage: "filters", progressStage: "idle" });
                 return;
             }
@@ -1001,7 +1029,7 @@ export default function TlcNewCustomerReporting(props) {
         } catch (err) {
             console.error("❌ Error in handleAnalyse:", err);
             updateTab({ error: err.message, stage: "filters" });
-            alert("Something went wrong: " + err.message);
+            toast.error("Something went wrong: " + err.message);
         } finally {
             updateTab({ loading: false, uploading: false });
             setTimeout(() => updateTab({ progressStage: "idle" }), 800);
@@ -1090,26 +1118,26 @@ export default function TlcNewCustomerReporting(props) {
 
         // ✅ If loaded from history, block saving again
         if (activeTabData.isFromHistory) {
-            alert("⚠️ This analysis is already saved in the history list.");
+            toast.warn("This analysis is already saved in the history list.");
             return;
         }
 
         // ✅ Also check if already saved in this session
         if (activeTabData.analysisData?.savedToHistory) {
-            alert("⚠️ This analysis has already been saved.");
+            toast.warn("This analysis has already been saved.");
             return;
         }
 
         const { analysisData, startDate, endDate, selectedState, selectedDepartment, selectedRole, selectedEmploymentType } = activeTabData;
 
         if (!analysisData) {
-            alert("No analysis data found. Please run an analysis first.");
+            toast.warn("No analysis data found. Please run an analysis first.");
             return;
         }
 
         const email = userEmail
         if (!email) {
-            alert("Email is missing — cannot save data.");
+            toast.error("Email is missing — cannot save data.");
             return;
         }
 
@@ -1151,12 +1179,12 @@ export default function TlcNewCustomerReporting(props) {
             const result = await response.json();
             if (!response.ok) {
                 console.error("❌ Failed to save:", result.error);
-                alert(`Error: ${result.error || "Failed to save data."}`);
+                toast.error(`Error: ${result.error || "Failed to save data."}`);
                 return;
             }
 
             // console.log("Save response:", result);
-            alert("Analysis data saved successfully!");
+            toast.success("Analysis data saved successfully!");
             updateTab({
                 isFromHistory: true,
                 analysisData: {
@@ -1180,7 +1208,7 @@ export default function TlcNewCustomerReporting(props) {
             ]);
         } catch (err) {
             console.error("❌ Error saving data:", err);
-            alert("Something went wrong while saving data.");
+            toast.error("Something went wrong while saving data.");
         } finally {
             setSaving(false);
         }
@@ -1205,10 +1233,10 @@ export default function TlcNewCustomerReporting(props) {
             // console.log("Deleted successfully:", data);
             setHistoryList((prev) => prev.filter((item) => item.id !== selectedHistoryId));
             setShowDeleteModal(false);
-            alert("✅ Deleted successfully!");
+            toast.success("Deleted successfully!");
         } catch (err) {
             console.error("❌ Error deleting:", err);
-            alert("Failed to delete history: " + err.message);
+            toast.error("Failed to delete history: " + err.message);
         } finally {
             setDeleting(false);
         }
@@ -1255,7 +1283,7 @@ export default function TlcNewCustomerReporting(props) {
         let aiProgressInterval;
         if (activeTabData.aiReport || activeTabData.aiLoading) return;
         if (!activeTabData?.analysisData) {
-            alert("Please run the regular analysis first.");
+            toast.warn("Please run the regular analysis first.");
             return;
         }
         if (USE_DUMMY_DATA) {
@@ -1278,7 +1306,7 @@ export default function TlcNewCustomerReporting(props) {
         // console.log("AI Payload ready to send:", aiPayload);
 
         if (!aiPayload || aiPayload.length === 0) {
-            alert("No valid payload available for AI Analysis.");
+            toast.warn("No valid payload available for AI Analysis.");
             return;
         }
 
@@ -1342,7 +1370,7 @@ export default function TlcNewCustomerReporting(props) {
         } catch (err) {
             clearInterval(aiProgressInterval);
             console.error("❌ AI Analysis Error:", err);
-            alert("AI Analysis failed: " + err.message);
+            toast.error("AI Analysis failed: " + err.message);
             updateTab({ aiLoading: false, aiProgress: 0 });
         }
     };
@@ -1412,7 +1440,7 @@ export default function TlcNewCustomerReporting(props) {
             await incrementCareVoiceAnalysisCount(userEmail, "history-click", 0, "payroll-analysis", 0)
         } catch (err) {
             console.error("❌ Error loading analysis:", err);
-            alert("Failed to load analysis: " + err.message);
+            toast.error("Failed to load analysis: " + err.message);
         }
         finally {
             setHistoryLoading(false);
@@ -1468,6 +1496,7 @@ export default function TlcNewCustomerReporting(props) {
                                 cursor: "pointer",
                                 fontWeight: "bold",
                                 fontSize: "18px",
+                                lineHeight: 1,
                             }}
                         >
                             ×
@@ -1697,6 +1726,7 @@ export default function TlcNewCustomerReporting(props) {
     }
     return (
         <div className="page-containersss tlc-new-page" ref={pageRef}>
+            {/* ToastContainer is mounted once globally in HomePage. */}
             {historyLoading && (
                 <div className="full-screen-loader">
                     <div className="history-loader"></div>
@@ -1767,25 +1797,6 @@ export default function TlcNewCustomerReporting(props) {
                             </div>
                         </div>
 
-
-                        {/* ROLE */}
-                        <div
-                            style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "12px",
-                            }}
-                        >
-
-                            <MultiSelectCustom
-                                options={optionsRole}
-                                selected={activeTabData.selectedRole}
-                                setSelected={(v) => updateTab({ selectedRole: v })}
-                                placeholder="Role"
-                                leftIcon={TlcPayrollRoleIcon}
-                                rightIcon={TlcPayrollRoleDownArrowIcon}
-                            />
-                        </div>
 
                     </div>
 
@@ -1881,7 +1892,7 @@ export default function TlcNewCustomerReporting(props) {
                         >
                             <button
                                 onClick={handleAnalyse}
-                                disabled={activeTabData.loading || activeTabData.uploading}
+                                disabled={true}
                                 style={{
                                     background: "var(--Curki-2nd-Portal-1, #14C8A8)",
                                     color: "#fff",
@@ -1890,15 +1901,12 @@ export default function TlcNewCustomerReporting(props) {
                                     borderRadius: "8px",
                                     fontSize: "14px",
                                     fontWeight: 400,
-                                    cursor: "pointer",
+                                    cursor: "not-allowed",
                                     display: "flex",
                                     alignItems: "center",
                                     gap: "8px",
                                     marginTop: "17px",
-                                    opacity:
-                                        activeTabData.loading || activeTabData.uploading?.accounts
-                                            ? 0.6
-                                            : 1,
+                                    opacity: 0.6,
                                 }}
                             >
                                 <img
@@ -1997,7 +2005,14 @@ export default function TlcNewCustomerReporting(props) {
                             leftIcon={TlcPayrollTypeIcon}
                             rightIcon={TlcPayrollRoleDownArrowIcon}
                         />
-
+                            <MultiSelectCustom
+                                options={optionsRole}
+                                selected={activeTabData.selectedRole}
+                                setSelected={(v) => updateTab({ selectedRole: v })}
+                                placeholder="Role"
+                                leftIcon={TlcPayrollRoleIcon}
+                                rightIcon={TlcPayrollRoleDownArrowIcon}
+                            />
                     </div>
                     {/* {activeTabData.analysisData && (
                         <div style={{ display: "flex", justifyContent: "center" }}>
@@ -2699,81 +2714,6 @@ export default function TlcNewCustomerReporting(props) {
                                 );
                             })}
 
-                            {/* Delete confirmation modal */}
-                            {showDeleteModal && (
-                                <div
-                                    className="tlc-new-delete-modal-overlay"
-                                    style={{
-                                        position: "fixed",
-                                        top: 0,
-                                        left: 0,
-                                        width: "100%",
-                                        height: "100%",
-                                        background: "rgba(0,0,0,0.4)",
-                                        display: "flex",
-                                        alignItems: "center",
-                                        justifyContent: "center",
-                                        zIndex: 9999,
-                                        fontFamily: "Inter, sans-serif",
-                                    }}
-                                >
-                                    <div
-                                        className="tlc-new-delete-modal"
-                                        style={{
-                                            background: "#fff",
-                                            borderRadius: "10px",
-                                            padding: "20px 28px",
-                                            boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
-                                            textAlign: "center",
-                                            animation: "scaleIn 0.25s ease",
-                                        }}
-                                    >
-                                        <h4
-                                            style={{
-                                                fontSize: "16px",
-                                                fontWeight: "600",
-                                                color: "#1f2937",
-                                                marginBottom: "16px",
-                                            }}
-                                        >
-                                            Are you sure you want to delete history?
-                                        </h4>
-
-                                        <div style={{ display: "flex", justifyContent: "center", gap: "12px" }}>
-                                            <button
-                                                onClick={() => setShowDeleteModal(false)}
-                                                style={{
-                                                    background: "#E5E7EB",
-                                                    color: "#111",
-                                                    border: "none",
-                                                    borderRadius: "6px",
-                                                    padding: "6px 16px",
-                                                    fontWeight: 500,
-                                                    cursor: "pointer",
-                                                }}
-                                            >
-                                                No
-                                            </button>
-                                            <button
-                                                onClick={handleDeleteHistory}
-                                                disabled={deleting}
-                                                style={{
-                                                    background: "#6C4CDC",
-                                                    color: "#fff",
-                                                    border: "none",
-                                                    borderRadius: "6px",
-                                                    padding: "6px 16px",
-                                                    fontWeight: 600,
-                                                    cursor: "pointer",
-                                                    opacity: deleting ? 0.7 : 1,
-                                                }}
-                                            >
-                                                {deleting ? "..." : "Yes"}
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
                         </>
                     )}
                 </section>
@@ -2824,7 +2764,88 @@ export default function TlcNewCustomerReporting(props) {
                     userEmail={userEmail}
                     moduleLabel="Payroll Analysis"
                     apiBase={`${BASE_URL}/api/payroll/access`}
+                    allowStaffRole={false}
                 />
+            )}
+
+            {/* Delete-history modal lives at the top level so its
+                position:fixed overlay centers on the viewport. Rendering it
+                inside .history-container failed because that container has
+                `backdrop-filter`, which creates a new containing block and
+                traps fixed-positioned descendants. */}
+            {showDeleteModal && (
+                <div
+                    className="tlc-new-delete-modal-overlay"
+                    style={{
+                        position: "fixed",
+                        top: 0,
+                        left: 0,
+                        width: "100%",
+                        height: "100%",
+                        background: "rgba(0,0,0,0.4)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        zIndex: 9999,
+                        fontFamily: "Inter, sans-serif",
+                    }}
+                >
+                    <div
+                        className="tlc-new-delete-modal"
+                        style={{
+                            background: "#fff",
+                            borderRadius: "10px",
+                            padding: "20px 28px",
+                            boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
+                            textAlign: "center",
+                            animation: "scaleIn 0.25s ease",
+                        }}
+                    >
+                        <h4
+                            style={{
+                                fontSize: "16px",
+                                fontWeight: "600",
+                                color: "#1f2937",
+                                marginBottom: "16px",
+                            }}
+                        >
+                            Are you sure you want to delete history?
+                        </h4>
+
+                        <div style={{ display: "flex", justifyContent: "center", gap: "12px" }}>
+                            <button
+                                onClick={() => setShowDeleteModal(false)}
+                                style={{
+                                    background: "#E5E7EB",
+                                    color: "#111",
+                                    border: "none",
+                                    borderRadius: "6px",
+                                    padding: "6px 16px",
+                                    fontWeight: 500,
+                                    cursor: "pointer",
+                                }}
+                            >
+                                No
+                            </button>
+                            <button
+                                onClick={handleDeleteHistory}
+                                disabled={deleting}
+                                style={{
+                                    background: "#6C4CDC",
+                                    color: "#fff",
+                                    border: "none",
+                                    borderRadius: "6px",
+                                    padding: "6px 16px",
+                                    fontWeight: 600,
+                                    cursor: "pointer",
+                                    opacity: deleting ? 0.7 : 1,
+                                }}
+                            >
+                                {deleting ? "..." : "Yes"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
 
         </div>

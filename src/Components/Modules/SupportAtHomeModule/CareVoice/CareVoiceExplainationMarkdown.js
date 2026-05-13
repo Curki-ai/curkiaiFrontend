@@ -8,7 +8,7 @@ const CareVoiceExplainationMarkdown = ({ content = "" }) => {
     if (!content) return null;
 
     return (
-        <div className="sirs-markdown" style={{background:"white",padding:"0px",margin:"0px"}}>
+        <div className="sirs-markdown cv-markdown">
             <ReactMarkdown
                 children={content}
                 remarkPlugins={[remarkGfm]}

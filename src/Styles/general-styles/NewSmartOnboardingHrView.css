@@ -1,5 +1,12 @@
 .resume-dashboard-wrapper {
-    min-height: 100vh;
+    /* No min-height here: the outer .hr-analysis-container already
+       enforces min-height: 100vh. Stacking another 100vh inside it
+       pushes total content past the viewport and creates an
+       unnecessary outer scrollbar when only a few cards are shown. */
+}
+
+.hr-tab-pane-hidden {
+    display: none;
 }
 
 .resume-top-cards {

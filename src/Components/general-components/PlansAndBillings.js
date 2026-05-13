@@ -9,7 +9,7 @@ import pricingExample from "../../Images/newPricingExample.svg"
 import ausDollar from "../../Images/AusDollar.svg"
 import crossIcon from "../../Images/ComparePriceCross.png"
 import { API_BASE } from "../../config/apiBase";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 const PlansAndBillings = ({ onClose, email: userEmail, firstName: firstName, setSubscriptionInfo, subscriptionInfo, isAdmin, setIsAdmin, adminDetails, setAdminDetails }) => {
     // console.log("User Email:", userEmail);
     // console.log("Subscription Info:", subscriptionInfo);
@@ -98,7 +98,7 @@ const PlansAndBillings = ({ onClose, email: userEmail, firstName: firstName, set
     };
     return (
         <div className="pb-overlay">
-            <ToastContainer position="top-right" />
+            {/* ToastContainer is mounted once globally in HomePage. */}
             <div className="pb-container">
                 {/* Top bar */}
                 <div className="pb-top">

@@ -483,12 +483,21 @@
   font-size: 14px;
   font-family: 'Inter', sans-serif;
   resize: vertical;
-  transition: all 0.3s ease;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
   background: #ffffff;
-  border-color: #6c5ce7;
-  box-shadow: 0 0 0 4px rgba(108, 92, 231, 0.1);
   outline: none;
   line-height: 1.6;
+  color: #1f1f1f;
+  box-sizing: border-box;
+}
+
+.analysis-feedback-input:hover {
+  border-color: #c5bde8;
+}
+
+.analysis-feedback-input:focus {
+  border-color: #6C4CDC;
+  box-shadow: 0 0 0 3px rgba(108, 76, 220, 0.18);
 }
 
 .analysis-feedback-input::placeholder {
@@ -1703,10 +1712,8 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px 16px;
   border-radius: 999px;
   border: 1px solid #E5E7EB;
-  background-color: #ffffff;
 }
 
 /* Below 1100px the centred "Record Conversation" title expands toward
@@ -1939,7 +1946,8 @@
 }
 
 .generated-docs-title {
-  margin: 0;
+  text-align: center;
+  margin-left: 48px;
   font-size: 28px;
   font-weight: 700;
   color: #111827;
@@ -1991,6 +1999,7 @@
   align-items: center;
   gap: 12px;
   flex: 1;
+  min-width: 0;
 }
 
 /* Icon Wrapper (left side icon) */
@@ -2016,6 +2025,7 @@
   display: flex;
   flex-direction: column;
   width: 100%;
+  min-width: 0;
   text-align: left;
 }
 
@@ -2026,7 +2036,8 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 260px;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .generated-doc-filename {
@@ -2036,7 +2047,8 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 260px;
+  max-width: 100%;
+  min-width: 0;
 }
 
 /* Hover Icon - Top Right Corner */
@@ -2202,10 +2214,14 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 500px;
-  padding: 40px 20px;
+  width: 100%;
+  min-height: calc(100vh - 260px);
+  height: 100%;
+  flex: 1 1 auto;
+  padding: clamp(24px, 3vw, 56px) clamp(16px, 2.5vw, 40px);
   background: linear-gradient(108.22deg, #F4F2FF 0%, #FFFFFF 100%);
   border-radius: 16px;
+  box-sizing: border-box;
 }
 
 .staff-landing-container:hover {
@@ -2215,55 +2231,71 @@
 }
 
 .staff-landing-content {
-  max-width: 500px;
   width: 100%;
+  max-width: clamp(440px, 52vw, 880px);
   text-align: center;
   border-radius: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(8px, 1vw, 20px);
 }
 
 .staff-landing-animation {
   display: flex;
   justify-content: center;
   align-items: center;
+  width: clamp(150px, 14vw, 320px);
+  height: clamp(150px, 14vw, 320px);
+  margin-bottom: -20px;
+}
+
+.staff-landing-animation > * {
+  width: 100% !important;
+  height: 100% !important;
 }
 
 .staff-landing-text {
-  margin-bottom: 32px;
-  font-size: 16px;
+  font-size: clamp(14px, 1.1vw, 20px);
   font-weight: 500;
+  margin: 0;
 }
 
 .staff-landing-title {
   font-weight: 600;
-  font-size: 24px;
+  font-size: clamp(22px, 1.9vw, 36px);
   color: #0e0c16;
-  margin: 0 0 12px 0;
+  margin: 0 0 8px 0;
   line-height: 1.3;
 }
 
 .staff-landing-description {
-  font-size: 16px;
+  font-size: clamp(14px, 1.1vw, 20px);
   color: #6B7280;
   margin: 0;
   line-height: 1.5;
 }
 
+.staff-landing-description-line {
+  display: block;
+}
+
 .staff-landing-button {
-  margin: 0 auto;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 10px 20px;
+  padding: 10px clamp(20px, 1.6vw, 28px);
   background: #6C4CDC;
   color: white;
   border: none;
   border-radius: 44px;
   font-weight: 600;
-  font-size: 14px;
+  font-size: clamp(13px, 0.95vw, 15px);
   cursor: pointer;
   transition: all 0.2s ease;
-  height: 44px;
+  min-height: 44px;
+  margin-top: clamp(16px, 1.5vw, 28px);
 }
 
 .staff-landing-button:hover {
@@ -2288,8 +2320,19 @@
 
 /* Responsive */
 @media (max-width: 768px) {
+  .staff-landing-container {
+    min-height: calc(100vh - 320px);
+    padding: 24px 16px;
+  }
+
   .staff-landing-content {
-    padding: 32px 20px;
+    max-width: 100%;
+    gap: 16px;
+  }
+
+  .staff-landing-animation {
+    width: 160px;
+    height: 160px;
   }
 
   .staff-landing-title {
@@ -2404,6 +2447,15 @@
 .carevoice-staff-container {
   background: linear-gradient(108.22deg, #F4F2FF 0%, #FFFFFF 100%);
   border-radius: 16px;
+  width: 100%;
+  min-height: calc(100vh - 260px);
+  padding: clamp(20px, 2vw, 36px);
+  gap: clamp(14px, 1.4vw, 26px);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 }
 
 .carevoice-staff-container:hover {
@@ -2412,18 +2464,616 @@
   border: 1px solid #e2e8f0;
 }
 
+/* ===== STAFF RECORDING VIEW — RESPONSIVE OVERRIDES ===== */
+/* Scoped under .carevoice-staff-container so admin / other views keep
+   their original sizing. CTA and recording animation have generous
+   floors so they never feel small at any viewport. */
+
+.carevoice-staff-container .record-conversation {
+  width: 100%;
+  padding: 0 clamp(16px, 2vw, 32px);
+}
+
+.carevoice-staff-container .record-conversation h2 {
+  font-size: clamp(22px, 1.8vw, 34px);
+  line-height: 1.25;
+}
+
+.carevoice-staff-container .record-conversation p {
+  font-size: clamp(14px, 1.1vw, 20px);
+}
+
+.carevoice-staff-container .selectedtemplatebtn {
+  right: clamp(16px, 1.5vw, 40px);
+}
+
+.carevoice-staff-container .staff-rec-circle {
+  width: clamp(190px, 19vw, 300px);
+  height: clamp(190px, 19vw, 300px);
+  margin-bottom:20px
+}
+
+.carevoice-staff-container .staff-recording-wrapper {
+  width: clamp(320px, 25vw, 500px);
+  height: clamp(320px, 25vw, 500px);
+}
+
+.carevoice-staff-container .staff-recording-lottie {
+  width: 100%;
+  height: 100%;
+}
+
+.carevoice-staff-container .staff-recording-timer {
+  font-size: clamp(16px, 1.3vw, 24px);
+}
+
+.carevoice-staff-container .staff-rec-actions {
+  /* Negative margin compensates for the lottie wrapper overhanging
+     below the visible rec-circle (wrapper is ~25vw, circle is ~19vw,
+     so it overhangs by ~3vw on each side). Result: actual visual gap
+     between the lottie's bottom edge and the Start Recording button
+     stays ~12-20px, matching the upload-box → Generate Document gap. */
+  margin-top: clamp(-40px, -2vw, -16px);
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: clamp(14px, 1.2vw, 24px);
+}
+
+/* In preview/paused mode the audio preview wrapper sits between the
+   rec-circle (or nothing) and the action buttons. The negative margin
+   above was tuned for the lottie overhang — leaving it on would pull
+   the buttons up *over* the seekbar/timer, exposing only the slider
+   thumb and the time text between/behind the buttons. Reset it to a
+   normal positive gap whenever the preview wrapper is present. */
+.carevoice-staff-container .staff-recorder:has(.staff-audio-preview-wrapper) .staff-rec-actions {
+  margin-top: clamp(20px, 1.6vw, 32px);
+}
+
+/* Constrain the preview wrapper so it sits as its own row above the
+   buttons, not stretched edge-to-edge of the recorder card. Matches
+   the .voice-or-row max-width so it feels consistent. */
+.carevoice-staff-container .staff-audio-preview-wrapper {
+  width: 100%;
+  max-width: clamp(420px, 44vw, 640px);
+  margin: clamp(12px, 1vw, 20px) auto 0;
+  justify-content: center;
+}
+
+/* Scale CTAs up on larger viewports — floor matches current sizing so
+   they never get smaller than today on small screens. */
+.carevoice-staff-container .staff-primary,
+.carevoice-staff-container .staff-outline {
+  padding: clamp(13px, 1.1vw, 18px) clamp(20px, 1.6vw, 32px);
+  font-size: clamp(14px, 1vw, 17px);
+  height: auto;
+  min-height: 44px;
+}
+
+.carevoice-staff-container .voice-or-row {
+  width: 100%;
+  max-width: clamp(420px, 44vw, 700px);
+  margin: 0 auto;
+}
+
+/* Override the inline marginTop/marginBottom on the Generate Document
+   wrapper div (last child inside .voice-upload-col) so it doesn't
+   leave a big empty area at the bottom. */
+.carevoice-staff-container .voice-upload-col > div:last-child[style] {
+  margin-top: clamp(12px, 1.2vw, 22px) !important;
+  margin-bottom: 0 !important;
+}
+
+.carevoice-staff-container .voice-or-text {
+  font-size: clamp(14px, 1vw, 18px);
+}
+
+.carevoice-staff-container .voice-upload-col {
+  width: 100%;
+  max-width: clamp(420px, 50vw, 760px);
+}
+
+/* ============================================================
+   STAFF RECORDING VIEW — ALIGNED WITH STAFF ONBOARDING DESIGN SYSTEM
+   Card on tinted surface, gradient-text headings, 14px buttons,
+   subtle purple-tinted shadows. Inter font, #6c4cdc → #8b6dff brand.
+   Scoped under .carevoice-staff-container; admin/other views untouched.
+   ============================================================ */
+
+/* --- CONTAINER: white-tinted card matching onboarding section card --- */
+.carevoice-staff-container {
+  position: relative;
+  overflow: hidden;
+  border-radius: 20px;
+  border: 1px solid #ede9fe;
+  background: linear-gradient(135deg, #ffffff 0%, #fbfaff 100%);
+  box-shadow: 0 4px 24px rgba(108, 76, 220, 0.08);
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  color: #1e1b3a;
+}
+
+/* Single decorative orb top-right — matches onboarding header treatment */
+.carevoice-staff-container::before {
+  content: '';
+  position: absolute;
+  top: -60px;
+  right: -60px;
+  width: clamp(220px, 22vw, 360px);
+  height: clamp(220px, 22vw, 360px);
+  background: radial-gradient(circle, rgba(108, 76, 220, 0.1) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.carevoice-staff-container > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* --- TITLE: gradient text matching onboarding main heading --- */
+.carevoice-staff-container .record-conversation h2 {
+  font-size: clamp(22px, 1.8vw, 32px);
+  letter-spacing: -0.02em;
+  font-weight: 700;
+  line-height: 1.2;
+  background: linear-gradient(135deg, #1e1b3a 0%, #4c3da3 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.carevoice-staff-container .record-conversation p {
+  font-size: clamp(13px, 1vw, 16px);
+  color: #6b7280;
+  font-weight: 500;
+  margin-top: clamp(6px, 0.5vw, 10px);
+  max-width: 520px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* --- SELECTED TEMPLATE PILL: modern badge with brand-purple gradient
+       inner pill, refined count chip. No resting shadow — only on hover. --- */
+.carevoice-staff-container .selectedtemplatebtn {
+  border: 1px solid rgba(108, 76, 220, 0.12);
+  border-radius: 999px;
+  padding: 5px 6px 5px 14px;
+  gap: 10px;
+  box-shadow: none;
+  transition: transform 200ms ease, box-shadow 200ms ease;
+}
+
+.carevoice-staff-container .selectedtemplatebtn:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 2px 4px rgba(15, 23, 42, 0.06),
+    0 10px 26px rgba(108, 76, 220, 0.18);
+}
+
+/* Inner pill — solid blue per design spec */
+.carevoice-staff-container .selectedtemplatebtn > div {
+  background: #328DEE !important;
+  padding: 8px 12px !important;
+  gap: 8px !important;
+  font-weight: 600 !important;
+  font-size: 13px !important;
+  letter-spacing: -0.005em;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 4px 12px rgba(50, 141, 238, 0.32) !important;
+}
+
+/* Hide the checkmark chip — keep only "Selected" text and count */
+.carevoice-staff-container .selectedtemplatebtn > div > span:first-child {
+  display: none !important;
+}
+
+/* Count chip — translucent white badge that reads as a counter */
+.carevoice-staff-container .selectedtemplatebtn > div > span:last-child {
+  width: 20px !important;
+  height: 20px !important;
+  background: rgba(255, 255, 255, 0.22) !important;
+  color: #ffffff !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+/* --- RECORDING CIRCLE: subtle pulse, onboarding-restrained --- */
+.carevoice-staff-container .staff-rec-circle {
+  position: relative;
+  border-radius: 50%;
+}
+
+.carevoice-staff-container .staff-rec-circle::before {
+  content: '';
+  position: absolute;
+  inset: -22%;
+  border-radius: 50%;
+  background: radial-gradient(circle,
+      rgba(108, 76, 220, 0.12) 0%,
+      rgba(108, 76, 220, 0.04) 50%,
+      transparent 72%);
+  z-index: 0;
+  pointer-events: none;
+  animation: rec-halo 4s ease-in-out infinite;
+}
+
+.carevoice-staff-container .staff-recording-wrapper {
+  position: relative;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.carevoice-staff-container .staff-recording-wrapper > * {
+  pointer-events: none;
+}
+
+.carevoice-staff-container .staff-recording-timer {
+  letter-spacing: -0.01em;
+  font-weight: 700;
+  color: #1e1b3a;
+}
+
+@keyframes rec-halo {
+  0%, 100% { opacity: 0.65; transform: scale(1); }
+  50%      { opacity: 1;    transform: scale(1.05); }
+}
+
+/* --- PRIMARY CTA: matches onboarding .resume-add-btn pattern
+       (135deg purple gradient, 14px radius, weight 700) --- */
+.carevoice-staff-container .staff-primary {
+  padding: clamp(12px, 1vw, 16px) clamp(22px, 1.8vw, 32px);
+  min-height: 46px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+  border: none;
+  color: #fff;
+  font-weight: 700;
+  letter-spacing: -0.005em;
+  box-shadow: 0 6px 16px rgba(108, 76, 220, 0.22);
+  transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease;
+  cursor: pointer;
+}
+
+.carevoice-staff-container .staff-primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  background: linear-gradient(135deg, #6c4cdc 0%, #5b21b6 100%);
+  box-shadow: 0 10px 24px rgba(108, 76, 220, 0.32);
+}
+
+.carevoice-staff-container .staff-primary:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 4px 10px rgba(108, 76, 220, 0.22);
+}
+
+.carevoice-staff-container .staff-primary:focus-visible {
+  outline: 2px solid #7c3aed;
+  outline-offset: 3px;
+}
+
+.carevoice-staff-container .staff-primary:disabled {
+  background: #c9bfe1;
+  color: #ffffff;
+  cursor: not-allowed;
+  opacity: 0.7;
+  box-shadow: none;
+  transform: none;
+}
+
+/* --- OUTLINE CTA: clean white with purple-tinted border --- */
+.carevoice-staff-container .staff-outline {
+  padding: clamp(12px, 1vw, 16px) clamp(22px, 1.8vw, 32px);
+  min-height: 46px;
+  border-radius: 999px;
+  background: #ffffff;
+  border: 1px solid #e0dff0;
+  color: #1e1b3a;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  box-shadow: 0 2px 8px rgba(108, 76, 220, 0.05);
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease, background 180ms ease;
+  cursor: pointer;
+}
+
+.carevoice-staff-container .staff-outline:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: #c8c1ed;
+  background: #faf8ff;
+  box-shadow: 0 6px 16px rgba(108, 76, 220, 0.08);
+}
+
+.carevoice-staff-container .staff-outline:focus-visible {
+  outline: 2px solid #7c3aed;
+  outline-offset: 3px;
+}
+
+/* --- OR DIVIDER: subtle line + clean uppercase pill --- */
+.carevoice-staff-container .voice-or-line {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, #e0dff0 50%, transparent 100%);
+  border: 0;
+}
+
+.carevoice-staff-container .voice-or-text {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 26px;
+  padding: 0 14px;
+  border-radius: 20px;
+  background: #f4ecff;
+  border: 1px solid #ede9fe;
+  color: #7c5cbf;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: clamp(11px, 0.8vw, 12px);
+}
+
+/* --- UPLOAD CARD: matches onboarding section card glassmorphism --- */
+.carevoice-staff-container .voice-upload-col .data-upload-card {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1.5px solid rgba(139, 92, 246, 0.18);
+  border-radius: 20px;
+  padding: clamp(18px, 1.8vw, 28px);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.75),
+    0 6px 32px rgba(108, 76, 220, 0.1),
+    0 2px 6px rgba(0, 0, 0, 0.04);
+}
+
+.carevoice-staff-container .voice-upload-col .data-upload-label {
+  color: #1e1b3a;
+  font-weight: 700;
+  letter-spacing: -0.005em;
+  font-size: clamp(13px, 0.95vw, 15px);
+}
+
+.carevoice-staff-container .voice-upload-col .data-upload-droparea {
+  border: 1.5px dashed #c0bde0;
+  border-radius: 12px;
+  background: #faf8ff;
+  transition: border-color 200ms ease, background 200ms ease;
+  cursor: pointer;
+}
+
+.carevoice-staff-container .voice-upload-col .data-upload-droparea:hover {
+  border-color: #7c5cbf;
+  background: #f4ecff;
+}
+
+.carevoice-staff-container .voice-upload-col .data-upload-cta {
+  color: #7c5cbf;
+  font-weight: 700;
+  letter-spacing: -0.005em;
+  font-size: clamp(13px, 0.95vw, 15px);
+}
+
+.carevoice-staff-container .voice-upload-col .data-upload-format {
+  color: #94a3b8;
+  letter-spacing: 0.04em;
+  font-weight: 500;
+  font-size: clamp(10px, 0.8vw, 12px);
+  text-transform: uppercase;
+}
+
+/* --- Respect reduced-motion preferences --- */
+@media (prefers-reduced-motion: reduce) {
+  .carevoice-staff-container .staff-rec-circle::before {
+    animation: none;
+  }
+
+  .carevoice-staff-container .staff-primary,
+  .carevoice-staff-container .staff-outline,
+  .carevoice-staff-container .selectedtemplatebtn {
+    transition: none;
+  }
+
+  .carevoice-staff-container .staff-primary:hover:not(:disabled),
+  .carevoice-staff-container .staff-outline:hover:not(:disabled),
+  .carevoice-staff-container .selectedtemplatebtn:hover {
+    transform: none;
+  }
+}
+
 .genratingDocLottieDiv {
   display: flex;
   justify-content: center;
   align-items: center;
   width: 100%;
+  min-height: calc(100vh - 320px);
+  padding: clamp(20px, 3vw, 60px) clamp(16px, 2vw, 40px);
+  box-sizing: border-box;
 }
 
 .generating-docs-video {
-  width: 420px;
+  width: clamp(280px, 30vw, 560px);
+  max-width: 100%;
   height: auto;
   object-fit: contain;
   display: block;
+}
+
+/* ============================================================
+   GENERATED DOCUMENTS SCREEN — RESPONSIVE
+   Container, cards, icons, buttons all scale across viewports
+   while keeping the established visual identity.
+   ============================================================ */
+
+.generated-docs-container {
+  width: 100%;
+  max-width: 100%;
+  min-height: calc(100vh - 260px);
+  padding: clamp(20px, 2.5vw, 48px);
+  border-radius: clamp(16px, 1.5vw, 24px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: clamp(18px, 1.8vw, 32px);
+  box-sizing: border-box;
+}
+
+.generated-docs-header {
+  margin: 0;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.generated-docs-title {
+  font-size: clamp(22px, 2vw, 34px);
+  text-align: center;
+  margin-left: 48px;
+}
+
+.generated-docs-grid-wrapper {
+  margin: 0;
+  width: 100%;
+}
+
+.generated-docs-grid {
+  /* Override the inline grid template/maxWidth from JSX so the layout
+     adapts in all 3 cases (1 doc, 2 docs, many docs) at every viewport
+     instead of locking to the fixed 300/630px from the inline style. */
+  grid-template-columns: repeat(auto-fit, minmax(260px, 360px)) !important;
+  max-width: clamp(280px, 92vw, 1120px) !important;
+  width: 100% !important;
+  gap: clamp(12px, 1.2vw, 20px) !important;
+  margin: 0 auto;
+  justify-content: center;
+}
+
+.generated-doc-card {
+  min-height: clamp(72px, 6.5vw, 100px);
+  padding: clamp(14px, 1.2vw, 22px) clamp(14px, 1.3vw, 24px);
+  border-radius: clamp(14px, 1.2vw, 20px);
+}
+
+.generated-doc-icon-wrapper {
+  width: clamp(40px, 3.2vw, 56px);
+  height: clamp(40px, 3.2vw, 56px);
+  border-radius: clamp(12px, 1vw, 16px);
+}
+
+.generated-doc-icon-wrapper .default-icon {
+  width: clamp(16px, 1.2vw, 22px);
+  height: clamp(16px, 1.2vw, 22px);
+}
+
+.generated-doc-name {
+  font-size: clamp(13px, 1vw, 17px);
+}
+
+.generated-doc-filename {
+  font-size: clamp(11px, 0.85vw, 14px);
+}
+
+.generated-doc-hover-icon {
+  width: clamp(28px, 2.2vw, 38px);
+  height: clamp(28px, 2.2vw, 38px);
+  border-radius: clamp(8px, 0.8vw, 12px);
+}
+
+.generated-doc-hover-icon img {
+  width: clamp(12px, 1vw, 16px);
+  height: clamp(12px, 1vw, 16px);
+}
+
+.generated-docs-actions {
+  margin: 0;
+  gap: clamp(10px, 1vw, 18px);
+  justify-content: center;
+  align-items: center;
+}
+
+.generate-doc-btns,
+.start-with-new-template-btn {
+  padding: clamp(10px, 0.9vw, 14px) clamp(18px, 1.5vw, 28px);
+  font-size: clamp(13px, 0.95vw, 16px);
+  min-height: 42px;
+}
+
+/* ============================================================
+   SELECT TEMPLATE MODAL — SUBTLE SHADOW POLISH ONLY
+   Keeps the original modal design. Just adds elevation on:
+   - the Choose Template CTA
+   - template cards on hover
+   - template cards when selected (active)
+   Scoped to .template-select-modal so admin modals stay untouched.
+   ============================================================ */
+
+/* Choose Template CTA — soft brand shadow + hover lift */
+.template-select-modal .template-select-confirm {
+  box-shadow: 0 4px 12px rgba(108, 76, 220, 0.22);
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.template-select-modal .template-select-confirm.selected:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(108, 76, 220, 0.32);
+}
+
+.template-select-modal .template-select-confirm:focus-visible {
+  outline: 2px solid #6c4cdc;
+  outline-offset: 3px;
+}
+
+/* Padding so the active/hover shadow above the first row of cards
+   isn't clipped by the scrollable list container's top edge. */
+.template-select-modal .template-select-list {
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+/* Template cards — subtle resting elevation + hover/active shadows */
+.template-select-modal .template-select-card {
+  box-shadow: 0 1px 3px rgba(108, 76, 220, 0.04);
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+}
+
+/* Move the checkbox to the right edge of the card so the icon takes the
+   leftmost position and gets its proper area next to the info text. */
+.template-select-modal .template-select-card .template-checkbox {
+  order: 99;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+/* Info column should take all the space between the icon and the checkbox */
+.template-select-modal .template-select-card .template-select-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.template-select-modal .template-select-card:hover {
+  transform: translateY(-1px);
+  border-color: #c8c1ed;
+  box-shadow: 0 8px 20px rgba(108, 76, 220, 0.12);
+}
+
+.template-select-modal .template-select-card.active {
+  box-shadow:
+    0 0 0 1px #6c4cdc,
+    0 6px 16px rgba(108, 76, 220, 0.18);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .template-select-modal .template-select-card,
+  .template-select-modal .template-select-confirm {
+    transition: none;
+  }
+
+  .template-select-modal .template-select-card:hover,
+  .template-select-modal .template-select-confirm.selected:hover {
+    transform: none;
+  }
 }
 
 .vm-admin-loading-video {
@@ -2547,5 +3197,1457 @@
   .vm-template-list {
     height: auto;
     min-height: 199px;
+  }
+}
+
+/* ===============================================================
+   ADMIN SECTION — UI/UX POLISH
+   Keeps existing color tokens (#6C4CDC primary, #F4F2FF surface)
+   and font-size scale. Layered on top of base rules above so
+   nothing is duplicated.
+=================================================================*/
+
+/* Access Management trigger — clearer affordance, focus ring */
+.access-mgmt-trigger-btn {
+  cursor: pointer;
+}
+
+.access-mgmt-trigger-btn:focus-visible {
+  outline: none;
+  border-color: #6C4CDC;
+  box-shadow: 0 0 0 3px rgba(108, 76, 220, 0.18);
+}
+
+/* Admin heading — tighten vertical rhythm */
+.vm-admin-heading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.vm-admin-title {
+  line-height: 1.3;
+}
+
+.vm-admin-subtitle {
+  line-height: 1.55;
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+/* Analyze button — softer hover lift + focus ring */
+.voice-action button:not(:disabled) {
+  transition: background 0.18s ease, box-shadow 0.18s ease, transform 0.08s ease;
+  cursor: pointer;
+}
+
+.voice-action button:not(:disabled):hover {
+  background: #5a3fc4;
+  box-shadow: 0 8px 20px rgba(108, 76, 220, 0.28);
+}
+
+.voice-action button:not(:disabled):active {
+  transform: translateY(1px);
+}
+
+.voice-action button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(108, 76, 220, 0.22);
+}
+
+/* ===== TEMPLATE LIST (gradient panel) ===== */
+.vm-template-header {
+  align-items: center;
+  height: auto;
+  margin-bottom: 14px;
+}
+
+.vm-template-list-title {
+  height: auto;
+  margin-top: 0;
+  line-height: 1.4;
+  letter-spacing: -0.01em;
+}
+
+/* Arrows ride on the dark-purple gradient — give them a soft chip */
+.vm-slider-arrow {
+  background: rgba(255, 255, 255, 0.55);
+  transition: background 0.15s ease, transform 0.08s ease;
+}
+
+.vm-slider-arrow:hover:not(:disabled) {
+  background: #ffffff;
+}
+
+.vm-slider-arrow:active:not(:disabled) {
+  transform: scale(0.94);
+}
+
+.vm-slider-arrow:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.55);
+}
+
+/* Slider dots — better contrast on gradient */
+.vm-slider-dot {
+  transition: width 0.18s ease, background 0.18s ease;
+}
+
+/* ===== TEMPLATE CARD ===== */
+.vm-template-card {
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.vm-template-card:hover {
+  border-color: #6C4CDC;
+  box-shadow: 0 6px 18px rgba(108, 76, 220, 0.12);
+  transform: none;
+}
+
+.vm-template-card:focus-visible {
+  outline: none;
+  border-color: #6C4CDC;
+  box-shadow: 0 0 0 3px rgba(108, 76, 220, 0.22);
+}
+
+/* The icon img is 58x58 inside a 58x58 padded box — strip the padding
+   and let the image fill the chip so it isn't clipped */
+.vm-template-icon {
+  padding: 0;
+  overflow: hidden;
+}
+
+.vm-template-icon img {
+  width: 42px;
+  height: 42px;
+}
+
+.vm-template-name-text {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1f1f1f;
+}
+
+.vm-template-edit-icon {
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.vm-template-edit-icon:hover {
+  color: #6C4CDC;
+}
+
+/* 3-dots affordance — square hit area, hover bg */
+.vm-dots {
+  font-size: 20px;
+  letter-spacing: 1px;
+  color: #6b6b6b;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.vm-dots:hover {
+  color: #1f1f1f;
+}
+
+/* Dropdown — danger item should read as danger */
+.vm-dropdown-item {
+  border-radius: 6px;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.vm-dropdown-item.danger {
+  color: #b53b3b;
+}
+
+.vm-dropdown-item.danger:hover {
+  background: #fef2f2;
+  color: #b53b3b;
+}
+
+/* ===== TEMPLATE DETAILS VIEW ===== */
+
+/* Top action bar (Back + Save) — replaces inline flex styles */
+.vm-template-details-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 28px;
+  gap: 12px;
+}
+
+.vm-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 6px 10px 6px 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #6C4CDC;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.vm-back-btn:hover {
+  background: #f4f2ff;
+}
+
+.vm-back-btn:focus-visible {
+  outline: none;
+  border-color: #6C4CDC;
+  box-shadow: 0 0 0 3px rgba(108, 76, 220, 0.18);
+}
+
+/* Save Template button (reuses .analysis-accept-btn) — give it
+   consistent layout, hover, focus, cursor. Heights left to padding
+   so existing ~41px button height isn't changed. */
+.analysis-accept-btn,
+.analysis-feedback-submit-btn,
+.analysis-feedback-request-btn,
+.analysis-feedback-discard-btn,
+.analysis-feedback-btn {
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.2;
+}
+
+.analysis-accept-btn:focus-visible,
+.analysis-feedback-submit-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.28);
+}
+
+.analysis-feedback-request-btn:focus-visible,
+.analysis-feedback-discard-btn:focus-visible {
+  outline: none;
+  border-color: #6C4CDC;
+  box-shadow: 0 0 0 3px rgba(108, 76, 220, 0.18);
+}
+
+.analysis-accept-btn:disabled,
+.analysis-feedback-submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Uploaded documents section */
+.vm-uploaded-docs-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.vm-uploaded-docs-title-row img {
+  width: 24px;
+  height: 24px;
+}
+
+.vm-uploaded-docs-title-row h4 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f1f1f;
+  letter-spacing: -0.01em;
+}
+
+.vm-uploaded-docs-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+/* Doc card variant inside Uploaded Documents — flexible width,
+   consistent height, real hover/focus affordance */
+.vm-file-item.vm-file-item-doc {
+  flex: 1 1 360px;
+  max-width: 460px;
+  min-height: 78px;
+  margin-bottom: 0;
+  padding: 14px 16px;
+  border: 1px solid #ecebf3;
+  background: #ffffff;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.vm-file-item.vm-file-item-doc:hover {
+  border-color: #6C4CDC;
+  background: #faf9ff;
+  box-shadow: 0 4px 14px rgba(108, 76, 220, 0.08);
+}
+
+.vm-file-item.vm-file-item-doc:focus-visible {
+  outline: none;
+  border-color: #6C4CDC;
+  box-shadow: 0 0 0 3px rgba(108, 76, 220, 0.18);
+}
+
+.vm-file-item-doc-inner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+}
+
+.vm-file-item-doc-inner img.vm-file-doc-icon {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.vm-file-item-doc-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* ===== ACCORDION HEADER (replaces inline gradient) ===== */
+.vm-accordion-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: linear-gradient(180deg, #efeafd 0%, #ffffff 100%);
+  border: 1px solid #ecebf3;
+  border-radius: 10px;
+  cursor: pointer;
+  margin-bottom: 14px;
+  transition: background 0.15s ease, border-color 0.15s ease;
+  font-family: inherit;
+  width: 100%;
+  text-align: left;
+}
+
+.vm-accordion-header:hover {
+  border-color: #c5bde8;
+  background: linear-gradient(180deg, #e6e0fa 0%, #faf9ff 100%);
+}
+
+.vm-accordion-header:focus-visible {
+  outline: none;
+  border-color: #6C4CDC;
+  box-shadow: 0 0 0 3px rgba(108, 76, 220, 0.18);
+}
+
+.vm-accordion-toggle {
+  width: 18px;
+  height: 10px;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.vm-accordion-toggle.vm-accordion-toggle-open {
+  transform: rotate(180deg);
+}
+
+.vm-accordion-header-text {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.vm-accordion-header-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f1f1f;
+}
+
+.vm-accordion-header-icon {
+  width: 20px;
+  height: 20px;
+}
+
+/* Inline Save button used by the prompt editor right-slot */
+.vm-prompt-save-btn {
+  background: #6C4CDC;
+  color: #ffffff;
+  border: none;
+  padding: 0 20px;
+  height: 40px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+}
+
+.vm-prompt-save-btn:hover:not(:disabled) {
+  background: #5a3fc4;
+  box-shadow: 0 4px 12px rgba(108, 76, 220, 0.25);
+}
+
+.vm-prompt-save-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(108, 76, 220, 0.22);
+}
+
+.vm-prompt-save-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.vm-prompt-saved-toast {
+  margin-top: 12px;
+  color: #16a34a;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+/* Review-state action row — replaces inline marginBottom */
+.analysis-actions-row {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-bottom: 16px;
+}
+
+.analysis-actions-row-feedback {
+  margin-top: 16px;
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+/* Completed state — Save Template button row */
+.analysis-completed-actions {
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* ===== RESPONSIVE — admin details ===== */
+@media (max-width: 768px) {
+  .vm-template-details-topbar {
+    margin-bottom: 18px;
+  }
+
+  .vm-uploaded-docs-list {
+    flex-direction: column;
+  }
+
+  .vm-file-item.vm-file-item-doc {
+    flex: 1 1 100%;
+    max-width: 100%;
+  }
+}
+
+/* =================================================================
+   ADMIN SECTION — PASS 2 (top-bar, upload, processing, review,
+   completed, template-list refinement)
+==================================================================*/
+
+/* Top bar — slightly more breathing room between role row and the
+   access-mgmt trigger button */
+.voice-top-bar {
+  padding: 4px 0;
+}
+
+/* Softer divider that flows with the purple theme */
+.voice-divider {
+  background: linear-gradient(90deg, transparent 0%, #e5e7eb 12%, #e5e7eb 88%, transparent 100%);
+  margin: 22px 0 22px;
+}
+
+/* ===== ADMIN HEADING ===== */
+.vm-admin-heading {
+  margin: 36px 0 24px;
+}
+
+.vm-admin-lottie-anim {
+  width: 240px;
+  height: 240px;
+}
+
+/* ===== UPLOAD SECTION (admin) =====
+   Responsive grid that replaces inline width: 35% */
+.voice-upload-row-admin {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) minmax(260px, 1fr);
+  justify-content: center;
+  gap: 32px;
+  height: auto;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.voice-upload-row-admin .voice-upload-col {
+  width: 100%;
+  align-items: stretch;
+}
+
+/* ===== PROCESSING WRAPPER ===== */
+.vm-admin-processing {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 320px;
+  padding: 24px 0 12px;
+  animation: fadeIn 0.4s ease;
+}
+
+/* ===== REVIEW ANALYSIS BOX (more breathing room) ===== */
+.analysis-box.analysis-box-review {
+  padding: 28px 32px;
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(17, 24, 39, 0.04);
+}
+
+/* ===== FEEDBACK SECTION ===== */
+.analysis-feedback-section {
+  background: #faf9ff;
+  border: 1px solid #ecebf3;
+  border-radius: 12px;
+  padding: 18px 20px;
+  margin-bottom: 18px;
+}
+
+.analysis-feedback-label {
+  margin-bottom: 10px;
+  color: #1f1f1f;
+  font-weight: 600;
+}
+
+/* ===== TEMPLATE LIST PANEL — refined header & inactive dot ===== */
+.vm-template-list-title {
+  font-size: 16px;
+  color: #1f1f1f;
+}
+
+.vm-slider-dot {
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.vm-slider-dot.active {
+  background: #ffffff;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.18);
+}
+
+/* ===== RESPONSIVE — admin pass 2 ===== */
+@media (max-width: 768px) {
+  .voice-upload-row-admin {
+    grid-template-columns: 1fr;
+    gap: 20px;
+    max-width: 520px;
+  }
+
+  .vm-admin-heading {
+    margin: 20px 0 16px;
+  }
+
+  .vm-admin-lottie-anim {
+    width: 200px;
+    height: 200px;
+  }
+
+  .analysis-box.analysis-box-review {
+    padding: 18px 16px;
+  }
+
+  .vm-admin-processing {
+    min-height: 240px;
+  }
+}
+
+/* =================================================================
+   AVAILABLE TEMPLATE PANEL — PREMIUM POLISH
+   Reworks the gradient surface and gives every card real depth.
+   Keeps the existing purple palette (#6C4CDC family).
+==================================================================*/
+
+/* Panel — layered radial highlights over a softer gradient, plus a
+   light outer shadow so the section reads as a lifted surface */
+.vm-template-list {
+  background:
+    radial-gradient(140% 90% at 0% 0%, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0) 55%),
+    radial-gradient(90% 70% at 100% 100%, rgba(108, 76, 220, 0.22) 0%, rgba(108, 76, 220, 0) 60%),
+    linear-gradient(135deg, #f4efff 0%, #e8dcff 48%, #c8b4f1 100%);
+  border-radius: 16px;
+  padding: 26px 26px 22px;
+  position: relative;
+  overflow: hidden;
+  box-shadow:
+    0 10px 30px rgba(108, 76, 220, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+/* Decorative soft glow blob in the bottom-right of the panel */
+.vm-template-list::after {
+  content: "";
+  position: absolute;
+  right: -60px;
+  bottom: -80px;
+  width: 220px;
+  height: 220px;
+  background: radial-gradient(circle, rgba(108, 76, 220, 0.28) 0%, rgba(108, 76, 220, 0) 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Make sure interactive content stays above the decorative glow */
+.vm-template-list > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Title — slightly more presence */
+.vm-template-list-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #1f1f40;
+  letter-spacing: -0.01em;
+}
+
+/* Slider arrow chips — crisper white pill with shadow */
+.vm-slider-arrow {
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow:
+    0 4px 12px rgba(31, 31, 64, 0.10),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(4px);
+  transition: transform 200ms cubic-bezier(0.34, 1.4, 0.6, 1),
+              background 200ms ease,
+              box-shadow 200ms ease;
+}
+
+.vm-slider-arrow:hover:not(:disabled) {
+  background: #ffffff;
+  transform: translateY(-1px);
+  box-shadow:
+    0 6px 16px rgba(108, 76, 220, 0.20),
+    inset 0 0 0 1px rgba(108, 76, 220, 0.10);
+}
+
+.vm-slider-arrow:active:not(:disabled) {
+  transform: scale(0.94);
+  box-shadow:
+    0 2px 6px rgba(108, 76, 220, 0.18),
+    inset 0 0 0 1px rgba(108, 76, 220, 0.15);
+}
+
+/* ===== TEMPLATE CARD — REAL DEPTH ===== */
+.vm-template-card {
+  background: #ffffff;
+  border: 1px solid rgba(108, 76, 220, 0.08);
+  box-shadow:
+    0 8px 20px rgba(31, 31, 64, 0.08),
+    0 1px 2px rgba(31, 31, 64, 0.04);
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.25s ease,
+    transform 0.18s ease;
+}
+
+/* Hover — pronounced purple-tinted shadow + small lift */
+.vm-template-card:hover {
+  border-color: rgba(108, 76, 220, 0.45);
+  box-shadow:
+    0 16px 32px rgba(108, 76, 220, 0.20),
+    0 3px 6px rgba(108, 76, 220, 0.08);
+  transform: translateY(-2px);
+}
+
+.vm-template-card:active {
+  transform: translateY(0);
+  box-shadow:
+    0 10px 20px rgba(108, 76, 220, 0.16),
+    0 1px 3px rgba(108, 76, 220, 0.08);
+}
+
+.vm-template-card:focus-visible {
+  outline: none;
+  border-color: #6C4CDC;
+  box-shadow:
+    0 0 0 3px rgba(108, 76, 220, 0.22),
+    0 16px 32px rgba(108, 76, 220, 0.18);
+}
+
+/* Icon chip — gradient instead of flat */
+.vm-template-icon {
+  background: linear-gradient(135deg, #efeafd 0%, #ddd5fa 100%);
+  box-shadow: inset 0 0 0 1px rgba(108, 76, 220, 0.06);
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.vm-template-card:hover .vm-template-icon {
+  background: linear-gradient(135deg, #e7dffe 0%, #cebef4 100%);
+}
+
+/* Name — a touch tighter typography for a more "designed" feel */
+.vm-template-name-text {
+  letter-spacing: -0.01em;
+}
+
+/* Date row — softer muted color that reads better on white */
+.vm-template-date {
+  color: #6b6885;
+  font-weight: 500;
+}
+
+/* 3-dots — tighten the dot baseline so it sits centered */
+.vm-dots {
+  font-size: 22px;
+  line-height: 0.6;
+  padding: 6px 8px;
+}
+
+/* Slider needs vertical padding so the new card shadows aren't
+   clipped by the implicit overflow-y: auto (overflow-x: auto
+   forces a clipped y-axis per CSS overflow spec). */
+.vm-template-slider {
+  padding: 12px 4px 16px;
+}
+
+/* Keep right padding so the last card's shadow has room at the end */
+.vm-template-track {
+  padding-right: 4px;
+}
+
+/* ===== RESPONSIVE — panel ===== */
+@media (max-width: 768px) {
+  .vm-template-list {
+    padding: 20px 18px 18px;
+    border-radius: 14px;
+  }
+
+  .vm-template-list::after {
+    width: 160px;
+    height: 160px;
+    right: -50px;
+    bottom: -60px;
+  }
+}
+
+/* =================================================================
+   AVAILABLE TEMPLATE — V2 OVERRIDES
+   - Brighter, more saturated panel gradient
+   - Vivid solid purple hover border + halo ring
+   - Slider dots with clearly perceptible active animation
+==================================================================*/
+
+/* Panel — pushed deeper into the brand purple so it actually pops */
+.vm-template-list {
+  background:
+    radial-gradient(140% 90% at 0% 0%, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0) 50%),
+    radial-gradient(90% 70% at 100% 100%, rgba(108, 76, 220, 0.42) 0%, rgba(108, 76, 220, 0) 65%),
+    linear-gradient(135deg, #efe5ff 0%, #d4bfff 45%, #a685e7 100%);
+  box-shadow:
+    0 14px 36px rgba(108, 76, 220, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.vm-template-list::after {
+  width: 260px;
+  height: 260px;
+  background: radial-gradient(circle, rgba(108, 76, 220, 0.45) 0%, rgba(108, 76, 220, 0) 70%);
+}
+
+/* Title sits on a richer panel now — keep deep ink color */
+.vm-template-list-title {
+  color: #1a1748;
+}
+
+/* ===== CARD HOVER — vivid solid border + halo ring (no layout shift) ===== */
+.vm-template-card:hover {
+  border-color: #6C4CDC;
+  box-shadow:
+    0 0 0 3px rgba(108, 76, 220, 0.22),
+    0 18px 36px rgba(108, 76, 220, 0.24),
+    0 4px 10px rgba(108, 76, 220, 0.10);
+  transform: translateY(-3px);
+}
+
+.vm-template-card:active {
+  border-color: #6C4CDC;
+  box-shadow:
+    0 0 0 2px rgba(108, 76, 220, 0.30),
+    0 10px 22px rgba(108, 76, 220, 0.18),
+    0 2px 4px rgba(108, 76, 220, 0.08);
+  transform: translateY(0);
+}
+
+.vm-template-card:focus-visible {
+  border-color: #6C4CDC;
+  box-shadow:
+    0 0 0 3px rgba(108, 76, 220, 0.35),
+    0 18px 36px rgba(108, 76, 220, 0.20);
+}
+
+/* ===== SLIDER DOTS — clearly visible state change ===== */
+.vm-slider-dots {
+  gap: 8px;
+  margin-top: 18px;
+}
+
+/* Inactive: small round dot */
+.vm-slider-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.45);
+  transition:
+    width 0.5s cubic-bezier(0.34, 1.4, 0.6, 1),
+    background 0.3s ease,
+    box-shadow 0.3s ease,
+    opacity 0.3s ease;
+}
+
+/* Active: stretched pill with subtle glow */
+.vm-slider-dot.active {
+  width: 28px;
+  height: 8px;
+  background: #ffffff;
+  opacity: 1;
+  box-shadow:
+    0 0 0 2px rgba(255, 255, 255, 0.28),
+    0 2px 8px rgba(108, 76, 220, 0.45);
+}
+
+/* =================================================================
+   FEEDBACK / REQUEST CHANGES PANEL — STUNNING
+   Premium gradient surface, refined header, textarea, buttons.
+==================================================================*/
+
+.analysis-feedback-section {
+  position: relative;
+  background:
+    radial-gradient(120% 90% at 0% 0%, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0) 55%),
+    linear-gradient(135deg, #f6f1ff 0%, #efe5ff 100%);
+  border: 1px solid rgba(108, 76, 220, 0.18);
+  border-radius: 16px;
+  padding: 22px 24px 20px;
+  margin-bottom: 22px;
+  box-shadow:
+    0 12px 32px rgba(108, 76, 220, 0.10),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  overflow: hidden;
+  animation: feedbackFadeIn 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Decorative blob in the bottom-right of the feedback panel */
+.analysis-feedback-section::after {
+  content: "";
+  position: absolute;
+  right: -80px;
+  bottom: -100px;
+  width: 240px;
+  height: 240px;
+  background: radial-gradient(circle, rgba(108, 76, 220, 0.22) 0%, rgba(108, 76, 220, 0) 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.analysis-feedback-section > * {
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes feedbackFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Header — icon chip + title + subtitle */
+.analysis-feedback-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.analysis-feedback-header-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  background: linear-gradient(135deg, #6C4CDC 0%, #8b6cff 100%);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(108, 76, 220, 0.32);
+}
+
+.analysis-feedback-header-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.analysis-feedback-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1f1f40;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+}
+
+.analysis-feedback-subtitle {
+  font-size: 13px;
+  color: #6b6885;
+  margin-top: 2px;
+  line-height: 1.5;
+}
+
+/* Textarea — refined inside the panel */
+.analysis-feedback-section .analysis-feedback-input {
+  background: #ffffff;
+  border: 1.5px solid rgba(108, 76, 220, 0.15);
+  border-radius: 12px;
+  padding: 14px 16px;
+  min-height: 120px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #1f1f40;
+  box-shadow: 0 1px 2px rgba(31, 31, 64, 0.04);
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.analysis-feedback-section .analysis-feedback-input::placeholder {
+  color: #a3a0ba;
+}
+
+.analysis-feedback-section .analysis-feedback-input:hover {
+  border-color: rgba(108, 76, 220, 0.35);
+}
+
+.analysis-feedback-section .analysis-feedback-input:focus {
+  border-color: #6C4CDC;
+  box-shadow:
+    0 0 0 3px rgba(108, 76, 220, 0.18),
+    0 1px 2px rgba(31, 31, 64, 0.04);
+}
+
+/* Footer — character count + actions */
+.analysis-feedback-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 12px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.analysis-feedback-count {
+  font-size: 12px;
+  color: #8b88a8;
+  font-weight: 500;
+}
+
+/* Reset the row margin since footer handles spacing now */
+.analysis-feedback-footer .analysis-actions-row-feedback {
+  margin-top: 0;
+}
+
+/* ===== BUTTONS (within feedback panel) ===== */
+
+.analysis-feedback-section .analysis-feedback-discard-btn {
+  background: #ffffff;
+  color: #4f4d6b;
+  border: 1px solid #dcd9ec;
+  border-radius: 10px;
+  padding: 10px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    transform 0.08s ease;
+}
+
+.analysis-feedback-section .analysis-feedback-discard-btn:hover {
+  background: #faf8ff;
+  border-color: #c5bde8;
+  color: #1f1f40;
+}
+
+.analysis-feedback-section .analysis-feedback-discard-btn:active {
+  transform: scale(0.97);
+}
+
+.analysis-feedback-section .analysis-feedback-discard-btn:focus-visible {
+  outline: none;
+  border-color: #6C4CDC;
+  box-shadow: 0 0 0 3px rgba(108, 76, 220, 0.18);
+}
+
+.analysis-feedback-section .analysis-feedback-submit-btn {
+  background: linear-gradient(135deg, #6C4CDC 0%, #8b6cff 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 22px;
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: 0 6px 16px rgba(108, 76, 220, 0.30);
+  transition:
+    box-shadow 0.18s ease,
+    transform 0.08s ease,
+    opacity 0.15s ease;
+}
+
+.analysis-feedback-section .analysis-feedback-submit-btn:hover:not(:disabled) {
+  box-shadow: 0 10px 22px rgba(108, 76, 220, 0.42);
+  transform: translateY(-1px);
+}
+
+.analysis-feedback-section .analysis-feedback-submit-btn:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 4px 12px rgba(108, 76, 220, 0.30);
+}
+
+.analysis-feedback-section .analysis-feedback-submit-btn:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 3px rgba(108, 76, 220, 0.32),
+    0 6px 16px rgba(108, 76, 220, 0.30);
+}
+
+.analysis-feedback-section .analysis-feedback-submit-btn:disabled {
+  background: #d4cdee;
+  color: #ffffff;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .analysis-feedback-section {
+    padding: 18px 16px;
+    border-radius: 14px;
+  }
+
+  .analysis-feedback-footer {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .analysis-feedback-footer .analysis-actions-row-feedback {
+    justify-content: stretch;
+  }
+
+  .analysis-feedback-section .analysis-feedback-discard-btn,
+  .analysis-feedback-section .analysis-feedback-submit-btn {
+    flex: 1;
+  }
+}
+
+/* =================================================================
+   REVIEW ACTION BUTTONS — PREMIUM STYLING
+   Applies to:
+     .analysis-accept-btn         — primary (Accept / Save Template)
+     .analysis-feedback-request-btn — outline secondary (Request Changes)
+==================================================================*/
+
+/* ===== Primary: Accept / Save Template ===== */
+.analysis-accept-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #6C4CDC 0%, #8b6cff 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  padding: 11px 22px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  letter-spacing: -0.01em;
+  box-shadow:
+    0 8px 22px rgba(108, 76, 220, 0.32),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  transition:
+    box-shadow 0.18s ease,
+    transform 0.08s ease,
+    background 0.18s ease,
+    opacity 0.15s ease;
+}
+
+.analysis-accept-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #6041d2 0%, #7e5cff 100%);
+  box-shadow:
+    0 12px 28px rgba(108, 76, 220, 0.42),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  transform: translateY(-1px);
+}
+
+.analysis-accept-btn:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow:
+    0 5px 14px rgba(108, 76, 220, 0.32),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+.analysis-accept-btn:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 3px rgba(108, 76, 220, 0.32),
+    0 8px 22px rgba(108, 76, 220, 0.32);
+}
+
+.analysis-accept-btn:disabled {
+  background: #d4cdee;
+  color: #ffffff;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+/* Star inside primary button — keep crisp white */
+.analysis-accept-btn .voice-star {
+  width: 14px;
+  height: 14px;
+  filter: brightness(0) invert(1);
+}
+
+/* ===== Secondary: Request Changes ===== */
+.analysis-feedback-request-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: #ffffff;
+  color: #4f4d6b;
+  border: 1.5px solid #e1ddf2;
+  border-radius: 10px;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  letter-spacing: -0.01em;
+  box-shadow: 0 2px 6px rgba(31, 31, 64, 0.05);
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.08s ease;
+}
+
+.analysis-feedback-request-btn:hover {
+  background: #faf8ff;
+  border-color: #c5bde8;
+  color: #1f1f40;
+  box-shadow: 0 4px 12px rgba(108, 76, 220, 0.12);
+}
+
+.analysis-feedback-request-btn:hover svg {
+  color: #6C4CDC;
+}
+
+.analysis-feedback-request-btn:active {
+  transform: scale(0.98);
+}
+
+.analysis-feedback-request-btn:focus-visible {
+  outline: none;
+  border-color: #6C4CDC;
+  box-shadow:
+    0 0 0 3px rgba(108, 76, 220, 0.18),
+    0 2px 6px rgba(31, 31, 64, 0.05);
+}
+
+.analysis-feedback-request-btn svg {
+  color: #8b88a8;
+  transition: color 0.15s ease;
+}
+
+/* Slightly more breathing room between the two buttons */
+.analysis-actions-row {
+  gap: 12px;
+}
+
+/* =================================================================
+   EXPLANATION MARKDOWN — REFINED TYPOGRAPHY & STRUCTURE
+   Scoped via .cv-markdown so SummaryReportViewer's .sirs-markdown
+   styles stay untouched.
+==================================================================*/
+
+.sirs-markdown.cv-markdown {
+  background: #ffffff;
+  color: #1f1f40;
+  font-family: 'Inter', sans-serif;
+  font-size: 15px;
+  line-height: 1.75;
+  padding: 0;
+  margin: 0;
+  border-radius: 0;
+  /* Better browser text rendering for prose */
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ===== HEADINGS ===== */
+.cv-markdown h1,
+.cv-markdown h2,
+.cv-markdown h3,
+.cv-markdown h4,
+.cv-markdown h5,
+.cv-markdown h6 {
+  font-family: 'Inter', sans-serif;
+  color: #1a1748;
+  letter-spacing: -0.015em;
+  line-height: 1.3;
+  margin: 1.6em 0 0.6em;
+  font-weight: 700;
+}
+
+.cv-markdown > :first-child {
+  margin-top: 0;
+}
+
+.cv-markdown h1 {
+  font-size: 26px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #ecebf3;
+}
+
+.cv-markdown h2 {
+  font-size: 21px;
+  padding-bottom: 6px;
+}
+
+/* Subtle purple accent bar before H2 — gives section weight */
+.cv-markdown h2 {
+  position: relative;
+  padding-left: 14px;
+}
+
+.cv-markdown h2::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.18em;
+  bottom: 0.28em;
+  width: 4px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #6C4CDC 0%, #8b6cff 100%);
+}
+
+.cv-markdown h3 {
+  font-size: 17px;
+  color: #2c2856;
+}
+
+.cv-markdown h4 {
+  font-size: 15px;
+  color: #2c2856;
+  font-weight: 600;
+}
+
+/* ===== PARAGRAPHS ===== */
+.cv-markdown p {
+  margin: 0 0 1em;
+  color: #2c2956;
+}
+
+.cv-markdown p:last-child {
+  margin-bottom: 0;
+}
+
+/* ===== LISTS ===== */
+.cv-markdown ul,
+.cv-markdown ol {
+  margin: 0.4em 0 1.1em;
+  padding-left: 22px;
+}
+
+.cv-markdown li {
+  margin-bottom: 0.5em;
+  padding-left: 4px;
+}
+
+.cv-markdown li::marker {
+  color: #6C4CDC;
+  font-weight: 700;
+}
+
+.cv-markdown li > p {
+  margin: 0 0 0.4em;
+}
+
+.cv-markdown li > ul,
+.cv-markdown li > ol {
+  margin: 0.5em 0 0.3em;
+}
+
+/* ===== INLINE TEXT ===== */
+.cv-markdown strong {
+  font-weight: 700;
+  color: #1a1748;
+}
+
+.cv-markdown em {
+  font-style: italic;
+  color: #4f4d6b;
+}
+
+/* Avoid the unscoped .sirs-markdown rule that paints all spans orange */
+.cv-markdown span {
+  font-weight: inherit;
+  color: inherit;
+}
+
+/* ===== LINKS ===== */
+.cv-markdown a {
+  color: #6C4CDC;
+  font-weight: 500;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(108, 76, 220, 0.25);
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.cv-markdown a:hover {
+  color: #5a3fc4;
+  border-bottom-color: #6C4CDC;
+}
+
+/* ===== HR ===== */
+.cv-markdown hr {
+  margin: 1.6em 0;
+  border: none;
+  border-top: 1px solid #ecebf3;
+}
+
+/* ===== INLINE CODE ===== */
+.cv-markdown code {
+  font-family: 'JetBrains Mono', 'Fira Code', Menlo, Consolas, monospace;
+  font-size: 0.88em;
+  background: #f4f1fc;
+  color: #5a3fc4;
+  padding: 0.15em 0.45em;
+  border-radius: 6px;
+  border: 1px solid rgba(108, 76, 220, 0.12);
+}
+
+/* ===== CODE BLOCKS ===== */
+.cv-markdown pre {
+  background: #1e1b3a;
+  color: #ece9ff;
+  padding: 18px 20px;
+  border-radius: 12px;
+  overflow-x: auto;
+  margin: 1.1em 0;
+  font-size: 13px;
+  line-height: 1.6;
+  box-shadow: 0 4px 14px rgba(31, 31, 64, 0.18);
+}
+
+.cv-markdown pre code {
+  background: transparent;
+  color: inherit;
+  border: none;
+  padding: 0;
+  font-size: inherit;
+}
+
+/* ===== BLOCKQUOTE ===== */
+.cv-markdown blockquote {
+  margin: 1.1em 0;
+  padding: 12px 18px;
+  background: linear-gradient(135deg, #faf8ff 0%, #f3eeff 100%);
+  border-left: 4px solid #6C4CDC;
+  border-radius: 0 10px 10px 0;
+  color: #3e3b66;
+  font-style: italic;
+}
+
+.cv-markdown blockquote p {
+  margin: 0;
+}
+
+/* ===== TABLES ===== */
+.cv-markdown table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin: 1.2em 0;
+  font-size: 14px;
+  border: 1px solid #ecebf3;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(31, 31, 64, 0.04);
+}
+
+.cv-markdown th,
+.cv-markdown td {
+  border: none;
+  border-bottom: 1px solid #ecebf3;
+  padding: 12px 16px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.cv-markdown th + th,
+.cv-markdown td + td {
+  border-left: 1px solid #ecebf3;
+}
+
+.cv-markdown th {
+  background: linear-gradient(180deg, #f7f4ff 0%, #efe9ff 100%);
+  font-weight: 600;
+  color: #1f1f40;
+  letter-spacing: -0.005em;
+  text-transform: none;
+}
+
+.cv-markdown tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.cv-markdown tbody tr:hover {
+  background: #faf9ff;
+}
+
+/* ===== IMAGES ===== */
+.cv-markdown img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 10px;
+  margin: 0.8em 0;
+  box-shadow: 0 4px 14px rgba(31, 31, 64, 0.08);
+}
+
+/* ===== MEDIA: smaller screens ===== */
+@media (max-width: 640px) {
+  .sirs-markdown.cv-markdown {
+    font-size: 14px;
+  }
+
+  .cv-markdown h1 {
+    font-size: 22px;
+  }
+
+  .cv-markdown h2 {
+    font-size: 18px;
+  }
+
+  .cv-markdown h3 {
+    font-size: 16px;
+  }
+
+  .cv-markdown table {
+    font-size: 13px;
+  }
+
+  .cv-markdown th,
+  .cv-markdown td {
+    padding: 10px 12px;
   }
 }

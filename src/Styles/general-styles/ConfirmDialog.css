@@ -1,0 +1,130 @@
+/* Reusable yes/no confirmation popup.
+   Visual language matches the Financial Health delete-history popup so
+   every module's confirmation experience is identical. All classes are
+   prefixed `cd-` so this stylesheet does not collide with any module. */
+
+.cd-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.4);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    z-index: 10000;
+    font-family: 'Inter', system-ui, -apple-system, "Segoe UI", sans-serif;
+    animation: cd-fade-in 0.18s ease;
+}
+
+@keyframes cd-fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes cd-slide-up {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.cd-modal {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 22px 26px 20px;
+    min-width: 360px;
+    max-width: 90vw;
+    text-align: center;
+    box-shadow: 0 24px 64px rgba(31, 31, 64, 0.18),
+        0 0 0 1px rgba(108, 76, 220, 0.06);
+    animation: cd-slide-up 0.22s ease;
+}
+
+.cd-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 8px;
+    letter-spacing: -0.005em;
+}
+
+.cd-message {
+    font-size: 13px;
+    color: #6b7280;
+    margin-bottom: 18px;
+    line-height: 1.5;
+}
+
+.cd-title:last-child,
+.cd-title + .cd-actions {
+    margin-bottom: 0;
+}
+
+.cd-title + .cd-actions {
+    margin-top: 18px;
+}
+
+.cd-actions {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 6px;
+}
+
+.cd-cancel,
+.cd-confirm {
+    padding: 8px 22px;
+    border-radius: 6px;
+    border: none;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 160ms ease, transform 100ms ease, opacity 160ms ease;
+}
+
+.cd-cancel {
+    background: #e5e7eb;
+    color: #1f2937;
+}
+
+.cd-cancel:hover:not(:disabled) {
+    background: #d6d8dd;
+}
+
+.cd-cancel:active:not(:disabled) {
+    transform: scale(0.98);
+}
+
+.cd-cancel:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.cd-confirm {
+    background: #6C4CDC;
+    color: #ffffff;
+    font-weight: 500;
+}
+
+.cd-confirm:hover:not(:disabled) {
+    background: #5a3fc4;
+}
+
+.cd-confirm:active:not(:disabled) {
+    transform: scale(0.98);
+}
+
+.cd-confirm:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+/* Danger tone — red confirm button for destructive actions. */
+.cd-confirm-danger {
+    background: #dc2626;
+}
+
+.cd-confirm-danger:hover:not(:disabled) {
+    background: #b91c1c;
+}

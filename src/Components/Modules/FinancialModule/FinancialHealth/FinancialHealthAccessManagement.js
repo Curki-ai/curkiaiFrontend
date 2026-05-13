@@ -1,13 +1,30 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import "../../../../Styles/general-styles/FinancialHealthAccessManagement.css";
 import { API_BASE as ROOT_API_BASE } from "../../../../config/apiBase";
+import { HiOutlineChevronDown, HiOutlineShieldCheck, HiOutlineUser } from "react-icons/hi";
+import { RiAdminLine } from "react-icons/ri";
+import { FiUserPlus, FiUsers } from "react-icons/fi";
 
-// Financial Health supports two roles. Staff can use the product but cannot
-// manage access — only admins reach this surface (the API enforces it).
-const ROLE_OPTIONS = [
-  { label: "Admin", value: "admin" },
-  { label: "Staff", value: "staff" },
-];
+// Financial Health historically supported two roles. The three apex modules
+// (Financial Health, Client Profitability, Payroll Analysis aka TLC Custom
+// Reporting) only need admins, so they pass `allowStaffRole={false}` and the
+// dropdown collapses into a static Admin badge. The incident/quality/SIRS
+// modules keep both options.
+const ADMIN_ROLE_OPTION = {
+  label: "Admin",
+  value: "admin",
+  description: "Full access — manage users & all data",
+  Icon: RiAdminLine,
+};
+
+const STAFF_ROLE_OPTION = {
+  label: "Staff",
+  value: "staff",
+  description: "Can view dashboards & reports",
+  Icon: HiOutlineUser,
+};
+
+const ALL_ROLE_OPTIONS = [ADMIN_ROLE_OPTION, STAFF_ROLE_OPTION];
 
 // Canonical state list. Mirrored on the backend in
 // modules/financial-health/access/access.service.js (ALLOWED_STATES) — keep
@@ -28,22 +45,123 @@ const DEFAULT_API_BASE =
   process.env.REACT_APP_FH_ACCESS_BASE_URL ||
   `${ROOT_API_BASE}/api/financial-health/access`;
 
-// `apiBase` and `moduleLabel` let TlcNewClientProfitibility and
-// TlcNewCustomReporting reuse this same modal against their own backend
-// (`/api/client-profitability/access`, `/api/payroll/access`) — each module
-// has its own user_access container, so the API surface differs by base
-// path while the UI shape stays identical.
+// ─── Helpers ───────────────────────────────────────────────────────────────
+const initialsOf = (email = "", name = "") => {
+  const source = (name || email).trim();
+  if (!source) return "?";
+  const parts = source.split(/[\s.@_-]+/).filter(Boolean);
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+  return source.slice(0, 2).toUpperCase();
+};
+
+const AVATAR_PALETTE = [
+  ["#a78bfa", "#6c4cdc"],
+  ["#60a5fa", "#2563eb"],
+  ["#34d399", "#0d9488"],
+  ["#f59e0b", "#d97706"],
+  ["#f472b6", "#db2777"],
+  ["#fb923c", "#ea580c"],
+  ["#22d3ee", "#0891b2"],
+  ["#a3e635", "#65a30d"],
+];
+
+const avatarGradient = (key = "") => {
+  let hash = 0;
+  for (let i = 0; i < key.length; i++)
+    hash = (hash << 5) - hash + key.charCodeAt(i);
+  const [a, b] = AVATAR_PALETTE[Math.abs(hash) % AVATAR_PALETTE.length];
+  return `linear-gradient(135deg, ${a} 0%, ${b} 100%)`;
+};
+
+// ─── Custom Role Select ─────────────────────────────────────────────────────
+const RoleSelect = ({ value, onChange, options }) => {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  const current = options.find((o) => o.value === value) || options[0];
+  const CurrentIcon = current.Icon;
+
+  useEffect(() => {
+    const onClick = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, []);
+
+  return (
+    <div className={`fha-role-select ${open ? "fha-role-open" : ""}`} ref={ref}>
+      <button
+        type="button"
+        className="fha-role-trigger"
+        onClick={() => setOpen((v) => !v)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+      >
+        <span className={`fha-role-icon-wrap fha-role-icon-${value}`}>
+          <CurrentIcon size={14} />
+        </span>
+        <span className="fha-role-label">{current.label}</span>
+        <HiOutlineChevronDown
+          className={`fha-role-chevron ${open ? "fha-role-chevron-open" : ""}`}
+          size={15}
+        />
+      </button>
+
+      {open && (
+        <div className="fha-role-menu" role="listbox">
+          {options.map(({ value: v, label, description, Icon }) => (
+            <button
+              type="button"
+              key={v}
+              className={`fha-role-item ${value === v ? "fha-role-item-active" : ""}`}
+              role="option"
+              aria-selected={value === v}
+              onClick={() => {
+                onChange(v);
+                setOpen(false);
+              }}
+            >
+              <span className={`fha-role-item-icon fha-role-icon-${v}`}>
+                <Icon size={15} />
+              </span>
+              <span className="fha-role-item-text">
+                <span className="fha-role-item-label">{label}</span>
+                <span className="fha-role-item-desc">{description}</span>
+              </span>
+              {value === v && (
+                <span className="fha-role-item-check">✓</span>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ─── Main Component ─────────────────────────────────────────────────────────
+// `apiBase` and `moduleLabel` let TlcNewClientProfitibility,
+// TlcNewCustomReporting, and the NDIS/Compliance/Quality incident surfaces
+// reuse this same modal against their own backend (each module has its
+// own user_access container, so the API surface differs by base path
+// while the UI shape stays identical).
 const FinancialHealthAccessManagement = ({
   onClose,
   userEmail,
   apiBase = DEFAULT_API_BASE,
   moduleLabel = "Financial Health",
   subtitle,
+  // When false, Staff is hidden from the invite UI and admin is the only
+  // role that can be assigned. The three apex modules pass false; the
+  // incident/quality/SIRS surfaces keep the default and still expose both.
+  allowStaffRole = true,
 }) => {
   const API_BASE = apiBase;
+  const roleOptions = allowStaffRole ? ALL_ROLE_OPTIONS : [ADMIN_ROLE_OPTION];
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [role, setRole] = useState("staff");
+  const [role, setRole] = useState(allowStaffRole ? "staff" : "admin");
   // Empty array = "All States". When the user picks a specific state we
   // implicitly drop the all-states selection.
   const [selectedStates, setSelectedStates] = useState([]);
@@ -70,14 +188,10 @@ const FinancialHealthAccessManagement = ({
         headers: requestHeaders(),
       });
       const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data?.error || "Failed to load users");
-      }
+      if (!res.ok) throw new Error(data?.error || "Failed to load users");
       const list = Array.isArray(data?.data) ? data.data : [];
-      console.log("[FinancialHealth/Access] users", list);
       setUsers(list);
     } catch (err) {
-      console.error("[FinancialHealth/Access] fetch users failed", err);
       setError(err.message || "Failed to load users for this organization");
     } finally {
       setLoading(false);
@@ -104,27 +218,12 @@ const FinancialHealthAccessManagement = ({
     const trimmedName = name.trim();
     const trimmedEmail = email.trim().toLowerCase();
 
-    if (!trimmedName) {
-      setError("Name is required");
-      return;
-    }
-    if (!EMAIL_REGEX.test(trimmedEmail)) {
-      setError("A valid email is required");
-      return;
-    }
-    if (!ROLE_OPTIONS.some((r) => r.value === role)) {
-      setError("Select a valid role");
-      return;
-    }
+    if (!trimmedName) { setError("Name is required"); return; }
+    if (!EMAIL_REGEX.test(trimmedEmail)) { setError("A valid email is required"); return; }
+    if (!roleOptions.some((r) => r.value === role)) { setError("Select a valid role"); return; }
 
     setInviting(true);
     try {
-      console.log("[FinancialHealth/Access] invite", {
-        name: trimmedName,
-        email: trimmedEmail,
-        role,
-        states: selectedStates,
-      });
       const res = await fetch(`${API_BASE}/invite`, {
         method: "POST",
         headers: requestHeaders(),
@@ -136,9 +235,7 @@ const FinancialHealthAccessManagement = ({
         }),
       });
       const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data?.error || "Failed to invite user");
-      }
+      if (!res.ok) throw new Error(data?.error || "Failed to invite user");
 
       setSuccess(
         data?.already_invited
@@ -146,14 +243,9 @@ const FinancialHealthAccessManagement = ({
           : "Invite created successfully"
       );
 
-      setName("");
-      setEmail("");
-      setRole("staff");
-      setSelectedStates([]);
-
+      setName(""); setEmail(""); setRole(allowStaffRole ? "staff" : "admin"); setSelectedStates([]);
       await fetchUsers();
     } catch (err) {
-      console.error("[FinancialHealth/Access] invite failed", err);
       setError(err.message || "Failed to invite user");
     } finally {
       setInviting(false);
@@ -168,23 +260,14 @@ const FinancialHealthAccessManagement = ({
       : `Revoke invite for ${user.email}? They will lose access until re-invited.`;
     if (!window.confirm(confirmMessage)) return;
 
-    setError("");
-    setSuccess("");
-    setRevokingId(user.id);
+    setError(""); setSuccess(""); setRevokingId(user.id);
     try {
-      console.log("[FinancialHealth/Access] remove", {
-        id: user.id,
-        email: user.email,
-        status: user.status,
-      });
       const res = await fetch(
         `${API_BASE}/users/${encodeURIComponent(user.id)}`,
         { method: "DELETE", headers: requestHeaders() }
       );
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        throw new Error(data?.error || "Failed to remove user");
-      }
+      if (!res.ok) throw new Error(data?.error || "Failed to remove user");
       setSuccess(
         isActive
           ? `Removed access for ${user.email}`
@@ -192,7 +275,6 @@ const FinancialHealthAccessManagement = ({
       );
       await fetchUsers();
     } catch (err) {
-      console.error("[FinancialHealth/Access] remove failed", err);
       setError(err.message || "Failed to remove user");
     } finally {
       setRevokingId("");
@@ -203,11 +285,6 @@ const FinancialHealthAccessManagement = ({
     !!userEmail &&
     !!user?.email &&
     user.email.trim().toLowerCase() === userEmail.trim().toLowerCase();
-
-  const roleClass = (value) =>
-    `fh-access-badge fh-access-role-${(value || "").toLowerCase()}`;
-  const statusClass = (value) =>
-    `fh-access-badge fh-access-status-${(value || "").toLowerCase()}`;
 
   // The signed-in admin is always a member of the org they're managing —
   // surface them in the table even before the API list is populated.
@@ -221,11 +298,17 @@ const FinancialHealthAccessManagement = ({
         states: [],
       }
     : null;
+
   const displayedUsers = (() => {
     const list = Array.isArray(users) ? [...users] : [];
     if (selfEntry && !list.some(isSelf)) list.unshift(selfEntry);
     return list;
   })();
+
+  const activeCount = displayedUsers.filter((u) => u.status === "active").length;
+  const pendingCount = displayedUsers.filter(
+    (u) => u.status === "invited" || u.status === "pending"
+  ).length;
 
   const renderStatesCell = (statesArr) => {
     const arr = Array.isArray(statesArr) ? statesArr : [];
@@ -258,167 +341,232 @@ const FinancialHealthAccessManagement = ({
         aria-labelledby="fh-access-title"
         onClick={(e) => e.stopPropagation()}
       >
+        {/* ── MODAL HEADER ── */}
+        <div className="fh-access-modal-header">
+          <div className="fh-access-header-icon">
+            <HiOutlineShieldCheck size={22} />
+          </div>
+          <div className="fh-access-header-text">
+            <div id="fh-access-title" className="fh-access-title">
+              Access Management
+            </div>
+            <div className="fh-access-subtitle">
+              {subtitle ||
+                `Invite teammates and manage who can access ${moduleLabel} for this organization. Use the State field to scope a user to specific Australian states.`}
+            </div>
+          </div>
+          <button
+            type="button"
+            className="fh-access-close"
+            onClick={onClose}
+            aria-label="Close"
+          >
+            ×
+          </button>
+        </div>
+
         <div className="fh-access-scroll">
-          <div className="fh-access-header">
-            <div>
-              <div id="fh-access-title" className="fh-access-title">
-                Access Management
+          {/* ── INVITE SECTION ── */}
+          <div className="fh-access-invite-card">
+            <div className="fh-access-invite-card-header">
+              <FiUserPlus size={15} />
+              <span>Invite a new member</span>
+            </div>
+
+            <div className="fh-access-invite-grid">
+              {/* Name */}
+              <div className="fh-access-field">
+                <label className="fh-access-label">
+                  Full Name <sup className="fh-access-required">*</sup>
+                </label>
+                <input
+                  className="fh-access-input"
+                  type="text"
+                  placeholder="e.g. Jane Smith"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
               </div>
-              <div className="fh-access-subtitle">
-                {subtitle ||
-                  `Invite teammates and manage who can access ${moduleLabel} for this organization. Use the State field to scope a user to specific Australian states.`}
+
+              {/* Email */}
+              <div className="fh-access-field">
+                <label className="fh-access-label">
+                  Email Address <sup className="fh-access-required">*</sup>
+                </label>
+                <input
+                  className="fh-access-input"
+                  type="email"
+                  placeholder="user@company.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
               </div>
-            </div>
-            <button
-              type="button"
-              className="fh-access-close"
-              onClick={onClose}
-              aria-label="Close"
-            >
-              ×
-            </button>
-          </div>
 
-          <div className="fh-access-section-title">Invite a new member</div>
-
-          <div className="fh-access-row">
-            <div className="fh-access-field">
-              <label className="fh-access-label">
-                Name <sup className="fh-access-required">*</sup>
-              </label>
-              <input
-                className="fh-access-input"
-                type="text"
-                placeholder="Full name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-              />
-            </div>
-
-            <div className="fh-access-field">
-              <label className="fh-access-label">
-                Email <sup className="fh-access-required">*</sup>
-              </label>
-              <input
-                className="fh-access-input"
-                type="email"
-                placeholder="user@company.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
-          </div>
-
-          <div className="fh-access-row">
-            <div className="fh-access-field">
-              <label className="fh-access-label">
-                Role <sup className="fh-access-required">*</sup>
-              </label>
-              <select
-                className="fh-access-select"
-                value={role}
-                onChange={(e) => setRole(e.target.value)}
-              >
-                {ROLE_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="fh-access-field">
-              <label className="fh-access-label">States</label>
-              <div className="fh-access-states">
-                <span
-                  className={`fh-access-state-chip fh-access-state-chip-all ${
-                    selectedStates.length === 0
-                      ? "fh-access-state-chip-selected"
-                      : ""
-                  }`}
-                  onClick={() => setSelectedStates([])}
-                  role="button"
-                  tabIndex={0}
-                >
-                  All states
-                </span>
-                {STATE_OPTIONS.map((s) => {
-                  const isSelected = selectedStates.includes(s);
-                  return (
-                    <span
-                      key={s}
-                      className={`fh-access-state-chip ${
-                        isSelected ? "fh-access-state-chip-selected" : ""
-                      }`}
-                      onClick={() => toggleState(s)}
-                      role="button"
-                      tabIndex={0}
-                    >
-                      {s}
+              {/* Role */}
+              <div className="fh-access-field">
+                <label className="fh-access-label">
+                  Role {allowStaffRole && <sup className="fh-access-required">*</sup>}
+                </label>
+                {allowStaffRole ? (
+                  <RoleSelect
+                    value={role}
+                    onChange={setRole}
+                    options={roleOptions}
+                  />
+                ) : (
+                  <div className="fh-access-role-static" aria-label="Role: Admin">
+                    <span className="fh-access-role-static-icon">
+                      <RiAdminLine size={14} />
                     </span>
-                  );
-                })}
+                    <span className="fh-access-role-static-text">Admin</span>
+                    <span className="fh-access-role-static-hint">Only role available</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Invite Button */}
+              <div className="fh-access-field fh-access-invite-action-field">
+                <label className="fh-access-label fh-access-label-invisible">Action</label>
+                <button
+                  type="button"
+                  className="fh-access-invite-btn"
+                  onClick={handleInvite}
+                  disabled={inviting}
+                >
+                  {inviting ? (
+                    <><span className="fh-access-spinner" /> Inviting…</>
+                  ) : (
+                    <><FiUserPlus size={15} /> Invite User</>
+                  )}
+                </button>
+              </div>
+
+              {/* States — full width, below the 2x2 grid */}
+              <div className="fh-access-field fh-access-field-full">
+                <label className="fh-access-label">States</label>
+                <div className="fh-access-states">
+                  <span
+                    className={`fh-access-state-chip fh-access-state-chip-all ${
+                      selectedStates.length === 0
+                        ? "fh-access-state-chip-selected"
+                        : ""
+                    }`}
+                    onClick={() => setSelectedStates([])}
+                    role="button"
+                    tabIndex={0}
+                  >
+                    All states
+                  </span>
+                  {STATE_OPTIONS.map((s) => {
+                    const isSelected = selectedStates.includes(s);
+                    return (
+                      <span
+                        key={s}
+                        className={`fh-access-state-chip ${
+                          isSelected ? "fh-access-state-chip-selected" : ""
+                        }`}
+                        onClick={() => toggleState(s)}
+                        role="button"
+                        tabIndex={0}
+                      >
+                        {s}
+                      </span>
+                    );
+                  })}
+                </div>
               </div>
             </div>
+
+            {error && <div className="fh-access-error"><span>⚠</span> {error}</div>}
+            {success && <div className="fh-access-success"><span>✓</span> {success}</div>}
           </div>
 
-          <div className="fh-access-row-invite">
-            <div />
-            <div />
-            <div className="fh-access-invite-cell">
-              <button
-                type="button"
-                className="fh-access-invite-btn"
-                onClick={handleInvite}
-                disabled={inviting}
-              >
-                {inviting ? "Inviting..." : "Invite User"}
-              </button>
-            </div>
-          </div>
-
-          {error && <div className="fh-access-error">{error}</div>}
-          {success && <div className="fh-access-success">{success}</div>}
-
+          {/* ── TEAM MEMBERS TABLE ── */}
           <div className="fh-access-list-section">
-            <div className="fh-access-section-title fh-access-list-title">
-              <span>Team Members</span>
-              {!loading && displayedUsers.length > 0 && (
-                <span className="fh-access-count">{displayedUsers.length}</span>
-              )}
+            <div className="fh-access-list-header">
+              <div className="fh-access-list-title-row">
+                <FiUsers size={15} />
+                <span>Team Members</span>
+                {!loading && displayedUsers.length > 0 && (
+                  <span className="fh-access-count">{displayedUsers.length}</span>
+                )}
+                <div className="fh-access-stats-row">
+                  <div className="fh-access-stat-pill fh-access-stat-green">
+                    <span className="fh-access-stat-dot fh-access-stat-dot-green" />
+                    <span><strong>{activeCount}</strong> active</span>
+                  </div>
+                  {pendingCount > 0 && (
+                    <div className="fh-access-stat-pill fh-access-stat-amber">
+                      <span className="fh-access-stat-dot fh-access-stat-dot-amber" />
+                      <span><strong>{pendingCount}</strong> pending</span>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
 
             {loading ? (
-              <div className="fh-access-state">Loading users...</div>
+              <div className="fh-access-state">
+                <span className="fh-access-spinner fh-access-spinner-lg" />
+                <span>Loading members…</span>
+              </div>
             ) : displayedUsers.length === 0 ? (
               <div className="fh-access-state">
-                No users in this organization yet
+                <FiUsers size={28} className="fh-access-state-icon" />
+                <div className="fh-access-state-title">No members yet</div>
+                <div className="fh-access-state-sub">Invite your first team member above.</div>
               </div>
             ) : (
               <div className="fh-access-table-wrapper">
                 <div className="fh-access-table">
                   <div className="fh-access-table-header">
-                    <div>Name</div>
-                    <div>Email</div>
+                    <div>Member</div>
                     <div>Role</div>
                     <div>Status</div>
                     <div>States</div>
                     <div>Actions</div>
                   </div>
+
                   {displayedUsers.map((u) => (
                     <div key={u.id || u.email} className="fh-access-table-row">
-                      <div className="fh-access-name-cell">{u.name}</div>
-                      <div className="fh-access-email">{u.email}</div>
-                      <div>
-                        <span className={roleClass(u.role)}>{u.role}</span>
+                      {/* Avatar + Name + Email */}
+                      <div className="fh-access-user-cell">
+                        <div
+                          className="fh-access-avatar"
+                          style={{ background: avatarGradient(u.email) }}
+                          aria-hidden="true"
+                        >
+                          {initialsOf(u.email, u.name)}
+                        </div>
+                        <div className="fh-access-user-info">
+                          <div className="fh-access-user-name-row">
+                            <span className="fh-access-name-cell">{u.name}</span>
+                            {isSelf(u) && <span className="fh-access-you-badge">You</span>}
+                          </div>
+                          <div className="fh-access-email">{u.email}</div>
+                        </div>
                       </div>
+
+                      {/* Role badge */}
                       <div>
-                        <span className={statusClass(u.status)}>{u.status}</span>
+                        <span className={`fh-access-badge fh-access-role-${(u.role || "").toLowerCase()}`}>
+                          {u.role}
+                        </span>
                       </div>
+
+                      {/* Status badge */}
+                      <div>
+                        <span className={`fh-access-badge fh-access-status-${(u.status || "").toLowerCase()}`}>
+                          {u.status}
+                        </span>
+                      </div>
+
+                      {/* States */}
                       <div>{renderStatesCell(u.states)}</div>
+
+                      {/* Actions */}
                       <div className="fh-access-actions-cell">
-                        {(u.status === "invited" || u.status === "active") &&
-                        !isSelf(u) ? (
+                        {(u.status === "invited" || u.status === "active") && !isSelf(u) ? (
                           <button
                             type="button"
                             className="fh-access-revoke-btn"
@@ -431,21 +579,13 @@ const FinancialHealthAccessManagement = ({
                             }
                           >
                             {revokingId === u.id
-                              ? u.status === "active"
-                                ? "Removing..."
-                                : "Revoking..."
-                              : u.status === "active"
-                              ? "Remove"
-                              : "Revoke"}
+                              ? u.status === "active" ? "Removing…" : "Revoking…"
+                              : u.status === "active" ? "Remove" : "Revoke"}
                           </button>
                         ) : (
                           <span
                             className="fh-access-actions-empty"
-                            title={
-                              isSelf(u)
-                                ? "You cannot remove your own access"
-                                : undefined
-                            }
+                            title={isSelf(u) ? "You cannot remove your own access" : undefined}
                           >
                             —
                           </span>

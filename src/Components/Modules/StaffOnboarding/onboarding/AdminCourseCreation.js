@@ -1,5 +1,7 @@
 ﻿import React, { useEffect, useState } from "react";
+import { toast } from "react-toastify";
 import "../../../../Styles/general-styles/AdminCourseCreation.css";
+import ConfirmDialog from "../../../general-components/ConfirmDialog";
 import { createLectureApi, createModuleApi, deleteModuleApi, editModuleApi, getAllModulesApi, updateLectureApi } from "./AdminCourseApis";
 import lms_file_icon from "../../../../Images/lms_file_icon.png"
 import lms_play_icon1 from "../../../../Images/lms_play_icon1.png"
@@ -18,6 +20,11 @@ const AdminCourseCreation = (props) => {
   const [openMenuId, setOpenMenuId] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+  // Stores the module id awaiting deletion confirmation. null = no dialog open.
+  // Replaces window.confirm so we get a styled yes/no popup instead of the
+  // browser-native one.
+  const [deleteModuleId, setDeleteModuleId] = useState(null);
+  const [deletingModule, setDeletingModule] = useState(false);
 
   const AdminEmail = props?.user?.email || "";
   // console.log('AdminUserEmail', AdminEmail);
@@ -37,7 +44,7 @@ const AdminCourseCreation = (props) => {
         setModules(normalizedModules);
       } catch (err) {
         console.error("❌ Error fetching modules:", err);
-        alert("Failed to load modules");
+        toast.error("Failed to load modules");
       }
     };
 
@@ -77,7 +84,7 @@ const AdminCourseCreation = (props) => {
       setNewModuleName("");
     } catch (err) {
       console.error("❌ Error creating module:", err);
-      alert("Failed to create module");
+      toast.error("Failed to create module");
     }
   };
 
@@ -118,7 +125,7 @@ const AdminCourseCreation = (props) => {
       setModules(updatedModules);
     } catch (err) {
       console.error("❌ Error adding lesson:", err);
-      alert("Failed to add lesson");
+      toast.error("Failed to add lesson");
     }
   };
 
@@ -157,7 +164,7 @@ const AdminCourseCreation = (props) => {
       );
     } catch (err) {
       console.error("❌ Error updating lesson:", err);
-      alert("Failed to update lesson");
+      toast.error("Failed to update lesson");
     }
   };
   // Rename just replaces the title directly
@@ -165,7 +172,7 @@ const AdminCourseCreation = (props) => {
   const handleRenameModule = async (id, newTitle, module) => {
     // console.log('handleRenameModule', id, newTitle, module);
     if (!newTitle.trim()) {
-      alert("Module title cannot be empty");
+      toast.warn("Module title cannot be empty");
       return;
     }
     try {
@@ -177,21 +184,29 @@ const AdminCourseCreation = (props) => {
       );
     } catch (err) {
       console.error("❌ Error renaming module:", err);
-      alert("Failed to rename module");
+      toast.error("Failed to rename module");
     }
   };
 
-  // Delete with confirmation
-  const handleDeleteModule = async (id) => {
-    const confirmDelete = window.confirm("Are you sure you want to delete this module?");
-    if (!confirmDelete) return;
+  // Opens the styled ConfirmDialog — the actual delete runs from
+  // confirmDeleteModule once the user clicks Yes.
+  const handleDeleteModule = (id) => {
+    setDeleteModuleId(id);
+  };
 
+  const confirmDeleteModule = async () => {
+    if (!deleteModuleId) return;
     try {
-      await deleteModuleApi(id);
-      setModules((prev) => prev.filter((m) => m.id !== id));
+      setDeletingModule(true);
+      await deleteModuleApi(deleteModuleId);
+      setModules((prev) => prev.filter((m) => m.id !== deleteModuleId));
+      toast.success("Module deleted");
     } catch (err) {
       console.error("❌ Error deleting module:", err);
-      alert("Failed to delete module");
+      toast.error("Failed to delete module");
+    } finally {
+      setDeletingModule(false);
+      setDeleteModuleId(null);
     }
   };
 
@@ -588,6 +603,17 @@ const AdminCourseCreation = (props) => {
           <p className="empty-message">Edit Lesson</p>
         )}
       </div>
+
+      <ConfirmDialog
+        open={deleteModuleId !== null}
+        title="Are you sure you want to delete this module?"
+        confirmLabel="Yes"
+        cancelLabel="No"
+        confirmTone="danger"
+        busy={deletingModule}
+        onConfirm={confirmDeleteModule}
+        onCancel={() => setDeleteModuleId(null)}
+      />
     </div>
   );
 };

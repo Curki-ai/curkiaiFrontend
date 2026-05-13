@@ -52,8 +52,6 @@ const LessonEditor = ({ section, lesson, onChange, courseTitle, organizationId, 
     setPendingTypeSwitch(null);
   };
 
-  const togglePublished = () => onChange((l) => ({ ...l, published: !l.published }));
-
   return (
     <div className="ulms-les-editor">
       <div className="ulms-les-editor-hdr">
@@ -63,12 +61,6 @@ const LessonEditor = ({ section, lesson, onChange, courseTitle, organizationId, 
           onChange={setField("title")}
           placeholder="Lesson title…"
         />
-        <button
-          className={`ulms-pub-toggle-btn ${lesson.published ? "pub" : "draft"}`}
-          onClick={togglePublished}
-        >
-          {lesson.published ? "● Published" : "○ Draft"}
-        </button>
       </div>
 
       <div className="ulms-breadcrumb">

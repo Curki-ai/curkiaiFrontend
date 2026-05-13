@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
+import { toast } from "react-toastify";
 import "../../../../Styles/general-styles/SmartOnboarding.enhanced.css";
 import "../../../../Styles/general-styles/ResumeScreening.css";
 import "../../../../Styles/general-styles/NewSmartOnboardingHrView.css"
@@ -265,7 +266,7 @@ const HRAdminView = ({
   });
   const handleAnalyze = async () => {
     if (!selectedFile.length || !selectedJd.length) {
-      alert("Please upload both Resume ZIP and Job Description PDF.");
+      toast.warn("Please upload both Resume ZIP and Job Description PDF.");
       return;
     }
     setManualResumeZip(selectedFile[0]);
@@ -321,7 +322,7 @@ const HRAdminView = ({
 
     } catch (error) {
       console.error("Analysis failed:", error);
-      alert(error.message || "Analysis failed. Please try again.");
+      toast.error(error.message || "Analysis failed. Please try again.");
     } finally {
       clearInterval(interval);
 
@@ -354,10 +355,10 @@ const HRAdminView = ({
 
   const handleSendScreeningTest = () => {
     if (selectedCandidates.size === 0) {
-      alert("Please select at least one candidate to send screening test.");
+      toast.warn("Please select at least one candidate to send screening test.");
       return;
     }
-    alert(
+    toast.success(
       `Screening test link sent to ${selectedCandidates.size} selected candidate(s)!`
     );
     setSelectedCandidates(new Set());
@@ -875,7 +876,9 @@ const HRAdminView = ({
               </div>
             </div>
           )}
-          {activeTab === "Screening Test Creation" && <ScreeningTestCreation user={user} organizationId={organizationId} />}
+          <div className={activeTab === "Screening Test Creation" ? "" : "hr-tab-pane-hidden"}>
+            <ScreeningTestCreation user={user} organizationId={organizationId} />
+          </div>
         </div>
         <div className="content-areasss">
           {activeTab === "Staff Onboarding" && (

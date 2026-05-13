@@ -16,13 +16,14 @@ import {
   FiCopy,
   FiArrowUp,
   FiArrowDown,
+  FiArrowLeft,
   FiChevronRight,
   FiCheckCircle,
   FiCircle,
   FiSquare,
   FiAlignLeft
 } from "react-icons/fi";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "../../../../Styles/general-styles/NewScreeningTestCreation.css";
 import { API_BASE } from "../../../../config/apiBase";
@@ -68,8 +69,8 @@ const normalizeQuestion = (q) => ({
   required: !!q.required
 });
 
-// Backend stores: { question, options, answer, questionType, required }
-//   answer is a string for "single"/"text", array of strings for "multiple"
+// Backend stores: { question, options, answerKey, questionType, required }
+//   answerKey is a string for "single"/"text", array of strings for "multiple"
 // Frontend uses: { id, type, question, options, correctAnswers, correctText, required }
 const backendQuestionToFrontend = (q) => {
   const type = q.questionType || q.type || "single";
@@ -85,15 +86,15 @@ const backendQuestionToFrontend = (q) => {
   };
   if (type === "text") {
     base.correctText =
-      typeof q.answer === "string" ? q.answer : q.correctText || "";
+      typeof q.answerKey === "string" ? q.answerKey : q.correctText || "";
   } else if (type === "multiple") {
-    const answers = Array.isArray(q.answer) ? q.answer : [];
+    const answers = Array.isArray(q.answerKey) ? q.answerKey : [];
     base.correctAnswers = answers
       .map((ans) => options.indexOf(ans))
       .filter((i) => i >= 0);
   } else {
-    if (typeof q.answer === "string" && q.answer) {
-      const idx = options.indexOf(q.answer);
+    if (typeof q.answerKey === "string" && q.answerKey) {
+      const idx = options.indexOf(q.answerKey);
       if (idx >= 0) base.correctAnswers = [idx];
     }
   }
@@ -105,26 +106,26 @@ const frontendQuestionToBackend = (q) => {
     return {
       question: q.question,
       options: [],
-      answer: q.correctText || "",
+      answerKey: q.correctText || "",
       questionType: "text",
       required: !!q.required
     };
   }
   const cleanOpts = (q.options || []).filter((o) => o.trim() !== "");
-  let answer;
+  let answerKey;
   if (q.type === "single") {
     const idx = (q.correctAnswers || [])[0];
-    answer =
+    answerKey =
       typeof idx === "number" && q.options[idx] ? q.options[idx] : "";
   } else {
-    answer = (q.correctAnswers || [])
+    answerKey = (q.correctAnswers || [])
       .map((i) => q.options[i])
       .filter(Boolean);
   }
   return {
     question: q.question,
     options: cleanOpts,
-    answer,
+    answerKey,
     questionType: q.type,
     required: !!q.required
   };
@@ -259,7 +260,8 @@ const ScreeningTestCreation = (props) => {
     try {
       const res = await axios.post(`${BASE_URL}/delete-test`, {
         organisation_id: ORG_ID,
-        test_id: id
+        test_id: id,
+        admin_email: adminEmail
       });
       if (res.data?.ok) {
         showToast("Test deleted successfully.");
@@ -494,23 +496,8 @@ const ScreeningTestCreation = (props) => {
         showToast(`Question ${i + 1} text is empty.`, "error");
         return;
       }
-      if (q.type === "text") {
-        if (!q.correctText || !q.correctText.trim()) {
-          showToast(
-            `Question ${i + 1}: please enter the expected answer.`,
-            "error"
-          );
-          return;
-        }
-      } else {
+      if (q.type !== "text") {
         const correct = q.correctAnswers || [];
-        if (correct.length === 0) {
-          showToast(
-            `Question ${i + 1}: please select the correct answer.`,
-            "error"
-          );
-          return;
-        }
         // Guard against a "correct" pointer to an option whose text was
         // cleared — saving that would silently drop the answer key on the
         // backend (frontendQuestionToBackend filters empty options).
@@ -745,11 +732,9 @@ const ScreeningTestCreation = (props) => {
   const renderBuilder = () => (
     <>
       <div className="stc_breadcrumb stc_fade_in">
-        <button className="stc_breadcrumb_link" onClick={onGoHome}>
-          Test Library
+        <button className="stc_back_btn" onClick={onGoHome}>
+          <FiArrowLeft /> Back
         </button>
-        <FiChevronRight />
-        <span>{editingTestId ? "Edit Test" : "New Test"}</span>
       </div>
 
       <div className="stc_top_action_bar stc_fade_in">
@@ -914,7 +899,6 @@ const ScreeningTestCreation = (props) => {
               <div className="stc_answer_key_section">
                 <div className="stc_answer_key_head">
                   <span className="stc_answer_key_label">Answer Key</span>
-                  <span className="stc_required_pill">REQUIRED</span>
                 </div>
                 {q.type === "text" ? (
                   <textarea
@@ -1158,7 +1142,7 @@ const ScreeningTestCreation = (props) => {
         {view === "builder" && renderBuilder()}
         {view === "preview" && previewData && renderPreview()}
 
-        <ToastContainer position="top-right" autoClose={3500} />
+        {/* ToastContainer is mounted once globally in HomePage. */}
 
         {confirmDelete && (
           <div
