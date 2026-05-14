@@ -3,6 +3,7 @@ import { saveAs } from "file-saver";
 import { marked } from "marked";
 
 import { ImageRun } from "docx";
+import { toast } from "react-toastify";
 
 export const addSectionWithGraphsToWord = async ({
     title,
@@ -278,7 +279,7 @@ export const parseMarkdownToDocx = (markdown) => {
 export const TlcClientProfitibilityAiWordExporter = ({ markdown, fileName }) => {
     const downloadWord = async () => {
         if (!markdown) {
-            alert("No AI summary available");
+            toast.warn("No AI summary available");
             return;
         }
 

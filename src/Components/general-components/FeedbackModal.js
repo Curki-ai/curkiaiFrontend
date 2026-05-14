@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import emailjs from "@emailjs/browser";
 import "../../Styles/general-styles/FeedbackModal.css";
+import { toast } from "react-toastify";
 
 const FeedbackModal = (props) => {
   console.log(props);
@@ -48,7 +49,7 @@ const FeedbackModal = (props) => {
         },
         (error) => {
           setIsFeedbackLoading(false);
-          alert("Failed to send feedback. Error: " + JSON.stringify(error));
+          toast.error("Failed to send feedback. Error: " + JSON.stringify(error));
         }
       );
   };

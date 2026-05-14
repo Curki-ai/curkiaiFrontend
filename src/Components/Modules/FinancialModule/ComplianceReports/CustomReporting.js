@@ -6,6 +6,7 @@ import star from '../../../../Images/star.png';
 import SummaryReport from "../../../general-components/SummaryReportViewer";
 import '../../../../Styles/general-styles/UploaderPage.css'
 import { API_BASE } from "../../../../config/apiBase";
+import { toast } from "react-toastify";
 
 const CustomReporting = (props) => {
     const [customReportFiles, setCustomReportFiles] = useState([]);
@@ -22,7 +23,7 @@ const CustomReporting = (props) => {
 
     const handleAnalyse = async () => {
         if (customReportFiles.length === 0) {
-            alert("Please upload the report files.");
+            toast.warn("Please upload the report files.");
             return;
         }
         props.handleClick();
@@ -93,7 +94,7 @@ const CustomReporting = (props) => {
             }, 500);
         } catch (error) {
             console.error("Custom Reporting Error:", error);
-            alert("Custom Reporting failed. Please check your files or try again.");
+            toast.error("Custom Reporting failed. Please check your files or try again.");
             clearInterval(interval);
             setCustomProgress(0);
             setIsCustomProcessing(false);

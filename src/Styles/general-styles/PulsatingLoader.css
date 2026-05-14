@@ -1,10 +1,17 @@
 .app-containerssss {
   background-color: #ffffff;
-  min-height: 100vh;
+  /* No min-height: the loader sits inside contexts that already have
+     a top bar (HomePage) plus often a per-module header row (e.g. the
+     Care Voice admin role selector). Forcing 100vh — or any viewport-
+     anchored height — pushes total page height past the viewport and
+     creates a body scroll behind a screen that has no real content
+     to scroll. Let the loader size to its own content; the parent
+     module is responsible for centering it if desired. */
   position: relative;
   text-align: center;
   overflow: hidden;
   width: 100%;
+  padding: 60px 0;
 }
 
 .titlesss {

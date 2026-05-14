@@ -3,6 +3,7 @@ import { FiX, FiDownload, FiSave, FiRefreshCw, FiMail } from "react-icons/fi";
 import "superdoc/style.css";
 import "../../../../Styles/SupportAtHomeModule/CareVoice/FilePreviewModal.css"
 import { API_BASE } from "../../../../config/apiBase";
+import { toast } from "react-toastify";
 const FilePreviewModal = ({
   doc,
   fileIndex,
@@ -138,13 +139,13 @@ const FilePreviewModal = ({
         );
 
         if (!res.ok) throw new Error("Email failed");
-        alert("Email sent successfully");
+        toast.success("Email sent successfully");
         setShowEmailDialog(false);
       };
       reader.readAsDataURL(blob);
     } catch (error) {
       console.error(error);
-      alert("Email failed");
+      toast.error("Email failed");
     } finally {
       setSendingEmail(false);
     }
@@ -159,11 +160,11 @@ const FilePreviewModal = ({
         type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
       });
       updateParentFile(updatedFile);
-      alert("Document saved successfully");
+      toast.success("Document saved successfully");
       setReloadKey(prev => prev + 1);
     } catch (error) {
       console.error("Save failed:", error);
-      alert("Save failed. Check browser console.");
+      toast.error("Save failed. Check browser console.");
     } finally {
       setSaving(false);
     }
@@ -183,7 +184,7 @@ const FilePreviewModal = ({
       window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error("Download failed:", error);
-      alert("Download failed");
+      toast.error("Download failed");
     }
   };
 

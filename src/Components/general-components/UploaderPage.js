@@ -13,6 +13,7 @@ import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 import FeedbackModal from "./FeedbackModal";
 import SummaryReport from "./SummaryReportViewer";
+import { toast } from "react-toastify";
 import PricingModal from "./PricingModal";
 import SubscriptionStatus from "./SubscriptionStatus";
 import { FiUploadCloud } from "react-icons/fi";
@@ -600,7 +601,7 @@ const UploaderPage = () => {
 
     const handleAnalyse = async () => {
         if (reportFiles.length === 0) {
-            alert("Please upload the report files.");
+            toast.warn("Please upload the report files.");
             return;
         }
 
@@ -932,17 +933,17 @@ const UploaderPage = () => {
                     }, 500);
                 } catch (error) {
                     console.error("Custom Reporting Error:", error);
-                    alert("Custom Reporting failed. Please check your files or try again.");
+                    toast.error("Custom Reporting failed. Please check your files or try again.");
                     clearInterval(interval);
                     setProgress(0);
                     setIsProcessing(false);
                 }
             } else {
-                alert("Selected module not supported yet.");
+                toast.info("Selected module not supported yet.");
             }
         } catch (error) {
             console.error("Error:", error);
-            alert("AI Overloading or network issue.");
+            toast.error("AI Overloading or network issue.");
             clearInterval(interval);
             setProgress(0);
             setIsProcessing(false);
@@ -953,7 +954,7 @@ const UploaderPage = () => {
 
     const handleDownloadUploadedExcel = () => {
         if (!uploadedExcelFile) {
-            alert("No Uploaded Excel file to download.");
+            toast.warn("No Uploaded Excel file to download.");
             return;
         }
 
@@ -992,7 +993,7 @@ const UploaderPage = () => {
 
     const handleDownloadStandardExcel = async () => {
         if (!Array.isArray(standardExcelFile) || standardExcelFile.length === 0) {
-            alert("No Standard Excel files to download.");
+            toast.warn("No Standard Excel files to download.");
             return;
         }
 
@@ -1042,7 +1043,7 @@ const UploaderPage = () => {
 
     const handleGenerate = async () => {
         if (!zipFile1) {
-            alert("Please upload a zip file");
+            toast.warn("Please upload a zip file");
             return;
         }
         handleClick();
@@ -1115,7 +1116,7 @@ const UploaderPage = () => {
             setShowFinalZipReport(true);
         } catch (error) {
             console.error("Error processing ZIP:", error);
-            alert("Failed to process the ZIP file.");
+            toast.error("Failed to process the ZIP file.");
         } finally {
             setIsZipProcessing(false);
         }
@@ -1123,7 +1124,7 @@ const UploaderPage = () => {
 
     const handleAnalyseReports = async () => {
         if (reportFiles.length === 0) {
-            alert("Please upload a file.");
+            toast.warn("Please upload a file.");
             return;
         }
 
@@ -1181,7 +1182,7 @@ const UploaderPage = () => {
                         if (i === 0) {
                             clearInterval(progressInterval);
                             setIsAnalysingReportLoading(false);
-                            alert("Error analyzing first row.");
+                            toast.error("Error analyzing first row.");
                         }
                     }
                 }
@@ -1230,7 +1231,7 @@ const UploaderPage = () => {
                         if (i === 0) {
                             clearInterval(progressInterval);
                             setIsAnalysingReportLoading(false);
-                            alert("Error analyzing first row.");
+                            toast.error("Error analyzing first row.");
                         }
                     }
                 }
@@ -1263,13 +1264,13 @@ const UploaderPage = () => {
                     throw new Error("No report data found.");
                 }
             } else {
-                alert("Selected module not supported yet.");
+                toast.info("Selected module not supported yet.");
                 clearInterval(progressInterval);
                 setIsAnalysingReportLoading(false);
             }
         } catch (error) {
             console.error("Unexpected Error:", error);
-            alert("Something went wrong while analyzing the report.");
+            toast.error("Something went wrong while analyzing the report.");
             clearInterval(progressInterval);
             setIsAnalysingReportLoading(false);
         }

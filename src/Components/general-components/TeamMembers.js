@@ -7,6 +7,7 @@ import MultiSelectCustom from "../Modules/FinancialModule/MultiSelectCustom";
 import voiceRoleIcon from "../../Images/VoiceRoleIcon.png";
 import TlcPayrollDownArrow from "../../Images/tlc_payroll_down_button.png"
 import { API_BASE } from "../../config/apiBase";
+import { toast } from "react-toastify";
 const TeamMembers = ({ onBack, loggedInUserEmail }) => {
   const [members, setMembers] = useState([]);
   const [showInviteModal, setShowInviteModal] = useState(false);
@@ -94,7 +95,11 @@ const TeamMembers = ({ onBack, loggedInUserEmail }) => {
       });
 
       const data = await res.json();
-      alert(data.message);
+      if (res.ok) {
+        toast.success(data.message);
+      } else {
+        toast.error(data.message);
+      }
 
       setShowInviteModal(false);
       setInviteData({ email: "", name: "", role: "Staff" });

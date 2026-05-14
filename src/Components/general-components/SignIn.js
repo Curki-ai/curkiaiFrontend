@@ -13,6 +13,7 @@ import {
 } from "../../firebase";
 import "../../Styles/general-styles/SignIn.css";
 import emailjs from "@emailjs/browser";
+import { toast } from "react-toastify";
 import { API_BASE } from "../../config/apiBase";
 import { FcGoogle } from "react-icons/fc";
 import { FaEnvelope, FaKey, FaUser } from "react-icons/fa";
@@ -321,13 +322,13 @@ const SignIn = ({ show, onClose }) => {
   };
   const handleForgotPassword = async () => {
     if (!email) {
-      alert("Please enter your email in the email field first!");
+      toast.warn("Please enter your email in the email field first!");
       return;
     }
 
     try {
       await sendPasswordResetEmail(auth, email);
-      alert("Password reset email sent! Check your inbox.");
+      toast.success("Password reset email sent! Check your inbox.");
     } catch (error) {
       console.log(error);
       setError("Failed to send reset email. Try again.");
@@ -343,7 +344,7 @@ const SignIn = ({ show, onClose }) => {
     try {
       await signInWithEmailAndPassword(auth, email, password);
 
-      alert("Login successful!");
+      toast.success("Login successful!");
       onClose();
     } catch (err) {
       if (
@@ -369,7 +370,7 @@ const SignIn = ({ show, onClose }) => {
     try {
       const result = await signInWithPopup(auth, googleProvider);
       console.log(result?.user?.email);
-      alert("Google Sign-In successful!");
+      toast.success("Google Sign-In successful!");
       onClose();
       if (result._tokenResponse.isNewUser) {
         const newEmail = result?.user?.email;
@@ -818,7 +819,7 @@ const SignIn = ({ show, onClose }) => {
                 const user = auth.currentUser;
                 if (user) {
                   await sendEmailVerification(user);
-                  alert("Verification email resent!");
+                  toast.success("Verification email resent!");
                 }
               }}>
               Resend

@@ -8,6 +8,7 @@ import '../../../../Styles/general-styles/UploaderPage.css';
 import SummaryReport from "../../../general-components/SummaryReportViewer";
 import '../../../../Styles/general-styles/UploaderPage.css'
 import incrementAnalysisCount from "../../FinancialModule/Tlc/TLcAnalysisCount";
+import { toast } from "react-toastify";
 import incrementCareVoiceAnalysisCount from "../careVoiceCostAnalysis";
 import { API_BASE } from "../../../../config/apiBase";
 import useModuleOrgLookup from "../../../../hooks/useModuleOrgLookup";
@@ -38,7 +39,7 @@ const IncidentReport = (props) => {
     };
     const handleAnalyseReports = async () => {
         if (incidentreportFiles.length === 0) {
-            alert("Please upload a file.");
+            toast.warn("Please upload a file.");
             return;
         }
 
@@ -97,7 +98,7 @@ const IncidentReport = (props) => {
                     if (i === 0) {
                         clearInterval(progressInterval);
                         setIsAnalysingIncidentReportLoading(false);
-                        alert("Error analyzing first row.");
+                        toast.error("Error analyzing first row.");
                     }
                 }
             }
@@ -105,7 +106,7 @@ const IncidentReport = (props) => {
             setShowDownloadButton(true);
         } catch (error) {
             console.error("Unexpected Error:", error);
-            alert("Something went wrong while analyzing the report.");
+            toast.error("Something went wrong while analyzing the report.");
             clearInterval(progressInterval);
             setIsAnalysingIncidentReportLoading(false);
         }

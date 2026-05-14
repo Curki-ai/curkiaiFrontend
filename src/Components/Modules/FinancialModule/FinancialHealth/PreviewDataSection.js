@@ -16,6 +16,7 @@ import {
     BorderStyle,
 } from "docx";
 import { saveAs } from "file-saver";
+import { toast } from "react-toastify";
 
 const PreviewDataSection = forwardRef(
   ({ apiExcelUrls, tabTitles, financialReport }, ref) => {
@@ -164,7 +165,7 @@ const PreviewDataSection = forwardRef(
 
             // Step 2️⃣: Generate DOCX
             if (!financialReport) {
-                alert("No summary report available to download.");
+                toast.warn("No summary report available to download.");
                 return;
             }
 
@@ -367,7 +368,7 @@ const PreviewDataSection = forwardRef(
             saveAs(blob, "Financial_Summary_Report.docx");
         } catch (err) {
             console.error("Error generating report:", err);
-            alert("Error generating DOCX. Check console for details.");
+            toast.error("Error generating DOCX. Check console for details.");
         }
     };
     useImperativeHandle(ref, () => ({

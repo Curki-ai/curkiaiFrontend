@@ -351,7 +351,7 @@ const SmartRostering = (props) => {
         setSelectedFile((prev) => {
             const combined = [...prev, ...files];
             if (combined.length > 2) {
-                alert("You can only upload a maximum of 2 files");
+                toast.warn("You can only upload a maximum of 2 files");
                 return combined.slice(0, 2);
             }
             return combined;
@@ -458,11 +458,11 @@ const SmartRostering = (props) => {
                 setSelectedClient(client);
                 setScreen(2);
             } else {
-                alert("No staff found for this shift.");
+                toast.warn("No staff found for this shift.");
             }
         } catch (error) {
             console.error("❌ Error in Smart Rostering:", error);
-            alert("Failed to run smart rostering.");
+            toast.error("Failed to run smart rostering.");
         } finally {
             setLoading(false);
         }
@@ -492,7 +492,7 @@ const SmartRostering = (props) => {
 
     const handleSubmit = async () => {
         if (!query.trim()) {
-            alert("Please enter a query first.");
+            toast.warn("Please enter a query first.");
             return;
         }
 
@@ -521,7 +521,7 @@ const SmartRostering = (props) => {
                 // handle manual response
                 const rankedStaff = manualResponse.data?.final_ranked || [];
                 if (rankedStaff.length === 0) {
-                    alert("No staff found.");
+                    toast.warn("No staff found.");
                     return;
                 }
 
@@ -568,7 +568,7 @@ const SmartRostering = (props) => {
             }
             const rankedStaff = response.data?.rostering_summary?.final_ranked || [];
             if (!rankedStaff.length) {
-                alert("No staff found.");
+                toast.warn("No staff found.");
                 return;
             }
 
@@ -591,7 +591,7 @@ const SmartRostering = (props) => {
 
         } catch (error) {
             console.error("❌ Error:", error);
-            alert("Error running query.");
+            toast.error("Error running query.");
         } finally {
             setPromptLoading(false);
         }

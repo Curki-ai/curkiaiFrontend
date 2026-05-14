@@ -10,6 +10,7 @@ import supportSettingsRight from "../../Images/supportSettingsUpIcon.svg"
 import supportSettingsUploadIcon from "../../Images/supportSettingsUpload.svg"
 import { API_BASE } from "../../config/apiBase";
 import SupportModal from "./SupportModal";
+import { toast } from "react-toastify";
 const SettingsPage = ({ user, onBack }) => {
     const [firstName, setFirstName] = useState(user?.displayName || "Deepak");
     const [lastName, setLastName] = useState(user?.displayName || "uday");
@@ -29,10 +30,10 @@ const SettingsPage = ({ user, onBack }) => {
     const handleResetPassword = async () => {
         try {
             await sendPasswordResetEmail(auth, user?.email);
-            alert("Password reset email sent!");
+            toast.success("Password reset email sent!");
         } catch (error) {
             console.error(error);
-            alert("Failed to send reset email.");
+            toast.error("Failed to send reset email.");
         }
     };
 
@@ -41,7 +42,7 @@ const SettingsPage = ({ user, onBack }) => {
             const currentUser = auth.currentUser;
 
             if (!currentUser) {
-                alert("No user found.");
+                toast.error("No user found.");
                 return;
             }
 
@@ -51,7 +52,7 @@ const SettingsPage = ({ user, onBack }) => {
 
             await deleteUser(currentUser);
 
-            alert("Account deleted successfully.");
+            toast.success("Account deleted successfully.");
 
             // window.location.reload();
 
@@ -59,9 +60,9 @@ const SettingsPage = ({ user, onBack }) => {
             console.error(error);
 
             if (error.code === "auth/requires-recent-login") {
-                alert("Please log in again before deleting your account.");
+                toast.warn("Please log in again before deleting your account.");
             } else {
-                alert("Failed to delete account.");
+                toast.error("Failed to delete account.");
             }
         }
     };

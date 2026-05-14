@@ -8,6 +8,7 @@ import axios from "axios";
 import clockCircleIcon from "../../../Images/clock circle.png"
 import clickHandIcon from "../../../Images/clock hand.png"
 import star_icon from "../../../Images/rostering_star.png"
+import { toast } from "react-toastify";
 const RosterDetails = ({ setScreen, rosteringResponse, API_BASE, selectedClient, visualCareCreds, userEmail, SetIsSmartRosteringDetails, bulkQueue, setBulkQueue,
     bulkResults,
     setBulkResults,
@@ -264,7 +265,7 @@ const RosterDetails = ({ setScreen, rosteringResponse, API_BASE, selectedClient,
 
     const handleBroadcast = async () => {
         if (selected.length === 0) {
-            alert("Please select at least one staff to broadcast.");
+            toast.warn("Please select at least one staff to broadcast.");
             return;
         }
 
@@ -335,20 +336,20 @@ const RosterDetails = ({ setScreen, rosteringResponse, API_BASE, selectedClient,
 
         } catch (error) {
             console.error("Error broadcasting:", error);
-            alert("Failed to broadcast messages. Try again.");
+            toast.error("Failed to broadcast messages. Try again.");
         } finally {
             setBroadcasting(false);
         }
     };
     const handleRefine = async () => {
         if (!prompt.trim()) {
-            alert("Please enter a prompt.");
+            toast.warn("Please enter a prompt.");
             return;
         }
 
         const main = effectiveResponse?.rosteringMainResponse;
         if (!main) {
-            alert("No rostering main response found.");
+            toast.warn("No rostering main response found.");
             return;
         }
 
@@ -379,7 +380,7 @@ const RosterDetails = ({ setScreen, rosteringResponse, API_BASE, selectedClient,
             }
         } catch (err) {
             console.error("Refinement API Error:", err);
-            alert("Refinement failed.");
+            toast.error("Refinement failed.");
         } finally {
             setRefining(false);
         }

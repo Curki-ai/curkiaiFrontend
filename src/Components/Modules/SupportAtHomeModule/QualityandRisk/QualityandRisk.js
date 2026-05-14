@@ -8,6 +8,7 @@ import '../../../../Styles/general-styles/UploaderPage.css';
 import SummaryReport from "../../../general-components/SummaryReportViewer";
 import '../../../../Styles/general-styles/UploaderPage.css'
 import incrementAnalysisCount from "../../FinancialModule/Tlc/TLcAnalysisCount";
+import { toast } from "react-toastify";
 import incrementCareVoiceAnalysisCount from "../careVoiceCostAnalysis";
 import { API_BASE } from "../../../../config/apiBase";
 import useModuleOrgLookup from "../../../../hooks/useModuleOrgLookup";
@@ -38,7 +39,7 @@ const QualityandRisk = (props) => {
     };
     const handleAnalyseReports = async () => {
         if (qualityreportFiles.length === 0) {
-            alert("Please upload a file.");
+            toast.warn("Please upload a file.");
             return;
         }
 
@@ -79,7 +80,7 @@ const QualityandRisk = (props) => {
             }
         } catch (error) {
             console.error("Unexpected Error:", error);
-            alert("Something went wrong while analyzing the report.");
+            toast.error("Something went wrong while analyzing the report.");
             clearInterval(progressInterval);
             setIsAnalysingQualityReportLoading(false);
         }
