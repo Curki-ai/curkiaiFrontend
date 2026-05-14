@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import "../../Styles/general-styles/UploaderPage.css";
 import { API_BASE } from "../../config/apiBase";
 import logo from "../../../src/Images/CurkiAiLogo.png";
@@ -536,16 +537,38 @@ const Sidebar = ({
         </div>
 
 
-        {/* PROFILE PANEL */}
-        {showProfilePanel && (
+        {/* PROFILE PANEL — rendered via portal so it escapes every parent
+            stacking context (sidebar's sticky position, module-level
+            containers, etc.) and reliably sits above the page. */}
+        {showProfilePanel && createPortal(
+          <>
+          <div
+            className="profile-backdrop"
+            onClick={() => setShowProfilePanel(false)}
+          />
           <div className="profile-panel">
 
             {/* HEADER */}
             <div className="profile-header">
 
               <img
-                src={user?.photoURL || `https://ui-avatars.com/api/?name=${user?.displayName}`}
+                src={
+                  user?.photoURL ||
+                  `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                    user?.displayName || user?.email || "User"
+                  )}&background=6C4CDC&color=fff&bold=true`
+                }
                 className="profile-avatar"
+                alt=""
+                referrerPolicy="no-referrer"
+                onError={(e) => {
+                  const fallback = `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                    user?.displayName || user?.email || "User"
+                  )}&background=6C4CDC&color=fff&bold=true`;
+                  if (e.currentTarget.src !== fallback) {
+                    e.currentTarget.src = fallback;
+                  }
+                }}
               />
 
               <div className="profile-header-info">
@@ -744,6 +767,8 @@ const Sidebar = ({
             </div>
 
           </div>
+          </>,
+          document.body
         )}
 
       </div>

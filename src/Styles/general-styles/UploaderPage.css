@@ -910,12 +910,19 @@ html,
 
 /* panel */
 
+.profile-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 16, 35, 0.45);
+  z-index: 2147483646;
+}
+
 .profile-panel {
-  position: absolute;
-  bottom: 0;
-  left: calc(100% + 18px);
+  position: fixed;
+  bottom: 20px;
+  left: max(21vw, 240px);
   width: 400px;
-  max-width: calc(100vw - 100% - 40px);
+  max-width: calc(100vw - max(21vw, 240px) - 32px);
   height: 674px;
   max-height: calc(100vh - 40px);
   background: white;
@@ -924,7 +931,14 @@ html,
   display: flex;
   flex-direction: column;
   overflow-y: auto;
-  z-index: 9999;
+  overflow-x: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  z-index: 2147483647;
+}
+
+.profile-panel::-webkit-scrollbar {
+  display: none;
 }
 
 
