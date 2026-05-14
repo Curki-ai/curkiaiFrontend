@@ -17,6 +17,7 @@ import Plot from "react-plotly.js";
 import response from "./response_api_only";
 import PreviewDataSection from "./PreviewDataSection";
 import { LuDownload } from "react-icons/lu";
+import { toast } from "react-toastify";
 
 const FinancialHealth = (props) => {
   const [financialReportFiles, setFinancialReportFiles] = useState([]);
@@ -51,7 +52,7 @@ const FinancialHealth = (props) => {
 
   const handleDownloadUploadedExcel = () => {
     if (!uploadedFinancialExcelFile) {
-      alert("No Uploaded Excel file to download.");
+      toast.warn("No Uploaded Excel file to download.");
       return;
     }
 
@@ -87,7 +88,7 @@ const FinancialHealth = (props) => {
       !Array.isArray(standardFinancialExcelFile) ||
       standardFinancialExcelFile.length === 0
     ) {
-      alert("No Standard Excel files to download.");
+      toast.warn("No Standard Excel files to download.");
       return;
     }
 
@@ -138,11 +139,11 @@ const FinancialHealth = (props) => {
   const handleAnalyse = async () => {
     // Validation checks
     if (financialReportFiles.length === 0 && !syncEnabled) {
-      alert("Please upload the report files or enable sync.");
+      toast.warn("Please upload the report files or enable sync.");
       return;
     }
     if (syncEnabled && (!startDay || !startMonth || !endDay || !endMonth)) {
-      alert("Please select both start and end dates when sync is enabled.");
+      toast.warn("Please select both start and end dates when sync is enabled.");
       return;
     }
 
@@ -168,7 +169,7 @@ const FinancialHealth = (props) => {
         fromDate = toAWSDateTime(startDay, startMonth);
         toDate = toAWSDateTime(endDay, endMonth);
         if (!fromDate || !toDate) {
-          alert("Please select valid start and end dates for sync mode.");
+          toast.warn("Please select valid start and end dates for sync mode.");
           clearInterval(interval);
           setIsFinancialProcessing(false);
           return;
@@ -181,7 +182,7 @@ const FinancialHealth = (props) => {
 
       // Validate user email
       if (!props.user?.email) {
-        alert("User email is required. Please log in again.");
+        toast.error("User email is required. Please log in again.");
         clearInterval(interval);
         setIsFinancialProcessing(false);
         return;
@@ -203,7 +204,7 @@ const FinancialHealth = (props) => {
       // Append files if needed
       if (type === "upload" || type === "hybrid") {
         if (financialReportFiles.length === 0) {
-          alert("No files selected for upload.");
+          toast.warn("No files selected for upload.");
           clearInterval(interval);
           setIsFinancialProcessing(false);
           return;
@@ -396,11 +397,11 @@ const FinancialHealth = (props) => {
       console.error("Error in analysis pipeline:", err);
       if (err.response) {
         const { status, data } = err.response;
-        alert(`Error ${status}: ${data?.error || data?.message || "Unknown server error"}`);
+        toast.error(`Error ${status}: ${data?.error || data?.message || "Unknown server error"}`);
       } else if (err.request) {
-        alert("Network error. Please check your internet connection.");
+        toast.error("Network error. Please check your internet connection.");
       } else {
-        alert(`Unexpected error: ${err.message}`);
+        toast.error(`Unexpected error: ${err.message}`);
       }
     } finally {
       clearInterval(interval);

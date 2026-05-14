@@ -64,7 +64,7 @@ import adminLottie from "../../../../Images/adminPageLottie.json"
 import { API_BASE } from "../../../../config/apiBase";
 const VoiceModule = (props) => {
     const userEmail = props?.user?.email;
-    // const userEmail = "admin@contemporarycoordination.com";
+    // const userEmail = "sarah@contemporarycoordination.com";
     const ALLOWED_USERS = [
         "mboutros@tenderlovingcaredisability.com.au",
         "rjodeh@tenderlovingcaredisability.com.au",
@@ -1008,6 +1008,11 @@ const VoiceModule = (props) => {
         return `${days} day${days > 1 ? "s" : ""} ago`;
     };
 
+    // Cache key is per-org so switching orgs doesn't show the previous org's
+    // templates. sessionStorage (not localStorage) keeps the data tab-scoped
+    // and clears on browser close.
+    const templatesCacheKey = (orgId) => `cv:templates:${orgId}`;
+
     const fetchTemplates = async () => {
         if (!organizationId) return;
         try {
@@ -1015,13 +1020,34 @@ const VoiceModule = (props) => {
                 `${API_BASE}/api/voiceModuleTemplate?organizationId=${encodeURIComponent(organizationId)}`
             );
             const data = await res.json();
-            if (data.success) setTemplates(data?.data);
+            if (data.success) {
+                setTemplates(data?.data);
+                try {
+                    sessionStorage.setItem(
+                        templatesCacheKey(organizationId),
+                        JSON.stringify(data?.data || [])
+                    );
+                } catch (_) { /* quota / private mode — ignore */ }
+            }
         } catch (err) {
             console.error("[UI] Fetch templates failed", err);
         }
     };
 
     useEffect(() => {
+        if (!organizationId) return;
+        // Paint cached templates immediately so the list isn't blank while
+        // the network request is in flight. Background refresh happens below.
+        try {
+            const cached = sessionStorage.getItem(templatesCacheKey(organizationId));
+            if (cached) {
+                const parsed = JSON.parse(cached);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    setTemplates(parsed);
+                }
+            }
+        } catch (_) { /* ignore */ }
+
         fetchTemplates();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [organizationId]);

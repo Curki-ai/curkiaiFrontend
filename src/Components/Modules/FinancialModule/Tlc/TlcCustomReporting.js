@@ -11,6 +11,7 @@ import star from '../../../../Images/star.png';
 import AIAnalysisReportViewer from "./TlcAiAnalysisReport";
 import incrementAnalysisCount from "./TLcAnalysisCount";
 import { API_BASE } from "../../../../config/apiBase";
+import { toast } from "react-toastify";
 
 export default function TlcCustomerReporting(props) {
   // -------------------- MULTI TAB SUPPORT --------------------
@@ -196,7 +197,7 @@ export default function TlcCustomerReporting(props) {
     });
 
     if (validFiles.length === 0) {
-      alert(`⚠️ Invalid file uploaded in ${type.toUpperCase()} section.`)
+      toast.warn(`⚠️ Invalid file uploaded in ${type.toUpperCase()} section.`)
       e.target.value = "";
       return;
     }
@@ -235,7 +236,7 @@ export default function TlcCustomerReporting(props) {
 
     // ✅ Basic check for date range
     if (!startDate || !endDate) {
-      alert("Please select a date range first!");
+      toast.warn("Please select a date range first!");
       return;
     }
 
@@ -301,7 +302,7 @@ export default function TlcCustomerReporting(props) {
           if (invalidUploads.length > 0)
             message += "\n" + invalidUploads.join("\n");
 
-          alert(message);
+          toast.warn(message);
           return;
         }
 
@@ -330,7 +331,7 @@ export default function TlcCustomerReporting(props) {
           updateTab({ progressStage: "analysing" });
         } catch (uploadErr) {
           console.error("❌ Upload failed:", uploadErr);
-          alert("Some files failed to upload. Continuing with existing data...");
+          toast.warn("Some files failed to upload. Continuing with existing data...");
         } finally {
           updateTab({ uploading: false });
         }
@@ -370,14 +371,14 @@ export default function TlcCustomerReporting(props) {
 
       // 🧩 Handle invalid date range
       if (analyzeData.message && analyzeData.message.includes("Invalid date range")) {
-        alert("⚠️ Invalid date range selected. Please choose correct start and end dates.");
+        toast.warn("⚠️ Invalid date range selected. Please choose correct start and end dates.");
         updateTab({ loading: false, uploading: false, stage: "filters" });
         return;
       }
 
       // 🧩 Handle no data found
       if (analyzeData.analysisResult?.message === "No data found for given filters.") {
-        alert("⚠️ No data found for the selected filters. Please adjust your filters and try again.");
+        toast.warn("⚠️ No data found for the selected filters. Please adjust your filters and try again.");
         updateTab({ loading: false, uploading: false, stage: "filters" });
         return;
       }
@@ -410,7 +411,7 @@ export default function TlcCustomerReporting(props) {
     } catch (err) {
       console.error("❌ Error in handleAnalyse:", err);
       updateTab({ error: err.message, stage: "filters" });
-      alert("Something went wrong: " + err.message);
+      toast.error("Something went wrong: " + err.message);
     } finally {
       updateTab({ loading: false, uploading: false });
       updateTab({ loading: false, uploading: false });
@@ -490,20 +491,20 @@ export default function TlcCustomerReporting(props) {
 
     // ✅ If loaded from history, block saving again
     if (activeTabData.isFromHistory) {
-      alert("⚠️ This analysis is already saved in the history list.");
+      toast.warn("⚠️ This analysis is already saved in the history list.");
       return;
     }
 
     const { analysisData, startDate, endDate, selectedState, selectedDepartment, selectedRole, selectedEmploymentType } = activeTabData;
 
     if (!analysisData) {
-      alert("No analysis data found. Please run an analysis first.");
+      toast.warn("No analysis data found. Please run an analysis first.");
       return;
     }
 
     const email = props.user.email.trim().toLowerCase();
     if (!email) {
-      alert("Email is missing — cannot save data.");
+      toast.error("Email is missing — cannot save data.");
       return;
     }
 
@@ -544,17 +545,17 @@ export default function TlcCustomerReporting(props) {
       const result = await response.json();
       if (!response.ok) {
         console.error("❌ Failed to save:", result.error);
-        alert(`Error: ${result.error || "Failed to save data."}`);
+        toast.error(`Error: ${result.error || "Failed to save data."}`);
         return;
       }
 
       console.log("Save response:", result);
-      alert("✅ Analysis data saved successfully!");
+      toast.success("✅ Analysis data saved successfully!");
       // ✅ Optional: Mark as saved to prevent double-save
       updateTab({ isFromHistory: true });
     } catch (err) {
       console.error("❌ Error saving data:", err);
-      alert("Something went wrong while saving data.");
+      toast.error("Something went wrong while saving data.");
     } finally {
       setSaving(false);
     }
@@ -579,10 +580,10 @@ export default function TlcCustomerReporting(props) {
       // console.log("Deleted successfully:", data);
       setHistoryList((prev) => prev.filter((item) => item.id !== selectedHistoryId));
       setShowDeleteModal(false);
-      alert("✅ Deleted successfully!");
+      toast.success("✅ Deleted successfully!");
     } catch (err) {
       console.error("❌ Error deleting:", err);
-      alert("Failed to delete history: " + err.message);
+      toast.error("Failed to delete history: " + err.message);
     } finally {
       setDeleting(false);
     }
@@ -612,7 +613,7 @@ export default function TlcCustomerReporting(props) {
 
   const handleAiAnalysis = async () => {
     if (!activeTabData?.analysisData) {
-      alert("Please run the regular analysis first.");
+      toast.warn("Please run the regular analysis first.");
       return;
     }
 
@@ -625,7 +626,7 @@ export default function TlcCustomerReporting(props) {
     // console.log("AI Payload ready to send:", aiPayload);
 
     if (!aiPayload || aiPayload.length === 0) {
-      alert("No valid payload available for AI Analysis.");
+      toast.warn("No valid payload available for AI Analysis.");
       return;
     }
 
@@ -672,7 +673,7 @@ export default function TlcCustomerReporting(props) {
       }
     } catch (err) {
       console.error("❌ AI Analysis Error:", err);
-      alert("AI Analysis failed: " + err.message);
+      toast.error("AI Analysis failed: " + err.message);
       updateTab({ aiLoading: false });
     }
   };
@@ -720,7 +721,7 @@ export default function TlcCustomerReporting(props) {
 
     } catch (err) {
       console.error("❌ Error loading analysis:", err);
-      alert("Failed to load analysis: " + err.message);
+      toast.error("Failed to load analysis: " + err.message);
     }
   };
 

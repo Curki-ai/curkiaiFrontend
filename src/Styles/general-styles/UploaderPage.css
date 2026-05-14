@@ -29,6 +29,12 @@ html,
   flex-direction: column;
   /* align-items: center; */
   padding: 14px 20px 14px 12px;
+  /* Pin the sidebar so it stays visible when the body scrolls. Using
+     sticky (not fixed) keeps it inside the page-container flex flow,
+     so layout math for the right column stays correct. */
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
   height: 100vh;
   scrollbar-width: none !important;
   /* Firefox */

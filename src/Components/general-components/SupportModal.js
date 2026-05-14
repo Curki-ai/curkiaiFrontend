@@ -4,6 +4,7 @@ import "../../Styles/general-styles/Settings.css";
 import TlcUploadBox from "../Modules/FinancialModule/Tlc/TlcUploadBox";
 import crossIcon from "../../Images/ComparePriceCross.png";
 import { API_BASE } from "../../config/apiBase";
+import { toast } from "react-toastify";
 
 const SupportModal = ({ user, firstName, onClose, onSubmitted }) => {
     const [issueType, setIssueType] = useState("Integration support");
@@ -15,7 +16,7 @@ const SupportModal = ({ user, firstName, onClose, onSubmitted }) => {
     const handleSubmitSupport = async () => {
         try {
             if (!description.trim()) {
-                alert("Please describe your issue.");
+                toast.warn("Please describe your issue.");
                 return;
             }
 
@@ -47,7 +48,7 @@ const SupportModal = ({ user, firstName, onClose, onSubmitted }) => {
             }
         } catch (error) {
             console.error("Support submission failed:", error);
-            alert("Failed to submit request.");
+            toast.error("Failed to submit request.");
         } finally {
             setIsSubmittingSupport(false);
         }

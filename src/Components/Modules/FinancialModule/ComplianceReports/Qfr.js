@@ -7,6 +7,7 @@ import UploaderCSVBox from "../../../general-components/UploaderCSVBox";
 import star from '../../../../Images/star.png';
 import '../../../../Styles/general-styles/UploaderPage.css';
 import NewReportIcon from '../../../../Images/NewReportIcon.png';
+import { toast } from "react-toastify";
 
 const Qfr = (props) => {
     const [qfrReportFiles, setQfrReportFiles] = useState([]);
@@ -26,7 +27,7 @@ const Qfr = (props) => {
 
     const handleDownloadUploadedExcel = () => {
         if (!uploadedQfrExcelFile) {
-            alert("No Uploaded Excel file to download.");
+            toast.warn("No Uploaded Excel file to download.");
             return;
         }
 
@@ -50,7 +51,7 @@ const Qfr = (props) => {
 
     const handleDownloadStandardExcel = async () => {
         if (!Array.isArray(standardQfrExcelFile) || standardQfrExcelFile.length === 0) {
-            alert("No Standard Excel files to download.");
+            toast.warn("No Standard Excel files to download.");
             return;
         }
 
@@ -98,7 +99,7 @@ const Qfr = (props) => {
 
     const handleAnalyse = async () => {
         if (qfrReportFiles.length === 0) {
-            alert("Please upload the report files.");
+            toast.warn("Please upload the report files.");
             return;
         }
 
@@ -320,7 +321,7 @@ const Qfr = (props) => {
             }
         } catch (error) {
             console.error("Error:", error);
-            alert("AI Overloading or network issue.");
+            toast.error("AI Overloading or network issue.");
             clearInterval(interval);
             setQfrProgress(0);
             setIsQfrProcessing(false);

@@ -5,6 +5,7 @@ import UploadFiles from "../../../general-components/UploadFiles";
 import star from '../../../../Images/star.png';
 import SummaryReport from "../../../general-components/SummaryReportViewer";
 import '../../../../Styles/general-styles/UploaderPage.css'
+import { toast } from "react-toastify";
 
 const Afr = (props) => {
     const [afrReportFiles, setafrReportFiles] = useState([]);
@@ -19,7 +20,7 @@ const Afr = (props) => {
     };
 
     const handleAnalyse = async (props) => {
-        alert('This module is not supported yet')
+        toast.info('This module is not supported yet')
     };
 
     const isButtonDisabled = afrReportFiles.length === 0;

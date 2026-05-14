@@ -13,6 +13,7 @@ import { API_BASE } from "../../../config/apiBase";
 import useModuleOrgLookup from "../../../hooks/useModuleOrgLookup";
 import FinancialHealthNoOrgEmptyState from "../FinancialModule/FinancialHealth/FinancialHealthNoOrgEmptyState";
 import FinancialHealthAccessManagement from "../FinancialModule/FinancialHealth/FinancialHealthAccessManagement";
+import { toast } from "react-toastify";
 import { RiSettingsLine } from "react-icons/ri";
 
 const BASE_URL =
@@ -123,7 +124,7 @@ const Client_Event_Reporting = (props) => {
 
       if (!res.ok) throw new Error("Save failed");
 
-      alert("Saved successfully");
+      toast.success("Saved successfully");
 
       // 🔁 refresh history list immediately
       const historyRes = await fetch(
@@ -133,7 +134,7 @@ const Client_Event_Reporting = (props) => {
       setHistoryList(historyJson.data || []);
     } catch (err) {
       console.error("Save history failed", err);
-      alert("Failed to save history");
+      toast.error("Failed to save history");
     } finally {
       setSavingHistory(false);
     }
@@ -210,7 +211,7 @@ const Client_Event_Reporting = (props) => {
       setSelectedHistoryId(null);
     } catch (err) {
       console.error("Delete history failed", err);
-      alert("Failed to delete history");
+      toast.error("Failed to delete history");
     } finally {
       setDeleting(false);
     }
@@ -219,7 +220,7 @@ const Client_Event_Reporting = (props) => {
   const handleFileChange = (e) => {
     const filesArray = Array.from(e.target.files);
     if (filesArray.length + selectedFiles.length > 10) {
-      alert("You can select up to 10 files only");
+      toast.warn("You can select up to 10 files only");
       return;
     }
     setSelectedFiles(Array.from(e.target.files));
@@ -227,7 +228,7 @@ const Client_Event_Reporting = (props) => {
 
   const handleAnalyse = async () => {
     if (selectedFiles.length === 0) {
-      alert("Please select at least one file");
+      toast.warn("Please select at least one file");
       return;
     }
 
@@ -282,14 +283,14 @@ const Client_Event_Reporting = (props) => {
         setStage3Data(eventsArray);
         await incrementCareVoiceAnalysisCount(props?.user?.email?.trim(), "ai-analysis", 0, "client-event-reporting", 0);
       } else {
-        alert("Stage 3 data not found in response");
+        toast.error("Stage 3 data not found in response");
       }
 
       // ✅ Jump to 100% once backend responds
       setUploadProgress(100);
     } catch (err) {
       console.error("Error:", err);
-      alert("Something went wrong! Check console for details.");
+      toast.error("Something went wrong! Check console for details.");
     } finally {
       setLoading(false);
       if (fakeProgressInterval) clearInterval(fakeProgressInterval);

@@ -8,6 +8,7 @@ import star from '../../../../Images/star.png';
 import '../../../../Styles/general-styles/UploaderPage.css';
 import NewReportIcon from '../../../../Images/NewReportIcon.png';
 import incrementAnalysisCount from "../Tlc/TLcAnalysisCount";
+import { toast } from "react-toastify";
 import incrementCareVoiceAnalysisCount from "../../SupportAtHomeModule/careVoiceCostAnalysis";
 import { API_BASE } from "../../../../config/apiBase";
 import useModuleOrgLookup from "../../../../hooks/useModuleOrgLookup";
@@ -41,7 +42,7 @@ const IncidentManagement = (props) => {
 
     const handleGenerate = async () => {
         if (!zipFile1) {
-            alert("Please upload a zip file");
+            toast.warn("Please upload a zip file");
             return;
         }
         props.handleClick();
@@ -115,7 +116,7 @@ const IncidentManagement = (props) => {
             setShowFinalZipReport(true);
         } catch (error) {
             console.error("Error processing ZIP:", error);
-            alert("Failed to process the ZIP file.");
+            toast.error("Failed to process the ZIP file.");
         } finally {
             setIsZipProcessing(false);
         }

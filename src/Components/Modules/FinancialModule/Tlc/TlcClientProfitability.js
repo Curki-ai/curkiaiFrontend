@@ -13,6 +13,7 @@ import { IoMdInformationCircleOutline } from "react-icons/io";
 import TooltipPlaceholder from '../../../../Images/TooltipPlaceholder.png';
 import ClientProfitabilityAIAnalysisReportViewer from "./TlcClientProfitibilityReport";
 import { API_BASE as BASE_URL } from "../../../../config/apiBase";
+import { toast } from "react-toastify";
 const TlcClientProfitability = (props) => {
     const onPrepareAiPayload = props.onPrepareAiPayload;
     const user = props.user
@@ -128,7 +129,7 @@ const TlcClientProfitability = (props) => {
     const handleAnalyse = async () => {
         try {
             if (!startMonth || !endMonth) {
-                alert("Please select both start and end months");
+                toast.warn("Please select both start and end months");
                 return;
             }
 
@@ -154,7 +155,7 @@ const TlcClientProfitability = (props) => {
             console.log("PREPARE DATA:", prepareData);
 
             if (!prepareData?.ok) {
-                alert("Prepare failed");
+                toast.error("Prepare failed");
                 return;
             }
 
@@ -169,7 +170,7 @@ const TlcClientProfitability = (props) => {
 
         } catch (err) {
             console.error("❌ ERROR IN handleAnalyse:", err);
-            alert("Analysis failed: " + err.message);
+            toast.error("Analysis failed: " + err.message);
         } finally {
             setTlcClientProfitabilityLoading(false);
         }

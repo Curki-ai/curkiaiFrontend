@@ -8,6 +8,7 @@ import '../../../../Styles/general-styles/UploaderPage.css'
 import incrementAnalysisCount from "../Tlc/TLcAnalysisCount";
 import incrementCareVoiceAnalysisCount from "../../SupportAtHomeModule/careVoiceCostAnalysis";
 import { API_BASE } from "../../../../config/apiBase";
+import { toast } from "react-toastify";
 import useModuleOrgLookup from "../../../../hooks/useModuleOrgLookup";
 import FinancialHealthNoOrgEmptyState from "../FinancialHealth/FinancialHealthNoOrgEmptyState";
 import FinancialHealthAccessManagement from "../FinancialHealth/FinancialHealthAccessManagement";
@@ -36,7 +37,7 @@ const SirsAnalysis = (props) => {
 
     const handleAnalyse = async () => {
         if (sirsReportFiles.length === 0) {
-            alert("Please upload the report files.");
+            toast.warn("Please upload the report files.");
             return;
         }
         props.handleClick();
@@ -94,7 +95,7 @@ const SirsAnalysis = (props) => {
             clearInterval(interval);
         } catch (error) {
             console.error("Error:", error);
-            alert("AI Overloading or network issue.");
+            toast.error("AI Overloading or network issue.");
             clearInterval(interval);
             setSirsProgress(0);
             setIsSirsProcessing(false);

@@ -13,6 +13,7 @@ import { IoMdInformationCircleOutline } from "react-icons/io";
 import TooltipPlaceholder from '../../../../Images/TooltipPlaceholder.png';
 import { Document, Packer, Paragraph, HeadingLevel, TextRun } from "docx";
 import { saveAs } from "file-saver";
+import { toast } from "react-toastify";
 const CareServicesEligibility = (props) => {
     const [carePlanreportFiles, setCarePlanReportFiles] = useState([]);
     const [isAnalysingCareReportLoading, setIsAnalysingCareReportLoading] = useState(false);
@@ -33,7 +34,7 @@ const CareServicesEligibility = (props) => {
     };
     const handleAnalyseReports = async () => {
         if (carePlanreportFiles.length === 0) {
-            alert("Please upload a file.");
+            toast.warn("Please upload a file.");
             return;
         }
 
@@ -92,7 +93,7 @@ const CareServicesEligibility = (props) => {
                     if (i === 0) {
                         clearInterval(progressInterval);
                         setIsAnalysingCareReportLoading(false);
-                        alert("Error analyzing first row.");
+                        toast.error("Error analyzing first row.");
                     }
                 }
             }
@@ -101,7 +102,7 @@ const CareServicesEligibility = (props) => {
             setShowCarePlanDownloadButton(true);
         } catch (error) {
             console.error("Unexpected Error:", error);
-            alert("Something went wrong while analyzing the report.");
+            toast.error("Something went wrong while analyzing the report.");
             clearInterval(progressInterval);
             setIsAnalysingCareReportLoading(false);
         }

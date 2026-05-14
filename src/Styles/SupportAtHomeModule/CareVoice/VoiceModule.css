@@ -2250,7 +2250,7 @@
   margin-bottom: -20px;
 }
 
-.staff-landing-animation > * {
+.staff-landing-animation>* {
   width: 100% !important;
   height: 100% !important;
 }
@@ -2490,7 +2490,7 @@
 .carevoice-staff-container .staff-rec-circle {
   width: clamp(190px, 19vw, 300px);
   height: clamp(190px, 19vw, 300px);
-  margin-bottom:20px
+  margin-bottom: 20px
 }
 
 .carevoice-staff-container .staff-recording-wrapper {
@@ -2559,7 +2559,7 @@
 /* Override the inline marginTop/marginBottom on the Generate Document
    wrapper div (last child inside .voice-upload-col) so it doesn't
    leave a big empty area at the bottom. */
-.carevoice-staff-container .voice-upload-col > div:last-child[style] {
+.carevoice-staff-container .voice-upload-col>div:last-child[style] {
   margin-top: clamp(12px, 1.2vw, 22px) !important;
   margin-bottom: 0 !important;
 }
@@ -2606,7 +2606,7 @@
   z-index: 0;
 }
 
-.carevoice-staff-container > * {
+.carevoice-staff-container>* {
   position: relative;
   z-index: 1;
 }
@@ -2652,7 +2652,7 @@
 }
 
 /* Inner pill — solid blue per design spec */
-.carevoice-staff-container .selectedtemplatebtn > div {
+.carevoice-staff-container .selectedtemplatebtn>div {
   background: #328DEE !important;
   padding: 8px 12px !important;
   gap: 8px !important;
@@ -2665,12 +2665,12 @@
 }
 
 /* Hide the checkmark chip — keep only "Selected" text and count */
-.carevoice-staff-container .selectedtemplatebtn > div > span:first-child {
+.carevoice-staff-container .selectedtemplatebtn>div>span:first-child {
   display: none !important;
 }
 
 /* Count chip — translucent white badge that reads as a counter */
-.carevoice-staff-container .selectedtemplatebtn > div > span:last-child {
+.carevoice-staff-container .selectedtemplatebtn>div>span:last-child {
   width: 20px !important;
   height: 20px !important;
   background: rgba(255, 255, 255, 0.22) !important;
@@ -2706,7 +2706,7 @@
   pointer-events: none;
 }
 
-.carevoice-staff-container .staff-recording-wrapper > * {
+.carevoice-staff-container .staff-recording-wrapper>* {
   pointer-events: none;
 }
 
@@ -2717,8 +2717,17 @@
 }
 
 @keyframes rec-halo {
-  0%, 100% { opacity: 0.65; transform: scale(1); }
-  50%      { opacity: 1;    transform: scale(1.05); }
+
+  0%,
+  100% {
+    opacity: 0.65;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
 }
 
 /* --- PRIMARY CTA: matches onboarding .resume-add-btn pattern
@@ -3065,6 +3074,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+
   .template-select-modal .template-select-card,
   .template-select-modal .template-select-confirm {
     transition: none;
@@ -3513,7 +3523,7 @@
   align-items: center;
   gap: 10px;
   padding: 12px 16px;
-  background: linear-gradient(180deg, #efeafd 0%, #ffffff 100%);
+  background: linear-gradient(rgb(108, 76, 220) -65.32%, rgb(255, 255, 255) 157.07%, rgb(255, 255, 255) 226.61%);
   border: 1px solid #ecebf3;
   border-radius: 10px;
   cursor: pointer;
@@ -3524,10 +3534,10 @@
   text-align: left;
 }
 
-.vm-accordion-header:hover {
+/* .vm-accordion-header:hover {
   border-color: #c5bde8;
   background: linear-gradient(180deg, #e6e0fa 0%, #faf9ff 100%);
-}
+} */
 
 .vm-accordion-header:focus-visible {
   outline: none;
@@ -3793,7 +3803,7 @@
 }
 
 /* Make sure interactive content stays above the decorative glow */
-.vm-template-list > * {
+.vm-template-list>* {
   position: relative;
   z-index: 1;
 }
@@ -3814,8 +3824,8 @@
     inset 0 0 0 1px rgba(255, 255, 255, 0.6);
   backdrop-filter: blur(4px);
   transition: transform 200ms cubic-bezier(0.34, 1.4, 0.6, 1),
-              background 200ms ease,
-              box-shadow 200ms ease;
+    background 200ms ease,
+    box-shadow 200ms ease;
 }
 
 .vm-slider-arrow:hover:not(:disabled) {
@@ -4045,7 +4055,7 @@
   z-index: 0;
 }
 
-.analysis-feedback-section > * {
+.analysis-feedback-section>* {
   position: relative;
   z-index: 1;
 }
@@ -4055,6 +4065,7 @@
     opacity: 0;
     transform: translateY(-6px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -4408,7 +4419,7 @@
   font-weight: 700;
 }
 
-.cv-markdown > :first-child {
+.cv-markdown> :first-child {
   margin-top: 0;
 }
 
@@ -4478,12 +4489,12 @@
   font-weight: 700;
 }
 
-.cv-markdown li > p {
+.cv-markdown li>p {
   margin: 0 0 0.4em;
 }
 
-.cv-markdown li > ul,
-.cv-markdown li > ol {
+.cv-markdown li>ul,
+.cv-markdown li>ol {
   margin: 0.5em 0 0.3em;
 }
 
@@ -4594,8 +4605,8 @@
   vertical-align: top;
 }
 
-.cv-markdown th + th,
-.cv-markdown td + td {
+.cv-markdown th+th,
+.cv-markdown td+td {
   border-left: 1px solid #ecebf3;
 }
 

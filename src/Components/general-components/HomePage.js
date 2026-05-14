@@ -363,6 +363,19 @@ const HomePage = () => {
         setIsListening(true);
         setIsSTTActive(true); // LOCK SEND BUTTON
 
+        // Resolve the moduleName the same way the LLM askai increments do
+        // (selectedRole → backend module key), so STT cost rolls up under the
+        // same per-module bucket in the cost-analyse doc. Unmapped roles
+        // return null and the increment is skipped on the STT side.
+        const sttModuleName =
+          isCareVoicePage ? "carevoice" :
+          isNewFinancialModule ? "financial-health" :
+          isSmartRosteringPage ? "smart-rostering" :
+          isTlcClientProfitabilityPage ? "client-profitability" :
+          isTlcPage ? "payroll-analysis" :
+          isHRAskAiPage ? "staff-onboarding" :
+          null;
+
         recognizerRef.current = await startSpeechRecognition((text) => {
 
           // console.log("Speech text received:", text);
@@ -377,7 +390,8 @@ const HomePage = () => {
           inputRef.current = text;
           setIsInputEmpty(!text || !text.trim());
 
-        });
+        }, user?.email?.trim(), sttModuleName,
+        () => textareaRef.current?.value || "");
 
       } else {
 
@@ -683,15 +697,15 @@ const HomePage = () => {
     console.log("generatedCareVoiceDocsCount", generatedCareVoiceDocsCount);
     try {
       if (isCareVoiceLocked) {
-        alert("Please wait until your documents are ready before starting Ask AI.");
+        toast.warn("Please wait until your documents are ready before starting Ask AI.");
         return;
       }
       if (isCareVoiceGeneratingDocs || (totalCareVoiceDocsToGenerate > 0 && generatedCareVoiceDocsCount < totalCareVoiceDocsToGenerate)) {
-        alert("Please wait until all documents are downloaded before starting a session.");
+        toast.warn("Please wait until all documents are downloaded before starting a session.");
         return;
       }
       if (!careVoiceFiles.length) {
-        alert("No documents available");
+        toast.warn("No documents available");
         return;
       }
       // console.log("careVoiceFiles", careVoiceFiles);
@@ -1293,7 +1307,7 @@ const HomePage = () => {
     try {
       if (isCareVoicePage) {
         if (!careVoiceStarted) {
-          alert("Please start session first");
+          toast.warn("Please start session first");
 
           setMessages(prev =>
             prev.map(msg =>
@@ -1886,7 +1900,7 @@ const HomePage = () => {
                 />
               )}
 
-              <div style={{ flex: 1, height: "100vh", overflowY: "auto", scrollbarWidth: 'none' }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
                 <div
                   className="typeofreportmaindiv"
                   style={{

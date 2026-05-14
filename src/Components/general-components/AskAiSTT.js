@@ -1,5 +1,13 @@
 import * as SpeechSDK from "microsoft-cognitiveservices-speech-sdk";
 import { API_BASE } from "../../config/apiBase";
+import incrementCareVoiceAnalysisCount from "../Modules/SupportAtHomeModule/careVoiceCostAnalysis";
+
+// Azure Speech SDK streams from the mic and does not return a cost/token
+// field — we derive USD from session wall-clock seconds. Rate comes from
+// REACT_APP_STT_USD_PER_HOUR (build-time env), defaulting to $1.00/hr —
+// Azure's Standard-tier real-time STT flat rate (no volume discount).
+const STT_USD_PER_HOUR = Number(process.env.REACT_APP_STT_USD_PER_HOUR) || 1.0;
+const STT_USD_PER_SECOND = STT_USD_PER_HOUR / 3600;
 
 const logWithTime = (message, data = "") => {
     const time = new Date().toISOString();
@@ -11,7 +19,7 @@ const logWithTime = (message, data = "") => {
     }
 };
 
-export const startSpeechRecognition = async (setTextCallback) => {
+export const startSpeechRecognition = async (setTextCallback, userEmail, moduleName, getCurrentText) => {
     try {
         logWithTime("Initializing Azure Speech Configuration");
 
@@ -43,20 +51,70 @@ export const startSpeechRecognition = async (setTextCallback) => {
         );
 
         logWithTime("Speech recognizer initialized successfully");
-        let finalTranscript = "";
+        // Track session wall-clock so we can bill Azure-equivalent STT cost on stop.
+        let sessionStartMs = null;
+        let incrementFired = false;
+
+        // Phrase-base model:
+        //  - phraseBase = textarea content as of the start of the CURRENT phrase
+        //  - phraseInProgress flips false→true on first `recognizing` for a phrase,
+        //    back to false on `recognized`.
+        //  - At each phrase boundary we re-read the textarea via getCurrentText
+        //    so any manual edits the user made between phrases become the new
+        //    base. This is what fixes manual edits being overwritten.
+        let phraseBase = (typeof getCurrentText === "function" ? getCurrentText() : "") || "";
+        let phraseInProgress = false;
+
+        const composeWithBase = (newPhrase) => {
+            const base = (phraseBase || "").trim();
+            return (base ? base + " " : "") + newPhrase;
+        };
+
         recognizer.recognizing = (sender, event) => {
-            if (event.result.text) {
-                const combined = finalTranscript + " " + event.result.text;
-                setTextCallback(combined.trim());
+            if (!event.result.text) return;
+
+            // On the first interim event of a new phrase, snapshot whatever
+            // is currently in the textarea as the base. This captures any
+            // edits the user made since the previous phrase committed.
+            if (!phraseInProgress) {
+                phraseBase = (typeof getCurrentText === "function" ? getCurrentText() : phraseBase) || "";
+                phraseInProgress = true;
             }
+
+            setTextCallback(composeWithBase(event.result.text).trim());
         };
 
         recognizer.recognized = (sender, event) => {
+            // CRITICAL: Transcript update happens FIRST so nothing added below
+            // (logging, cost tracking) can ever delay or interfere with the
+            // user-visible text.
             if (event.result.text) {
+                // Defensive: if recognized fires without a prior recognizing
+                // (rare — e.g. very short utterance), sync the base now.
+                if (!phraseInProgress) {
+                    phraseBase = (typeof getCurrentText === "function" ? getCurrentText() : phraseBase) || "";
+                }
 
-                finalTranscript += " " + event.result.text;
+                const committed = composeWithBase(event.result.text).trim();
+                phraseBase = committed;       // The finalized phrase joins the base
+                phraseInProgress = false;     // Phrase done — next recognizing will re-snapshot
+                setTextCallback(committed);
+            }
 
-                setTextCallback(finalTranscript.trim());
+            // Diagnostic logging — fully isolated in its own try/catch so a
+            // malformed event.result can't bubble up and break the callback.
+            try {
+                const rawJson = event?.result?.json ? JSON.parse(event.result.json) : null;
+                logWithTime("[ASKAI-STT] recognized event raw JSON:", rawJson);
+                logWithTime("[ASKAI-STT] recognized event summary:", {
+                    text: event?.result?.text,
+                    offsetTicks: event?.result?.offset,
+                    durationTicks: event?.result?.duration,
+                    reason: event?.result?.reason,
+                    resultId: event?.result?.resultId
+                });
+            } catch (e) {
+                logWithTime("[ASKAI-STT] recognized event logging failed (non-fatal)", e?.message);
             }
         };
 
@@ -65,11 +123,55 @@ export const startSpeechRecognition = async (setTextCallback) => {
         };
 
         recognizer.sessionStarted = () => {
-            logWithTime("Speech recognition session started");
+            sessionStartMs = Date.now();
+            logWithTime("Speech recognition session started", { sessionStartMs });
         };
 
-        recognizer.sessionStopped = () => {
+        recognizer.sessionStopped = async () => {
             logWithTime("Speech recognition session stopped");
+
+            // Fire the STT cost increment exactly once per session, regardless
+            // of whether the session ended via user stop, timeout, or cancel.
+            if (incrementFired) return;
+            incrementFired = true;
+
+            if (!sessionStartMs) {
+                logWithTime("[ASKAI-STT] No sessionStartMs — skipping increment");
+                return;
+            }
+            if (!userEmail) {
+                logWithTime("[ASKAI-STT] No userEmail passed — skipping increment");
+                return;
+            }
+            // Skip when caller couldn't resolve an active module — billing this
+            // under a fake bucket would corrupt per-module cost reports.
+            if (!moduleName) {
+                logWithTime("[ASKAI-STT] No moduleName passed — skipping increment (caller did not resolve active module)");
+                return;
+            }
+
+            const sessionSeconds = (Date.now() - sessionStartMs) / 1000;
+            const sttCostUsd = sessionSeconds * STT_USD_PER_SECOND;
+            logWithTime("[ASKAI-STT] Session totals", {
+                sessionSeconds: sessionSeconds.toFixed(2),
+                sttCostUsd: sttCostUsd.toFixed(6),
+                rate: `$${STT_USD_PER_HOUR}/hr`,
+                userEmail,
+                moduleName
+            });
+
+            try {
+                const result = await incrementCareVoiceAnalysisCount(
+                    userEmail,
+                    "askai-stt",
+                    sttCostUsd,
+                    moduleName,
+                    0
+                );
+                logWithTime("[ASKAI-STT] Increment API response:", result);
+            } catch (err) {
+                logWithTime("[ASKAI-STT] Increment failed (non-fatal):", err?.message);
+            }
         };
 
         logWithTime("Starting continuous speech recognition");

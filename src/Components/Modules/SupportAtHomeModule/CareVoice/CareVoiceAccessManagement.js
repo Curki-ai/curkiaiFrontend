@@ -4,6 +4,7 @@ import { API_BASE as ROOT_API_BASE } from "../../../../config/apiBase";
 import { HiOutlineChevronDown, HiOutlineShieldCheck, HiOutlineUser } from "react-icons/hi";
 import { RiAdminLine } from "react-icons/ri";
 import { FiUserPlus, FiUsers } from "react-icons/fi";
+import ConfirmDialog from "../../../general-components/ConfirmDialog";
 
 // Care Voice supports two roles. Staff can use the product but cannot
 // manage access — only admins reach this surface (the API enforces it).
@@ -134,6 +135,7 @@ const CareVoiceAccessManagement = ({ onClose, userEmail }) => {
   const [revokingId, setRevokingId] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [pendingRemoval, setPendingRemoval] = useState(null);
 
   const requestHeaders = () => {
     const headers = { "Content-Type": "application/json" };
@@ -197,13 +199,15 @@ const CareVoiceAccessManagement = ({ onClose, userEmail }) => {
     }
   };
 
-  const handleRemove = async (user) => {
+  const handleRemove = (user) => {
+    if (!user?.id) return;
+    setPendingRemoval(user);
+  };
+
+  const confirmRemove = async () => {
+    const user = pendingRemoval;
     if (!user?.id) return;
     const isActive = user.status === "active";
-    const confirmMessage = isActive
-      ? `Remove access for ${user.email}? They will lose access immediately.`
-      : `Revoke invite for ${user.email}?`;
-    if (!window.confirm(confirmMessage)) return;
 
     setError(""); setSuccess(""); setRevokingId(user.id);
     try {
@@ -219,6 +223,7 @@ const CareVoiceAccessManagement = ({ onClose, userEmail }) => {
       setError(err.message || "Failed to remove user");
     } finally {
       setRevokingId("");
+      setPendingRemoval(null);
     }
   };
 
@@ -448,6 +453,26 @@ const CareVoiceAccessManagement = ({ onClose, userEmail }) => {
           </div>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={pendingRemoval !== null}
+        title={
+          pendingRemoval?.status === "active"
+            ? `Remove access for ${pendingRemoval.email}?`
+            : `Revoke invite for ${pendingRemoval?.email || ""}?`
+        }
+        message={
+          pendingRemoval?.status === "active"
+            ? "They will lose access immediately and need to be re-invited to come back."
+            : "They will lose access until re-invited."
+        }
+        confirmLabel="Yes"
+        cancelLabel="No"
+        confirmTone="danger"
+        busy={!!revokingId}
+        onConfirm={confirmRemove}
+        onCancel={() => setPendingRemoval(null)}
+      />
     </div>
   );
 };
