@@ -64,7 +64,6 @@ import adminLottie from "../../../../Images/adminPageLottie.json"
 import { API_BASE } from "../../../../config/apiBase";
 const VoiceModule = (props) => {
     const userEmail = props?.user?.email;
-    // const userEmail = "sarah@contemporarycoordination.com";
     const ALLOWED_USERS = [
         "mboutros@tenderlovingcaredisability.com.au",
         "rjodeh@tenderlovingcaredisability.com.au",
