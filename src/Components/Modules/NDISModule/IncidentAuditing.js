@@ -15,6 +15,7 @@ import { API_BASE as BASE_URL } from "../../../config/apiBase";
 import useModuleOrgLookup from "../../../hooks/useModuleOrgLookup";
 import FinancialHealthNoOrgEmptyState from "../FinancialModule/FinancialHealth/FinancialHealthNoOrgEmptyState";
 import FinancialHealthAccessManagement from "../FinancialModule/FinancialHealth/FinancialHealthAccessManagement";
+import CenteredLoader from "../../general-components/CenteredLoader";
 
 const IA_API_BASE = `${BASE_URL}/api/incident-auditing`;
 
@@ -458,11 +459,7 @@ const IncidentAuditing = (props) => {
     }
 
     if (orgLookupStatus === "loading") {
-        return (
-            <div className="ia-org-loading">
-                <p>Loading…</p>
-            </div>
-        );
+        return <CenteredLoader />;
     }
     if (orgLookupStatus === "not_found") {
         return (

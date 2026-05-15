@@ -684,6 +684,46 @@
   transform: none !important;
 }
 
+/* Dedicated pill-shaped AI Analyse button for the TLC Client Profitability
+   landing — owns its entire visual treatment so it doesn't depend on
+   the shared .analyse-btn / .search-btn / .analyse-btn-rounded chain. */
+.tlc-cp-analyse-pill-btn {
+  background-color: #6C4CDC;
+  color: #ffffff;
+  border: none;
+  border-radius: 50px;
+  padding: 12px 28px;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.1px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 6px 16px rgba(108, 76, 220, 0.22);
+  transition: opacity 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.tlc-cp-analyse-pill-btn:hover:not(:disabled) {
+  opacity: 0.94;
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px rgba(108, 76, 220, 0.32);
+}
+
+.tlc-cp-analyse-pill-btn:disabled {
+  background-color: #B8A9E3;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+.tlc-cp-analyse-pill-btn:disabled:hover {
+  opacity: 1;
+  transform: none;
+  box-shadow: none;
+}
+
 /* --- Drill toggle button (small circular utility button) --- */
 .tlc-cp-page .drill-toggle-btn {
   background: #ffffff;

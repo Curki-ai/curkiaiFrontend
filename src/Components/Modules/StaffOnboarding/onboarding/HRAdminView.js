@@ -42,6 +42,7 @@ const HRAdminView = ({
   const [organizationId, setOrganizationId] = useState(null);
   const [testResultsById, setTestResultsById] = useState({});
   const [selectedTestResult, setSelectedTestResult] = useState(null);
+  const [selectedTestPreview, setSelectedTestPreview] = useState(null);
   const [smartCandidates, setSmartCandidates] = useState([]);
   const [isLoadingCandidates, setIsLoadingCandidates] = useState(true);
   const hasFetchedCandidatesRef = useRef(false);
@@ -799,6 +800,50 @@ const HRAdminView = ({
                         </div>
                       </div>
 
+                      {(() => {
+                        const submittedAnswers =
+                          Array.isArray(testResult?.testData?.answers)
+                            ? testResult.testData.answers
+                            : [];
+                        const hasPreview = submittedAnswers.length > 0;
+
+                        return (
+                          <div
+                            className={`resume-test-preview-row ${hasPreview ? "has-preview" : "no-preview"}`}
+                            onClick={() =>
+                              hasPreview &&
+                              setSelectedTestPreview({
+                                candidate: item,
+                                answers: submittedAnswers
+                              })
+                            }
+                          >
+                            <div className="resume-test-result-left">
+                              <div className="resume-test-preview-icon">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                  <circle cx="12" cy="12" r="3"></circle>
+                                </svg>
+                              </div>
+                              <div className="resume-test-result-label">Preview Test</div>
+                            </div>
+                            <div className="resume-test-result-right">
+                              {hasPreview ? (
+                                <>
+                                  <span className="resume-test-preview-value">
+                                    View answers
+                                  </span>
+                                  <svg className="resume-test-result-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <polyline points="9 18 15 12 9 6"></polyline>
+                                  </svg>
+                                </>
+                              ) : (
+                                <span className="resume-test-result-pending">Not submitted</span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })()}
 
                     </div>
                   );
@@ -1037,6 +1082,92 @@ const HRAdminView = ({
                 onClick={() => setSelectedTestResult(null)}
               >
                 Close Insights
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selectedTestPreview && (
+        <div
+          className="resume-assessment-overlay"
+          onClick={() => setSelectedTestPreview(null)}
+        >
+          <div
+            className="resume-assessment-modal resume-test-preview-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="resume-assessment-header">
+              <div className="resume-assessment-title-wrap">
+                <div className="resume-assessment-icon">✦</div>
+                <div>
+                  <h2>
+                    {selectedTestPreview.candidate?.candidateName || "Candidate"}'s Test Submission Preview
+                  </h2>
+                  <p>SUBMITTED ANSWERS</p>
+                </div>
+              </div>
+
+              <button
+                className="resume-assessment-close"
+                onClick={() => setSelectedTestPreview(null)}
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="resume-test-preview-list">
+              {selectedTestPreview.answers.map((entry, idx) => {
+                const rawAnswer = entry?.answer;
+                const isEmpty =
+                  rawAnswer === undefined ||
+                  rawAnswer === null ||
+                  rawAnswer === "" ||
+                  (Array.isArray(rawAnswer) && rawAnswer.length === 0);
+                const displayAnswer = Array.isArray(rawAnswer)
+                  ? rawAnswer
+                  : [rawAnswer];
+
+                return (
+                  <div className="resume-test-preview-item" key={idx}>
+                    <div className="resume-test-preview-q-head">
+                      <span className="resume-test-preview-q-num">
+                        Q{idx + 1}
+                      </span>
+                      <p className="resume-test-preview-q-text">
+                        {entry?.question || "—"}
+                      </p>
+                    </div>
+
+                    <div className="resume-test-preview-a-row">
+                      <span className="resume-test-preview-a-label">
+                        Answer
+                      </span>
+                      {isEmpty ? (
+                        <span className="resume-test-preview-a-empty">
+                          No answer submitted
+                        </span>
+                      ) : (
+                        <div className="resume-test-preview-a-values">
+                          {displayAnswer.map((ans, i) => (
+                            <span key={i} className="resume-test-preview-a-chip">
+                              {String(ans)}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="resume-modal-footer">
+              <button
+                className="resume-close-btn"
+                onClick={() => setSelectedTestPreview(null)}
+              >
+                Close Preview
               </button>
             </div>
           </div>

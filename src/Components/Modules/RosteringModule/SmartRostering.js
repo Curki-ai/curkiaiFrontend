@@ -14,6 +14,7 @@ import RosterHistory from "./RosterHistory";
 import { LuDownload } from "react-icons/lu";
 import incrementAnalysisCount from "../FinancialModule/Tlc/TLcAnalysisCount";
 import OnboardingForm from "../../general-components/OnboardingForm";
+import CenteredLoader from "../../general-components/CenteredLoader";
 import { RiSettingsLine } from "react-icons/ri";
 import { FiCheck } from "react-icons/fi";
 import incrementCareVoiceAnalysisCount from "../SupportAtHomeModule/careVoiceCostAnalysis";
@@ -621,16 +622,7 @@ const SmartRostering = (props) => {
     //     );
     // }
     if (orgLookupStatus === "loading") {
-        return (
-            <div style={{
-                textAlign: "center",
-                padding: "120px 20px",
-                fontFamily: "Inter, sans-serif",
-                color: "#1f2937"
-            }}>
-                <p style={{ fontSize: "15px", color: "#555" }}>Loading…</p>
-            </div>
-        );
+        return <CenteredLoader />;
     }
 
     if (orgLookupStatus === "not_found") {
