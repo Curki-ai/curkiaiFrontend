@@ -100,6 +100,7 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  transition: color 0.18s ease;
 }
 
 .sb-connect-subtitle {
@@ -111,6 +112,7 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  transition: color 0.18s ease;
 }
 
 .sb-connect-card.active-role .sb-connect-title {
@@ -185,7 +187,7 @@
   color: #ffffff;
   gap: 10px;
   align-items: center;
-  transition: background 0.16s ease;
+  transition: background 0.16s ease, color 0.16s ease;
   overflow: visible;
 }
 

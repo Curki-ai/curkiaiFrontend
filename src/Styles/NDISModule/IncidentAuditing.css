@@ -46,31 +46,12 @@
    ============================================================ */
 .ia-main-container {
     position: relative;
-    height: 100vh;
-    overflow-y: auto;
+    min-height: 100vh;
+    overflow-x: hidden;
     padding: clamp(20px, 1.6vw, 32px) 4%;
     color: #1e1b3a;
     font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
     background: #fffdfc;
-}
-
-.ia-main-container::-webkit-scrollbar {
-    width: 14px;
-}
-
-.ia-main-container::-webkit-scrollbar-track {
-    background: #f4ecff;
-    border-radius: 10px;
-}
-
-.ia-main-container::-webkit-scrollbar-thumb {
-    background: linear-gradient(180deg, #8b6dff 0%, #6c4cdc 100%);
-    border-radius: 10px;
-    border: 3px solid #fbfaff;
-}
-
-.ia-main-container::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(180deg, #6c4cdc 0%, #5b3fb5 100%);
 }
 
 /* Decorative ambient orb behind page content */
