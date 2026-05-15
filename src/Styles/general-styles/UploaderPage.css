@@ -18,11 +18,11 @@ html,
 }
 
 .sidebar {
-  width: 21%;
+  width: 17%;
   /* Floor the width so the sidebar never gets so narrow that role
      labels need to wrap. flex-shrink:0 keeps the parent flex from
      compressing it below the floor. */
-  min-width: 240px;
+  min-width: 215px;
   flex-shrink: 0;
   background: linear-gradient(175.63deg, #000000 -1.22%, #1A1235 48.04%, #1A1235 86.81%, #6C4CDC 118.54%);
   display: flex;
@@ -921,9 +921,14 @@ html,
 .profile-panel {
   position: fixed;
   bottom: 20px;
-  left: max(21vw, 240px);
+  /* Anchor to the sidebar's right edge so the panel sits next to it at
+     every viewport size. Formula mirrors the sidebar's own `width: 17%;
+     min-width: 215px;` so the two stay aligned without a hardcoded gap.
+     Responsive overrides below adjust the floor to match the sidebar's
+     reduced min-width at ≤1100px and ≤900px. */
+  left: calc(max(17vw, 215px) + 12px);
   width: 400px;
-  max-width: calc(100vw - max(21vw, 240px) - 32px);
+  max-width: calc(100vw - max(17vw, 215px) - 32px);
   height: 674px;
   max-height: calc(100vh - 40px);
   background: white;
@@ -936,6 +941,20 @@ html,
   scrollbar-width: none;
   -ms-overflow-style: none;
   z-index: 2147483647;
+}
+
+@media (max-width: 1100px) {
+  .profile-panel {
+    left: calc(max(17vw, 200px) + 12px);
+    max-width: calc(100vw - max(17vw, 200px) - 32px);
+  }
+}
+
+@media (max-width: 900px) {
+  .profile-panel {
+    left: calc(max(17vw, 190px) + 12px);
+    max-width: calc(100vw - max(17vw, 190px) - 32px);
+  }
 }
 
 .profile-panel::-webkit-scrollbar {
@@ -2159,7 +2178,7 @@ html,
 /* ------------------ Tablet landscape / small laptop (≤1100px) ------------------ */
 @media (max-width: 1100px) {
   .sidebar {
-    min-width: 220px;
+    min-width: 210px;
     padding: 12px 14px 12px 10px;
   }
 
@@ -2184,7 +2203,7 @@ html,
 /* ------------------ Lower end of supported range (≤900px) ------------------ */
 @media (max-width: 900px) {
   .sidebar {
-    min-width: 210px;
+    min-width: 190px;
   }
 
   .sidebar .role-item {
