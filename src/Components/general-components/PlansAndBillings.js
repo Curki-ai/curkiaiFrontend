@@ -192,7 +192,7 @@ const PlansAndBillings = ({ onClose, email: userEmail, firstName: firstName, set
                         features={[
                             "4M AI credits",
                             "100 SMS",
-                            "~25 analysis",
+                            "~25 actions",
                             "$50 auto top-up when credits or SMS run out",
                         ]}
                         saving="$100K+ / year"
@@ -221,7 +221,7 @@ const PlansAndBillings = ({ onClose, email: userEmail, firstName: firstName, set
                         features={[
                             "15M AI credits",
                             "1,000 SMS",
-                            "~100 analysis",
+                            "~100 actions",
                             "$50 auto top-up when credits or SMS run out",
                         ]}
                         saving="$100,000+ / year"
@@ -252,7 +252,7 @@ const PlansAndBillings = ({ onClose, email: userEmail, firstName: firstName, set
                         features={[
                             "50M AI credits",
                             "3,000 SMS",
-                            "~300 analysis",
+                            "~300 actions",
                             "$50 auto top-up when credits or SMS run out",
                         ]}
                         saving="$200,000+ / year"
