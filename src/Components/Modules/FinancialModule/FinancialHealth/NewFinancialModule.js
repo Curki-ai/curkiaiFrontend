@@ -6,6 +6,7 @@ import axios from "axios";
 import SummaryReport from "../../../general-components/SummaryReportViewer";
 import UploadFiles from "../../../general-components/UploadFiles";
 import UploaderCSVBox from "../../../general-components/UploaderCSVBox";
+import CenteredLoader from "../../../general-components/CenteredLoader";
 import star from "../../../../Images/star.png";
 import "../../../../Styles/FinancialModule/FinancialHealth.css";
 import "../../../../Styles/general-styles/UploaderPage.css";
@@ -1754,18 +1755,7 @@ const NewFinancialHealth = (props) => {
     // of the dashboard — otherwise the State filter would briefly populate
     // with no scoping and history would fetch with the wrong/missing orgId.
     if (orgLookupStatus === "loading") {
-        return (
-            <div
-                style={{
-                    textAlign: "center",
-                    padding: "120px 20px",
-                    fontFamily: "Inter, sans-serif",
-                    color: "#1f2937",
-                }}
-            >
-                <p style={{ fontSize: "15px", color: "#555" }}>Loading…</p>
-            </div>
-        );
+        return <CenteredLoader />;
     }
 
     if (orgLookupStatus === "not_found") {
@@ -2078,12 +2068,9 @@ const NewFinancialHealth = (props) => {
                     {activeTabData.stage !== "loading" && (
                         <div className="search-section">
                             <button
-                                className="analyse-btn"
-                                // disabled={isButtonDisabled || activeTabData.loading}
+                                className="fh-analyse-pill-btn"
+                                disabled={isButtonDisabled || activeTabData.loading}
                                 style={{
-                                    backgroundColor:
-                                        isButtonDisabled || activeTabData.loading ? "#A1A1AA" : "#000",
-                                    cursor: activeTabData.loading ? "not-allowed" : "pointer",
                                     marginTop: activeTabData.isFromHistory ? 0 : "40px",
                                 }}
                                 onClick={handleAnalyse}

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "../../Styles/general-styles/PlansAndBillings.css";
 import { IoClose } from "react-icons/io5";
 import pricingTick from "../../Images/pricingmodaltick.png"
@@ -17,6 +17,17 @@ const PlansAndBillings = ({ onClose, email: userEmail, firstName: firstName, set
     const [showCompare, setShowCompare] = useState(false);
     const currentPlan = subscriptionInfo?.plan_key || "trial";
     const currentBilling = subscriptionInfo?.billing_interval || "monthly";
+
+    // Lock the body scroll while this fixed-overlay modal is open. Without
+    // this the page underneath keeps its own scrollbar and the overlay's
+    // scrollbar renders right next to it, showing two scrollbars at once.
+    useEffect(() => {
+        const previousOverflow = document.body.style.overflow;
+        document.body.style.overflow = "hidden";
+        return () => {
+            document.body.style.overflow = previousOverflow;
+        };
+    }, []);
     const handleCheckout = async ({ planKey }) => {
         try {
             if (!userEmail) {

@@ -358,6 +358,181 @@
     transform: translateX(2px);
 }
 
+.resume-test-preview-row {
+    margin-top: 10px;
+    padding: 14px 18px;
+    border-radius: 14px;
+    background: #f0f9ff;
+    border: 1px solid #dbeafe;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+}
+
+.resume-test-preview-row.has-preview {
+    cursor: pointer;
+}
+
+.resume-test-preview-row.has-preview:hover {
+    transform: translateY(-1px);
+    border-color: #93c5fd;
+    background: #e0f2fe;
+    box-shadow: 0 6px 16px rgba(37, 99, 235, 0.10);
+}
+
+.resume-test-preview-row.no-preview {
+    cursor: default;
+    opacity: 0.85;
+}
+
+.resume-test-preview-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: #dbeafe;
+    color: #2563eb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.resume-test-preview-value {
+    font-size: 14px;
+    font-weight: 700;
+    color: #2563eb;
+}
+
+.resume-test-preview-row.has-preview:hover .resume-test-result-chevron {
+    color: #2563eb;
+    transform: translateX(2px);
+}
+
+.resume-test-preview-modal {
+    text-align: left;
+    max-width: 680px;
+    padding: 24px 22px 24px 24px;
+}
+
+.resume-test-preview-modal .resume-modal-footer {
+    margin-top: 24px;
+}
+
+.resume-test-preview-modal .resume-close-btn {
+    padding: 11px 20px;
+    border-radius: 12px;
+    font-size: 14px;
+}
+
+.resume-test-preview-list {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    text-align: left;
+}
+
+.resume-test-preview-item {
+    padding: 14px 16px;
+    border-radius: 12px;
+    background: #fafafa;
+    border: 1px solid #ececec;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    text-align: left;
+}
+
+.resume-test-preview-q-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    text-align: left;
+}
+
+.resume-test-preview-q-num {
+    flex-shrink: 0;
+    min-width: 32px;
+    height: 24px;
+    padding: 0 8px;
+    border-radius: 6px;
+    background: #ede9fe;
+    color: #7c3aed;
+    font-size: 12px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.resume-test-preview-q-text {
+    margin: 2px 0 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: #1e1b3a;
+    line-height: 1.45;
+    word-break: break-word;
+    text-align: left;
+    flex: 1;
+}
+
+.resume-test-preview-a-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: #ffffff;
+    border: 1px solid #ececec;
+    margin-left: 42px;
+    text-align: left;
+}
+
+.resume-test-preview-a-label {
+    flex-shrink: 0;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    color: #6b7280;
+    text-align: left;
+}
+
+.resume-test-preview-a-values {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    text-align: left;
+}
+
+.resume-test-preview-a-chip {
+    font-size: 13px;
+    color: #1f2937;
+    line-height: 1.4;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: #f4f4f5;
+    border: 1px solid #e4e4e7;
+    word-break: break-word;
+    text-align: left;
+}
+
+.resume-test-preview-a-empty {
+    font-size: 12px;
+    font-style: italic;
+    color: #9ca3af;
+    text-align: left;
+}
+
+@media (max-width: 640px) {
+    .resume-test-preview-a-row {
+        margin-left: 0;
+    }
+}
+
 .resume-skills-wrap {
     margin-top: 18px;
     display: flex;
@@ -1115,4 +1290,151 @@
 .confirm-dialog-btn-danger:focus-visible {
   outline: 2px solid #fca5a5;
   outline-offset: 2px;
+}
+
+/* ===================================================
+   RESPONSIVE OVERRIDES — Dashboard tab + candidate cards
+   These use the same `.hr-analysis-container` prefix +
+   !important so they beat the locked 2-column grids and
+   tab styles in SmartOnboarding.enhanced.css.
+=================================================== */
+
+/* Top tab bar — allow wrap, shrink padding/font as width shrinks */
+@media (max-width: 900px) {
+  .hr-analysis-container .top-nav {
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+    padding: 6px !important;
+  }
+
+  .hr-analysis-container .nav-tab {
+    flex: 1 1 calc(50% - 6px) !important;
+    padding: 9px 14px !important;
+    font-size: 13px !important;
+    min-width: 0 !important;
+  }
+
+  .hr-analysis-container .so-access-trigger-btn {
+    margin-left: 0 !important;
+    flex: 1 1 100% !important;
+    justify-content: center !important;
+  }
+}
+
+@media (max-width: 540px) {
+  .hr-analysis-container .top-nav {
+    gap: 5px !important;
+    padding: 5px !important;
+  }
+
+  .hr-analysis-container .nav-tab {
+    flex: 1 1 100% !important;
+    padding: 10px 12px !important;
+    font-size: 12.5px !important;
+    white-space: normal !important;
+    line-height: 1.25 !important;
+  }
+
+  .hr-analysis-container .nav-tab.active::after {
+    bottom: 4px !important;
+  }
+}
+
+/* Candidate grid + card internals — single column from ~1100px,
+   then collapse the inner two-column resume/docs split when card
+   becomes narrow enough that side-by-side stops fitting. */
+@media (max-width: 1100px) {
+  .hr-analysis-container .resume-candidate-grid {
+    grid-template-columns: 1fr !important;
+    gap: 18px !important;
+  }
+}
+
+@media (max-width: 900px) {
+  .hr-analysis-container .resume-middle-section {
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+  }
+
+  .hr-analysis-container .resume-summary-box {
+    height: auto !important;
+    min-height: 0 !important;
+  }
+}
+
+/* Test result row + preview row — let value/chevron wrap rather than
+   pushing past the card edge when content is long (e.g. "Completed (15%)"). */
+@media (max-width: 600px) {
+  .resume-test-result-row,
+  .resume-test-preview-row {
+    flex-wrap: wrap;
+    row-gap: 8px;
+    padding: 12px 14px;
+  }
+
+  .resume-test-result-right {
+    margin-left: 48px;
+  }
+}
+
+/* Narrow cards: avatar shouldn't dominate, header text wraps cleanly */
+@media (max-width: 480px) {
+  .hr-analysis-container .resume-user-top {
+    gap: 12px !important;
+    padding-bottom: 14px !important;
+    margin-bottom: 14px !important;
+  }
+
+  .hr-analysis-container .resume-avatar {
+    width: 48px !important;
+    height: 48px !important;
+    font-size: 18px !important;
+    border-radius: 12px !important;
+  }
+
+  .hr-analysis-container .resume-candidate-card {
+    padding: 18px !important;
+    border-radius: 18px !important;
+  }
+
+  .hr-analysis-container .candidate-item-header h3 {
+    font-size: 16px !important;
+    word-break: break-word;
+  }
+
+  .hr-analysis-container .candidate-item-header p {
+    font-size: 12px !important;
+    word-break: break-all;
+  }
+
+  .resume-test-result-right {
+    margin-left: 0;
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .resume-card-delete-btn {
+    top: 12px;
+    right: 12px;
+    width: 28px;
+    height: 28px;
+  }
+}
+
+/* Prevent the candidate card from establishing a min-content width
+   larger than its grid track (long unbreakable email addresses
+   were stretching the column past viewport). */
+.hr-analysis-container .resume-candidate-card,
+.hr-analysis-container .resume-user-top,
+.hr-analysis-container .candidate-item-header,
+.hr-analysis-container .resume-middle-section,
+.hr-analysis-container .resume-summary-box,
+.hr-analysis-container .resume-right-progress {
+  min-width: 0 !important;
+}
+
+.hr-analysis-container .candidate-item-header h3,
+.hr-analysis-container .candidate-item-header p {
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }

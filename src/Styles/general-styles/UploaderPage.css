@@ -337,6 +337,7 @@ html,
   opacity: 0.9;
 }
 
+
 .uploader-box.loading {
   opacity: 0.5;
   pointer-events: none;

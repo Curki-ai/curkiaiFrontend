@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import "../../Styles/general-styles/UploaderPage.css";
+import "../../Styles/general-styles/Sidebar.css";
 import { API_BASE } from "../../config/apiBase";
 import logo from "../../../src/Images/CurkiAiLogo.png";
 import purpleFinanicial from "../../Images/purple_financial.png";
@@ -235,229 +236,178 @@ const Sidebar = ({
 
   return (
     <div className="sidebar">
-      <div className="logo" style={{ cursor: "pointer" }}>
-        <img src={logo} style={{ width: "75%", height: "auto" }} alt="curkiLogo" />
-        <div style={{ border: "1px solid #c8c8c8", padding: "4px 8px", borderRadius: "20px", color: "#c8c8c8", marginLeft: "-10px", fontSize: "8px", marginBottom: "-20px", marginTop: "10px", }}
-        >
-          Beta
-        </div>
+      <div className="sb-header">
+        <img src={logo} className="sb-logo-img" alt="curkiLogo" />
+        <div className="sb-beta-pill">Beta</div>
       </div>
-      <div className="sidebar-scroll-content" style={{ overflowY: "auto", flex: 1, scrollbarWidth: 'auto', }}>
-        <div>
-          {ConnectButton
-            .map((report) => {
-              const icon = roleIcons[report];
-              return (
-                <div key={report} className={`role-item ${activeItem === report ? "active-role" : ""}`}
-                  style={{ cursor: "pointer", opacity: 1, pointerEvents: "auto", border: '1px solid #CCCCCC', borderRadius: '14px', padding: '16px 10px', marginLeft: '20px', marginTop: '14px', marginBottom: '24px' }}
-                  onClick={() => {
-                    let reportType = report;
-                    setSelectedRole(reportType);
-                    setActiveItem(report);
-                    closeAllPanels();
-                    setShowProfilePanel(false)
-                  }}
-                >
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px", }}>
-                    <img
-                      src={activeItem === report ? icon.purple : icon.white}
-                      alt={`${report} icon`}
-                      style={{ width: "30px", height: "30px" }}
-                    />
-                    <div>
-                      <p style={{ color: activeItem === report ? "#000000" : "#FFFFFF" }}>
-                        {report}
-                      </p>
-                      <p style={{ color: activeItem === report ? "#000000" : "#FFFFFF", fontSize: '12px' }}>Care Management, Financial, HR</p>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-        </div>
-        <div style={{ color: "white", fontSize: "18px", fontWeight: "bold", textAlign: "center", fontFamily: "Inter", marginBottom: "14px", alignItems: "center", gap: "6px", marginTop: "4px", }}
-        >
-          Aged Care/NDIS
-        </div>
+      <div className="sidebar-scroll-content">
+        {ConnectButton.map((report) => {
+          const icon = roleIcons[report];
+          const isActive = activeItem === report;
+          return (
+            <div
+              key={report}
+              className={`sb-connect-card ${isActive ? "active-role" : ""}`}
+              onClick={() => {
+                setSelectedRole(report);
+                setActiveItem(report);
+                closeAllPanels();
+                setShowProfilePanel(false);
+              }}
+            >
+              <img
+                src={isActive ? icon.purple : icon.white}
+                alt={`${report} icon`}
+                className="sb-connect-icon"
+              />
+              <div className="sb-connect-text">
+                <p className="sb-connect-title">{report}</p>
+                <p className="sb-connect-subtitle">Care Management, Financial, HR</p>
+              </div>
+            </div>
+          );
+        })}
+
         {showRoles && (
-          <div className="roles-list">
-            {roles.map((role) => {
-              return (
-                <div key={role} className={`role-item ${activeItem === role ? "active-role" : ""}`}
-                  onClick={() => {
-                    let reportType = role;
-                    if (role === "Client Profitability & Service")
-                      reportType = "Client Profitability & Service";
-                    setSelectedRole(reportType);
-                    setActiveItem(role);
-                    closeAllPanels();
-                    setShowProfilePanel(false)
-                  }}
-                  style={{ cursor: "pointer", opacity: 1, marginTop: "2px" }}
-                >
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px", }}>
-                    <img src={activeItem === role ? roleIcons[role].purple : roleIcons[role].white}
+          <div className="sb-section">
+            <div className="sb-section-heading">Aged Care / NDIS</div>
+            <div className="sb-section-items">
+              {roles.map((role) => {
+                const isActive = activeItem === role;
+                return (
+                  <div
+                    key={role}
+                    className={`role-item ${isActive ? "active-role" : ""}`}
+                    onClick={() => {
+                      let reportType = role;
+                      if (role === "Client Profitability & Service")
+                        reportType = "Client Profitability & Service";
+                      setSelectedRole(reportType);
+                      setActiveItem(role);
+                      closeAllPanels();
+                      setShowProfilePanel(false);
+                    }}
+                  >
+                    <img
+                      src={isActive ? roleIcons[role].purple : roleIcons[role].white}
                       alt={`${role} icon`}
-                      style={{ width: "22px", height: "22px" }}
                     />
                     <p>{role}</p>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         )}
-        <div className="roles-list">
-          <div style={{ color: "white", fontSize: "18px", fontWeight: "bold", textAlign: "center", fontFamily: "Inter", marginBottom: "14px", alignItems: "center", gap: "6px", marginTop: "4px", }}
-          >
-            AI AUTOMATION
-          </div>
-          {AiAutomationButtons
-            .map((report) => {
+
+        <div className="sb-section">
+          <div className="sb-section-heading">AI Automation</div>
+          <div className="sb-section-items">
+            {AiAutomationButtons.map((report) => {
               const icon = roleIcons[report];
+              const isActive = activeItem === report;
               return (
-                <div key={report} className={`role-item ${activeItem === report ? "active-role" : ""}`}
-                  style={{ cursor: "pointer", marginTop: "2px", opacity: 1, pointerEvents: "auto", }}
+                <div
+                  key={report}
+                  className={`role-item ${isActive ? "active-role" : ""}`}
                   onClick={() => {
-                    let reportType = report;
-                    setSelectedRole(reportType);
+                    setSelectedRole(report);
                     setActiveItem(report);
                     setMajorTypeOfReport("AI AUTOMATION");
                     closeAllPanels();
-                    setShowProfilePanel(false)
+                    setShowProfilePanel(false);
                   }}
                 >
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px", }}>
-                    {icon ? (
-                      <img
-                        src={activeItem === report ? icon.purple : icon.white}
-                        alt={`${report} icon`}
-                        style={{ width: "22px", height: "22px" }}
-                      />
-                    ) : (
-                      <img
-                        src={lock}
-                        alt="lock"
-                        style={{ width: "22px", height: "22px" }}
-                      />
-                    )}
-                    <p style={{ color: activeItem === report ? "#000000" : "#FFFFFF" }}>
-                      {report}
-                    </p>
-                  </div>
+                  {icon ? (
+                    <img
+                      src={isActive ? icon.purple : icon.white}
+                      alt={`${report} icon`}
+                    />
+                  ) : (
+                    <img src={lock} alt="lock" />
+                  )}
+                  <p>{report}</p>
                 </div>
               );
             })}
+          </div>
         </div>
 
-        {/* NDIS (Locked) */}
-        <div className="roles-list">
-          <div
-            style={{ color: "white", fontSize: "18px", fontWeight: "bold", textAlign: "center", fontFamily: "Inter", marginBottom: "14px", alignItems: "center", gap: "6px", marginTop: "4px", }}
-          >
-            NDIS
-          </div>
+        <div className="sb-section">
+          <div className="sb-section-heading">NDIS</div>
+          <div className="sb-section-items">
+            {NDISButton.map((report) => {
+              const icon = roleIcons[report];
+              const isEnabled = true;
+              const isActive = activeItem === report;
 
-          {NDISButton.map((report) => {
-            const icon = roleIcons[report];
-            const isEnabled = true; // Always enabled now
-
-            return (
-              <div
-                key={report}
-                className={`role-item ${activeItem === report ? "active-role" : ""
-                  }`}
-                style={{
-                  cursor: isEnabled ? "pointer" : "not-allowed",
-                  marginTop: "2px",
-                  opacity: isEnabled ? 1 : 0.6,
-                  pointerEvents: isEnabled ? "auto" : "none",
-                }}
-                onClick={() => {
-                  if (!isEnabled) return;
-
-                  let reportType = report;
-
-                  // Map UI names to internal report types
-                  if (report === "Participant Events & Incident Management")
-                    reportType = "Participant Events & Incident Management";
-                  else if (report === "Audit & Registration Manager")
-                    reportType = "Audit & Registration Manager";
-                  else if (report === "Incident & Complaint Reporter")
-                    reportType = "Incident & Complaint Reporter";
-                  else if (
-                    report === "Restrictive Practice & Behaviour Support"
-                  )
-                    reportType = "Restrictive Practice & Behaviour Support";
-                  else if (report === "Worker-Screening & HR Compliance")
-                    reportType = "Worker-Screening & HR Compliance";
-                  else if (report === "Financial & Claims Compliance")
-                    reportType = "Financial & Claims Compliance";
-                  else if (
-                    report === "Participant Outcomes & Capacity-Building"
-                  )
-                    reportType = "Participant Outcomes & Capacity-Building";
-
-                  // Set both selectedRole and activeReportType
-                  setSelectedRole(reportType);
-                  setActiveItem(report);
-                  setActiveReportType(reportType);
-
-                  // Reset views
-                  setShowReport(false);
-                  setShowFinalZipReport(false);
-                  setShowUploadReport(true);
-                  setMajorTypeOfReport("NDIS");
-
-                  if (analysedReportdata) setAnalysedReportdata(null);
-                  closeAllPanels();
-                  setShowProfilePanel(false)
-                }}
-              >
+              return (
                 <div
-                  style={{ display: "flex", alignItems: "center", gap: "8px" }}
+                  key={report}
+                  className={`role-item ${isActive ? "active-role" : ""}`}
+                  style={{
+                    cursor: isEnabled ? "pointer" : "not-allowed",
+                    opacity: isEnabled ? 1 : 0.6,
+                    pointerEvents: isEnabled ? "auto" : "none",
+                  }}
+                  onClick={() => {
+                    if (!isEnabled) return;
+
+                    let reportType = report;
+                    if (report === "Participant Events & Incident Management")
+                      reportType = "Participant Events & Incident Management";
+                    else if (report === "Audit & Registration Manager")
+                      reportType = "Audit & Registration Manager";
+                    else if (report === "Incident & Complaint Reporter")
+                      reportType = "Incident & Complaint Reporter";
+                    else if (report === "Restrictive Practice & Behaviour Support")
+                      reportType = "Restrictive Practice & Behaviour Support";
+                    else if (report === "Worker-Screening & HR Compliance")
+                      reportType = "Worker-Screening & HR Compliance";
+                    else if (report === "Financial & Claims Compliance")
+                      reportType = "Financial & Claims Compliance";
+                    else if (report === "Participant Outcomes & Capacity-Building")
+                      reportType = "Participant Outcomes & Capacity-Building";
+
+                    setSelectedRole(reportType);
+                    setActiveItem(report);
+                    setActiveReportType(reportType);
+                    setShowReport(false);
+                    setShowFinalZipReport(false);
+                    setShowUploadReport(true);
+                    setMajorTypeOfReport("NDIS");
+
+                    if (analysedReportdata) setAnalysedReportdata(null);
+                    closeAllPanels();
+                    setShowProfilePanel(false);
+                  }}
                 >
                   {isEnabled && icon ? (
                     <img
-                      src={activeItem === report ? icon.purple : icon.white}
+                      src={isActive ? icon.purple : icon.white}
                       alt={`${report} icon`}
-                      style={{ width: "22px", height: "22px" }}
                     />
                   ) : (
-                    <img
-                      src={lock}
-                      alt="lock"
-                      style={{ width: "22px", height: "22px" }}
-                    />
+                    <img src={lock} alt="lock" />
                   )}
-                  <p
-                    style={{
-                      color: isEnabled
-                        ? activeItem === report
-                          ? "#000000"
-                          : "#FFFFFF"
-                        : "#929592",
-                    }}
-                  >
-                    {report}
-                  </p>
+                  <p>{report}</p>
                 </div>
-              </div>
-            );
-          })}
-        </div>
-        <div className="roles-list">
-          <div style={{ color: "white", fontSize: "18px", fontWeight: "bold", textAlign: "center", fontFamily: "Inter", marginBottom: "6px", alignItems: "center", gap: "6px", marginTop: "4px", }}
-          >
-            AGED CARE
+              );
+            })}
           </div>
-          <div style={{ fontSize: '14px', fontWeight: '400', color: 'white', fontFamily: 'Inter', textAlign: 'center', marginBottom: '14px' }}>SUPPORT AT HOME | HCP | CHSP</div>
-          {AgedCareButton
-            .map((report) => {
+        </div>
+
+        <div className="sb-section">
+          <div className="sb-section-heading">Aged Care</div>
+          <div className="sb-section-subheading">Support at Home | HCP | CHSP</div>
+          <div className="sb-section-items">
+            {AgedCareButton.map((report) => {
               const icon = roleIcons[report];
+              const isActive = activeItem === report;
               return (
-                <div key={report} className={`role-item ${activeItem === report ? "active-role" : ""}`}
-                  style={{ cursor: "pointer", marginTop: "2px", opacity: 1, pointerEvents: "auto", }}
+                <div
+                  key={report}
+                  className={`role-item ${isActive ? "active-role" : ""}`}
                   onClick={() => {
                     let reportType = report;
                     if (report === "Care Services & Eligibility Analysis")
@@ -466,42 +416,22 @@ const Sidebar = ({
                     setActiveItem(report);
                     setMajorTypeOfReport("SUPPORT AT HOME");
                     closeAllPanels();
-                    setShowProfilePanel(false)
+                    setShowProfilePanel(false);
                   }}
                 >
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "8px",
-                    }}
-                  >
-                    {icon ? (
-                      <img
-                        src={activeItem === report ? icon.purple : icon.white}
-                        alt={`${report} icon`}
-                        style={{ width: "22px", height: "22px" }}
-                      />
-                    ) : (
-                      <img
-                        src={lock}
-                        alt="lock"
-                        style={{ width: "22px", height: "22px" }}
-                      />
-                    )}
-                    <p
-                      style={{
-                        color: activeItem === report
-                          ? "#000000"
-                          : "#FFFFFF"
-                      }}
-                    >
-                      {report}
-                    </p>
-                  </div>
+                  {icon ? (
+                    <img
+                      src={isActive ? icon.purple : icon.white}
+                      alt={`${report} icon`}
+                    />
+                  ) : (
+                    <img src={lock} alt="lock" />
+                  )}
+                  <p>{report}</p>
                 </div>
               );
             })}
+          </div>
         </div>
       </div>
       <div className="profile-wrapper">

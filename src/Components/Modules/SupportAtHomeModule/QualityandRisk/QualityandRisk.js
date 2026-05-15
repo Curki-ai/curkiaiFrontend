@@ -14,6 +14,7 @@ import { API_BASE } from "../../../../config/apiBase";
 import useModuleOrgLookup from "../../../../hooks/useModuleOrgLookup";
 import FinancialHealthNoOrgEmptyState from "../../FinancialModule/FinancialHealth/FinancialHealthNoOrgEmptyState";
 import FinancialHealthAccessManagement from "../../FinancialModule/FinancialHealth/FinancialHealthAccessManagement";
+import CenteredLoader from "../../../general-components/CenteredLoader";
 import { RiSettingsLine } from "react-icons/ri";
 
 const QR_API_BASE = `${API_BASE}/api/quality-and-risk-reporting`;
@@ -106,16 +107,7 @@ const QualityandRisk = (props) => {
         setShowDownloadButton(false);
     };
     if (orgLookupStatus === "loading") {
-        return (
-            <div style={{
-                textAlign: "center",
-                padding: "120px 20px",
-                fontFamily: "Inter, sans-serif",
-                color: "#1f2937"
-            }}>
-                <p style={{ fontSize: "15px", color: "#555" }}>Loading…</p>
-            </div>
-        );
+        return <CenteredLoader />;
     }
     if (orgLookupStatus === "not_found") {
         return (
