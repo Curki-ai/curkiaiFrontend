@@ -215,9 +215,7 @@ const IncidentAuditing = (props) => {
             toast.error("Failed to load history");
         } finally {
             setHistoryLoading(false);
-            if (pageRef.current) {
-                pageRef.current.scrollTo({ top: 0, behavior: "smooth" });
-            }
+            window.scrollTo({ top: 0, behavior: "smooth" });
         }
     };
 
