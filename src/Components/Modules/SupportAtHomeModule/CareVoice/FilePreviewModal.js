@@ -100,6 +100,31 @@ const FilePreviewModal = ({
     };
   }, [isOpen, doc, reloadKey, fileIndex, careVoiceFiles]);
 
+  // Fit-to-width: SuperDoc renders pages at the docx's intrinsic width
+  // (~816px for US-letter). On viewports narrower than that the page
+  // would overflow horizontally. Push a CSS zoom ratio (container width
+  // ÷ natural width, capped at 1) as a custom property — the stylesheet
+  // consumes it so the rendered document scales down proportionally
+  // while keeping the laptop appearance intact.
+  useEffect(() => {
+    if (!isOpen) return;
+    const container = containerRef.current;
+    if (!container) return;
+
+    const NATURAL_WIDTH = 850;
+    const fit = () => {
+      const cw = container.clientWidth;
+      if (cw <= 0) return;
+      const zoom = Math.min(1, cw / NATURAL_WIDTH);
+      container.style.setProperty("--sd-fit-zoom", String(zoom));
+    };
+
+    fit();
+    const ro = new ResizeObserver(fit);
+    ro.observe(container);
+    return () => ro.disconnect();
+  }, [isOpen, reloadKey]);
+
   const getEditorInstance = () => {
     if (!editorRef.current) {
       throw new Error("Editor not initialized");
