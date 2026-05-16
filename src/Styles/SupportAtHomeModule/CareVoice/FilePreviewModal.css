@@ -202,9 +202,18 @@
   display: flex;
   justify-content: center;
 
-  /* Make the horizontal scrollbar visible so users at narrow widths can
-     see they can scroll the document */
   scrollbar-width: thin;
+}
+
+/* Fit-to-width: scale SuperDoc's rendered document so it always fits
+   the container width without horizontal scroll. --sd-fit-zoom is
+   computed in FilePreviewModal.js (container width ÷ natural page
+   width, capped at 1) — CSS can't derive a unitless zoom value from a
+   length, so it has to come from JS. Using zoom (not transform: scale)
+   so the layout box shrinks too, keeping the vertical scroll height
+   correct and preserving caret/selection accuracy inside ProseMirror. */
+.superdoc-container > * {
+  zoom: var(--sd-fit-zoom, 1);
 }
 
 .superdoc-container::-webkit-scrollbar {
@@ -390,11 +399,10 @@ body [data-radix-popper-content-wrapper] {
 /* ===============================
    RESPONSIVE — narrow viewports
 ================================= */
-/* Word documents inside SuperDoc have a fixed page width (≈816px). At
-   narrow viewports the user is forced to scroll the document
-   horizontally inside .superdoc-container. Tighten the modal padding
-   and the SuperDoc container so as much of the page as possible is
-   visible without padding eating screen real-estate. */
+/* The fit-to-width zoom rule above keeps the document inside the
+   container at all widths, so on narrow viewports we only need to
+   tighten the modal chrome and hard-block any residual horizontal
+   overflow (e.g. a very wide image or pre block inside the doc). */
 @media (max-width: 1024px) {
   .file-preview-overlay {
     padding: 12px;
@@ -408,17 +416,7 @@ body [data-radix-popper-content-wrapper] {
 
   .superdoc-container {
     padding: 0;
-  }
-}
-
-/* When the SuperDoc page is wider than the container, justify-content:
-   center clips both sides equally — at narrow widths the user can see
-   the document is cut off on the left ("lan: Aman" instead of "Plan:
-   Aman"). Switch to flex-start so the page anchors to the left edge
-   and only the right side overflows (reachable via horizontal scroll). */
-@media (max-width: 1024px) {
-  .superdoc-container {
-    justify-content: flex-start;
+    overflow-x: hidden;
   }
 }
 

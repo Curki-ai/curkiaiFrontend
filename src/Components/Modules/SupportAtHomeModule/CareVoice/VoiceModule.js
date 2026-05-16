@@ -204,6 +204,7 @@ const VoiceModule = (props) => {
     const [generatedDocsSasUrls, setGeneratedDocsSasUrls] = useState([])
     const [previewIndex, setPreviewIndex] = useState(null);
     const feedbackTextareaRef = useRef(null);
+    const generatingDocVideoRef = useRef(null);
     const [isSpeaking, setIsSpeaking] = useState(false);
     const [isEmailingDocs, setIsEmailingDocs] = useState(false);
     // Add this useEffect
@@ -212,6 +213,29 @@ const VoiceModule = (props) => {
             feedbackTextareaRef.current.focus();
         }
     }, [showFeedbackBox]);
+
+    // Warm the HTTP cache for the generating-docs video so it starts
+    // instantly when isCareVoiceGeneratingDocs flips on — otherwise the
+    // browser does a cold fetch + buffer at the worst possible moment.
+    useEffect(() => {
+        fetch(generatingDocAnimationVideo).catch(() => {});
+    }, []);
+
+    const showGeneratingDocsVideo =
+        props?.careVoiceFiles?.length === 0 || props?.isCareVoiceGeneratingDocs;
+
+    useEffect(() => {
+        if (!showGeneratingDocsVideo) return;
+        const video = generatingDocVideoRef.current;
+        if (!video) return;
+        try {
+            video.load();
+            const playPromise = video.play();
+            if (playPromise && typeof playPromise.catch === "function") {
+                playPromise.catch(() => {});
+            }
+        } catch (_) {}
+    }, [showGeneratingDocsVideo]);
     // Add this function to handle file preview
     const handleFilePreview = (doc, index) => {
         setPreviewDoc(doc);
@@ -4000,14 +4024,15 @@ const VoiceModule = (props) => {
                         props?.isCareVoiceGeneratingDocs ? (
                         <div className="genratingDocLottieDiv">
                             <video
+                                ref={generatingDocVideoRef}
                                 className="generating-docs-video"
+                                src={generatingDocAnimationVideo}
                                 autoPlay
                                 loop
                                 muted
                                 playsInline
-                            >
-                                <source src={generatingDocAnimationVideo} type="video/mp4" />
-                            </video>
+                                preload="auto"
+                            />
                         </div>
                     ) : (
                         <>

@@ -224,6 +224,17 @@ const FinancialHealthAccessManagement = ({
     if (!EMAIL_REGEX.test(trimmedEmail)) { setError("A valid email is required"); return; }
     if (!roleOptions.some((r) => r.value === role)) { setError("Select a valid role"); return; }
 
+    // Client-side guard against re-inviting an existing member. The backend
+    // is the source of truth (409 on duplicate) — this just avoids a round
+    // trip when we can already tell from the loaded list.
+    const alreadyExists = users.some(
+      (u) => (u.email || "").trim().toLowerCase() === trimmedEmail
+    );
+    if (alreadyExists) {
+      setError("This user is already registered in the organization.");
+      return;
+    }
+
     setInviting(true);
     try {
       const res = await fetch(`${API_BASE}/invite`, {
@@ -239,11 +250,7 @@ const FinancialHealthAccessManagement = ({
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "Failed to invite user");
 
-      setSuccess(
-        data?.already_invited
-          ? "User already invited to this organization"
-          : "Invite created successfully"
-      );
+      setSuccess("Invite created successfully");
 
       setName(""); setEmail(""); setRole(allowStaffRole ? "staff" : "admin"); setSelectedStates([]);
       await fetchUsers();
