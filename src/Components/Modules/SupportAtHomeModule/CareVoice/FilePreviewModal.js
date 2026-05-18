@@ -45,6 +45,12 @@ const FilePreviewModal = ({
           readOnly: false,
           pagination: true,
           rulers: true,
+          // Disable the kebab overflow — CSS wraps controls onto a second row instead.
+          modules: {
+            toolbar: {
+              hideButtons: false
+            }
+          },
           features: {
             zoom: true,
             fonts: true,

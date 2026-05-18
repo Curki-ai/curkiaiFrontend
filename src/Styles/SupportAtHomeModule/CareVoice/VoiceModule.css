@@ -2472,6 +2472,45 @@
 .carevoice-staff-container .record-conversation {
   width: 100%;
   padding: 0 clamp(16px, 2vw, 32px);
+  /* Title block sits at the left of the header row; the absolutely-
+     positioned .vm-rec-header-right (Combine switch + Selected pill)
+     keeps its own anchor on the right. */
+  justify-content: flex-start;
+}
+
+.carevoice-staff-container .vm-rec-conv-title {
+  /* Text centered inside the block so the title sits visually centered
+     above the rec-circle in both layouts. */
+  text-align: center;
+  /* Cap at the recorder column's max-width so the block matches the
+     rec-circle column's horizontal footprint. */
+  width: 100%;
+  max-width: 460px;
+  /* Mirror the body row's centered horizontal layout so the title
+     block's left edge aligns with the rec-circle column's left edge.
+     1154px ≈ recorder(520) + gap(~27) + or-divider(~60) + gap(~27) +
+     upload(520) at desktop widths; below that the calc clamps to 0. */
+  /* margin-left: max(0px, calc((100% - 1154px) / 2));
+  margin-right: 10px; */
+}
+
+/* Stacked layout (below the side-by-side breakpoint) — rec-circle is
+   centered on the page, so center the title block on the page too. */
+@media (max-width: 1023px) {
+  .carevoice-staff-container .vm-rec-conv-title {
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+
+.carevoice-staff-container .vm-rec-conv-title h2 {
+  margin: 0;
+  font-weight: 600;
+}
+
+.carevoice-staff-container .vm-rec-conv-title p {
+  margin-top: 6px;
+  color: #6b7280;
 }
 
 .carevoice-staff-container .record-conversation h2 {
@@ -2744,6 +2783,7 @@
   box-shadow: 0 6px 16px rgba(108, 76, 220, 0.22);
   transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease;
   cursor: pointer;
+  margin: auto;
 }
 
 .carevoice-staff-container .staff-primary:hover:not(:disabled) {
@@ -2769,6 +2809,7 @@
   opacity: 0.7;
   box-shadow: none;
   transform: none;
+  margin: auto;
 }
 
 /* --- OUTLINE CTA: clean white with purple-tinted border --- */
@@ -2887,6 +2928,137 @@
   .carevoice-staff-container .staff-outline:hover:not(:disabled),
   .carevoice-staff-container .selectedtemplatebtn:hover {
     transform: none;
+  }
+}
+
+/* ============================================================
+   STAFF: Record + Upload single-row layout
+   Default (≥1024px): record and upload sit side by side with a
+   vertical OR divider between them — no page scroll.
+   Below 1024px: stack vertically with the original horizontal OR.
+   When actively recording / paused / preview, the wrapper carries
+   .recorder-only and the recorder takes the full width as before.
+   ============================================================ */
+
+.carevoice-staff-container .staff-record-upload-row {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(16px, 1.6vw, 28px);
+}
+
+.carevoice-staff-container .staff-record-upload-row.recorder-only {
+  flex: 1 1 auto;
+  justify-content: center;
+}
+
+.carevoice-staff-container .staff-record-upload-row.has-upload .staff-recorder {
+  width: 100%;
+}
+
+.carevoice-staff-container .staff-record-upload-row.has-upload .voice-upload-col {
+  width: 100%;
+}
+
+@media (min-width: 1024px) {
+  /* Prevent the container from forcing a tall min-height that pushes
+     the page to scroll once the two columns are side-by-side. */
+  .carevoice-staff-container {
+    min-height: 0;
+  }
+
+  .carevoice-staff-container .staff-record-upload-row.has-upload {
+    flex-direction: row;
+    /* flex-end aligns both columns by their BOTTOM edges, so the Start
+       Recording and Generate Document buttons share a baseline regardless
+       of how tall each column's content is. No stretch = no wasted vertical
+       gap inside either column → equal space appears below each button. */
+    align-items: flex-end;
+    justify-content: center;
+    gap: clamp(16px, 1.8vw, 36px);
+    /* Minimal vertical padding — the container already sets its own
+       padding, and adding more here was pushing the page into scroll. */
+    padding-top: clamp(8px, 0.8vw, 16px);
+    padding-bottom: clamp(8px, 0.8vw, 16px);
+  }
+
+  .carevoice-staff-container .staff-record-upload-row.has-upload .staff-recorder {
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: 520px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .carevoice-staff-container .staff-record-upload-row.has-upload .voice-upload-col {
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: 520px;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  /* Rec-circle sized to roughly match the upload card's natural height
+     so the circle's top and bottom edges line up with the upload box.
+     Wrapper matches the circle (no overhang) so the visible lottie
+     fills the circle's bounding box exactly — necessary for the top
+     and bottom edges to read as aligned with the upload card. */
+  .carevoice-staff-container .staff-record-upload-row.has-upload .staff-rec-circle,
+  .carevoice-staff-container .staff-record-upload-row.has-upload .staff-recording-wrapper {
+    width: clamp(240px, 18vw, 280px);
+    height: clamp(240px, 18vw, 280px);
+  }
+
+  .carevoice-staff-container .staff-record-upload-row.has-upload .staff-rec-circle {
+    /* Removed: no bottom margin so the recorder column's total height
+       matches the upload column's (circle + same gap + button). */
+    margin-bottom: 0;
+  }
+
+  /* Same gap below the circle as below the upload box — keeps both CTAs
+     on the same baseline now that the columns share total height. */
+  .carevoice-staff-container .staff-record-upload-row.has-upload .staff-rec-actions {
+    margin-top: clamp(16px, 1.2vw, 24px);
+  }
+
+  /* Vertical OR divider between the two columns. */
+  .carevoice-staff-container .staff-record-upload-row.has-upload .staff-or-divider {
+    flex-direction: column;
+    width: auto;
+    max-width: none;
+    margin: 0;
+    align-self: stretch;
+    justify-content: center;
+    gap: 14px;
+  }
+
+  .carevoice-staff-container .staff-record-upload-row.has-upload .staff-or-divider .voice-or-line {
+    width: 1px;
+    height: auto;
+    min-height: 80px;
+    flex: 1 1 auto;
+    background: linear-gradient(180deg, transparent 0%, #e0dff0 50%, transparent 100%);
+    border: 0;
+  }
+
+  /* Generate Document wrapper — tight gap below the upload box, centered
+     horizontally (overrides the inline textAlign:right + 64px bottom
+     margin). Tight gap keeps the column compact instead of leaving dead
+     space between the upload area and the CTA. */
+  .carevoice-staff-container .staff-record-upload-row.has-upload .voice-upload-col > div:last-child[style] {
+    margin-top: clamp(16px, 1.2vw, 24px) !important;
+    margin-bottom: 0 !important;
+    text-align: center !important;
+  }
+}
+
+/* ---------- Below 1024px: stacked layout retains existing look ---------- */
+@media (max-width: 1023.98px) {
+  .carevoice-staff-container .staff-record-upload-row {
+    gap: clamp(16px, 2vw, 28px);
   }
 }
 
@@ -4661,4 +4833,119 @@
   .cv-markdown td {
     padding: 10px 12px;
   }
+}
+
+/* Wraps the "Combine transcripts" switch + the existing "Selected" pill so
+   they share a single absolute anchor on the right side of the staff
+   "Record Conversation" header. Inheriting the old absolute coords from
+   .selectedtemplatebtn keeps responsive parity. */
+.vm-rec-header-right {
+  position: absolute;
+  right: 32px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.vm-rec-header-right .selectedtemplatebtn {
+  position: static;
+  right: auto;
+}
+
+.carevoice-staff-container .vm-rec-header-right {
+  right: clamp(16px, 1.5vw, 40px);
+}
+
+@media (max-width: 1100px) {
+  .vm-rec-header-right {
+    top: 13px;
+    right: 16px;
+  }
+}
+
+@media (max-width: 768px) {
+  .vm-rec-header-right {
+    right: 0;
+    top: 5px;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+  }
+}
+
+.vm-combine-switch {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.vm-combine-switch-label {
+  font-size: 14px;
+  font-weight: 500;
+  font-family: Inter, sans-serif;
+  color: #1f2937;
+  white-space: nowrap;
+}
+
+.vm-combine-info-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  line-height: 0;
+  outline: none;
+}
+
+.vm-combine-info-icon:focus-visible {
+  outline: 2px solid #5B36E1;
+  outline-offset: 2px;
+  border-radius: 50%;
+}
+
+.vm-combine-info-tooltip {
+  font-family: Inter, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  text-align: left;
+  padding: 4px 2px;
+}
+
+.vm-combine-info-tooltip-line {
+  margin: 0 0 8px 0;
+}
+
+.vm-combine-info-tooltip-line:last-child {
+  margin-bottom: 0;
+}
+
+.vm-combine-switch-track {
+  width: 40px;
+  height: 22px;
+  border-radius: 20px;
+  background: #E5E7EB;
+  display: flex;
+  align-items: center;
+  padding: 2px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  border: none;
+  appearance: none;
+  outline: none;
+}
+
+.vm-combine-switch-track.is-on {
+  background: #6C4CDC;
+}
+
+.vm-combine-switch-knob {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.2s ease;
+  display: block;
+}
+
+.vm-combine-switch-track.is-on .vm-combine-switch-knob {
+  transform: translateX(18px);
 }

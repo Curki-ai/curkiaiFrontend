@@ -153,28 +153,22 @@
   z-index: 100;
 }
 
-/* SuperDoc renders an inner wrapper inside .superdoc-toolbar — give
-   that wrapper the horizontal scroll so the visible toolbar buttons
-   can still scroll, while the parent stays overflow:visible for menus. */
-.superdoc-toolbar > div {
-  overflow-x: auto;
+/* Wrap toolbar controls onto a second row instead of a kebab — paired with modules.toolbar.hideButtons:false in FilePreviewModal.js. The double-class selector beats the library's Vue-scoped `[data-v-…]` specificity so flex-start actually overrides its `space-between`. */
+.superdoc-toolbar > div.superdoc-toolbar {
   overflow-y: visible;
-  scrollbar-width: thin;
-  white-space: nowrap;
+  flex-wrap: wrap;
+  row-gap: 4px;
+  justify-content: flex-start;
 }
 
-.superdoc-toolbar > div::-webkit-scrollbar {
-  height: 6px;
+/* Dissolve the left/center/right group boxes so all controls share one wrapping flow — otherwise the small right group strands on its own row with empty space around it. */
+.superdoc-toolbar > div.superdoc-toolbar .button-group {
+  display: contents;
 }
 
-.superdoc-toolbar > div::-webkit-scrollbar-thumb {
-  background: #cfcfcf;
-  border-radius: 10px;
-}
-
-/* Keep toolbar content in single row */
-.superdoc-toolbar > * {
-  white-space: nowrap;
+/* Hide library-rendered toolbar separators — with items wrapping freely, a separator can end up first on a wrapped row as a lone vertical bar. */
+.superdoc-toolbar .toolbar-separator {
+  display: none;
 }
 
 /* Toolbar dropdowns / popovers rendered within the toolbar must paint
