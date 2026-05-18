@@ -2191,10 +2191,91 @@ const VoiceModule = (props) => {
         let totalDocsExpected = 0;
         let docsGeneratedSoFar = 0;
 
+        // Pre-transcribe step: when combine mode is on AND at least one
+        // media file is in the upload, transcribe every media file first
+        // via /process-recording (templates=[] so it just returns text),
+        // then wrap each transcript as an in-memory .txt File. Those text
+        // files are merged with the doc files into `filesToProcess`, so
+        // the combined-doc branch below can batch them into one
+        // /document-filler call per template with mode=single. Without
+        // this step the media-vs-doc split would generate two separate
+        // sets of docs, each filled from only half the source material.
+        let filesToProcess = uploadedTranscriptFiles;
+        const mediaSourceFiles = uploadedTranscriptFiles.filter(
+            (f) => isAudioFile(f) || isVideoFile(f)
+        );
+        const docSourceFiles = uploadedTranscriptFiles.filter(
+            (f) => !isAudioFile(f) && !isVideoFile(f)
+        );
+        const totalSources = mediaSourceFiles.length + docSourceFiles.length;
+        const shouldPreTranscribeMedia =
+            transcriptMergeMode === "single" &&
+            mediaSourceFiles.length > 0 &&
+            totalSources > 1;
+
+        if (shouldPreTranscribeMedia) {
+            try {
+                setCurrentTask("Transcribing media files");
+                const transcribeForm = new FormData();
+                for (const f of mediaSourceFiles) {
+                    transcribeForm.append("audio", f, f.name);
+                }
+                // Empty templates array → /process-recording skips
+                // document generation and just returns transcripts.
+                transcribeForm.append("templates", JSON.stringify([]));
+                transcribeForm.append("userEmail", userEmail || "");
+                transcribeForm.append("staffEmail", staffEmail || "");
+                transcribeForm.append("staffName", staffName || "");
+                // Pass the mode through purely for log/observability parity
+                // — the controller skips doc generation when templates=[],
+                // so the value has no effect on what's returned.
+                transcribeForm.append("mode", "single");
+
+                const transRes = await fetch(
+                    `${API_BASE}/api/process-recording`,
+                    { method: "POST", body: transcribeForm }
+                );
+                const transData = await transRes.json();
+
+                const transcribedFiles = (transData?.transcripts || [])
+                    .map((t, i) => {
+                        const text = (t?.text || "").trim();
+                        if (!text) return null;
+                        const sourceName =
+                            t?.fileName || mediaSourceFiles[i]?.name || `media_${i}`;
+                        const baseName = sourceName.replace(/\.[^/.]+$/, "");
+                        return new File(
+                            [text],
+                            `${baseName}_transcript.txt`,
+                            { type: "text/plain" }
+                        );
+                    })
+                    .filter(Boolean);
+
+                if (transcribedFiles.length === 0) {
+                    throw new Error("No usable transcripts produced from media files");
+                }
+
+                filesToProcess = [...transcribedFiles, ...docSourceFiles];
+                setCurrentTask("Generating documents");
+            } catch (err) {
+                console.error("Pre-transcription failed:", err);
+                toast.error("Failed to transcribe media files");
+                setIsGeneratingFile(false);
+                setFileStage(null);
+                if (setIsCareVoiceGeneratingDocs) setIsCareVoiceGeneratingDocs(false);
+                if (setIsCareVoiceLocked) setIsCareVoiceLocked(false);
+                setCurrentTask("");
+                return;
+            }
+        }
+
         // mode=single only kicks in when there are 2+ non-media files to
         // combine. With a single file the toggle is a no-op, so we fall back
         // to the legacy per-file path to avoid an unnecessary code branch.
-        const nonMediaFilesCount = uploadedTranscriptFiles.filter(
+        // After the pre-transcribe step above, any media file is already a
+        // .txt File so this count covers the merged set.
+        const nonMediaFilesCount = filesToProcess.filter(
             (f) => !isAudioFile(f) && !isVideoFile(f)
         ).length;
         const useSingleMode =
@@ -2202,7 +2283,7 @@ const VoiceModule = (props) => {
         let singleModeDocsProcessed = false;
 
         // Calculate total operations
-        const totalOperations = uploadedTranscriptFiles.length;
+        const totalOperations = filesToProcess.length;
         let completedOperations = 0;
         let hasError = false;
         const docsToSend = [];
@@ -2248,7 +2329,7 @@ const VoiceModule = (props) => {
         };
 
         // Process each file with ALL templates in ONE API call
-        for (const file of uploadedTranscriptFiles) {
+        for (const file of filesToProcess) {
             try {
                 // console.log(`Processing file: ${file.name} with ${selectedTemplate.templates.length} templates`);
 
@@ -2381,7 +2462,7 @@ const VoiceModule = (props) => {
                     } else {
                         singleModeDocsProcessed = true;
 
-                        const docFiles = uploadedTranscriptFiles.filter(
+                        const docFiles = filesToProcess.filter(
                             (f) => !isAudioFile(f) && !isVideoFile(f)
                         );
 
@@ -3609,7 +3690,7 @@ const VoiceModule = (props) => {
                                             <div className="vm-combine-info-tooltip">
                                                 {transcriptMergeMode === "single" ? (
                                                     <p className="vm-combine-info-tooltip-line">
-                                                        <strong>ON:</strong> All uploaded transcript files are merged into one combined transcript per form. Use this when several files belong to the same person (interview notes, call transcripts, etc.).
+                                                        <strong>ON:</strong> All uploaded documents, audio and video will be combined together to fill the forms. Example: use this when all uploaded files belong to one person.
                                                     </p>
                                                 ) : (
                                                     <p className="vm-combine-info-tooltip-line">

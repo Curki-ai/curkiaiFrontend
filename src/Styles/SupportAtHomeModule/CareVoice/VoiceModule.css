@@ -4864,11 +4864,25 @@
 }
 
 @media (max-width: 768px) {
+  /* On small screens drop the header-right group out of absolute
+     positioning and let it stack above the title in normal flow —
+     prevents the Selected pill / Combine switch from overlapping the
+     "Record Conversation" text. */
   .vm-rec-header-right {
-    right: 0;
-    top: 5px;
+    position: static;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-end;
+    width: 100%;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+  }
+
+  /* Stack the title under the now-static header-right group. */
+  .carevoice-staff-container .record-conversation {
     flex-direction: column;
-    align-items: flex-end;
+    align-items: stretch;
     gap: 8px;
   }
 }
@@ -4912,6 +4926,12 @@
 
 .vm-combine-info-tooltip-line {
   margin: 0 0 8px 0;
+  /* Allow long slash-joined tokens like "documents/audio/video" to
+     break across lines instead of forcing the whole token to wrap to
+     the next line (which leaves an awkward gap at the end of the
+     previous line). */
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .vm-combine-info-tooltip-line:last-child {
