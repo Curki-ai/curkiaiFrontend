@@ -2472,34 +2472,21 @@
 .carevoice-staff-container .record-conversation {
   width: 100%;
   padding: 0 clamp(16px, 2vw, 32px);
-  /* Title block sits at the left of the header row; the absolutely-
-     positioned .vm-rec-header-right (Combine switch + Selected pill)
-     keeps its own anchor on the right. */
-  justify-content: flex-start;
+  justify-content: center;
 }
 
 .carevoice-staff-container .vm-rec-conv-title {
-  /* Text centered inside the block so the title sits visually centered
-     above the rec-circle in both layouts. */
   text-align: center;
-  /* Cap at the recorder column's max-width so the block matches the
-     rec-circle column's horizontal footprint. */
   width: 100%;
-  max-width: 460px;
-  /* Mirror the body row's centered horizontal layout so the title
-     block's left edge aligns with the rec-circle column's left edge.
-     1154px ≈ recorder(520) + gap(~27) + or-divider(~60) + gap(~27) +
-     upload(520) at desktop widths; below that the calc clamps to 0. */
-  /* margin-left: max(0px, calc((100% - 1154px) / 2));
-  margin-right: 10px; */
+  max-width: 520px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
-/* Stacked layout (below the side-by-side breakpoint) — rec-circle is
-   centered on the page, so center the title block on the page too. */
-@media (max-width: 1023px) {
+@media (min-width: 1024px) {
   .carevoice-staff-container .vm-rec-conv-title {
-    margin-left: auto;
-    margin-right: auto;
+    margin-left: 0;
+    margin-right: calc(520px + clamp(16px, 1.8vw, 36px));
   }
 }
 
@@ -2527,14 +2514,14 @@
 }
 
 .carevoice-staff-container .staff-rec-circle {
-  width: clamp(190px, 19vw, 300px);
-  height: clamp(190px, 19vw, 300px);
+  width: clamp(320px, 32vw, 520px);
+  height: clamp(320px, 32vw, 520px);
   margin-bottom: 20px
 }
 
 .carevoice-staff-container .staff-recording-wrapper {
-  width: clamp(320px, 25vw, 500px);
-  height: clamp(320px, 25vw, 500px);
+  width: clamp(480px, 38vw, 740px);
+  height: clamp(480px, 38vw, 740px);
 }
 
 .carevoice-staff-container .staff-recording-lottie {
@@ -2728,15 +2715,56 @@
 .carevoice-staff-container .staff-rec-circle::before {
   content: '';
   position: absolute;
-  inset: -22%;
+  inset: -50%;
   border-radius: 50%;
+  background: radial-gradient(circle,
+      rgba(108, 76, 220, 0.10) 0%,
+      rgba(108, 76, 220, 0.03) 55%,
+      transparent 80%);
+  z-index: 0;
+  pointer-events: none;
+  animation: rec-halo 4s ease-in-out infinite;
+}
+
+.carevoice-staff-container .staff-rec-circle::after {
+  content: '';
+  position: absolute;
+  inset: -3%;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  border-top-color: rgba(124, 58, 237, 0.95);
+  border-right-color: rgba(167, 139, 250, 0.55);
+  box-shadow: 0 0 12px rgba(124, 58, 237, 0.25);
+  z-index: 2;
+  pointer-events: none;
+  animation: rec-revolve 4s linear infinite;
+}
+
+/* Recording / paused state — revert the rec-circle treatment to its
+   original (pre-idle-refresh) look: smaller container, original halo
+   footprint, no revolving accent ring. The presence of
+   .staff-recording-timer identifies recording/paused since the idle
+   variant of the wrapper does not render that node. */
+.carevoice-staff-container .staff-rec-circle:has(.staff-recording-timer) {
+  width: clamp(190px, 19vw, 300px);
+  height: clamp(190px, 19vw, 300px);
+}
+
+.carevoice-staff-container .staff-rec-circle:has(.staff-recording-timer) .staff-recording-wrapper {
+  width: clamp(320px, 25vw, 500px);
+  height: clamp(320px, 25vw, 500px);
+}
+
+.carevoice-staff-container .staff-rec-circle:has(.staff-recording-timer)::before {
+  inset: -22%;
   background: radial-gradient(circle,
       rgba(108, 76, 220, 0.12) 0%,
       rgba(108, 76, 220, 0.04) 50%,
       transparent 72%);
-  z-index: 0;
-  pointer-events: none;
-  animation: rec-halo 4s ease-in-out infinite;
+}
+
+.carevoice-staff-container .staff-rec-circle:has(.staff-recording-timer)::after {
+  display: none;
 }
 
 .carevoice-staff-container .staff-recording-wrapper {
@@ -2766,6 +2794,16 @@
   50% {
     opacity: 1;
     transform: scale(1.05);
+  }
+}
+
+@keyframes rec-revolve {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
   }
 }
 
@@ -2914,7 +2952,8 @@
 
 /* --- Respect reduced-motion preferences --- */
 @media (prefers-reduced-motion: reduce) {
-  .carevoice-staff-container .staff-rec-circle::before {
+  .carevoice-staff-container .staff-rec-circle::before,
+  .carevoice-staff-container .staff-rec-circle::after {
     animation: none;
   }
 
@@ -2948,6 +2987,14 @@
   gap: clamp(16px, 1.6vw, 28px);
 }
 
+/* Generate Document button wrapper — mirrors the Start Recording wrapper's
+   spacing so the two CTAs share equal upper/lower margins. */
+.carevoice-staff-container .generate-doc-btn-wrapper {
+  text-align: right;
+  margin-top: 24px;
+  margin-bottom: 24px;
+}
+
 .carevoice-staff-container .staff-record-upload-row.recorder-only {
   flex: 1 1 auto;
   justify-content: center;
@@ -2962,6 +3009,7 @@
 }
 
 @media (min-width: 1024px) {
+
   /* Prevent the container from forcing a tall min-height that pushes
      the page to scroll once the two columns are side-by-side. */
   .carevoice-staff-container {
@@ -3024,10 +3072,18 @@
     margin-bottom: 0;
   }
 
-  /* Same gap below the circle as below the upload box — keeps both CTAs
-     on the same baseline now that the columns share total height. */
+  /* Mirror the Generate Document wrapper's top/bottom margins so the
+     Start Recording button and Generate Document button share equal
+     upper and lower spacing — both CTAs read as mirror images across
+     the OR divider. */
   .carevoice-staff-container .staff-record-upload-row.has-upload .staff-rec-actions {
     margin-top: clamp(16px, 1.2vw, 24px);
+    margin-bottom: clamp(16px, 1.2vw, 24px);
+  }
+
+  .carevoice-staff-container .staff-record-upload-row.has-upload .generate-doc-btn-wrapper {
+    margin-top: clamp(16px, 1.2vw, 24px);
+    margin-bottom: clamp(16px, 1.2vw, 24px);
   }
 
   /* Vertical OR divider between the two columns. */
@@ -3054,7 +3110,7 @@
      horizontally (overrides the inline textAlign:right + 64px bottom
      margin). Tight gap keeps the column compact instead of leaving dead
      space between the upload area and the CTA. */
-  .carevoice-staff-container .staff-record-upload-row.has-upload .voice-upload-col > div:last-child[style] {
+  .carevoice-staff-container .staff-record-upload-row.has-upload .voice-upload-col>div:last-child[style] {
     margin-top: clamp(16px, 1.2vw, 24px) !important;
     margin-bottom: 0 !important;
     text-align: center !important;
@@ -4870,6 +4926,7 @@
 }
 
 @media (max-width: 768px) {
+
   /* On small screens drop the header-right group out of absolute
      positioning and let it stack above the title in normal flow —
      prevents the Selected pill / Combine switch from overlapping the
