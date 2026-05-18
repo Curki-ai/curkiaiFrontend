@@ -145,10 +145,6 @@ const VoiceModule = (props) => {
     const mediaStreamRef = useRef(null);
     const audioContextRef = useRef(null);
     const audioChunksRef = useRef([]);
-    // Ref on the staff record+upload row so we can read the upload card's
-    // rendered height and mirror it onto the rec-circle (keeps the two
-    // boxes the same height without touching TlcUploadBox CSS).
-    const recorderUploadRowRef = useRef(null);
     const audioRef = useRef(null);
     const [audioURL, setAudioURL] = useState(null);
     const [recordTime, setRecordTime] = useState(0);
@@ -878,30 +874,6 @@ const VoiceModule = (props) => {
             audio.removeEventListener("ended", handleEnded);
         };
     }, [audioURL]);
-    // Mirror the upload card's rendered height onto the rec-circle via a
-    // CSS variable so the two boxes stay the same height regardless of
-    // viewport or upload-card content size. ResizeObserver re-fires on
-    // viewport resize, content reflow, etc. CSS uses the var with a
-    // clamp() fallback for the period before the first measurement.
-    useEffect(() => {
-        const row = recorderUploadRowRef.current;
-        if (!row) return;
-        const uploadCard = row.querySelector(".data-upload-card");
-        if (!uploadCard) return;
-
-        const sync = () => {
-            const h = uploadCard.getBoundingClientRect().height;
-            if (h > 0) {
-                row.style.setProperty("--cv-circle-size", `${Math.round(h)}px`);
-            }
-        };
-        sync();
-
-        const ro = new ResizeObserver(sync);
-        ro.observe(uploadCard);
-        return () => ro.disconnect();
-    }, [staffStep, recordMode, role, selectedTemplate]);
-
     // Add this useEffect to clear audio when files are uploaded
     useEffect(() => {
         if (clearAudioOnFileUpload && uploadedTranscriptFiles.length > 0) {
@@ -3714,48 +3686,6 @@ const VoiceModule = (props) => {
                         {/* RIGHT */}
                         {selectedTemplate && (
                             <div className="vm-rec-header-right">
-                                <div className="vm-combine-switch">
-                                    <Tippy
-                                        content={
-                                            <div className="vm-combine-info-tooltip">
-                                                {transcriptMergeMode === "single" ? (
-                                                    <p className="vm-combine-info-tooltip-line">
-                                                        <strong>ON:</strong> All uploaded documents, audio and video will be combined together to fill the forms. Example: use this when all uploaded files belong to one person.
-                                                    </p>
-                                                ) : (
-                                                    <p className="vm-combine-info-tooltip-line">
-                                                        <strong>OFF (default):</strong> Each transcript file is processed separately against every selected form.
-                                                    </p>
-                                                )}
-                                            </div>
-                                        }
-                                        trigger="mouseenter focus click"
-                                        interactive={true}
-                                        placement="top"
-                                        maxWidth={320}
-                                        zIndex={9999}
-                                        appendTo={() => document.body}
-                                    >
-                                        <span className="vm-combine-info-icon" tabIndex={0} aria-label="What does Combine documents do?">
-                                            <IoMdInformationCircleOutline size={18} color="#5B36E1" />
-                                        </span>
-                                    </Tippy>
-                                    <span className="vm-combine-switch-label">Combine documents</span>
-                                    <button
-                                        type="button"
-                                        role="switch"
-                                        aria-checked={transcriptMergeMode === "single"}
-                                        aria-label="Combine multiple transcripts into one"
-                                        className={`vm-combine-switch-track${transcriptMergeMode === "single" ? " is-on" : ""}`}
-                                        onClick={() =>
-                                            setTranscriptMergeMode(
-                                                transcriptMergeMode === "single" ? "multiple" : "single"
-                                            )
-                                        }
-                                    >
-                                        <span className="vm-combine-switch-knob" />
-                                    </button>
-                                </div>
                                 <div className="selectedtemplatebtn" onClick={() => setStaffStep("selectTemplate")}>
                                     {/* LEFT DOC ICON */}
                                     <img
@@ -3826,7 +3756,6 @@ const VoiceModule = (props) => {
                     </div>
 
                     <div
-                        ref={recorderUploadRowRef}
                         className={`staff-record-upload-row ${!["recording", "paused", "preview"].includes(recordMode)
                             ? "has-upload"
                             : "recorder-only"
@@ -3844,7 +3773,7 @@ const VoiceModule = (props) => {
 
                             {/* ===== TIMER CIRCLE ===== */}
                             {(recordMode === "idle" || recordMode === "recording" || recordMode === "paused") && (
-                                <div className="staff-rec-circle">
+                                <div className={`staff-rec-circle ${recordMode === "idle" ? "is-before-recording" : ""}`}>
                                     {recordMode === "recording" || recordMode === "paused" ? (
                                         <div className="staff-recording-wrapper">
                                             <Lottie
@@ -4009,8 +3938,52 @@ const VoiceModule = (props) => {
                             <span className="voice-or-text">Or</span>
                             <span className="voice-or-line" />
                         </div>}
-
+                        {!["recording", "paused", "preview"].includes(recordMode) && selectedTemplate && (
+                            <div className="vm-combine-switch">
+                                <Tippy
+                                    content={
+                                        <div className="vm-combine-info-tooltip">
+                                            {transcriptMergeMode === "single" ? (
+                                                <p className="vm-combine-info-tooltip-line">
+                                                    <strong>ON:</strong> All uploaded documents, audio and video will be combined together to fill the forms. Example: use this when all uploaded files belong to one person.
+                                                </p>
+                                            ) : (
+                                                <p className="vm-combine-info-tooltip-line">
+                                                    <strong>OFF (default):</strong> Each transcript file is processed separately against every selected form.
+                                                </p>
+                                            )}
+                                        </div>
+                                    }
+                                    trigger="mouseenter focus click"
+                                    interactive={true}
+                                    placement="top"
+                                    maxWidth={320}
+                                    zIndex={9999}
+                                    appendTo={() => document.body}
+                                >
+                                    <span className="vm-combine-info-icon" tabIndex={0} aria-label="What does Combine documents do?">
+                                        <IoMdInformationCircleOutline size={18} color="#5B36E1" />
+                                    </span>
+                                </Tippy>
+                                <span className="vm-combine-switch-label">Single documents</span>
+                                <button
+                                    type="button"
+                                    role="switch"
+                                    aria-checked={transcriptMergeMode === "single"}
+                                    aria-label="Combine multiple transcripts into one"
+                                    className={`vm-combine-switch-track${transcriptMergeMode === "single" ? " is-on" : ""}`}
+                                    onClick={() =>
+                                        setTranscriptMergeMode(
+                                            transcriptMergeMode === "single" ? "multiple" : "single"
+                                        )
+                                    }
+                                >
+                                    <span className="vm-combine-switch-knob" />
+                                </button>
+                            </div>
+                        )}
                         {!["recording", "paused", "preview"].includes(recordMode) && <div className="voice-upload-col">
+
                             <TlcUploadBox
                                 id="staff-transcript-upload"
                                 title="Upload Transcript"
