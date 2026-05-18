@@ -3703,11 +3703,13 @@ const VoiceModule = (props) => {
             {role === "Staff" && !showGeneratedFilesUI && staffStep === "working" && (
                 <div className="carevoice-staff-container">
                     <div className="record-conversation">
-                        {/* LEFT */}
-                        <div className="vm-rec-conv-title">
-                            <h2>Record Conversation</h2>
-                            <p>Start recording to fill your selected template</p>
-                        </div>
+                        {/* LEFT — only visible before recording starts */}
+                        {!["recording", "paused"].includes(recordMode) && (
+                            <div className="vm-rec-conv-title">
+                                <h2>Record Conversation</h2>
+                                <p>Start recording to fill your selected template</p>
+                            </div>
+                        )}
 
                         {/* RIGHT */}
                         {selectedTemplate && (
@@ -4025,7 +4027,7 @@ const VoiceModule = (props) => {
                             />
 
                             {/* ✅ GENERATE DOCUMENT BUTTON (PUT BACK) */}
-                            <div style={{ textAlign: "right", marginTop: "24px", marginBottom: '64px' }}>
+                            <div className="generate-doc-btn-wrapper">
                                 <button
                                     className="staff-primary"
                                     onClick={
