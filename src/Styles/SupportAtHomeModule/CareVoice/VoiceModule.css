@@ -3001,15 +3001,21 @@
     align-items: stretch;
   }
 
-  /* Rec-circle sized to roughly match the upload card's natural height
-     so the circle's top and bottom edges line up with the upload box.
-     Wrapper matches the circle (no overhang) so the visible lottie
-     fills the circle's bounding box exactly — necessary for the top
-     and bottom edges to read as aligned with the upload card. */
-  .carevoice-staff-container .staff-record-upload-row.has-upload .staff-rec-circle,
+  /* Rec-circle layout box mirrors the upload card's height (set by the
+     ResizeObserver in JS via --cv-circle-size). The lottie wrapper is
+     scaled by 1/0.657 ≈ 1.52× because the visible ring inside the lottie
+     (stroked ellipse ~131px in a 200px canvas) only fills ~65.7% of its
+     canvas — so a 1.52× wrapper makes the visible ring diameter equal
+     the upload box height. Clamp() fallback applies for the first paint
+     before the ResizeObserver fires. */
+  .carevoice-staff-container .staff-record-upload-row.has-upload .staff-rec-circle {
+    width: var(--cv-circle-size, clamp(270px, 18vw, 280px));
+    height: var(--cv-circle-size, clamp(270px, 18vw, 280px));
+  }
+
   .carevoice-staff-container .staff-record-upload-row.has-upload .staff-recording-wrapper {
-    width: clamp(240px, 18vw, 280px);
-    height: clamp(240px, 18vw, 280px);
+    width: calc(var(--cv-circle-size, clamp(270px, 18vw, 280px)) * 1.52);
+    height: calc(var(--cv-circle-size, clamp(270px, 18vw, 280px)) * 1.52);
   }
 
   .carevoice-staff-container .staff-record-upload-row.has-upload .staff-rec-circle {

@@ -145,6 +145,10 @@ const VoiceModule = (props) => {
     const mediaStreamRef = useRef(null);
     const audioContextRef = useRef(null);
     const audioChunksRef = useRef([]);
+    // Ref on the staff record+upload row so we can read the upload card's
+    // rendered height and mirror it onto the rec-circle (keeps the two
+    // boxes the same height without touching TlcUploadBox CSS).
+    const recorderUploadRowRef = useRef(null);
     const audioRef = useRef(null);
     const [audioURL, setAudioURL] = useState(null);
     const [recordTime, setRecordTime] = useState(0);
@@ -874,6 +878,30 @@ const VoiceModule = (props) => {
             audio.removeEventListener("ended", handleEnded);
         };
     }, [audioURL]);
+    // Mirror the upload card's rendered height onto the rec-circle via a
+    // CSS variable so the two boxes stay the same height regardless of
+    // viewport or upload-card content size. ResizeObserver re-fires on
+    // viewport resize, content reflow, etc. CSS uses the var with a
+    // clamp() fallback for the period before the first measurement.
+    useEffect(() => {
+        const row = recorderUploadRowRef.current;
+        if (!row) return;
+        const uploadCard = row.querySelector(".data-upload-card");
+        if (!uploadCard) return;
+
+        const sync = () => {
+            const h = uploadCard.getBoundingClientRect().height;
+            if (h > 0) {
+                row.style.setProperty("--cv-circle-size", `${Math.round(h)}px`);
+            }
+        };
+        sync();
+
+        const ro = new ResizeObserver(sync);
+        ro.observe(uploadCard);
+        return () => ro.disconnect();
+    }, [staffStep, recordMode, role, selectedTemplate]);
+
     // Add this useEffect to clear audio when files are uploaded
     useEffect(() => {
         if (clearAudioOnFileUpload && uploadedTranscriptFiles.length > 0) {
@@ -3796,6 +3824,7 @@ const VoiceModule = (props) => {
                     </div>
 
                     <div
+                        ref={recorderUploadRowRef}
                         className={`staff-record-upload-row ${!["recording", "paused", "preview"].includes(recordMode)
                             ? "has-upload"
                             : "recorder-only"
