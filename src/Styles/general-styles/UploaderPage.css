@@ -793,8 +793,15 @@ html,
   color: #6C4CDC;
 }
 
-.ask-ai-res-div ul {
-  margin-left: 30px;
+.ask-ai-res-div ul,
+.ask-ai-res-div ol {
+  padding-left: 32px;
+  margin: 8px 0;
+}
+
+.ask-ai-res-div li {
+  padding-left: 4px;
+  margin-bottom: 4px;
 }
 
 .ask-ai-res-div::-webkit-scrollbar {

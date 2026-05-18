@@ -58,6 +58,9 @@ import generatingDocAnimation from "../../../../Images/generatingDocAnimation.js
 import generatingDocAnimationVideo from "../../../../Images/generatingDocAnimationVideo.mp4"
 import PulsatingLoader from "../../../general-components/PulsatingLoader";
 import { RiSettingsLine } from "react-icons/ri";
+import Tippy from "@tippyjs/react";
+import "tippy.js/dist/tippy.css";
+import { IoMdInformationCircleOutline } from "react-icons/io";
 import CareVoiceAccessManagement from "./CareVoiceAccessManagement";
 import CareVoiceNoOrgEmptyState from "./CareVoiceNoOrgEmptyState";
 import adminLottie from "../../../../Images/adminPageLottie.json"
@@ -176,6 +179,9 @@ const VoiceModule = (props) => {
     const [staffStep, setStaffStep] = useState("landing");
     const [downloadingFileKey, setDownloadingFileKey] = useState(null);
     const [uploadedTranscriptFiles, setUploadedTranscriptFiles] = useState([]);
+    // "multiple" = legacy (one API call per file, only first transcript_data used server-side per call).
+    // "single" = combine all uploaded transcript files into one request per template.
+    const [transcriptMergeMode, setTranscriptMergeMode] = useState("multiple");
     const [currentTranscriptIndex, setCurrentTranscriptIndex] = useState(0);
     const [dropdownPos, setDropdownPos] = useState(null);
     const [isPromptEditing, setIsPromptEditing] = useState(false);
@@ -218,7 +224,7 @@ const VoiceModule = (props) => {
     // instantly when isCareVoiceGeneratingDocs flips on — otherwise the
     // browser does a cold fetch + buffer at the worst possible moment.
     useEffect(() => {
-        fetch(generatingDocAnimationVideo).catch(() => {});
+        fetch(generatingDocAnimationVideo).catch(() => { });
     }, []);
 
     const showGeneratingDocsVideo =
@@ -232,9 +238,9 @@ const VoiceModule = (props) => {
             video.load();
             const playPromise = video.play();
             if (playPromise && typeof playPromise.catch === "function") {
-                playPromise.catch(() => {});
+                playPromise.catch(() => { });
             }
-        } catch (_) {}
+        } catch (_) { }
     }, [showGeneratingDocsVideo]);
     // Add this function to handle file preview
     const handleFilePreview = (doc, index) => {
@@ -2100,6 +2106,63 @@ const VoiceModule = (props) => {
     };
 
 
+    // mode=single sibling of processSingleTranscriptWithTemplate: posts ALL
+    // transcript files in one request so the filler API can merge them into a
+    // single combined transcript before extraction.
+    const processCombinedTranscriptsWithTemplate = async (tpl, files) => {
+        const formData = new FormData();
+
+        formData.append("templateBlobName", tpl.templateBlobName);
+        formData.append("templateMimeType", tpl.templateMimeType);
+        formData.append("templateOriginalName", tpl.templateOriginalName);
+
+        formData.append(
+            "sampleBlobs",
+            JSON.stringify(tpl.sampleBlobs || [])
+        );
+
+        if (tpl.id) formData.append("templateId", tpl.id);
+        if (organizationId) formData.append("organizationId", organizationId);
+
+        formData.append("prompt", tpl.prompt);
+
+        const parsedJson = JSON.parse(tpl.mappings);
+        const normalizedMapper = {
+            ...parsedJson,
+            mapper: parsedJson?.mapper?.mapper ?? parsedJson?.mapper
+        };
+
+        formData.append("mapper", JSON.stringify(normalizedMapper));
+        formData.append("mode", "single");
+
+        for (const file of files) {
+            formData.append("transcript_data", file, file.name);
+        }
+
+        const res = await fetch(`${API_BASE}/api/document-filler`, {
+            method: "POST",
+            body: formData
+        });
+
+        const data = await res.json();
+
+        if (data.success && data.filled_document) {
+            const filename = `${tpl.templateName}_combined.docx`;
+            const doc = { filename, base64: data.filled_document, sasUrl: data?.sasUrl };
+            if (userEmail) {
+                await incrementCareVoiceAnalysisCount(
+                    userEmail,
+                    "document-generation",
+                    data?.llm_cost?.total_usd,
+                    "carevoice",
+                    data?.llm_cost?.token_usage
+                );
+            }
+            return doc;
+        }
+        return null;
+    };
+
     const submitMultipleTranscripts = async () => {
         setShowGeneratedFilesUI(true);
         if (setIsCareVoiceLocked) setIsCareVoiceLocked(true);
@@ -2128,8 +2191,99 @@ const VoiceModule = (props) => {
         let totalDocsExpected = 0;
         let docsGeneratedSoFar = 0;
 
+        // Pre-transcribe step: when combine mode is on AND at least one
+        // media file is in the upload, transcribe every media file first
+        // via /process-recording (templates=[] so it just returns text),
+        // then wrap each transcript as an in-memory .txt File. Those text
+        // files are merged with the doc files into `filesToProcess`, so
+        // the combined-doc branch below can batch them into one
+        // /document-filler call per template with mode=single. Without
+        // this step the media-vs-doc split would generate two separate
+        // sets of docs, each filled from only half the source material.
+        let filesToProcess = uploadedTranscriptFiles;
+        const mediaSourceFiles = uploadedTranscriptFiles.filter(
+            (f) => isAudioFile(f) || isVideoFile(f)
+        );
+        const docSourceFiles = uploadedTranscriptFiles.filter(
+            (f) => !isAudioFile(f) && !isVideoFile(f)
+        );
+        const totalSources = mediaSourceFiles.length + docSourceFiles.length;
+        const shouldPreTranscribeMedia =
+            transcriptMergeMode === "single" &&
+            mediaSourceFiles.length > 0 &&
+            totalSources > 1;
+
+        if (shouldPreTranscribeMedia) {
+            try {
+                setCurrentTask("Transcribing media files");
+                const transcribeForm = new FormData();
+                for (const f of mediaSourceFiles) {
+                    transcribeForm.append("audio", f, f.name);
+                }
+                // Empty templates array → /process-recording skips
+                // document generation and just returns transcripts.
+                transcribeForm.append("templates", JSON.stringify([]));
+                transcribeForm.append("userEmail", userEmail || "");
+                transcribeForm.append("staffEmail", staffEmail || "");
+                transcribeForm.append("staffName", staffName || "");
+                // Pass the mode through purely for log/observability parity
+                // — the controller skips doc generation when templates=[],
+                // so the value has no effect on what's returned.
+                transcribeForm.append("mode", "single");
+
+                const transRes = await fetch(
+                    `${API_BASE}/api/process-recording`,
+                    { method: "POST", body: transcribeForm }
+                );
+                const transData = await transRes.json();
+
+                const transcribedFiles = (transData?.transcripts || [])
+                    .map((t, i) => {
+                        const text = (t?.text || "").trim();
+                        if (!text) return null;
+                        const sourceName =
+                            t?.fileName || mediaSourceFiles[i]?.name || `media_${i}`;
+                        const baseName = sourceName.replace(/\.[^/.]+$/, "");
+                        return new File(
+                            [text],
+                            `${baseName}_transcript.txt`,
+                            { type: "text/plain" }
+                        );
+                    })
+                    .filter(Boolean);
+
+                if (transcribedFiles.length === 0) {
+                    throw new Error("No usable transcripts produced from media files");
+                }
+
+                filesToProcess = [...transcribedFiles, ...docSourceFiles];
+                setCurrentTask("Generating documents");
+            } catch (err) {
+                console.error("Pre-transcription failed:", err);
+                toast.error("Failed to transcribe media files");
+                setIsGeneratingFile(false);
+                setFileStage(null);
+                if (setIsCareVoiceGeneratingDocs) setIsCareVoiceGeneratingDocs(false);
+                if (setIsCareVoiceLocked) setIsCareVoiceLocked(false);
+                setCurrentTask("");
+                return;
+            }
+        }
+
+        // mode=single only kicks in when there are 2+ non-media files to
+        // combine. With a single file the toggle is a no-op, so we fall back
+        // to the legacy per-file path to avoid an unnecessary code branch.
+        // After the pre-transcribe step above, any media file is already a
+        // .txt File so this count covers the merged set.
+        const nonMediaFilesCount = filesToProcess.filter(
+            (f) => !isAudioFile(f) && !isVideoFile(f)
+        ).length;
+        const useSingleMode =
+            transcriptMergeMode === "single" && nonMediaFilesCount > 1;
+        let singleModeDocsProcessed = false;
+
         // Calculate total operations
-        const totalOperations = uploadedTranscriptFiles.length;
+        const totalOperations = filesToProcess.length;
         let completedOperations = 0;
         let hasError = false;
         const docsToSend = [];
@@ -2137,8 +2291,45 @@ const VoiceModule = (props) => {
         // console.log(`Starting processing of ${totalOperations} total operations`);
         // console.log(`Templates: ${selectedTemplate.templates.length}, Files: ${uploadedTranscriptFiles.length}`);
 
+        // Closes over the local counters/state so the parallel per-template
+        // branches below can share a single result-handler. Mutates the same
+        // docsToSend / generatedDocsSasUrls arrays the surrounding flow uses.
+        const handleGeneratedDoc = (doc) => {
+            if (!doc) return;
+
+            if (doc?.sasUrl) {
+                if (Array.isArray(doc.sasUrl)) {
+                    generatedDocsSasUrls.push(...doc.sasUrl);
+                } else {
+                    generatedDocsSasUrls.push(doc.sasUrl);
+                }
+            }
+            docsToSend.push(doc);
+
+            const byteCharacters = atob(doc.base64);
+            const byteNumbers = new Array(byteCharacters.length)
+                .fill(0)
+                .map((_, i) => byteCharacters.charCodeAt(i));
+            const byteArray = new Uint8Array(byteNumbers);
+            const fileObj = new File(
+                [byteArray],
+                doc.filename,
+                {
+                    type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                }
+            );
+            setCareVoiceFiles(prev => [...prev, fileObj]);
+
+            docsGeneratedSoFar++;
+            totalDocsExpected++;
+            if (setGeneratedCareVoiceDocsCount) setGeneratedCareVoiceDocsCount(docsGeneratedSoFar);
+            if (setTotalCareVoiceDocsToGenerate) setTotalCareVoiceDocsToGenerate(totalDocsExpected);
+            setDocsGeneratedCount(docsGeneratedSoFar);
+            setTotalDocsToGenerate(totalDocsExpected);
+        };
+
         // Process each file with ALL templates in ONE API call
-        for (const file of uploadedTranscriptFiles) {
+        for (const file of filesToProcess) {
             try {
                 // console.log(`Processing file: ${file.name} with ${selectedTemplate.templates.length} templates`);
 
@@ -2260,64 +2451,68 @@ const VoiceModule = (props) => {
                         }
                     }
                 }
+                else if (useSingleMode) {
+                    // Combined-transcript path: process ALL non-media files in
+                    // one batched call per template, only on the first
+                    // non-media iteration. Subsequent non-media iterations
+                    // fall through to the finally block to tick progress
+                    // (media iterations interleaved before/after still run).
+                    if (singleModeDocsProcessed) {
+                        // no-op; progress ticks in finally
+                    } else {
+                        singleModeDocsProcessed = true;
+
+                        const docFiles = filesToProcess.filter(
+                            (f) => !isAudioFile(f) && !isVideoFile(f)
+                        );
+
+                        // Fan out all templates in parallel. allSettled keeps a
+                        // single template's failure from cancelling the rest.
+                        const results = await Promise.allSettled(
+                            selectedTemplate.templates.map((tpl) =>
+                                processCombinedTranscriptsWithTemplate(tpl, docFiles)
+                            )
+                        );
+
+                        results.forEach((r, i) => {
+                            if (r.status === "fulfilled") {
+                                handleGeneratedDoc(r.value);
+                            } else {
+                                const tpl = selectedTemplate.templates[i];
+                                console.error(
+                                    `Error processing template ${tpl.id} with combined transcripts:`,
+                                    r.reason
+                                );
+                                hasError = true;
+                            }
+                        });
+                    }
+                }
                 else {
                     // For non-audio/video files (PDF, DOC, TXT, etc.)
                     console.log("Processing non-audio/video file:", file.name);
 
-                    for (const tpl of selectedTemplate.templates) {
-                        try {
-                            const doc = await processSingleTranscriptWithTemplate(tpl, file);
-                            console.log("doc", doc)
+                    // Fan out all templates for this file in parallel.
+                    // allSettled keeps a single template's failure from
+                    // cancelling the rest.
+                    const results = await Promise.allSettled(
+                        selectedTemplate.templates.map((tpl) =>
+                            processSingleTranscriptWithTemplate(tpl, file)
+                        )
+                    );
 
-                            if (doc) {
-                                if (doc?.sasUrl) {
-                                    if (Array.isArray(doc.sasUrl)) {
-                                        // If it's an array, spread it
-                                        generatedDocsSasUrls.push(...doc.sasUrl);
-                                    } else {
-                                        console.log("non media generatedDocsSasUrls.push", doc.sasUrl)
-                                        // If it's a single object, push it directly
-                                        generatedDocsSasUrls.push(doc.sasUrl);
-                                    }
-                                }
-                                docsToSend.push(doc);
-
-                                //CONVERT BASE64 → FILE (IMPORTANT)
-                                const byteCharacters = atob(doc.base64);
-                                const byteNumbers = new Array(byteCharacters.length)
-                                    .fill(0)
-                                    .map((_, i) => byteCharacters.charCodeAt(i));
-
-                                const byteArray = new Uint8Array(byteNumbers);
-
-                                const fileObj = new File(
-                                    [byteArray],
-                                    doc.filename,
-                                    {
-                                        type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                                    }
-                                );
-
-                                // ✅ ADD TO UI STATE (THIS WAS MISSING)
-                                setCareVoiceFiles(prev => [
-                                    ...prev,
-                                    fileObj
-                                ]);
-
-                                docsGeneratedSoFar++;
-                                totalDocsExpected++;
-
-                                if (setGeneratedCareVoiceDocsCount) setGeneratedCareVoiceDocsCount(docsGeneratedSoFar);
-                                if (setTotalCareVoiceDocsToGenerate) setTotalCareVoiceDocsToGenerate(totalDocsExpected);
-
-                                setDocsGeneratedCount(docsGeneratedSoFar);
-                                setTotalDocsToGenerate(totalDocsExpected);
-                            }
-                        } catch (err) {
-                            console.error(`Error processing template ${tpl.id} with file ${file.name}:`, err);
+                    results.forEach((r, i) => {
+                        if (r.status === "fulfilled") {
+                            handleGeneratedDoc(r.value);
+                        } else {
+                            const tpl = selectedTemplate.templates[i];
+                            console.error(
+                                `Error processing template ${tpl.id} with file ${file.name}:`,
+                                r.reason
+                            );
                             hasError = true;
                         }
-                    }
+                    });
                 }
             } catch (err) {
                 console.error("Error processing file:", file.name, err);
@@ -3481,79 +3676,119 @@ const VoiceModule = (props) => {
                 <div className="carevoice-staff-container">
                     <div className="record-conversation">
                         {/* LEFT */}
-                        <div style={{ textAlign: "center" }}>
-                            <h2 style={{ margin: 0, fontWeight: 600 }}>
-                                Record Conversation
-                            </h2>
-                            <p style={{ marginTop: "6px", color: "#6b7280" }}>
-                                Start recording to fill your selected template
-                            </p>
+                        <div className="vm-rec-conv-title">
+                            <h2>Record Conversation</h2>
+                            <p>Start recording to fill your selected template</p>
                         </div>
 
                         {/* RIGHT */}
                         {selectedTemplate && (
-                            <div className="selectedtemplatebtn" onClick={() => setStaffStep("selectTemplate")}>
-                                {/* LEFT DOC ICON */}
-                                <img
-                                    src={careVoiceStaffTemplateIcon}
-                                    alt="doc"
-                                    style={{ width: "20px", height: "20px" }}
-                                />
+                            <div className="vm-rec-header-right">
+                                <div className="vm-combine-switch">
+                                    <Tippy
+                                        content={
+                                            <div className="vm-combine-info-tooltip">
+                                                {transcriptMergeMode === "single" ? (
+                                                    <p className="vm-combine-info-tooltip-line">
+                                                        <strong>ON:</strong> All uploaded documents, audio and video will be combined together to fill the forms. Example: use this when all uploaded files belong to one person.
+                                                    </p>
+                                                ) : (
+                                                    <p className="vm-combine-info-tooltip-line">
+                                                        <strong>OFF (default):</strong> Each transcript file is processed separately against every selected form.
+                                                    </p>
+                                                )}
+                                            </div>
+                                        }
+                                        trigger="mouseenter focus click"
+                                        interactive={true}
+                                        placement="top"
+                                        maxWidth={320}
+                                        zIndex={9999}
+                                        appendTo={() => document.body}
+                                    >
+                                        <span className="vm-combine-info-icon" tabIndex={0} aria-label="What does Combine documents do?">
+                                            <IoMdInformationCircleOutline size={18} color="#5B36E1" />
+                                        </span>
+                                    </Tippy>
+                                    <span className="vm-combine-switch-label">Combine documents</span>
+                                    <button
+                                        type="button"
+                                        role="switch"
+                                        aria-checked={transcriptMergeMode === "single"}
+                                        aria-label="Combine multiple transcripts into one"
+                                        className={`vm-combine-switch-track${transcriptMergeMode === "single" ? " is-on" : ""}`}
+                                        onClick={() =>
+                                            setTranscriptMergeMode(
+                                                transcriptMergeMode === "single" ? "multiple" : "single"
+                                            )
+                                        }
+                                    >
+                                        <span className="vm-combine-switch-knob" />
+                                    </button>
+                                </div>
+                                <div className="selectedtemplatebtn" onClick={() => setStaffStep("selectTemplate")}>
+                                    {/* LEFT DOC ICON */}
+                                    <img
+                                        src={careVoiceStaffTemplateIcon}
+                                        alt="doc"
+                                        style={{ width: "20px", height: "20px" }}
+                                    />
 
-                                {/* BLUE SELECTED PILL */}
-                                <div
-                                    style={{
-                                        display: "flex",
-                                        alignItems: "center",
-                                        gap: "8px",
-                                        background: "#3B82F6",
-                                        color: "#FFFFFF",
-                                        padding: "6px 12px",
-                                        borderRadius: "999px",
-                                        fontSize: "14px",
-                                        fontWeight: 500,
-                                        cursor: "pointer"
-                                    }}
-                                >
-                                    {/* CHECK */}
-                                    <span
+                                    {/* BLUE SELECTED PILL */}
+                                    <div
                                         style={{
                                             display: "flex",
                                             alignItems: "center",
-                                            justifyContent: "center",
-                                            width: "18px",
-                                            height: "18px",
-                                            borderRadius: "50%",
-                                            background: "#FFFFFF",
-                                            color: "#3B82F6",
-                                            fontSize: "12px",
-                                            fontWeight: 700,
+                                            gap: "8px",
+                                            background: "#3B82F6",
+                                            color: "#FFFFFF",
+                                            padding: "6px 12px",
+                                            borderRadius: "999px",
+                                            fontSize: "14px",
+                                            fontWeight: 500,
+                                            cursor: "pointer"
                                         }}
                                     >
-                                        ✓
-                                    </span>
+                                        {/* CHECK */}
+                                        <span
+                                            style={{
+                                                display: "flex",
+                                                alignItems: "center",
+                                                justifyContent: "center",
+                                                width: "18px",
+                                                height: "18px",
+                                                borderRadius: "50%",
+                                                background: "#FFFFFF",
+                                                color: "#3B82F6",
+                                                fontSize: "12px",
+                                                fontWeight: 700,
+                                            }}
+                                        >
+                                            ✓
+                                        </span>
 
-                                    Selected
+                                        Selected
 
-                                    {/* COUNT */}
-                                    <span
-                                        style={{
-                                            display: "flex",
-                                            alignItems: "center",
-                                            justifyContent: "center",
-                                            width: "22px",
-                                            height: "22px",
-                                            borderRadius: "50%",
-                                            background: "#FFFFFF",
-                                            color: "#3B82F6",
-                                            fontSize: "12px",
-                                            fontWeight: 600,
-                                        }}
-                                    >
-                                        {selectedTemplate?.isMulti
-                                            ? selectedTemplate.templates.length
-                                            : 1}
-                                    </span>
+                                        {/* COUNT */}
+                                        <span
+                                            style={{
+                                                display: "flex",
+                                                alignItems: "center",
+                                                justifyContent: "center",
+                                                width: "22px",
+                                                height: "22px",
+                                                borderRadius: "50%",
+                                                background: "#FFFFFF",
+                                                color: "#3B82F6",
+                                                fontSize: "12px",
+                                                fontWeight: 600,
+                                            }}
+                                        >
+                                            {selectedTemplate?.isMulti
+                                                ? selectedTemplate.templates.length
+                                                : 1}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                         )}
@@ -3561,224 +3796,230 @@ const VoiceModule = (props) => {
                     </div>
 
                     <div
-                        className={`staff-recorder ${audioURL || recordMode === "recording" || recordMode === "paused"
-                            ? "staff-recorder-active"
-                            : ""
+                        className={`staff-record-upload-row ${!["recording", "paused", "preview"].includes(recordMode)
+                            ? "has-upload"
+                            : "recorder-only"
                             }`}
                     >
+                        <div
+                            className={`staff-recorder ${audioURL || recordMode === "recording" || recordMode === "paused"
+                                ? "staff-recorder-active"
+                                : ""
+                                }`}
+                        >
 
-                        {/* ===== REAL AUDIO PLAYER ===== */}
-                        <audio ref={audioRef} src={audioURL} />
+                            {/* ===== REAL AUDIO PLAYER ===== */}
+                            <audio ref={audioRef} src={audioURL} />
 
-                        {/* ===== TIMER CIRCLE ===== */}
-                        {(recordMode === "idle" || recordMode === "recording" || recordMode === "paused") && (
-                            <div className="staff-rec-circle">
-                                {recordMode === "recording" || recordMode === "paused" ? (
-                                    <div className="staff-recording-wrapper">
-                                        <Lottie
-                                            animationData={recordingLottieAnimation}
-                                            loop={recordMode === "recording"}
-                                            autoplay={recordMode === "recording"}
-                                            pause={recordMode === "paused"}
-                                            className="staff-recording-lottie"
-                                        />
+                            {/* ===== TIMER CIRCLE ===== */}
+                            {(recordMode === "idle" || recordMode === "recording" || recordMode === "paused") && (
+                                <div className="staff-rec-circle">
+                                    {recordMode === "recording" || recordMode === "paused" ? (
+                                        <div className="staff-recording-wrapper">
+                                            <Lottie
+                                                animationData={recordingLottieAnimation}
+                                                loop={recordMode === "recording"}
+                                                autoplay={recordMode === "recording"}
+                                                pause={recordMode === "paused"}
+                                                className="staff-recording-lottie"
+                                            />
 
-                                        <span className="staff-recording-timer">
-                                            {formatTime(recordTime)}
-                                        </span>
-                                    </div>
-                                ) : (
-                                    <div className="staff-recording-wrapper">
-                                        <Lottie
-                                            animationData={beforeRecordingAnimation}
-                                            loop={true}
-                                            autoplay={true}
-                                            paused={!isSpeaking}
-                                            className="staff-recording-lottie"
-                                        />
+                                            <span className="staff-recording-timer">
+                                                {formatTime(recordTime)}
+                                            </span>
+                                        </div>
+                                    ) : (
+                                        <div className="staff-recording-wrapper">
+                                            <Lottie
+                                                animationData={beforeRecordingAnimation}
+                                                loop={true}
+                                                autoplay={true}
+                                                paused={!isSpeaking}
+                                                className="staff-recording-lottie"
+                                            />
 
-                                        {/* <span className="staff-recording-timer">
+                                            {/* <span className="staff-recording-timer">
                                             {formatTime(recordTime)}
                                         </span> */}
-                                    </div>
-                                )}
-                            </div>
-                        )}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
 
 
-                        {/* ===== AUDIO PREVIEW (PAUSED / PREVIEW) ===== */}
-                        {(recordMode === "paused" || recordMode === "preview") && audioURL && (
-                            <div className="staff-audio-preview-wrapper">
+                            {/* ===== AUDIO PREVIEW (PAUSED / PREVIEW) ===== */}
+                            {(recordMode === "paused" || recordMode === "preview") && audioURL && (
+                                <div className="staff-audio-preview-wrapper">
 
-                                <div className="staff-play-recorder-div">
-                                    {/* PLAY / PAUSE ICON */}
-                                    <button
-                                        className="staff-play-circle"
-                                        onClick={togglePlayAudio}
-                                    >
-                                        <img
-                                            src={isPlaying ? careVoicePause : careVoicePlay}
-                                            alt="play-pause"
-                                            style={{ width: "20px", height: "20px" }}
-                                        />
-                                    </button>
-
-                                    {/* WAVE ICON */}
-                                    <div className="staff-wave-container">
-                                        <div className="staff-audio-seek-wrapper">
-                                            <input
-                                                type="range"
-                                                min="0"
-                                                max={audioRef.current?.duration || 0}
-                                                value={playTime}
-                                                step="0.1"
-                                                onChange={(e) => {
-                                                    const time = Number(e.target.value);
-                                                    audioRef.current.currentTime = time;
-                                                    setPlayTime(time);
-                                                }}
-                                                className="staff-audio-seekbar"
-                                                style={{
-                                                    background: audioRef.current?.duration
-                                                        ? `linear-gradient(to right, #6c4cdc ${(playTime / audioRef.current.duration) * 100
-                                                        }%, #bdbdbd ${(playTime / audioRef.current.duration) * 100
-                                                        }%)`
-                                                        : "#bdbdbd",
-                                                }}
+                                    <div className="staff-play-recorder-div">
+                                        {/* PLAY / PAUSE ICON */}
+                                        <button
+                                            className="staff-play-circle"
+                                            onClick={togglePlayAudio}
+                                        >
+                                            <img
+                                                src={isPlaying ? careVoicePause : careVoicePlay}
+                                                alt="play-pause"
+                                                style={{ width: "20px", height: "20px" }}
                                             />
+                                        </button>
+
+                                        {/* WAVE ICON */}
+                                        <div className="staff-wave-container">
+                                            <div className="staff-audio-seek-wrapper">
+                                                <input
+                                                    type="range"
+                                                    min="0"
+                                                    max={audioRef.current?.duration || 0}
+                                                    value={playTime}
+                                                    step="0.1"
+                                                    onChange={(e) => {
+                                                        const time = Number(e.target.value);
+                                                        audioRef.current.currentTime = time;
+                                                        setPlayTime(time);
+                                                    }}
+                                                    className="staff-audio-seekbar"
+                                                    style={{
+                                                        background: audioRef.current?.duration
+                                                            ? `linear-gradient(to right, #6c4cdc ${(playTime / audioRef.current.duration) * 100
+                                                            }%, #bdbdbd ${(playTime / audioRef.current.duration) * 100
+                                                            }%)`
+                                                            : "#bdbdbd",
+                                                    }}
+                                                />
+                                            </div>
                                         </div>
                                     </div>
+
+                                    {/* TIME — counts down from full duration to 00:00:00 */}
+                                    <span className="staff-audio-time">
+                                        {formatTime(Math.max(0, recordTime - playTime))}
+                                    </span>
                                 </div>
+                            )}
 
-                                {/* TIME — counts down from full duration to 00:00:00 */}
-                                <span className="staff-audio-time">
-                                    {formatTime(Math.max(0, recordTime - playTime))}
-                                </span>
+                            {/* ===== ACTION BUTTONS (ALL ICONS INTACT) ===== */}
+                            <div className="staff-rec-actions">
+
+                                {recordMode === "idle" && (
+                                    <button className="staff-primary" onClick={startRecording}>
+                                        <img src={recordIcon} width={16} />
+                                        Start Recording
+                                    </button>
+                                )}
+
+                                {recordMode === "recording" && (
+                                    <>
+                                        <button className="staff-outline" onClick={pauseRecording}>
+                                            <img src={careVoicePause} width={16} />
+                                            Pause
+                                        </button>
+
+                                        <button className="staff-primary" onClick={stopRecording}>
+                                            <img src={careVoiceEndAndPreview} width={16} />
+                                            End & Preview
+                                        </button>
+                                    </>
+                                )}
+
+                                {recordMode === "paused" && (
+                                    <>
+                                        <button className="staff-outline" onClick={resumeRecording}>
+                                            <img src={careVoicePlay} width={16} />
+                                            Resume
+                                        </button>
+
+                                        <button className="staff-primary" onClick={stopRecording}>
+                                            <img src={careVoiceEndAndPreview} width={16} />
+                                            End & Preview
+                                        </button>
+                                    </>
+                                )}
+
+                                {recordMode === "preview" && (
+                                    <>
+                                        <button className="staff-outline" onClick={discardRecording}>
+                                            ✕ Discard
+                                        </button>
+
+                                        <button
+                                            className="staff-primary"
+                                            onClick={acceptRecording}
+                                            disabled={generationStage !== null}
+                                        >
+                                            {generationStage === "transcribing"
+                                                ? `Transcribing... ${audioProgress}%`
+                                                : generationStage === "generating"
+                                                    ? `Generating Documents... ${audioProgress}%`
+                                                    : generationStage === "emailing"
+                                                        ? `Sending Emails... ${audioProgress}%`
+                                                        : "✓ Submit"}
+                                        </button>
+                                        <button
+                                            onClick={downloadRecording}
+                                            disabled={isDownloadingRecording}
+                                            className="staff-primary"
+                                        >
+                                            <FiDownload size={18} />
+                                            {isDownloadingRecording ? "Downloading..." : "Download"}
+                                        </button>
+                                    </>
+                                )}
+
                             </div>
-                        )}
+                        </div>
 
-                        {/* ===== ACTION BUTTONS (ALL ICONS INTACT) ===== */}
-                        <div className="staff-rec-actions">
 
-                            {recordMode === "idle" && (
-                                <button className="staff-primary" onClick={startRecording}>
-                                    <img src={recordIcon} width={16} />
-                                    Start Recording
+
+
+                        {/* ===== OR ===== */}
+                        {!["recording", "paused", "preview"].includes(recordMode) && <div className="voice-or-row staff-or-divider">
+                            <span className="voice-or-line" />
+                            <span className="voice-or-text">Or</span>
+                            <span className="voice-or-line" />
+                        </div>}
+
+                        {!["recording", "paused", "preview"].includes(recordMode) && <div className="voice-upload-col">
+                            <TlcUploadBox
+                                id="staff-transcript-upload"
+                                title="Upload Transcript"
+                                subtitle=".DOC, .PDF, .TXT, .MP3, .WAV, .WEBM ,.MP4, .MOV"
+                                accept=".doc,.docx,.pdf,.txt,.mp3,.wav,.webm,.mp4,.mov"
+                                files={uploadedTranscriptFiles}
+                                multiple
+                                setFiles={(files) => {
+                                    setUploadedTranscriptFiles(files);
+                                    setTranscriptSource("file");
+                                    setCurrentTranscriptIndex(0);
+                                    setClearAudioOnFileUpload(true);
+                                }}
+                            />
+
+                            {/* ✅ GENERATE DOCUMENT BUTTON (PUT BACK) */}
+                            <div style={{ textAlign: "right", marginTop: "24px", marginBottom: '64px' }}>
+                                <button
+                                    className="staff-primary"
+                                    onClick={
+                                        uploadedTranscriptFiles.length > 0
+                                            ? submitMultipleTranscripts
+                                            : submitToDocumentFiller
+                                    }
+                                    disabled={
+                                        fileStage !== null ||
+                                        !selectedTemplate ||
+                                        (selectedTemplate?.isMulti && selectedTemplate.templates.length === 0) ||
+                                        uploadedTranscriptFiles.length === 0
+                                    }
+                                >
+                                    {fileStage === "generating"
+                                        ? `Generating Documents... ${fileProgress}%`
+                                        : fileStage === "emailing"
+                                            ? `Sending Emails... ${fileProgress}%`
+                                            : "✓ Generate Document"}
                                 </button>
-                            )}
-
-                            {recordMode === "recording" && (
-                                <>
-                                    <button className="staff-outline" onClick={pauseRecording}>
-                                        <img src={careVoicePause} width={16} />
-                                        Pause
-                                    </button>
-
-                                    <button className="staff-primary" onClick={stopRecording}>
-                                        <img src={careVoiceEndAndPreview} width={16} />
-                                        End & Preview
-                                    </button>
-                                </>
-                            )}
-
-                            {recordMode === "paused" && (
-                                <>
-                                    <button className="staff-outline" onClick={resumeRecording}>
-                                        <img src={careVoicePlay} width={16} />
-                                        Resume
-                                    </button>
-
-                                    <button className="staff-primary" onClick={stopRecording}>
-                                        <img src={careVoiceEndAndPreview} width={16} />
-                                        End & Preview
-                                    </button>
-                                </>
-                            )}
-
-                            {recordMode === "preview" && (
-                                <>
-                                    <button className="staff-outline" onClick={discardRecording}>
-                                        ✕ Discard
-                                    </button>
-
-                                    <button
-                                        className="staff-primary"
-                                        onClick={acceptRecording}
-                                        disabled={generationStage !== null}
-                                    >
-                                        {generationStage === "transcribing"
-                                            ? `Transcribing... ${audioProgress}%`
-                                            : generationStage === "generating"
-                                                ? `Generating Documents... ${audioProgress}%`
-                                                : generationStage === "emailing"
-                                                    ? `Sending Emails... ${audioProgress}%`
-                                                    : "✓ Submit"}
-                                    </button>
-                                    <button
-                                        onClick={downloadRecording}
-                                        disabled={isDownloadingRecording}
-                                        className="staff-primary"
-                                    >
-                                        <FiDownload size={18} />
-                                        {isDownloadingRecording ? "Downloading..." : "Download"}
-                                    </button>
-                                </>
-                            )}
-
-                        </div>
+                            </div>
+                        </div>}
                     </div>
-
-
-
-
-                    {/* ===== OR ===== */}
-                    {!["recording", "paused", "preview"].includes(recordMode) && <div className="voice-or-row">
-                        <span className="voice-or-line" />
-                        <span className="voice-or-text">Or</span>
-                        <span className="voice-or-line" />
-                    </div>}
-
-                    {!["recording", "paused", "preview"].includes(recordMode) && <div className="voice-upload-col">
-                        <TlcUploadBox
-                            id="staff-transcript-upload"
-                            title="Upload Transcript"
-                            subtitle=".DOC, .PDF, .TXT, .MP3, .WAV, .WEBM ,.MP4, .MOV"
-                            accept=".doc,.docx,.pdf,.txt,.mp3,.wav,.webm,.mp4,.mov"
-                            files={uploadedTranscriptFiles}
-                            multiple
-                            setFiles={(files) => {
-                                setUploadedTranscriptFiles(files);
-                                setTranscriptSource("file");
-                                setCurrentTranscriptIndex(0);
-                                setClearAudioOnFileUpload(true);
-                            }}
-                        />
-
-                        {/* ✅ GENERATE DOCUMENT BUTTON (PUT BACK) */}
-                        <div style={{ textAlign: "right", marginTop: "24px", marginBottom: '64px' }}>
-                            <button
-                                className="staff-primary"
-                                onClick={
-                                    uploadedTranscriptFiles.length > 0
-                                        ? submitMultipleTranscripts
-                                        : submitToDocumentFiller
-                                }
-                                disabled={
-                                    fileStage !== null ||
-                                    !selectedTemplate ||
-                                    (selectedTemplate?.isMulti && selectedTemplate.templates.length === 0) ||
-                                    uploadedTranscriptFiles.length === 0
-                                }
-                            >
-                                {fileStage === "generating"
-                                    ? `Generating Documents... ${fileProgress}%`
-                                    : fileStage === "emailing"
-                                        ? `Sending Emails... ${fileProgress}%`
-                                        : "✓ Generate Document"}
-                            </button>
-                        </div>
-                    </div>}
-
 
 
 
