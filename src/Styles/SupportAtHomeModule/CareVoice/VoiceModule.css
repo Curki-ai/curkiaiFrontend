@@ -2514,14 +2514,14 @@
 }
 
 .carevoice-staff-container .staff-rec-circle {
-  width: clamp(320px, 32vw, 520px);
-  height: clamp(320px, 32vw, 520px);
+  width: clamp(180px, 36vw, 520px);
+  height: clamp(180px, 36vw, 520px);
   margin-bottom: 20px
 }
 
 .carevoice-staff-container .staff-recording-wrapper {
-  width: clamp(480px, 38vw, 740px);
-  height: clamp(480px, 38vw, 740px);
+  width: clamp(260px, 52vw, 740px);
+  height: clamp(260px, 52vw, 740px);
 }
 
 .carevoice-staff-container .staff-recording-lottie {
@@ -2554,6 +2554,16 @@
    normal positive gap whenever the preview wrapper is present. */
 .carevoice-staff-container .staff-recorder:has(.staff-audio-preview-wrapper) .staff-rec-actions {
   margin-top: clamp(20px, 1.6vw, 32px);
+}
+
+/* On mobile/narrow viewports the lottie wrapper shrinks proportionally
+   (52vw) and the negative compensation margin above would pull the
+   Start Recording button right into the visible lottie ring. Reset to
+   a positive gap so the circle and button have clear separation. */
+@media (max-width: 767px) {
+  .carevoice-staff-container .staff-rec-actions {
+    margin-top: 16px;
+  }
 }
 
 /* Constrain the preview wrapper so it sits as its own row above the
@@ -2765,6 +2775,24 @@
 
 .carevoice-staff-container .staff-rec-circle:has(.staff-recording-timer)::after {
   display: none;
+}
+
+/* Recording / paused state on narrow (stacked) viewports — the desktop
+   floor of 320px wrapper looks tiny on phones/tablets because 25vw
+   never reaches the floor. Use a steeper vw scale so the animation
+   grows proportionally with the viewport, matching the idle state's
+   responsiveness. Desktop keeps its original sizing via the rules
+   above (this media query does not fire ≥1024px). */
+@media (max-width: 1023px) {
+  .carevoice-staff-container .staff-rec-circle:has(.staff-recording-timer) {
+    width: clamp(200px, 40vw, 360px);
+    height: clamp(200px, 40vw, 360px);
+  }
+
+  .carevoice-staff-container .staff-rec-circle:has(.staff-recording-timer) .staff-recording-wrapper {
+    width: clamp(320px, 60vw, 540px);
+    height: clamp(320px, 60vw, 540px);
+  }
 }
 
 .carevoice-staff-container .staff-recording-wrapper {
