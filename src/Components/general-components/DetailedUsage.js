@@ -197,8 +197,8 @@ const ScrollableTabs = ({ children }) => {
 };
 
 const DetailedUsage = ({ user, onBack }) => {
-  // const userEmail = user?.email || "";
-  const userEmail = "admin@contemporarycoordination.com"
+  const userEmail = user?.email || "";
+  // const userEmail = "admin@contemporarycoordination.com"
   const userEmailLower = userEmail.toLowerCase();
 
   const [activeModule, setActiveModule] = useState(MODULE_TABS[0]);
