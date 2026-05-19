@@ -24,8 +24,10 @@ const AutoPaymentPopup = ({ onClose, userEmail }) => {
           if (!cancelled) setAccessLoading(false);
           return;
         }
+        const token = await auth.currentUser.getIdToken();
         const res = await fetch(
-          `${API_BASE}/api/payment-plans/me?firebase_uid=${encodeURIComponent(firebase_uid)}`
+          `${API_BASE}/api/payment-plans/me?firebase_uid=${encodeURIComponent(firebase_uid)}`,
+          { headers: { Authorization: `Bearer ${token}` } }
         );
         const data = await res.json();
         if (cancelled) return;
