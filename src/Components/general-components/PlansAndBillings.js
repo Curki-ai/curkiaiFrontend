@@ -532,6 +532,8 @@ const Plan = ({ title,
                 billing_interval: billing
             }));
 
+            window.location.reload();
+
         } catch (err) {
             console.error("Plan change error", err);
         } finally {
