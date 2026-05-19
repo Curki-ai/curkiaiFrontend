@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import "../../Styles/general-styles/PlansAndBillings.css";
 import { IoClose } from "react-icons/io5";
 import pricingTick from "../../Images/pricingmodaltick.png"
@@ -29,48 +29,57 @@ const PlansAndBillings = ({ onClose, email: userEmail, firstName: firstName, set
         ownerEmail: null,
         planDetails: null,
     });
+    // Tracks the in-flight /payment-plans/me promise so clicks that arrive
+    // before it resolves can await it instead of bailing with a toast.
+    const accessPromiseRef = useRef(null);
 
     useEffect(() => {
         let cancelled = false;
-        (async () => {
+        const promise = (async () => {
             try {
                 setAccessLoading(true);
                 const firebase_uid = auth.currentUser?.uid || "";
                 if (!firebase_uid) {
                     if (!cancelled) setAccessLoading(false);
-                    return;
+                    return null;
                 }
                 const res = await fetch(
                     `${API_BASE}/api/payment-plans/me?firebase_uid=${encodeURIComponent(firebase_uid)}`
                 );
                 const data = await res.json();
-                if (cancelled) return;
-                setAccess({
+                if (cancelled) return null;
+                const next = {
                     canPurchase: !!data?.canPurchase,
                     hasActiveSubscription: !!data?.hasActiveSubscription,
                     role: data?.membership?.role || null,
                     organizationId: data?.membership?.organizationId || null,
                     ownerEmail: data?.membership?.email || null,
                     planDetails: data?.membership?.plan_details || null,
-                });
+                };
+                setAccess(next);
+                return next;
             } catch (err) {
                 console.error("[PlansAndBillings] /payment-plans/me failed:", err);
+                return null;
             } finally {
                 if (!cancelled) setAccessLoading(false);
             }
         })();
+        accessPromiseRef.current = promise;
         return () => {
             cancelled = true;
         };
     }, [userEmail]);
 
-    const ensurePurchaseAllowed = () => {
+    const ensurePurchaseAllowed = async () => {
+        let current = access;
         if (accessLoading) {
             toast.info("Checking subscription access…");
-            return false;
+            const loaded = await accessPromiseRef.current;
+            if (loaded) current = loaded;
         }
-        if (access.canPurchase) return true;
-        if (access.role && access.role !== "owner") {
+        if (current.canPurchase) return true;
+        if (current.role && current.role !== "owner") {
             toast.error(
                 "Only the account Owner can purchase or change the subscription."
             );
@@ -709,10 +718,10 @@ const Plan = ({ title,
                                     : "pb-primary-btn pb-outline-plan-btn"
                             }
                             disabled={isCurrentPlan}
-                            onClick={(e) => {
+                            onClick={async (e) => {
                                 e.stopPropagation();
 
-                                if (!ensurePurchaseAllowed()) return;
+                                if (!(await ensurePurchaseAllowed())) return;
 
                                 if (isUpgrade || isDowngrade) {
                                     handlePlanChange();
