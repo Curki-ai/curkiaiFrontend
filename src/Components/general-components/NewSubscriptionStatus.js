@@ -22,17 +22,15 @@ const useSubscriptionStatus = (
     ];
 
     const emailDomain = user.email.split("@")[1]?.toLowerCase();
-
-    if (bypassDomains.includes(emailDomain)) {
-      setShowPricingModal(false);
-      setSubscriptionInfo(null);
-      return;
-    }
+    const isBypassDomain = bypassDomains.includes(emailDomain);
 
     const runCheck = async () => {
       const result = await checkSubscriptionStatus(user.email);
 
-      setShowPricingModal(result.shouldShowPricing);
+      // Bypass domains never get the pricing modal auto-popped,
+      // but we still load their subscription so manual opens of
+      // PlansAndBillings show correct Upgrade/Downgrade/Active states.
+      setShowPricingModal(isBypassDomain ? false : result.shouldShowPricing);
       setSubscriptionInfo(result.subscription || null);
     };
 

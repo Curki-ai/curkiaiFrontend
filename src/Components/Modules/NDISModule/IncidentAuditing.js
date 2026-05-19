@@ -473,7 +473,7 @@ const IncidentAuditing = (props) => {
     const renderHeaderBar = () => (
         <div className="ia-header-bar">
             <div className="ia-header-left">
-                {currentUserRole === "admin" && (
+                {(currentUserRole === "admin" || currentUserRole === "owner") && (
                     <button
                         type="button"
                         className="ia-access-mgmt-btn"
@@ -599,7 +599,7 @@ const IncidentAuditing = (props) => {
                             </button>
                         )}
 
-                        {currentUserRole === "admin" && (
+                        {(currentUserRole === "admin" || currentUserRole === "owner") && (
                             <div className="ia-header-bar ia-header-bar-dashboard">
                                 <div className="ia-header-left" />
                                 <div className="ia-header-right">
@@ -902,6 +902,10 @@ const IncidentAuditing = (props) => {
             {openAccessManagement && (
                 <FinancialHealthAccessManagement
                     onClose={() => setOpenAccessManagement(false)}
+                    onDeleted={() => {
+                        setOpenAccessManagement(false);
+                        refetchOrg();
+                    }}
                     userEmail={userEmail}
                     moduleLabel="Incident Auditing"
                     apiBase={`${IA_API_BASE}/access`}

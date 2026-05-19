@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { API_BASE as ROOT_API_BASE } from "../../../../config/apiBase";
+import { auth } from "../../../../firebase";
 
 // Rendered inside VoiceModule when the by-email lookup confirms the
 // signed-in user has no organization linked in v2d-user-access. Visual
@@ -30,6 +31,11 @@ const CareVoiceNoOrgEmptyState = ({ userEmail, onRegistered }) => {
       setError("Could not detect your email. Please sign in again.");
       return;
     }
+    const firebase_uid = auth.currentUser?.uid || "";
+    if (!firebase_uid) {
+      setError("Could not detect your Firebase session. Please sign in again.");
+      return;
+    }
     setSubmitting(true);
     setError("");
     try {
@@ -40,8 +46,9 @@ const CareVoiceNoOrgEmptyState = ({ userEmail, onRegistered }) => {
           headers: {
             "Content-Type": "application/json",
             "x-user-email": email,
+            "x-firebase-uid": firebase_uid,
           },
-          body: JSON.stringify({ organizationName: trimmed }),
+          body: JSON.stringify({ organizationName: trimmed, firebase_uid }),
         }
       );
       const data = await res.json();

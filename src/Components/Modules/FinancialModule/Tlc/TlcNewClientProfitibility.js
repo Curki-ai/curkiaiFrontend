@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { auth } from "../../../../firebase";
 import '../../../../Styles/FinancialModule/TlcClientProfitability.css';
 import TlcLogo from '../../../../Images/TLCLogo.png';
 import UploadTlcIcon from '../../../../Images/UploadTlcIcon.png';
@@ -197,6 +198,7 @@ const TlcNewClientProfitability = (props) => {
     // Sync history when loading from history
 
     const userEmail = user?.email;
+    // const userEmail = "bastruc@tenderlovingcaredisability.com.au"
     // const userEmail = "ilaurente@tenderlovingcaredisability.com.au";
 
     // Access-management driven state. Mirrors NewFinancialModule.js — the
@@ -216,8 +218,10 @@ const TlcNewClientProfitability = (props) => {
         if (!userEmail) return;
         setOrgLookupStatus("loading");
         try {
+            const firebase_uid = auth.currentUser?.uid || "";
             const res = await fetch(
-                `${BASE_URL}/api/client-profitability/organizations/by-email?email=${encodeURIComponent(userEmail)}`
+                `${BASE_URL}/api/client-profitability/organizations/by-email?email=${encodeURIComponent(userEmail)}` +
+                (firebase_uid ? `&firebase_uid=${encodeURIComponent(firebase_uid)}` : "")
             );
             const data = await res.json();
             const first = data?.organizations?.[0];
@@ -1770,7 +1774,7 @@ const TlcNewClientProfitability = (props) => {
                     />
                 </div> */}
                 <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                    {currentUserRole === "admin" && (
+                    {(currentUserRole === "admin" || currentUserRole === "owner") && (
                         <button
                             type="button"
                             className="access-mgmt-trigger-btn"
@@ -2309,6 +2313,10 @@ const TlcNewClientProfitability = (props) => {
             {openAccessManagement && (
                 <FinancialHealthAccessManagement
                     onClose={() => setOpenAccessManagement(false)}
+                    onDeleted={() => {
+                        setOpenAccessManagement(false);
+                        fetchOrganization();
+                    }}
                     userEmail={userEmail}
                     moduleLabel="Client Profitability"
                     apiBase={`${BASE_URL}/api/client-profitability/access`}

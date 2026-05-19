@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import "../../../../Styles/general-styles/SmartOnboardingAccessManagement.css";
 import { API_BASE as ROOT_API_BASE } from "../../../../config/apiBase";
+import { auth } from "../../../../firebase";
 import { HiOutlineShieldCheck } from "react-icons/hi";
 import { RiAdminLine } from "react-icons/ri";
 import { FiUserPlus, FiUsers } from "react-icons/fi";
@@ -47,7 +48,7 @@ const avatarGradient = (key = "") => {
   return `linear-gradient(135deg, ${a} 0%, ${b} 100%)`;
 };
 
-const SmartOnboardingAccessManagement = ({ onClose, userEmail, organizationId }) => {
+const SmartOnboardingAccessManagement = ({ onClose, userEmail, organizationId, onDeleted }) => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [users, setUsers] = useState([]);
@@ -60,11 +61,30 @@ const SmartOnboardingAccessManagement = ({ onClose, userEmail, organizationId })
   // Replaces window.confirm so we get the same styled yes/no popup used
   // across the platform.
   const [pendingRemoval, setPendingRemoval] = useState(null);
+  const [pendingOrgDelete, setPendingOrgDelete] = useState(false);
+  const [deletingOrg, setDeletingOrg] = useState(false);
 
-  const requestHeaders = () => {
+  // Staff-onboarding's organizations router is mounted at /api/organizations
+  // (NOT /api/staff-onboarding/organizations) — that's the legacy URL chosen
+  // when the module shipped. Use ROOT_API_BASE directly here.
+  const ORGS_BASE = `${ROOT_API_BASE}/api/organizations`;
+
+  // Builds headers for an authenticated backend call. Attaches the live
+  // Firebase ID token as a Bearer header so the verifyFirebaseToken
+  // middleware can confirm identity and overwrite x-user-email /
+  // x-firebase-uid with verified values.
+  const requestHeaders = async () => {
     const headers = { "Content-Type": "application/json" };
     if (userEmail) headers["x-user-email"] = userEmail;
     if (organizationId) headers["x-organization-id"] = String(organizationId);
+    if (auth.currentUser) {
+      try {
+        const token = await auth.currentUser.getIdToken();
+        if (token) headers["Authorization"] = `Bearer ${token}`;
+      } catch (err) {
+        console.warn("[so-access] getIdToken failed:", err?.message);
+      }
+    }
     return headers;
   };
 
@@ -75,7 +95,7 @@ const SmartOnboardingAccessManagement = ({ onClose, userEmail, organizationId })
     try {
       const res = await fetch(`${API_BASE}/users`, {
         method: "GET",
-        headers: requestHeaders(),
+        headers: await requestHeaders(),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "Failed to load users");
@@ -118,7 +138,7 @@ const SmartOnboardingAccessManagement = ({ onClose, userEmail, organizationId })
     try {
       const res = await fetch(`${API_BASE}/invite`, {
         method: "POST",
-        headers: requestHeaders(),
+        headers: await requestHeaders(),
         body: JSON.stringify({
           name: trimmedName,
           email: trimmedEmail,
@@ -154,7 +174,7 @@ const SmartOnboardingAccessManagement = ({ onClose, userEmail, organizationId })
     try {
       const res = await fetch(
         `${API_BASE}/users/${encodeURIComponent(user.id)}`,
-        { method: "DELETE", headers: requestHeaders() }
+        { method: "DELETE", headers: await requestHeaders() }
       );
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data?.error || "Failed to remove user");
@@ -385,7 +405,7 @@ const SmartOnboardingAccessManagement = ({ onClose, userEmail, organizationId })
 
                       {/* Actions */}
                       <div className="so-access-actions-cell">
-                        {(u.status === "invited" || u.status === "active") && !isSelf(u) ? (
+                        {(u.status === "invited" || u.status === "active") && !isSelf(u) && u.role !== "owner" ? (
                           <button
                             type="button"
                             className="so-access-revoke-btn"
@@ -404,7 +424,13 @@ const SmartOnboardingAccessManagement = ({ onClose, userEmail, organizationId })
                         ) : (
                           <span
                             className="so-access-actions-empty"
-                            title={isSelf(u) ? "You cannot remove your own access" : undefined}
+                            title={
+                              u.role === "owner"
+                                ? "The organization owner cannot be revoked"
+                                : isSelf(u)
+                                ? "You cannot remove your own access"
+                                : undefined
+                            }
                           >
                             —
                           </span>
@@ -415,9 +441,77 @@ const SmartOnboardingAccessManagement = ({ onClose, userEmail, organizationId })
                 </div>
               </div>
             )}
+
+            {/* ── DANGER ZONE — owner-only ── */}
+            {(() => {
+              const currentUserRow = (users || []).find(isSelf);
+              const isOwnerOfOrg = currentUserRow?.role === "owner";
+              if (!isOwnerOfOrg) return null;
+              return (
+                <div className="so-access-danger-zone">
+                  <div className="so-access-danger-zone-text">
+                    <div className="so-access-danger-zone-title">
+                      Delete this organization
+                    </div>
+                    <div className="so-access-danger-zone-subtitle">
+                      Permanently removes every member's access to Smart
+                      Onboarding for this organization. Your subscription
+                      and access to other modules are not affected — cancel
+                      your subscription in Stripe separately if needed.
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    className="so-access-danger-zone-btn"
+                    onClick={() => setPendingOrgDelete(true)}
+                    disabled={deletingOrg}
+                  >
+                    {deletingOrg ? "Deleting…" : "Delete Organization"}
+                  </button>
+                </div>
+              );
+            })()}
           </div>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={pendingOrgDelete}
+        title="Delete this organization?"
+        message="Every member's access will be revoked and the organization will be permanently removed. This cannot be undone."
+        confirmLabel="Yes, delete"
+        cancelLabel="No"
+        confirmTone="danger"
+        busy={deletingOrg}
+        onConfirm={async () => {
+          setError(""); setSuccess(""); setDeletingOrg(true);
+          try {
+            const res = await fetch(ORGS_BASE, {
+              method: "DELETE",
+              headers: await requestHeaders(),
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data?.error || "Failed to delete organization");
+            setSuccess(
+              `Organization deleted (removed ${data?.deletedAccessRows ?? 0} member${
+                data?.deletedAccessRows === 1 ? "" : "s"
+              }).`
+            );
+            // Hand off to the parent: it should close the modal AND refetch
+            // org state so the UI swaps to NoOrgEmptyState without a reload.
+            setTimeout(() => {
+              if (typeof onDeleted === "function") onDeleted();
+              else if (typeof onClose === "function") onClose();
+            }, 800);
+          } catch (err) {
+            setError(err.message || "Failed to delete organization");
+          } finally {
+            setDeletingOrg(false);
+            setPendingOrgDelete(false);
+          }
+        }}
+        onCancel={() => setPendingOrgDelete(false)}
+      />
 
       <ConfirmDialog
         open={pendingRemoval !== null}

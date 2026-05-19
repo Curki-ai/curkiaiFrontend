@@ -197,7 +197,8 @@ const ScrollableTabs = ({ children }) => {
 };
 
 const DetailedUsage = ({ user, onBack }) => {
-  const userEmail = user?.email || "";
+  // const userEmail = user?.email || "";
+  const userEmail = "admin@contemporarycoordination.com"
   const userEmailLower = userEmail.toLowerCase();
 
   const [activeModule, setActiveModule] = useState(MODULE_TABS[0]);
@@ -460,9 +461,9 @@ const DetailedUsage = ({ user, onBack }) => {
                 {totals.userCount} member{totals.userCount === 1 ? "" : "s"}
               </span>
               <span className="du2-hero-divider" />
-              <span className="du2-hero-org">
+              {/* <span className="du2-hero-org">
                 org <span>{summary.organizationId.slice(0, 8)}…</span>
-              </span>
+              </span> */}
             </div>
           )}
         </div>
@@ -496,12 +497,12 @@ const DetailedUsage = ({ user, onBack }) => {
               label="Tokens used"
               value={formatNumber(totals.tokens)}
             />
-            <StatCard
+            {/* <StatCard
               tone="indigo"
               icon={<FiDollarSign />}
               label="AI cost"
               value={formatCost(totals.aiCost)}
-            />
+            /> */}
             <StatCard
               tone="green"
               icon={<FiMessageCircle />}
@@ -589,7 +590,7 @@ const UserTable = ({ users, selfEmailLower, showsDocs }) => (
       <div>User</div>
       <div>Role</div>
       <div className="du2-num">Tokens</div>
-      <div className="du2-num">AI cost</div>
+      {/* <div className="du2-num">AI cost</div> */}
       <div className="du2-num">Ask AI</div>
       {showsDocs && <div className="du2-num">Docs</div>}
       <div className="du2-num">Actions</div>
@@ -629,10 +630,10 @@ const UserTable = ({ users, selfEmailLower, showsDocs }) => (
             <span className="du2-mobile-label">Tokens</span>
             {formatNumber(u.tokens)}
           </div>
-          <div className="du2-num">
+          {/* <div className="du2-num">
             <span className="du2-mobile-label">AI cost</span>
             {formatCost(u.aiCost)}
-          </div>
+          </div> */}
           <div className="du2-num">
             <span className="du2-mobile-label">Ask AI</span>
             {formatNumber(u.askAi)}

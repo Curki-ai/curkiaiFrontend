@@ -6,6 +6,8 @@ import {
   HiOutlineCheckCircle,
   HiOutlineExclamation,
 } from "react-icons/hi";
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "../../firebase";
 import curkiLogo from "../../Images/Black_logo.png";
 import { API_BASE } from "../../config/apiBase";
 import "../../Styles/general-styles/AcceptAccessInvite.css";
@@ -82,12 +84,57 @@ const AcceptAccessInvite = () => {
       return;
     }
 
+    // Backend now requires firebase_uid on accept-invite so it can write
+    // the membership into payment_plans. Wait for Firebase auth state to
+    // settle before firing — onAuthStateChanged returns synchronously
+    // when a user is already signed in.
+    const waitForFirebaseUid = () =>
+      new Promise((resolve) => {
+        if (auth.currentUser?.uid) {
+          resolve(auth.currentUser.uid);
+          return;
+        }
+        const timer = setTimeout(() => {
+          unsubscribe();
+          resolve(null);
+        }, 4000);
+        const unsubscribe = onAuthStateChanged(auth, (u) => {
+          if (u?.uid) {
+            clearTimeout(timer);
+            unsubscribe();
+            resolve(u.uid);
+          }
+        });
+      });
+
     const run = async () => {
       try {
+        const firebase_uid = await waitForFirebaseUid();
+        if (!firebase_uid) {
+          setPhase("error");
+          setMessage(
+            "Please sign in to your Curki account first, then click the invitation link again."
+          );
+          toast.error("Sign in before accepting the invitation.");
+          return;
+        }
+
+        // The access-management surface is gated by verifyFirebaseToken
+        // — every request must carry a valid Bearer Firebase ID token.
+        let bearerToken = "";
+        try {
+          bearerToken = await auth.currentUser.getIdToken();
+        } catch (err) {
+          console.warn("[AcceptAccessInvite] getIdToken failed:", err?.message);
+        }
+
+        const headers = { "Content-Type": "application/json" };
+        if (bearerToken) headers.Authorization = `Bearer ${bearerToken}`;
+
         const res = await fetch(`${API_BASE}${apiPath}`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ token }),
+          headers,
+          body: JSON.stringify({ token, firebase_uid }),
         });
         const data = await res.json().catch(() => ({}));
 

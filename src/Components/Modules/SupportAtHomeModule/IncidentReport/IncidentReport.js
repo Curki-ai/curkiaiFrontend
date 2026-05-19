@@ -157,7 +157,7 @@ const IncidentReport = (props) => {
     }
     return (
         <div className="ir-page">
-            {currentUserRole === "admin" && (
+            {(currentUserRole === "admin" || currentUserRole === "owner") && (
                 <div style={{ display: "flex", justifyContent: "flex-end", padding: "12px 16px 0" }}>
                     <button
                         type="button"
@@ -226,6 +226,10 @@ const IncidentReport = (props) => {
             {openAccessManagement && (
                 <FinancialHealthAccessManagement
                     onClose={() => setOpenAccessManagement(false)}
+                    onDeleted={() => {
+                        setOpenAccessManagement(false);
+                        refetchOrg();
+                    }}
                     userEmail={userEmail}
                     moduleLabel="Incident Report"
                     apiBase={`${IR_API_BASE}/access`}

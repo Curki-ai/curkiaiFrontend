@@ -661,6 +661,74 @@
   text-transform: capitalize;
 }
 
+.cv-access-role-owner {
+  background: #fff4d6;
+  color: #8a5a00;
+}
+
+.cv-access-danger-zone {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin-top: 28px;
+  padding: 18px 22px;
+  border: 1px solid #fbd5d5;
+  border-radius: 14px;
+  background: #fff7f7;
+}
+
+.cv-access-danger-zone-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.cv-access-danger-zone-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #9e2626;
+  margin-bottom: 4px;
+}
+
+.cv-access-danger-zone-subtitle {
+  font-size: 12.5px;
+  color: #7a3a3a;
+  line-height: 1.5;
+}
+
+.cv-access-danger-zone-btn {
+  padding: 9px 18px;
+  border-radius: 10px;
+  border: 1px solid #c63b3b;
+  background: #ffffff;
+  color: #c63b3b;
+  font-size: 13.5px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.cv-access-danger-zone-btn:hover:not(:disabled) {
+  background: #c63b3b;
+  color: #ffffff;
+}
+
+.cv-access-danger-zone-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 640px) {
+  .cv-access-danger-zone {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .cv-access-danger-zone-btn {
+    width: 100%;
+  }
+}
+
 .cv-access-role-admin {
   background: #efeafd;
   color: #6c4cdc;

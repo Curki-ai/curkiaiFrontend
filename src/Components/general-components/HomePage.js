@@ -148,8 +148,6 @@ const HomePage = () => {
   const [tlcPayrollAskAiConversationHistory, setTlcPayrollAskAiConversationHistory] = useState([]);
   const [isListening, setIsListening] = useState(false);
   const [isSTTActive, setIsSTTActive] = useState(false);
-  let [isAdmin, setIsAdmin] = useState(false);
-  const [adminDetails, setAdminDetails] = useState({})
   const [careVoiceSessionId, setCareVoiceSessionId] = useState(null);
   const [careVoiceUserId, setCareVoiceUserId] = useState(null);
   const [careVoiceStarted, setCareVoiceStarted] = useState(false);
@@ -333,26 +331,6 @@ const HomePage = () => {
       window.removeEventListener("beforeunload", handleTabClose);
     };
   }, [careVoiceSessionId, careVoiceUserId]);
-  useEffect(() => {
-    const fetchUserRole = async () => {
-      if (!user?.email) return;
-
-      try {
-        const res = await fetch(
-          `${API_BASE}/api/user/get?userEmail=${encodeURIComponent(user.email)}`
-        );
-
-        const data = await res.json();
-        // console.log("data", data)
-        setIsAdmin(data?.isAdmin === true);
-        setAdminDetails(data?.admin)
-      } catch (err) {
-        console.error("Error fetching user role:", err);
-      }
-    };
-
-    fetchUserRole();
-  }, [user]);
   const handleMicClick = async () => {
     try {
 
@@ -489,9 +467,11 @@ const HomePage = () => {
       console.log(
         `Fetching organizationId for: ${email} (attempt ${attempt}/${MAX_ATTEMPTS})`
       );
-      const res = await fetch(
-        `${API_BASE}/api/organizations/by-email?email=${encodeURIComponent(email)}`
-      );
+      const firebase_uid = user?.uid || "";
+      const url =
+        `${API_BASE}/api/organizations/by-email?email=${encodeURIComponent(email)}` +
+        (firebase_uid ? `&firebase_uid=${encodeURIComponent(firebase_uid)}` : "");
+      const res = await fetch(url);
       const data = await res.json();
       console.log("Organizations by-email response:", data);
       const firstOrgId = data?.organizations?.[0]?.organizationId;
@@ -1847,7 +1827,7 @@ const HomePage = () => {
         <>
           {showPricingModal ? (
             // <PricingModal onClose={() => setShowPricingModal(false)} email={user?.email} />
-            <PricingPlansModal onClose={() => setShowPricingModal(false)} email={user?.email} firstName={user?.displayName} setSubscriptionInfo={setSubscriptionInfo} isAdmin={isAdmin} adminDetails={adminDetails} />
+            <PricingPlansModal onClose={() => setShowPricingModal(false)} email={user?.email} firstName={user?.displayName} setSubscriptionInfo={setSubscriptionInfo} />
           ) : (
             <div className="page-container">
               {!isMobileOrTablet && sidebarVisible && (
@@ -3608,8 +3588,6 @@ const HomePage = () => {
           <AutoPaymentPopup
             userEmail={user?.email}
             onClose={() => setShowAutoPaymentPopup(false)}
-            isAdmin={isAdmin}
-            adminDetails={adminDetails}
           />
         )
       }
@@ -3621,10 +3599,6 @@ const HomePage = () => {
             firstName={user?.displayName}
             setSubscriptionInfo={setSubscriptionInfo}
             subscriptionInfo={subscriptionInfo}
-            isAdmin={isAdmin}
-            setIsAdmin={setIsAdmin}
-            adminDetails={adminDetails}
-            setAdminDetails={setAdminDetails}
           />
         )
       }

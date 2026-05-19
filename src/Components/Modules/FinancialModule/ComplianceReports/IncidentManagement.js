@@ -171,7 +171,7 @@ const IncidentManagement = (props) => {
     }
     return (
         <div className="cim-page">
-            {currentUserRole === "admin" && (
+            {(currentUserRole === "admin" || currentUserRole === "owner") && (
                 <div style={{ display: "flex", justifyContent: "flex-end", padding: "12px 16px 0" }}>
                     <button
                         type="button"
@@ -278,6 +278,10 @@ const IncidentManagement = (props) => {
             {openAccessManagement && (
                 <FinancialHealthAccessManagement
                     onClose={() => setOpenAccessManagement(false)}
+                    onDeleted={() => {
+                        setOpenAccessManagement(false);
+                        refetchOrg();
+                    }}
                     userEmail={userEmail}
                     moduleLabel="Custom Incident Management"
                     apiBase={`${CIM_API_BASE}/access`}
