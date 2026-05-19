@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { auth } from "../../../../firebase";
 import star from "../../../../Images/star.png";
 import "../../../../Styles/SupportAtHomeModule/CareVoice/VoiceModule.css";
 import voiceRoleIcon from "../../../../Images/VoiceRoleIcon.png";
@@ -2620,8 +2621,10 @@ const VoiceModule = (props) => {
         if (!userEmail) return;
         setOrgLookupStatus("loading");
         try {
+            const firebase_uid = auth.currentUser?.uid || "";
             const res = await fetch(
-                `${API_BASE}/api/care-voice/organizations/by-email?email=${encodeURIComponent(userEmail)}`
+                `${API_BASE}/api/care-voice/organizations/by-email?email=${encodeURIComponent(userEmail)}` +
+                (firebase_uid ? `&firebase_uid=${encodeURIComponent(firebase_uid)}` : "")
             );
             const data = await res.json();
             const first = data?.organizations?.[0];
@@ -2632,8 +2635,10 @@ const VoiceModule = (props) => {
                 if (apiRole === "staff") {
                     setCurrentUserRole("staff");
                     setRole("Staff");
-                } else if (apiRole === "admin") {
-                    setCurrentUserRole("admin");
+                } else if (apiRole === "admin" || apiRole === "owner") {
+                    // Owner is a superset of admin — same UI privileges
+                    // (Access Management, etc.) but a distinct backend role.
+                    setCurrentUserRole(apiRole);
                 }
                 setOrgLookupStatus("found");
                 if (data.justActivated) {
@@ -4459,6 +4464,10 @@ const VoiceModule = (props) => {
             {openAccessManagement && (
                 <CareVoiceAccessManagement
                     onClose={() => setOpenAccessManagement(false)}
+                    onDeleted={() => {
+                        setOpenAccessManagement(false);
+                        fetchOrganization();
+                    }}
                     userEmail={userEmail}
                 />
             )}

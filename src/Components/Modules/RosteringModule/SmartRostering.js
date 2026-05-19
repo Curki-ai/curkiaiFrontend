@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { auth } from "../../../firebase";
 import "../../../Styles/RosteringModule/SmartRostering.css";
 import { FiUploadCloud } from "react-icons/fi";
 import SearchIcon from '../../../Images/SearchIcon.png';
@@ -42,8 +43,10 @@ const SmartRostering = (props) => {
         if (!userEmail) return;
         setOrgLookupStatus("loading");
         try {
+            const firebase_uid = auth.currentUser?.uid || "";
             const res = await fetch(
-                `${API_BASE}/api/rostering/organizations/by-email?email=${encodeURIComponent(userEmail)}`
+                `${API_BASE}/api/rostering/organizations/by-email?email=${encodeURIComponent(userEmail)}` +
+                (firebase_uid ? `&firebase_uid=${encodeURIComponent(firebase_uid)}` : "")
             );
             const data = await res.json();
             const first = data?.organizations?.[0];

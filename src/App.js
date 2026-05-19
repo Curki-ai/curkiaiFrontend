@@ -39,6 +39,7 @@ function App() {
         pauseOnHover
         draggable
         theme="light"
+        style={{ zIndex: 10001 }}
       />
       <Routes>
         <Route path="/" element={<HomePage />} />

@@ -9,6 +9,7 @@ import React, { useState } from "react";
 //   2. Ask your admin/owner to invite you → informational only.
 
 import { API_BASE } from "../../../../config/apiBase";
+import { auth } from "../../../../firebase";
 
 const NoOrgEmptyState = ({ user, onRegistered }) => {
   const [showModal, setShowModal] = useState(false);
@@ -28,6 +29,11 @@ const NoOrgEmptyState = ({ user, onRegistered }) => {
       setError("Could not detect your email. Please sign in again.");
       return;
     }
+    const firebase_uid = auth.currentUser?.uid || "";
+    if (!firebase_uid) {
+      setError("Could not detect your Firebase session. Please sign in again.");
+      return;
+    }
     setSubmitting(true);
     setError("");
     try {
@@ -36,8 +42,9 @@ const NoOrgEmptyState = ({ user, onRegistered }) => {
         headers: {
           "Content-Type": "application/json",
           "x-user-email": email,
+          "x-firebase-uid": firebase_uid,
         },
-        body: JSON.stringify({ organizationName: trimmed }),
+        body: JSON.stringify({ organizationName: trimmed, firebase_uid }),
       });
       const data = await res.json();
       if (!res.ok || !data?.ok) {

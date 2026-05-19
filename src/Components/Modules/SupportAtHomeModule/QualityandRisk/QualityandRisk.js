@@ -121,7 +121,7 @@ const QualityandRisk = (props) => {
     }
     return (
         <div className="qr-page">
-            {currentUserRole === "admin" && (
+            {(currentUserRole === "admin" || currentUserRole === "owner") && (
                 <div style={{ display: "flex", justifyContent: "flex-end", padding: "12px 16px 0" }}>
                     <button
                         type="button"
@@ -190,6 +190,10 @@ const QualityandRisk = (props) => {
             {openAccessManagement && (
                 <FinancialHealthAccessManagement
                     onClose={() => setOpenAccessManagement(false)}
+                    onDeleted={() => {
+                        setOpenAccessManagement(false);
+                        refetchOrg();
+                    }}
                     userEmail={userEmail}
                     moduleLabel="Quality and Risk Reporting"
                     apiBase={`${QR_API_BASE}/access`}

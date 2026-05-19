@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, memo, useMemo } from "react";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { auth } from "../../../../firebase";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import "../../../../Styles/FinancialModule/TlcNewCustomReporting.css";
@@ -142,6 +143,8 @@ export default function TlcNewCustomerReporting(props) {
         }
     }, [activeTab, tabs]);
     const userEmail = props?.user?.email?.trim();
+    // const userEmail = "gjavier@tenderlovingcaredisability.com.au"
+    // const userEmail = "bastruc@tenderlovingcaredisability.com.au"
     const setTlcPayrollAskAiConversationHistory = props.setTlcPayrollAskAiConversationHistory; // ✅ NEW
     const tlcPayrollAskAiConversationHistory = props.tlcPayrollAskAiConversationHistory; // ✅ NEW
 
@@ -163,9 +166,12 @@ export default function TlcNewCustomerReporting(props) {
         if (!userEmail) return;
         setOrgLookupStatus("loading");
         try {
+            const firebase_uid = auth.currentUser?.uid || "";
             const res = await fetch(
-                `${BASE_URL}/api/payroll/organizations/by-email?email=${encodeURIComponent(userEmail)}`
+                `${BASE_URL}/api/payroll/organizations/by-email?email=${encodeURIComponent(userEmail)}` +
+                (firebase_uid ? `&firebase_uid=${encodeURIComponent(firebase_uid)}` : "")
             );
+            console.log("Organization lookup response:", res);
             const data = await res.json();
             const first = data?.organizations?.[0];
             if (res.ok && data?.ok && first?.organizationId) {
@@ -1257,6 +1263,7 @@ export default function TlcNewCustomerReporting(props) {
                 }
                 const res = await fetch(`${BASE_URL}/payroll/history?${params.toString()}`);
                 const data = await res.json();
+                console.log("Fetched history data:", data);
                 if (!res.ok) throw new Error(data.error || "Failed to fetch history");
                 const filteredHistory = userStates.length
                     ? data.data.filter(item =>
@@ -1794,7 +1801,7 @@ export default function TlcNewCustomerReporting(props) {
 
                     {/* RIGHT SIDE – SYNC */}
                     <div className="tlc-new-sync-group" style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                        {currentUserRole === "admin" && (
+                        {(currentUserRole === "admin" || currentUserRole === "owner") && (
                             <button
                                 type="button"
                                 className="access-mgmt-trigger-btn"
@@ -2757,6 +2764,10 @@ export default function TlcNewCustomerReporting(props) {
             {openAccessManagement && (
                 <FinancialHealthAccessManagement
                     onClose={() => setOpenAccessManagement(false)}
+                    onDeleted={() => {
+                        setOpenAccessManagement(false);
+                        fetchOrganization();
+                    }}
                     userEmail={userEmail}
                     moduleLabel="Payroll Analysis"
                     apiBase={`${BASE_URL}/api/payroll/access`}

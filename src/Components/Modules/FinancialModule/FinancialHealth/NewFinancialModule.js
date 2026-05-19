@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { auth } from "../../../../firebase";
 import * as XLSX from "xlsx";
 import axios from "axios";
 import SummaryReport from "../../../general-components/SummaryReportViewer";
@@ -245,7 +246,7 @@ const NewFinancialHealth = (props) => {
     const previewRef = useRef(null);
     const userEmail = props.user?.email;
     // const userEmail = "gjavier@tenderlovingcaredisability.com.au";
-
+    // const userEmail = "bastruc@tenderlovingcaredisability.com.au"
     // Access-management driven state.
     //   orgLookupStatus: "loading" | "found" | "not_found"
     //   userStates:      empty array means "All States" (no scoping)
@@ -276,8 +277,10 @@ const NewFinancialHealth = (props) => {
         if (!userEmail) return;
         setOrgLookupStatus("loading");
         try {
+            const firebase_uid = auth.currentUser?.uid || "";
             const res = await fetch(
-                `${BASE_URL}/api/financial-health/organizations/by-email?email=${encodeURIComponent(userEmail)}`
+                `${BASE_URL}/api/financial-health/organizations/by-email?email=${encodeURIComponent(userEmail)}` +
+                (firebase_uid ? `&firebase_uid=${encodeURIComponent(firebase_uid)}` : "")
             );
             const data = await res.json();
             const first = data?.organizations?.[0];
@@ -997,7 +1000,7 @@ const NewFinancialHealth = (props) => {
                 console.warn("Unknown reportType:", data.reportType);
                 updateTab(baseTabPayload);
             }
-            await incrementCareVoiceAnalysisCount(userEmail, "history-click", 0, "financial-health",0)
+            await incrementCareVoiceAnalysisCount(userEmail, "history-click", 0, "financial-health", 0)
         } catch (err) {
             console.error("Failed to load history", err);
         }
@@ -1117,7 +1120,7 @@ const NewFinancialHealth = (props) => {
 
             // Handle dates
             let fromDate, toDate;
-        
+
             if (type === "api") {
                 fromDate = startDate.toISOString();
                 toDate = endDate.toISOString();
@@ -1394,8 +1397,8 @@ const NewFinancialHealth = (props) => {
                     stage: "overview",
                     ...(tabDateName ? { name: tabDateName } : {}),
                 });
-                console.log("analysisData?.llm_cost",analysisData?.llm_cost)
-                await incrementCareVoiceAnalysisCount(userEmail, "ai-analysis", analysisData?.llm_cost?.total_usd, "financial-health",analysisData?.llm_cost?.token_usage);
+                console.log("analysisData?.llm_cost", analysisData?.llm_cost)
+                await incrementCareVoiceAnalysisCount(userEmail, "ai-analysis", analysisData?.llm_cost?.total_usd, "financial-health", analysisData?.llm_cost?.token_usage);
             } else {
                 // 🔹 Old upload flow
                 // 🔹 Upload flow (FIXED – parse like API)
@@ -1440,8 +1443,8 @@ const NewFinancialHealth = (props) => {
                     stage: "overview",
                     ...(tabDateName ? { name: tabDateName } : {}),
                 });
-                console.log("analysisData?.llm_cost in upload type",analysisData?.llm_cost)
-                await incrementCareVoiceAnalysisCount(userEmail, "ai-analysis", analysisData?.llm_cost?.total_usd, "financial-health",analysisData?.llm_cost?.token_usage);
+                console.log("analysisData?.llm_cost in upload type", analysisData?.llm_cost)
+                await incrementCareVoiceAnalysisCount(userEmail, "ai-analysis", analysisData?.llm_cost?.total_usd, "financial-health", analysisData?.llm_cost?.token_usage);
             }
 
 
@@ -1833,7 +1836,7 @@ const NewFinancialHealth = (props) => {
                             />
                         </div> */}
                         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                            {currentUserRole === "admin" && (
+                            {(currentUserRole === "admin" || currentUserRole === "owner") && (
                                 <button
                                     type="button"
                                     className="access-mgmt-trigger-btn"
@@ -2141,7 +2144,7 @@ const NewFinancialHealth = (props) => {
                             />
                         </div> */}
                         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                            {currentUserRole === "admin" && (
+                            {(currentUserRole === "admin" || currentUserRole === "owner") && (
                                 <button
                                     type="button"
                                     className="access-mgmt-trigger-btn"
@@ -2634,6 +2637,10 @@ const NewFinancialHealth = (props) => {
             {openAccessManagement && (
                 <FinancialHealthAccessManagement
                     onClose={() => setOpenAccessManagement(false)}
+                    onDeleted={() => {
+                        setOpenAccessManagement(false);
+                        fetchOrganization();
+                    }}
                     userEmail={userEmail}
                     allowStaffRole={false}
                 />

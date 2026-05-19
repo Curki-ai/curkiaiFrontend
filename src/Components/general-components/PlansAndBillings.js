@@ -10,13 +10,86 @@ import ausDollar from "../../Images/AusDollar.svg"
 import crossIcon from "../../Images/ComparePriceCross.png"
 import { API_BASE } from "../../config/apiBase";
 import { toast } from "react-toastify";
-const PlansAndBillings = ({ onClose, email: userEmail, firstName: firstName, setSubscriptionInfo, subscriptionInfo, isAdmin, setIsAdmin, adminDetails, setAdminDetails }) => {
-    // console.log("User Email:", userEmail);
-    // console.log("Subscription Info:", subscriptionInfo);
+import { auth } from "../../firebase";
+
+const PlansAndBillings = ({ onClose, email: userEmail, firstName: firstName, setSubscriptionInfo, subscriptionInfo }) => {
+    // Access state from GET /api/payment-plans/me?firebase_uid=...
+    // - canPurchase: true ONLY when the user has role="owner" in their org.
+    // - membership.role: "owner" / "admin" / "staff" / null
+    // - membership.plan_details: denormalized snapshot of the org's active
+    //   subscription (plan_key, billing_interval, status, etc.). This is the
+    //   authoritative source for what plan the org has — the Stripe webhook
+    //   fans out updates to every member's payment_plans row.
+    const [accessLoading, setAccessLoading] = useState(true);
+    const [access, setAccess] = useState({
+        canPurchase: false,
+        hasActiveSubscription: false,
+        role: null,
+        organizationId: null,
+        ownerEmail: null,
+        planDetails: null,
+    });
+
+    useEffect(() => {
+        let cancelled = false;
+        (async () => {
+            try {
+                setAccessLoading(true);
+                const firebase_uid = auth.currentUser?.uid || "";
+                if (!firebase_uid) {
+                    if (!cancelled) setAccessLoading(false);
+                    return;
+                }
+                const res = await fetch(
+                    `${API_BASE}/api/payment-plans/me?firebase_uid=${encodeURIComponent(firebase_uid)}`
+                );
+                const data = await res.json();
+                if (cancelled) return;
+                setAccess({
+                    canPurchase: !!data?.canPurchase,
+                    hasActiveSubscription: !!data?.hasActiveSubscription,
+                    role: data?.membership?.role || null,
+                    organizationId: data?.membership?.organizationId || null,
+                    ownerEmail: data?.membership?.email || null,
+                    planDetails: data?.membership?.plan_details || null,
+                });
+            } catch (err) {
+                console.error("[PlansAndBillings] /payment-plans/me failed:", err);
+            } finally {
+                if (!cancelled) setAccessLoading(false);
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, [userEmail]);
+
+    const ensurePurchaseAllowed = () => {
+        if (accessLoading) {
+            toast.info("Checking subscription access…");
+            return false;
+        }
+        if (access.canPurchase) return true;
+        if (access.role && access.role !== "owner") {
+            toast.error(
+                "Only the account Owner can purchase or change the subscription."
+            );
+            return false;
+        }
+        toast.error(
+            "Please ask your account Owner to set up the subscription."
+        );
+        return false;
+    };
+
     const [billing, setBilling] = useState("monthly");
     const [showCompare, setShowCompare] = useState(false);
-    const currentPlan = subscriptionInfo?.plan_key || "trial";
-    const currentBilling = subscriptionInfo?.billing_interval || "monthly";
+    // Prefer payment_plans.plan_details (org-scoped, denormalized per member,
+    // updated by the Stripe webhook). Fall back to the legacy subscriptionInfo
+    // prop for users not yet covered by the new model.
+    const effectiveSub = access.planDetails || subscriptionInfo || null;
+    const currentPlan = effectiveSub?.plan_key || "trial";
+    const currentBilling = effectiveSub?.billing_interval || "monthly";
 
     // Lock the body scroll while this fixed-overlay modal is open. Without
     // this the page underneath keeps its own scrollbar and the overlay's
@@ -189,6 +262,7 @@ const PlansAndBillings = ({ onClose, email: userEmail, firstName: firstName, set
                         yearly={950}
                         yearlyMonthly={89}
                         billing={billing}
+                        effectiveSub={effectiveSub}
                         features={[
                             "4M AI credits",
                             "100 SMS",
@@ -205,8 +279,7 @@ const PlansAndBillings = ({ onClose, email: userEmail, firstName: firstName, set
                         setSubscriptionInfo={setSubscriptionInfo}
                         currentPlan={currentPlan}
                         currentBilling={currentBilling}
-                        isAdmin={isAdmin}
-                        adminDetails={adminDetails}
+                        ensurePurchaseAllowed={ensurePurchaseAllowed}
                     />
 
                     <Plan
@@ -218,6 +291,7 @@ const PlansAndBillings = ({ onClose, email: userEmail, firstName: firstName, set
                         yearly={3830}
                         yearlyMonthly={299}
                         billing={billing}
+                        effectiveSub={effectiveSub}
                         features={[
                             "15M AI credits",
                             "1,000 SMS",
@@ -234,8 +308,7 @@ const PlansAndBillings = ({ onClose, email: userEmail, firstName: firstName, set
                         setSubscriptionInfo={setSubscriptionInfo}
                         currentPlan={currentPlan}
                         currentBilling={currentBilling}
-                        isAdmin={isAdmin}
-                        adminDetails={adminDetails}
+                        ensurePurchaseAllowed={ensurePurchaseAllowed}
                     />
 
                     <Plan
@@ -265,8 +338,7 @@ const PlansAndBillings = ({ onClose, email: userEmail, firstName: firstName, set
                         setSubscriptionInfo={setSubscriptionInfo}
                         currentPlan={currentPlan}
                         currentBilling={currentBilling}
-                        isAdmin={isAdmin}
-                        adminDetails={adminDetails}
+                        ensurePurchaseAllowed={ensurePurchaseAllowed}
                     />
 
                 </div>
@@ -373,17 +445,20 @@ const Plan = ({ title,
     onClose,
     firstName,
     subscriptionInfo,
-    setSubscriptionInfo, highlighted, badge, currentPlan, currentBilling, isAdmin, adminDetails }) => {
+    setSubscriptionInfo, highlighted, badge, currentPlan, currentBilling, ensurePurchaseAllowed, effectiveSub }) => {
     const PLAN_ORDER = {
         start: 1,
         grow: 2,
         thrive: 3,
         command: 4
     };
-
+    // Trial detection prefers effectiveSub (payment_plans.plan_details) and
+    // falls back to the legacy subscriptionInfo prop. A user with no
+    // effective sub at all is treated as a trial user.
+    const effective = effectiveSub || subscriptionInfo;
     const isTrialUser =
-        !subscriptionInfo ||
-        subscriptionInfo?.subscription_type === "trial";
+        !effective ||
+        effective?.subscription_type === "trial";
 
     const isSamePlan =
         !isTrialUser &&
@@ -412,9 +487,6 @@ const Plan = ({ title,
             }
         }
     }
-    // console.log("isUpgrade", isUpgrade);
-    // console.log("isCurrentPlan", isCurrentPlan);
-    // console.log("admin details", adminDetails)
     const price = billing === "monthly" ? monthly : yearly;
     const [loading, setLoading] = useState(false);
     const handlePlanChange = async () => {
@@ -638,10 +710,7 @@ const Plan = ({ title,
                             onClick={(e) => {
                                 e.stopPropagation();
 
-                                if (isAdmin === false) {
-                                    toast.error(`Only admins can manage billing & subscriptions, Please contact ${adminDetails.email}.`);
-                                    return;
-                                }
+                                if (!ensurePurchaseAllowed()) return;
 
                                 if (isUpgrade || isDowngrade) {
                                     handlePlanChange();

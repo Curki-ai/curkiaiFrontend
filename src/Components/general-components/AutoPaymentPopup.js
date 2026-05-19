@@ -1,20 +1,62 @@
-﻿import React, { useState } from "react";
+﻿import React, { useEffect, useState } from "react";
 import "../../Styles/general-styles/AutoPaymentPopup.css";
 import autoPaymentGif from "../../Images/autopaymentPopup.gif";
 import { toast } from "react-toastify";
 
 import { API_BASE } from "../../config/apiBase";
+import { auth } from "../../firebase";
 
-const AutoPaymentPopup = ({ onClose, userEmail, isAdmin, adminDetails }) => {
+const AutoPaymentPopup = ({ onClose, userEmail }) => {
   const [loading, setLoading] = useState(false);
+  const [accessLoading, setAccessLoading] = useState(true);
+  const [access, setAccess] = useState({
+    canPurchase: false,
+    role: null,
+  });
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        setAccessLoading(true);
+        const firebase_uid = auth.currentUser?.uid || "";
+        if (!firebase_uid) {
+          if (!cancelled) setAccessLoading(false);
+          return;
+        }
+        const res = await fetch(
+          `${API_BASE}/api/payment-plans/me?firebase_uid=${encodeURIComponent(firebase_uid)}`
+        );
+        const data = await res.json();
+        if (cancelled) return;
+        setAccess({
+          canPurchase: !!data?.canPurchase,
+          role: data?.membership?.role || null,
+        });
+      } catch (err) {
+        console.error("[AutoPaymentPopup] /payment-plans/me failed:", err);
+      } finally {
+        if (!cancelled) setAccessLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [userEmail]);
 
   const handleProceedTopup = async () => {
     try {
       console.log("[AutoPaymentPopup] Proceed topup clicked");
-      if (isAdmin === false) {
-        toast.error(
-          `Only admins can manage billing. Contact ${adminDetails?.name || ""} (${adminDetails?.email || ""})`
-        );
+      if (accessLoading) {
+        toast.info("Checking subscription access…");
+        return;
+      }
+      if (!access.canPurchase) {
+        if (access.role && access.role !== "owner") {
+          toast.error("Only the account Owner can manage billing.");
+        } else {
+          toast.error("Please ask your account Owner to set up the subscription.");
+        }
         return;
       }
       setLoading(true);

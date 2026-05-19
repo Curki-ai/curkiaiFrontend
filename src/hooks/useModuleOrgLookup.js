@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import { auth } from "../firebase";
 
 // Shared module-org lookup. Each per-module component (Client Event
 // Reporting, Incident Auditing, Quality and Risk, SIRS, Incident Report,
@@ -8,6 +9,9 @@ import { useEffect, useState, useCallback } from "react";
 //   - currentUserRole      → admin/staff (whether to show Access Management)
 //   - userStates           → state-based access if the module honors it
 //   - orgLookupStatus      → "loading" | "found" | "not_found"
+//
+// We also pass firebase_uid so the backend heal-path can backfill it onto
+// the access doc + seed payment_plans on first sign-in.
 //
 // Returns a `refresh` callback so the parent can re-fetch after the no-org
 // register flow completes.
@@ -23,9 +27,11 @@ const useModuleOrgLookup = ({ userEmail, orgsApiBase }) => {
     if (!userEmail || !orgsApiBase) return;
     setOrgLookupStatus("loading");
     try {
-      const res = await fetch(
-        `${orgsApiBase}/by-email?email=${encodeURIComponent(userEmail)}`
-      );
+      const firebase_uid = auth.currentUser?.uid || "";
+      const url =
+        `${orgsApiBase}/by-email?email=${encodeURIComponent(userEmail)}` +
+        (firebase_uid ? `&firebase_uid=${encodeURIComponent(firebase_uid)}` : "");
+      const res = await fetch(url);
       const data = await res.json();
       const first = data?.organizations?.[0];
       if (res.ok && data?.ok && first?.organizationId) {

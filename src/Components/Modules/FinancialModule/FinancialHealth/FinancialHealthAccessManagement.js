@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import "../../../../Styles/general-styles/FinancialHealthAccessManagement.css";
 import { API_BASE as ROOT_API_BASE } from "../../../../config/apiBase";
+import { auth } from "../../../../firebase";
 import { HiOutlineChevronDown, HiOutlineShieldCheck, HiOutlineUser } from "react-icons/hi";
 import { RiAdminLine } from "react-icons/ri";
 import { FiUserPlus, FiUsers } from "react-icons/fi";
@@ -157,6 +158,12 @@ const FinancialHealthAccessManagement = ({
   // role that can be assigned. The three apex modules pass false; the
   // incident/quality/SIRS surfaces keep the default and still expose both.
   allowStaffRole = true,
+  // Called right after a successful org delete. Parents pass a callback
+  // that closes the modal AND triggers their own org-state re-fetch
+  // (useModuleOrgLookup.refresh / fetchOrganization / etc) so the user
+  // bounces to NoOrgEmptyState without needing to refresh the page.
+  // Falls back to onClose when not provided.
+  onDeleted,
 }) => {
   const API_BASE = apiBase;
   const roleOptions = allowStaffRole ? ALL_ROLE_OPTIONS : [ADMIN_ROLE_OPTION];
@@ -173,10 +180,34 @@ const FinancialHealthAccessManagement = ({
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [pendingRemoval, setPendingRemoval] = useState(null);
+  // Org-delete state. Visible only when the logged-in user resolves as the
+  // org's owner via the loaded `users` list.
+  const [pendingOrgDelete, setPendingOrgDelete] = useState(false);
+  const [deletingOrg, setDeletingOrg] = useState(false);
 
-  const requestHeaders = () => {
+  // The orgs router lives at /api/<module>/organizations while this
+  // component's apiBase points at /api/<module>/access. Derive one from
+  // the other so callers don't need to pass a second URL.
+  const ORGS_BASE = API_BASE.endsWith("/access")
+    ? API_BASE.slice(0, -"/access".length) + "/organizations"
+    : `${API_BASE}/../organizations`;
+
+  // Builds headers for an authenticated backend call. Pulls the live
+  // Firebase ID token via `auth.currentUser.getIdToken()` (auto-refreshes
+  // if the cached token is close to expiry) and attaches it as a Bearer
+  // token. The backend's verifyFirebaseToken middleware checks this and
+  // overrides x-user-email / x-firebase-uid with the verified values.
+  const requestHeaders = async () => {
     const headers = { "Content-Type": "application/json" };
     if (userEmail) headers["x-user-email"] = userEmail;
+    if (auth.currentUser) {
+      try {
+        const token = await auth.currentUser.getIdToken();
+        if (token) headers["Authorization"] = `Bearer ${token}`;
+      } catch (err) {
+        console.warn("[fh-access] getIdToken failed:", err?.message);
+      }
+    }
     return headers;
   };
 
@@ -187,7 +218,7 @@ const FinancialHealthAccessManagement = ({
     try {
       const res = await fetch(`${API_BASE}/users`, {
         method: "GET",
-        headers: requestHeaders(),
+        headers: await requestHeaders(),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "Failed to load users");
@@ -239,7 +270,7 @@ const FinancialHealthAccessManagement = ({
     try {
       const res = await fetch(`${API_BASE}/invite`, {
         method: "POST",
-        headers: requestHeaders(),
+        headers: await requestHeaders(),
         body: JSON.stringify({
           name: trimmedName,
           email: trimmedEmail,
@@ -275,7 +306,7 @@ const FinancialHealthAccessManagement = ({
     try {
       const res = await fetch(
         `${API_BASE}/users/${encodeURIComponent(user.id)}`,
-        { method: "DELETE", headers: requestHeaders() }
+        { method: "DELETE", headers: await requestHeaders() }
       );
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data?.error || "Failed to remove user");
@@ -290,6 +321,34 @@ const FinancialHealthAccessManagement = ({
     } finally {
       setRevokingId("");
       setPendingRemoval(null);
+    }
+  };
+
+  const confirmDeleteOrg = async () => {
+    setError(""); setSuccess(""); setDeletingOrg(true);
+    try {
+      const res = await fetch(ORGS_BASE, {
+        method: "DELETE",
+        headers: await requestHeaders(),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.error || "Failed to delete organization");
+      setSuccess(
+        `Organization deleted (removed ${data?.deletedAccessRows ?? 0} member${
+          data?.deletedAccessRows === 1 ? "" : "s"
+        }).`
+      );
+      // Hand off to the parent: it should both close the modal AND refetch
+      // org state so the UI swaps to NoOrgEmptyState without a hard reload.
+      setTimeout(() => {
+        if (typeof onDeleted === "function") onDeleted();
+        else if (typeof onClose === "function") onClose();
+      }, 800);
+    } catch (err) {
+      setError(err.message || "Failed to delete organization");
+    } finally {
+      setDeletingOrg(false);
+      setPendingOrgDelete(false);
     }
   };
 
@@ -578,7 +637,7 @@ const FinancialHealthAccessManagement = ({
 
                       {/* Actions */}
                       <div className="fh-access-actions-cell">
-                        {(u.status === "invited" || u.status === "active") && !isSelf(u) ? (
+                        {(u.status === "invited" || u.status === "active") && !isSelf(u) && u.role !== "owner" ? (
                           <button
                             type="button"
                             className="fh-access-revoke-btn"
@@ -597,7 +656,13 @@ const FinancialHealthAccessManagement = ({
                         ) : (
                           <span
                             className="fh-access-actions-empty"
-                            title={isSelf(u) ? "You cannot remove your own access" : undefined}
+                            title={
+                              u.role === "owner"
+                                ? "The organization owner cannot be revoked"
+                                : isSelf(u)
+                                ? "You cannot remove your own access"
+                                : undefined
+                            }
                           >
                             —
                           </span>
@@ -608,9 +673,51 @@ const FinancialHealthAccessManagement = ({
                 </div>
               </div>
             )}
+
+            {/* ── DANGER ZONE — owner-only ── */}
+            {(() => {
+              const currentUserRow = (users || []).find(isSelf);
+              const isOwnerOfOrg = currentUserRow?.role === "owner";
+              if (!isOwnerOfOrg) return null;
+              return (
+                <div className="fh-access-danger-zone">
+                  <div className="fh-access-danger-zone-text">
+                    <div className="fh-access-danger-zone-title">
+                      Delete this organization
+                    </div>
+                    <div className="fh-access-danger-zone-subtitle">
+                      Permanently removes every member's access to{" "}
+                      {moduleLabel} for this organization. Your subscription
+                      and access to other modules are not affected — cancel
+                      your subscription in Stripe separately if needed.
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    className="fh-access-danger-zone-btn"
+                    onClick={() => setPendingOrgDelete(true)}
+                    disabled={deletingOrg}
+                  >
+                    {deletingOrg ? "Deleting…" : "Delete Organization"}
+                  </button>
+                </div>
+              );
+            })()}
           </div>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={pendingOrgDelete}
+        title="Delete this organization?"
+        message="Every member's access will be revoked and the organization will be permanently removed. This cannot be undone."
+        confirmLabel="Yes, delete"
+        cancelLabel="No"
+        confirmTone="danger"
+        busy={deletingOrg}
+        onConfirm={confirmDeleteOrg}
+        onCancel={() => setPendingOrgDelete(false)}
+      />
 
       <ConfirmDialog
         open={pendingRemoval !== null}

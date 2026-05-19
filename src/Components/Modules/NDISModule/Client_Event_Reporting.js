@@ -527,7 +527,7 @@ const Client_Event_Reporting = (props) => {
   }
   return (
     <div className="ce-page">
-      {currentUserRole === "admin" && (
+      {(currentUserRole === "admin" || currentUserRole === "owner") && (
         <div style={{ display: "flex", justifyContent: "flex-end", padding: "12px 16px 0" }}>
           <button
             type="button"
@@ -817,6 +817,10 @@ const Client_Event_Reporting = (props) => {
       {openAccessManagement && (
         <FinancialHealthAccessManagement
           onClose={() => setOpenAccessManagement(false)}
+          onDeleted={() => {
+            setOpenAccessManagement(false);
+            refetchOrg();
+          }}
           userEmail={userEmail}
           moduleLabel="Participant Events & Incident Management"
           apiBase={`${CEIM_API_BASE}/access`}

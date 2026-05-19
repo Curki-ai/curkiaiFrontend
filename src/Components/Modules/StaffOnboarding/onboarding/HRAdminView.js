@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { toast } from "react-toastify";
+import { auth } from "../../../../firebase";
 import "../../../../Styles/general-styles/SmartOnboarding.enhanced.css";
 import "../../../../Styles/general-styles/ResumeScreening.css";
 import "../../../../Styles/general-styles/NewSmartOnboardingHrView.css"
@@ -50,7 +51,11 @@ const HRAdminView = ({
   const [isDeletingCandidate, setIsDeletingCandidate] = useState(false);
   const [deleteError, setDeleteError] = useState("");
   const [openAccessManagement, setOpenAccessManagement] = useState(false);
-  
+  // Bumping this counter re-runs the org-resolution effect below — used
+  // when the user deletes their org from the access management modal so
+  // the page re-resolves state without a hard browser refresh.
+  const [orgReloadCounter, setOrgReloadCounter] = useState(0);
+
   useEffect(() => {
     // Resolve organizationId from the new `organizations` container.
     // On failure we leave organizationId as null and retry instead of
@@ -64,8 +69,10 @@ const HRAdminView = ({
       const email = user?.email;
       if (!email || cancelled) return;
       try {
+        const firebase_uid = auth.currentUser?.uid || "";
         const res = await fetch(
-          `${API_BASE}/api/organizations/by-email?email=${encodeURIComponent(email)}`
+          `${API_BASE}/api/organizations/by-email?email=${encodeURIComponent(email)}` +
+          (firebase_uid ? `&firebase_uid=${encodeURIComponent(firebase_uid)}` : "")
         );
         const data = await res.json();
         console.log(
@@ -93,7 +100,7 @@ const HRAdminView = ({
     return () => {
       cancelled = true;
     };
-  }, [user?.email]);
+  }, [user?.email, orgReloadCounter]);
 
   const fetchTestResults = useCallback(async () => {
     if (!organizationId) return;
@@ -1243,6 +1250,12 @@ const HRAdminView = ({
       {openAccessManagement && (
         <SmartOnboardingAccessManagement
           onClose={() => setOpenAccessManagement(false)}
+          onDeleted={() => {
+            setOpenAccessManagement(false);
+            // fetchOrganizationId is scoped inside the useEffect above;
+            // bump the counter to re-run it instead.
+            setOrgReloadCounter((n) => n + 1);
+          }}
           userEmail={user?.email}
           organizationId={organizationId}
         />

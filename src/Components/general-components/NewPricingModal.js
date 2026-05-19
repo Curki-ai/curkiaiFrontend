@@ -9,14 +9,16 @@ import pricingExample from "../../Images/newPricingExample.svg"
 import ausDollar from "../../Images/AusDollar.svg"
 import { toast } from "react-toastify";
 import { API_BASE } from "../../config/apiBase";
-const PricingPlansModal =({ onClose, email: userEmail, firstName: firstName, setSubscriptionInfo, isAdmin, adminDetails }) => {
-    console.log("User Email:", userEmail); // For debugging
+import { auth } from "../../firebase";
+const PricingPlansModal =({ onClose, email: userEmail, firstName: firstName, setSubscriptionInfo }) => {
     const [billing, setBilling] = useState("monthly");
     const [showCompare, setShowCompare] = useState(false);
+    const [accessLoading, setAccessLoading] = useState(true);
+    const [access, setAccess] = useState({
+        canPurchase: false,
+        role: null,
+    });
 
-    // Lock the body scroll while this fixed-overlay modal is open. Without
-    // this the page underneath keeps its own scrollbar and the overlay's
-    // scrollbar renders right next to it, showing two scrollbars at once.
     useEffect(() => {
         const previousOverflow = document.body.style.overflow;
         document.body.style.overflow = "hidden";
@@ -24,6 +26,54 @@ const PricingPlansModal =({ onClose, email: userEmail, firstName: firstName, set
             document.body.style.overflow = previousOverflow;
         };
     }, []);
+
+    useEffect(() => {
+        let cancelled = false;
+        (async () => {
+            try {
+                setAccessLoading(true);
+                const firebase_uid = auth.currentUser?.uid || "";
+                if (!firebase_uid) {
+                    if (!cancelled) setAccessLoading(false);
+                    return;
+                }
+                const res = await fetch(
+                    `${API_BASE}/api/payment-plans/me?firebase_uid=${encodeURIComponent(firebase_uid)}`
+                );
+                const data = await res.json();
+                if (cancelled) return;
+                setAccess({
+                    canPurchase: !!data?.canPurchase,
+                    role: data?.membership?.role || null,
+                });
+            } catch (err) {
+                console.error("[PricingPlansModal] /payment-plans/me failed:", err);
+            } finally {
+                if (!cancelled) setAccessLoading(false);
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, [userEmail]);
+
+    const ensurePurchaseAllowed = () => {
+        if (accessLoading) {
+            toast.info("Checking subscription access…");
+            return false;
+        }
+        if (access.canPurchase) return true;
+        if (access.role && access.role !== "owner") {
+            toast.error(
+                "Only the account Owner can purchase or change the subscription."
+            );
+            return false;
+        }
+        toast.error(
+            "Please ask your account Owner to set up the subscription."
+        );
+        return false;
+    };
 
     const handleCheckout = async ({ planKey }) => {
         try {
@@ -195,8 +245,7 @@ const PricingPlansModal =({ onClose, email: userEmail, firstName: firstName, set
                         onClose={onClose}
                         firstName={firstName}
                         setSubscriptionInfo={setSubscriptionInfo}
-                        isAdmin={isAdmin}
-                        adminDetails={adminDetails}
+                        ensurePurchaseAllowed={ensurePurchaseAllowed}
                     />
 
                     <Plan
@@ -221,8 +270,7 @@ const PricingPlansModal =({ onClose, email: userEmail, firstName: firstName, set
                         onClose={onClose}
                         firstName={firstName}
                         setSubscriptionInfo={setSubscriptionInfo}
-                        isAdmin={isAdmin}
-                        adminDetails={adminDetails}
+                        ensurePurchaseAllowed={ensurePurchaseAllowed}
                     />
 
                     <Plan
@@ -249,8 +297,7 @@ const PricingPlansModal =({ onClose, email: userEmail, firstName: firstName, set
                         onClose={onClose}
                         firstName={firstName}
                         setSubscriptionInfo={setSubscriptionInfo}
-                        isAdmin={isAdmin}
-                        adminDetails={adminDetails}
+                        ensurePurchaseAllowed={ensurePurchaseAllowed}
                     />
 
                 </div>
@@ -356,7 +403,7 @@ const Plan = ({ title,
     userEmail,
     onClose,
     firstName,
-    setSubscriptionInfo, highlighted, badge, isAdmin, adminDetails }) => {
+    setSubscriptionInfo, highlighted, badge, ensurePurchaseAllowed }) => {
     const price = billing === "monthly" ? monthly : yearly;
     const formatPrice = (value) => {
         if (!value) return value;
@@ -528,12 +575,7 @@ const Plan = ({ title,
                             }
                             onClick={(e) => {
                                 e.stopPropagation();
-
-                                if (!isAdmin) {
-                                    toast.error(`Only admins can manage billing & subscriptions, Please contact ${adminDetails.email}.`);
-                                    return;
-                                }
-
+                                if (!ensurePurchaseAllowed()) return;
                                 onCheckout({ planKey });
                             }}
                         >

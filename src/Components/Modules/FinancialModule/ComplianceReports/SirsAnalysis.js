@@ -139,7 +139,7 @@ const SirsAnalysis = (props) => {
     }
     return (
         <div className="sirs-page">
-            {currentUserRole === "admin" && (
+            {(currentUserRole === "admin" || currentUserRole === "owner") && (
                 <div style={{ display: "flex", justifyContent: "flex-end", padding: "12px 16px 0" }}>
                     <button
                         type="button"
@@ -212,6 +212,10 @@ const SirsAnalysis = (props) => {
             {openAccessManagement && (
                 <FinancialHealthAccessManagement
                     onClose={() => setOpenAccessManagement(false)}
+                    onDeleted={() => {
+                        setOpenAccessManagement(false);
+                        refetchOrg();
+                    }}
                     userEmail={userEmail}
                     moduleLabel="SIRS Analysis"
                     apiBase={`${SIRS_API_BASE}/access`}
