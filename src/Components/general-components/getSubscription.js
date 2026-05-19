@@ -1,4 +1,5 @@
 import { API_BASE } from "../../config/apiBase";
+import { auth } from "../../firebase";
 
 const isBillingPeriodOver = (subscription) => {
     if (!subscription) return true;
@@ -40,8 +41,14 @@ export const checkSubscriptionStatus = async (email) => {
     if (!email) return { shouldShowPricing: false };
 
     try {
+        // Backend now reads identity from the verified Firebase token, not
+        // the email query param. The email arg is kept for the early-exit
+        // guard above (still useful as a caller-side sanity check).
+        const token = await auth.currentUser?.getIdToken();
+        if (!token) return { shouldShowPricing: false };
         const res = await fetch(
-            `${API_BASE}/api/subscription/getSubscription?email=${email}`
+            `${API_BASE}/api/subscription/getSubscription`,
+            { headers: { Authorization: `Bearer ${token}` } }
         );
 
         const data = await res.json();

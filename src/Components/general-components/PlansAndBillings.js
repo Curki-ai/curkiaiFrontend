@@ -43,8 +43,10 @@ const PlansAndBillings = ({ onClose, email: userEmail, firstName: firstName, set
                     if (!cancelled) setAccessLoading(false);
                     return null;
                 }
+                const token = await auth.currentUser.getIdToken();
                 const res = await fetch(
-                    `${API_BASE}/api/payment-plans/me?firebase_uid=${encodeURIComponent(firebase_uid)}`
+                    `${API_BASE}/api/payment-plans/me?firebase_uid=${encodeURIComponent(firebase_uid)}`,
+                    { headers: { Authorization: `Bearer ${token}` } }
                 );
                 const data = await res.json();
                 if (cancelled) return null;
@@ -125,11 +127,15 @@ const PlansAndBillings = ({ onClose, email: userEmail, firstName: firstName, set
                 billingInterval: billing, // monthly / yearly
             };
 
+            const token = await auth.currentUser?.getIdToken();
             const res = await fetch(
                 `${API_BASE}/api/subscription/checkout`,
                 {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                    },
                     body: JSON.stringify(payload),
                 }
             );
@@ -506,13 +512,16 @@ const Plan = ({ title,
                 ? "/api/subscription/upgrade"
                 : "/api/subscription/downgrade";
 
+            const token = await auth.currentUser?.getIdToken();
             const res = await fetch(
                 `${API_BASE}${endpoint}`,
                 {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                    },
                     body: JSON.stringify({
-                        email: userEmail,
                         newPlanKey: planKey,
                         billingInterval: billing
                     })
@@ -565,12 +574,16 @@ const Plan = ({ title,
     const startTrial = async () => {
         try {
             // 1️⃣ Start trial in your system
+            const token = await auth.currentUser?.getIdToken();
             const res = await fetch(
                 `${API_BASE}/api/subscription/start-trial`,
                 {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ email: userEmail, firstName: firstName }),
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({ first_name: firstName }),
                 }
             );
 

@@ -114,14 +114,20 @@ const SignIn = ({ show, onClose }) => {
   if (!show) return null;
   const startTrialForUser = async (userEmail, firstName) => {
     try {
+      // Backend now requires a verified Firebase ID token and reads identity
+      // from the token, not the body. Caller has just signed in, so
+      // auth.currentUser is guaranteed.
+      const token = await auth.currentUser?.getIdToken();
       const res = await fetch(
         `${API_BASE}/api/subscription/start-trial`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
           body: JSON.stringify({
-            email: userEmail,
-            firstName: firstName || "",
+            first_name: firstName || "",
           }),
         }
       );
