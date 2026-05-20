@@ -1256,6 +1256,14 @@ const HRAdminView = ({
             // bump the counter to re-run it instead.
             setOrgReloadCounter((n) => n + 1);
           }}
+          onNoOrgDetected={() => {
+            setOpenAccessManagement(false);
+            setOrganizationId(null);
+            // Let the parent re-run the org lookup; if there really is no
+            // staff-onboarding access row the user lands wherever the
+            // module renders for a missing organizationId.
+            setOrgReloadCounter((n) => n + 1);
+          }}
           userEmail={user?.email}
           organizationId={organizationId}
         />

@@ -32,7 +32,7 @@ const IncidentManagement = (props) => {
     const [openAccessManagement, setOpenAccessManagement] = useState(false);
     const userEmail = props?.user?.email
 
-    const { currentUserRole, orgLookupStatus, refresh: refetchOrg } =
+    const { currentUserRole, orgLookupStatus, refresh: refetchOrg, forceNotFound: forceNoOrg } =
         useModuleOrgLookup({
             userEmail,
             orgsApiBase: `${CIM_API_BASE}/organizations`,
@@ -281,6 +281,10 @@ const IncidentManagement = (props) => {
                     onDeleted={() => {
                         setOpenAccessManagement(false);
                         refetchOrg();
+                    }}
+                    onNoOrgDetected={() => {
+                        setOpenAccessManagement(false);
+                        forceNoOrg();
                     }}
                     userEmail={userEmail}
                     moduleLabel="Custom Incident Management"

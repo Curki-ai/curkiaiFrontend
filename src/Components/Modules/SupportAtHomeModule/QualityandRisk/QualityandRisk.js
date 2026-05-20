@@ -30,7 +30,7 @@ const QualityandRisk = (props) => {
     const [showDownloadButton, setShowDownloadButton] = useState(false);
     const [openAccessManagement, setOpenAccessManagement] = useState(false);
 
-    const { currentUserRole, orgLookupStatus, refresh: refetchOrg } =
+    const { currentUserRole, orgLookupStatus, refresh: refetchOrg, forceNotFound: forceNoOrg } =
         useModuleOrgLookup({
             userEmail,
             orgsApiBase: `${QR_API_BASE}/organizations`,
@@ -193,6 +193,10 @@ const QualityandRisk = (props) => {
                     onDeleted={() => {
                         setOpenAccessManagement(false);
                         refetchOrg();
+                    }}
+                    onNoOrgDetected={() => {
+                        setOpenAccessManagement(false);
+                        forceNoOrg();
                     }}
                     userEmail={userEmail}
                     moduleLabel="Quality and Risk Reporting"

@@ -48,7 +48,7 @@ const Client_Event_Reporting = (props) => {
   const [isFromHistory, setIsFromHistory] = useState(false);
   const [openAccessManagement, setOpenAccessManagement] = useState(false);
 
-  const { currentUserRole, orgLookupStatus, refresh: refetchOrg } =
+  const { currentUserRole, orgLookupStatus, refresh: refetchOrg, forceNotFound: forceNoOrg } =
     useModuleOrgLookup({
       userEmail,
       orgsApiBase: `${CEIM_API_BASE}/organizations`,
@@ -820,6 +820,10 @@ const Client_Event_Reporting = (props) => {
           onDeleted={() => {
             setOpenAccessManagement(false);
             refetchOrg();
+          }}
+          onNoOrgDetected={() => {
+            setOpenAccessManagement(false);
+            forceNoOrg();
           }}
           userEmail={userEmail}
           moduleLabel="Participant Events & Incident Management"

@@ -2768,6 +2768,14 @@ export default function TlcNewCustomerReporting(props) {
                         setOpenAccessManagement(false);
                         fetchOrganization();
                     }}
+                    onNoOrgDetected={() => {
+                        setOpenAccessManagement(false);
+                        setOrganizationId(null);
+                        setOrganizationName("");
+                        setCurrentUserRole(null);
+                        setUserStates([]);
+                        setOrgLookupStatus("not_found");
+                    }}
                     userEmail={userEmail}
                     moduleLabel="Payroll Analysis"
                     apiBase={`${BASE_URL}/api/payroll/access`}

@@ -30,7 +30,7 @@ const IncidentReport = (props) => {
     const [showDownloadButton, setShowDownloadButton] = useState(false);
     const [openAccessManagement, setOpenAccessManagement] = useState(false);
 
-    const { currentUserRole, orgLookupStatus, refresh: refetchOrg } =
+    const { currentUserRole, orgLookupStatus, refresh: refetchOrg, forceNotFound: forceNoOrg } =
         useModuleOrgLookup({
             userEmail,
             orgsApiBase: `${IR_API_BASE}/organizations`,
@@ -229,6 +229,10 @@ const IncidentReport = (props) => {
                     onDeleted={() => {
                         setOpenAccessManagement(false);
                         refetchOrg();
+                    }}
+                    onNoOrgDetected={() => {
+                        setOpenAccessManagement(false);
+                        forceNoOrg();
                     }}
                     userEmail={userEmail}
                     moduleLabel="Incident Report"

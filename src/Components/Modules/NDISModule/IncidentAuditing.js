@@ -61,7 +61,7 @@ const IncidentAuditing = (props) => {
     const userEmail = props?.user?.email;
     const pageRef = useRef(null);
 
-    const { currentUserRole, orgLookupStatus, refresh: refetchOrg } =
+    const { currentUserRole, orgLookupStatus, refresh: refetchOrg, forceNotFound: forceNoOrg } =
         useModuleOrgLookup({
             userEmail,
             orgsApiBase: `${IA_API_BASE}/organizations`,
@@ -905,6 +905,10 @@ const IncidentAuditing = (props) => {
                     onDeleted={() => {
                         setOpenAccessManagement(false);
                         refetchOrg();
+                    }}
+                    onNoOrgDetected={() => {
+                        setOpenAccessManagement(false);
+                        forceNoOrg();
                     }}
                     userEmail={userEmail}
                     moduleLabel="Incident Auditing"

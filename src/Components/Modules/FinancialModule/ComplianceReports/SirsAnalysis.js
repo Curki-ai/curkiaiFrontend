@@ -27,7 +27,7 @@ const SirsAnalysis = (props) => {
     const [isConsentChecked, setIsConsentChecked] = useState(false);
     const [openAccessManagement, setOpenAccessManagement] = useState(false);
 
-    const { currentUserRole, orgLookupStatus, refresh: refetchOrg } =
+    const { currentUserRole, orgLookupStatus, refresh: refetchOrg, forceNotFound: forceNoOrg } =
         useModuleOrgLookup({
             userEmail,
             orgsApiBase: `${SIRS_API_BASE}/organizations`,
@@ -215,6 +215,10 @@ const SirsAnalysis = (props) => {
                     onDeleted={() => {
                         setOpenAccessManagement(false);
                         refetchOrg();
+                    }}
+                    onNoOrgDetected={() => {
+                        setOpenAccessManagement(false);
+                        forceNoOrg();
                     }}
                     userEmail={userEmail}
                     moduleLabel="SIRS Analysis"

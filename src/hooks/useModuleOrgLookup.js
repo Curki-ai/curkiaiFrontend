@@ -13,8 +13,14 @@ import { auth } from "../firebase";
 // We also pass firebase_uid so the backend heal-path can backfill it onto
 // the access doc + seed payment_plans on first sign-in.
 //
-// Returns a `refresh` callback so the parent can re-fetch after the no-org
-// register flow completes.
+// Returns:
+//   refresh        — re-fetch /by-email (used after register-org flow)
+//   forceNotFound  — flip status to "not_found" without re-fetching. Use
+//                    when the access middleware reports no row exists for
+//                    the user's firebase_uid (the /by-email row may be a
+//                    stale email match with no UID stamped, so re-fetching
+//                    would just bring it back). Bypasses the hook to land
+//                    the user on NoOrgEmptyState directly.
 
 const useModuleOrgLookup = ({ userEmail, orgsApiBase }) => {
   const [organizationId, setOrganizationId] = useState(null);
@@ -57,6 +63,14 @@ const useModuleOrgLookup = ({ userEmail, orgsApiBase }) => {
     refresh();
   }, [refresh]);
 
+  const forceNotFound = useCallback(() => {
+    setOrganizationId(null);
+    setOrganizationName("");
+    setCurrentUserRole(null);
+    setUserStates([]);
+    setOrgLookupStatus("not_found");
+  }, []);
+
   return {
     organizationId,
     organizationName,
@@ -64,6 +78,7 @@ const useModuleOrgLookup = ({ userEmail, orgsApiBase }) => {
     userStates,
     orgLookupStatus,
     refresh,
+    forceNotFound,
   };
 };
 

@@ -126,7 +126,7 @@ const RoleSelect = ({ value, onChange }) => {
 };
 
 // ─── Main Component ─────────────────────────────────────────────────────────
-const CareVoiceAccessManagement = ({ onClose, userEmail, onDeleted }) => {
+const CareVoiceAccessManagement = ({ onClose, userEmail, onDeleted, onNoOrgDetected }) => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("staff");
@@ -176,6 +176,19 @@ const CareVoiceAccessManagement = ({ onClose, userEmail, onDeleted }) => {
         headers: await requestHeaders(),
       });
       const data = await res.json();
+      // Access middleware reports the user has no v2d-user-access row whose
+      // firebase_uid matches the signed-in user. Hand off to the parent so it
+      // can swap the page to NoOrgEmptyState instead of showing this modal.
+      if (
+        res.status === 403 &&
+        typeof data?.error === "string" &&
+        data.error.toLowerCase().includes("no organization linked")
+      ) {
+        if (typeof onNoOrgDetected === "function") {
+          onNoOrgDetected();
+          return;
+        }
+      }
       if (!res.ok) throw new Error(data?.error || "Failed to load users");
       setUsers(Array.isArray(data?.data) ? data.data : []);
     } catch (err) {

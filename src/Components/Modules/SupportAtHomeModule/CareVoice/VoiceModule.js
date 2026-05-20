@@ -68,7 +68,7 @@ import adminLottie from "../../../../Images/adminPageLottie.json"
 import { API_BASE } from "../../../../config/apiBase";
 const VoiceModule = (props) => {
     const userEmail = props?.user?.email;
-    // const userEmail = "holly@contemporarycoordination.com"
+    // const userEmail = "admin@contemporarycoordination.com"
     const ALLOWED_USERS = [
         "mboutros@tenderlovingcaredisability.com.au",
         "rjodeh@tenderlovingcaredisability.com.au",
@@ -1369,9 +1369,12 @@ const VoiceModule = (props) => {
     const pollLatest = (id) => {
         console.log("[UI] pollLatest started for session:", id);
 
-        // Abort if no NEW event arrives within this window (engine truly hung).
-        // While the engine keeps heartbeating (status/processing), the deadline resets.
-        const STALL_TIMEOUT_MS = 2 * 60 * 1000; // 2 minutes of silence
+        // Abort if no NEW event arrives within this window. The engine can
+        // legitimately go silent for 2-3 min during a heavy LLM step on a
+        // large document, so this must comfortably exceed that gap. A truly
+        // dead engine is caught immediately via the WS-close "error" event,
+        // so this watchdog only needs to be a generous backstop.
+        const STALL_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes of silence
         let lastProgressAt = Date.now();
         let lastSeenSeq = 0;
         let done = false; // guards against late-arriving fetches after completion
@@ -4468,6 +4471,13 @@ const VoiceModule = (props) => {
                     onDeleted={() => {
                         setOpenAccessManagement(false);
                         fetchOrganization();
+                    }}
+                    onNoOrgDetected={() => {
+                        setOpenAccessManagement(false);
+                        setOrganizationId(null);
+                        setOrganizationName("");
+                        setCurrentUserRole(null);
+                        setOrgLookupStatus("not_found");
                     }}
                     userEmail={userEmail}
                 />
