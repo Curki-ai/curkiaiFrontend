@@ -48,7 +48,7 @@ const avatarGradient = (key = "") => {
   return `linear-gradient(135deg, ${a} 0%, ${b} 100%)`;
 };
 
-const SmartOnboardingAccessManagement = ({ onClose, userEmail, organizationId, onDeleted }) => {
+const SmartOnboardingAccessManagement = ({ onClose, userEmail, organizationId, onDeleted, onNoOrgDetected }) => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [users, setUsers] = useState([]);
@@ -98,6 +98,19 @@ const SmartOnboardingAccessManagement = ({ onClose, userEmail, organizationId, o
         headers: await requestHeaders(),
       });
       const data = await res.json();
+      // Access middleware reports the user has no user_access row whose
+      // firebase_uid matches the signed-in user. Hand off to the parent so it
+      // can swap the page to NoOrgEmptyState instead of showing this modal.
+      if (
+        res.status === 403 &&
+        typeof data?.error === "string" &&
+        data.error.toLowerCase().includes("no organization linked")
+      ) {
+        if (typeof onNoOrgDetected === "function") {
+          onNoOrgDetected();
+          return;
+        }
+      }
       if (!res.ok) throw new Error(data?.error || "Failed to load users");
       const list = Array.isArray(data?.data) ? data.data : [];
       setUsers(list);

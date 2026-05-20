@@ -2317,6 +2317,14 @@ const TlcNewClientProfitability = (props) => {
                         setOpenAccessManagement(false);
                         fetchOrganization();
                     }}
+                    onNoOrgDetected={() => {
+                        setOpenAccessManagement(false);
+                        setOrganizationId(null);
+                        setOrganizationName("");
+                        setCurrentUserRole(null);
+                        setUserStates([]);
+                        setOrgLookupStatus("not_found");
+                    }}
                     userEmail={userEmail}
                     moduleLabel="Client Profitability"
                     apiBase={`${BASE_URL}/api/client-profitability/access`}

@@ -164,6 +164,12 @@ const FinancialHealthAccessManagement = ({
   // bounces to NoOrgEmptyState without needing to refresh the page.
   // Falls back to onClose when not provided.
   onDeleted,
+  // Called when the backend reports there is no organization linked to
+  // this account (the access middleware's findUserByFirebaseUid returned
+  // zero rows). Parents should close the modal and flip their
+  // orgLookupStatus to "not_found" so the user lands on the Register
+  // Organization page instead of seeing this modal with a stale warning.
+  onNoOrgDetected,
 }) => {
   const API_BASE = apiBase;
   const roleOptions = allowStaffRole ? ALL_ROLE_OPTIONS : [ADMIN_ROLE_OPTION];
@@ -221,6 +227,21 @@ const FinancialHealthAccessManagement = ({
         headers: await requestHeaders(),
       });
       const data = await res.json();
+      // 403 + "No organization linked to this account" is the access
+      // middleware's signal that findUserByFirebaseUid returned zero rows.
+      // The parent's /by-email lookup may have stale-cached an org for this
+      // user (heal path didn't stamp firebase_uid), so hand control back so
+      // it can switch the page to NoOrgEmptyState.
+      if (
+        res.status === 403 &&
+        typeof data?.error === "string" &&
+        data.error.toLowerCase().includes("no organization linked")
+      ) {
+        if (typeof onNoOrgDetected === "function") {
+          onNoOrgDetected();
+          return;
+        }
+      }
       if (!res.ok) throw new Error(data?.error || "Failed to load users");
       const list = Array.isArray(data?.data) ? data.data : [];
       setUsers(list);
