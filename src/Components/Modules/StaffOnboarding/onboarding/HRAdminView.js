@@ -17,6 +17,7 @@ import incrementAnalysisCount from "../../FinancialModule/Tlc/TLcAnalysisCount";
 import incrementCareVoiceAnalysisCount from "../../SupportAtHomeModule/careVoiceCostAnalysis";
 import { API_BASE } from "../../../../config/apiBase";
 import SmartOnboardingAccessManagement from "./SmartOnboardingAccessManagement";
+import VirtualSpaceSwitcher from "./VirtualSpaceSwitcher";
 
 const HRAdminView = ({
   handleClick,
@@ -29,6 +30,7 @@ const HRAdminView = ({
   setMessages,
   setHrMode,
   setHrStep,
+  onActiveOrgChange,
 }) => {
   const [selectedFile, setSelectedFile] = useState([]);
   const [selectedJd, setSelectedJd] = useState([]);
@@ -40,7 +42,14 @@ const HRAdminView = ({
   const [progress, setProgress] = useState(0);
   const [selectedAssessment, setSelectedAssessment] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [organizationId, setOrganizationId] = useState(null);
+  // `baseOrganizationId` is the Main org (resolved from /by-email).
+  // `activeOrganizationId` is the workspace currently in view — the Main org
+  // by default, or a virtual space when one is selected. All Staff Onboarding
+  // CRUD keys off the active org; `organizationId` is an alias so the rest of
+  // this component reads the active workspace transparently.
+  const [baseOrganizationId, setBaseOrganizationId] = useState(null);
+  const [activeOrganizationId, setActiveOrganizationId] = useState(null);
+  const organizationId = activeOrganizationId;
   const [testResultsById, setTestResultsById] = useState({});
   const [selectedTestResult, setSelectedTestResult] = useState(null);
   const [selectedTestPreview, setSelectedTestPreview] = useState(null);
@@ -82,7 +91,7 @@ const HRAdminView = ({
         if (cancelled) return;
         const firstOrgId = data?.organizations?.[0]?.organizationId;
         if (res.ok && firstOrgId) {
-          setOrganizationId(firstOrgId);
+          setBaseOrganizationId(firstOrgId);
           return;
         }
         console.warn(
@@ -101,6 +110,53 @@ const HRAdminView = ({
       cancelled = true;
     };
   }, [user?.email, orgReloadCounter]);
+
+  // Resolve the active workspace once the Main org is known. Defaults to the
+  // Main org; restores a previously-selected virtual space from localStorage.
+  // VirtualSpaceSwitcher validates the restored id and reverts to Main if the
+  // space no longer exists or the user lost access.
+  useEffect(() => {
+    if (!baseOrganizationId || activeOrganizationId) return;
+    let next = baseOrganizationId;
+    try {
+      const stored = localStorage.getItem(`so_active_org_${baseOrganizationId}`);
+      if (stored) next = stored;
+    } catch (_) {}
+    setActiveOrganizationId(next);
+  }, [baseOrganizationId, activeOrganizationId]);
+
+  // Report the active workspace up to HomePage so the HR chat ("Ask AI") and
+  // resume-screening calls target the same virtual space the user is viewing.
+  useEffect(() => {
+    if (onActiveOrgChange) onActiveOrgChange(activeOrganizationId);
+  }, [activeOrganizationId, onActiveOrgChange]);
+
+  // Switch the active workspace (Main org or a virtual space). Persists the
+  // choice, clears stale data so the UI shows loading instead of the previous
+  // space's data, and resets to the Dashboard tab. The org-keyed fetches below
+  // re-run automatically once activeOrganizationId changes.
+  const handleSwitchSpace = useCallback(
+    (orgId) => {
+      if (!orgId || orgId === activeOrganizationId) return;
+      setActiveOrganizationId(orgId);
+      try {
+        if (baseOrganizationId) {
+          localStorage.setItem(`so_active_org_${baseOrganizationId}`, orgId);
+        }
+      } catch (_) {}
+      hasFetchedCandidatesRef.current = false;
+      setSmartCandidates([]);
+      setTestResultsById({});
+      setSelectedAssessment(null);
+      setSelectedTestResult(null);
+      setSelectedTestPreview(null);
+      setSelectedCandidates(new Set());
+      setShowResults(false);
+      setIsLoadingCandidates(true);
+      setActiveTab("Resume Screening");
+    },
+    [activeOrganizationId, baseOrganizationId]
+  );
 
   const fetchTestResults = useCallback(async () => {
     if (!organizationId) return;
@@ -445,6 +501,14 @@ const HRAdminView = ({
   return (
     <>
       <div className="hr-analysis-container">
+        {baseOrganizationId && (
+          <VirtualSpaceSwitcher
+            baseOrganizationId={baseOrganizationId}
+            activeOrganizationId={activeOrganizationId}
+            onSwitch={handleSwitchSpace}
+            userEmail={user?.email}
+          />
+        )}
         <div className="top-nav">
           <button
             className={`nav-tab ${activeTab === "Resume Screening" ? "active" : ""
@@ -1258,7 +1322,8 @@ const HRAdminView = ({
           }}
           onNoOrgDetected={() => {
             setOpenAccessManagement(false);
-            setOrganizationId(null);
+            setBaseOrganizationId(null);
+            setActiveOrganizationId(null);
             // Let the parent re-run the org lookup; if there really is no
             // staff-onboarding access row the user lands wherever the
             // module renders for a missing organizationId.

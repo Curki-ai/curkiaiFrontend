@@ -1,0 +1,199 @@
+/* Virtual Space switcher — button + dropdown above the Staff Onboarding tabs. */
+
+.vs-switcher {
+  position: relative;
+  display: flex;
+  justify-content: flex-end;
+  margin: 0 0 12px 0;
+}
+
+/* Trigger button */
+.vs-switcher-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: #ffffff;
+  border: 1px solid #e3e1f0;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  color: #4b3f72;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.vs-switcher-btn:hover,
+.vs-switcher-btn.open {
+  border-color: #6c4cdc;
+  box-shadow: 0 2px 10px rgba(108, 76, 220, 0.15);
+}
+
+.vs-switcher-btn-icon {
+  font-size: 16px;
+  color: #6c4cdc;
+}
+
+.vs-switcher-btn-label {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vs-switcher-caret {
+  font-size: 16px;
+  color: #8b86a8;
+  transition: transform 0.15s ease;
+}
+
+.vs-switcher-btn.open .vs-switcher-caret {
+  transform: rotate(180deg);
+}
+
+/* Dropdown menu */
+.vs-switcher-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 260px;
+  background: #ffffff;
+  border: 1px solid #e3e1f0;
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(40, 28, 90, 0.16);
+  padding: 6px;
+  z-index: 50;
+}
+
+.vs-switcher-menu-heading {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #9b96b3;
+  padding: 8px 10px 6px;
+}
+
+/* Menu item (Main org + each space) */
+.vs-switcher-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 9px 10px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #3f3a5c;
+  text-align: left;
+}
+
+.vs-switcher-item:hover {
+  background: #f4f2fd;
+}
+
+.vs-switcher-item.active {
+  background: #f0ecfc;
+  font-weight: 600;
+  color: #5733c9;
+}
+
+.vs-switcher-item-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vs-switcher-item-check {
+  flex-shrink: 0;
+  font-size: 16px;
+  color: #6c4cdc;
+}
+
+/* Create section */
+.vs-switcher-create {
+  border-top: 1px solid #eeecf9;
+  margin-top: 6px;
+  padding-top: 6px;
+}
+
+.vs-switcher-create-trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 9px 10px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  color: #6c4cdc;
+  text-align: left;
+}
+
+.vs-switcher-create-trigger:hover {
+  background: #f4f2fd;
+}
+
+.vs-switcher-input {
+  width: 100%;
+  padding: 9px 10px;
+  border: 1px solid #d9d5ec;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #3f3a5c;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.vs-switcher-input:focus {
+  border-color: #6c4cdc;
+}
+
+.vs-switcher-create-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.vs-switcher-cancel,
+.vs-switcher-confirm {
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.vs-switcher-cancel {
+  background: #f1f0f6;
+  border: 1px solid #e3e1f0;
+  color: #6b6685;
+}
+
+.vs-switcher-confirm {
+  background: #6c4cdc;
+  border: 1px solid #6c4cdc;
+  color: #ffffff;
+}
+
+.vs-switcher-confirm:disabled,
+.vs-switcher-cancel:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.vs-switcher-error {
+  margin-top: 8px;
+  padding: 6px 10px;
+  background: #fdecec;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #c0392b;
+}
