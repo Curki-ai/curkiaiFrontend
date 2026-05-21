@@ -190,6 +190,12 @@ const HomePage = () => {
   const [showCandidateModal, setShowCandidateModal] = useState(false);
   const [candidatesData, setCandidatesData] = useState([]);
   const [organizationId, setOrganizationId] = useState(null);
+  // Active HR workspace — mirrors the virtual-space selection inside
+  // HRAdminView (reported up via the onActiveOrgChange callback). The HR chat
+  // and resume-screening calls must target the space the user is in, not the
+  // Main org. Falls back to organizationId until HRAdminView reports a value.
+  const [activeOrganizationId, setActiveOrganizationId] = useState(null);
+  const hrActiveOrgId = activeOrganizationId || organizationId;
   // Tracks the lifecycle of the by-email org lookup so the HR admin view can
   // distinguish "still loading" from "looked up and there is no org for this
   // email". On "not_found" the HR view renders the NoOrgEmptyState (register
@@ -507,7 +513,7 @@ const HomePage = () => {
 
       console.log("Fetching all candidates for:", {
         admin_email: user.email,
-        organization_id: organizationId
+        organization_id: hrActiveOrgId
       });
 
       const res = await axios.get(
@@ -515,7 +521,7 @@ const HomePage = () => {
         {
           params: {
             admin_email: user.email,
-            organization_id: organizationId
+            organization_id: hrActiveOrgId
           }
         }
       );
@@ -549,7 +555,8 @@ const HomePage = () => {
     if (isHRAskAiPage && user?.email) {
       fetchAllCandidates();
     }
-  }, [selectedRole, user]);
+    // activeOrganizationId: refetch when the user switches virtual space.
+  }, [selectedRole, user, activeOrganizationId]);
   useEffect(() => {
     if (
       !subscriptionInfo ||
@@ -755,7 +762,7 @@ const HomePage = () => {
       ]);
 
       const formData = new FormData();
-      formData.append("organisation_id", organizationId);
+      formData.append("organisation_id", hrActiveOrgId);
       formData.append("jd_file", jdFiles[0]);
 
       resumeFiles.forEach((file) => {
@@ -818,7 +825,7 @@ const HomePage = () => {
       const data = await axios.post(
         `${API_BASE}/api/shortlist-screened`,
         {
-          organisation_id: organizationId,
+          organisation_id: hrActiveOrgId,
           admin_email: user?.email,
           screened: screenedResults,
           selected_indices: selectedCandidates
@@ -989,7 +996,7 @@ const HomePage = () => {
     // the upstream WS, so the upstream sees the same shape as the HTML
     // client.
     const payload = {
-      organisation_id: organizationId,
+      organisation_id: hrActiveOrgId,
       message: finalQuery,
       max_conversation_turns: 5,
       workflow_phase:
@@ -2164,7 +2171,7 @@ const HomePage = () => {
                           />
                         ) : (
                           <HRAnalysis handleClick={handleClick} selectedRole="Smart Onboarding (Staff)" setShowFeedbackPopup={setShowFeedbackPopup} user={user} setManualResumeZip={setManualResumeZip} setShowAIChat={setShowAIChat}
-                            setMessages={setMessages} setHrMode={setHrMode} setHrStep={setHrStep} organizationId={organizationId} />
+                            setMessages={setMessages} setHrMode={setHrMode} setHrStep={setHrStep} organizationId={organizationId} onActiveOrgChange={setActiveOrganizationId} />
                         )}
                       </div>
                       <div style={{ display: selectedRole === "Care Voice" ? "block" : "none" }}>
