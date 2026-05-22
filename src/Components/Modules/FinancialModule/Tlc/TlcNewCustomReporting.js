@@ -143,7 +143,6 @@ export default function TlcNewCustomerReporting(props) {
         }
     }, [activeTab, tabs]);
     const userEmail = props?.user?.email?.trim();
-    // const userEmail = "gjavier@tenderlovingcaredisability.com.au"
     // const userEmail = "bastruc@tenderlovingcaredisability.com.au"
     const setTlcPayrollAskAiConversationHistory = props.setTlcPayrollAskAiConversationHistory; // ✅ NEW
     const tlcPayrollAskAiConversationHistory = props.tlcPayrollAskAiConversationHistory; // ✅ NEW

@@ -199,7 +199,6 @@ const TlcNewClientProfitability = (props) => {
 
     const userEmail = user?.email;
     // const userEmail = "bastruc@tenderlovingcaredisability.com.au"
-    // const userEmail = "ilaurente@tenderlovingcaredisability.com.au";
 
     // Access-management driven state. Mirrors NewFinancialModule.js — the
     // org lookup feeds organizationId (history scope), currentUserRole (Access

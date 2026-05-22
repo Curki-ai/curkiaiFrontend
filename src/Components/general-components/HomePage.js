@@ -1887,7 +1887,13 @@ const HomePage = () => {
                 />
               )}
 
-              <div style={{ flex: 1, minWidth: 0 }}>
+              {/* Right column is a fixed-height (100vh) internal scroll
+                  region. The PAGE itself no longer scrolls — only this
+                  panel does. That keeps the 100vh sidebar covering the
+                  full viewport at every scroll position (previously a
+                  taller-than-viewport page left a white gap below the
+                  sidebar). */}
+              <div style={{ flex: 1, minWidth: 0, height: "100vh", overflowY: "auto" }}>
                 <div
                   className="typeofreportmaindiv"
                   style={{
@@ -2171,7 +2177,14 @@ const HomePage = () => {
                           />
                         ) : (
                           <HRAnalysis handleClick={handleClick} selectedRole="Smart Onboarding (Staff)" setShowFeedbackPopup={setShowFeedbackPopup} user={user} setManualResumeZip={setManualResumeZip} setShowAIChat={setShowAIChat}
-                            setMessages={setMessages} setHrMode={setHrMode} setHrStep={setHrStep} organizationId={organizationId} onActiveOrgChange={setActiveOrganizationId} />
+                            setMessages={setMessages} setHrMode={setHrMode} setHrStep={setHrStep} organizationId={organizationId} onActiveOrgChange={setActiveOrganizationId}
+                            onOrgRemoved={() => {
+                              // Org deleted (or backend reports no org) — swap to
+                              // NoOrgEmptyState immediately, no reload needed.
+                              setOrganizationId(null);
+                              setActiveOrganizationId(null);
+                              setOrgLookupStatus("not_found");
+                            }} />
                         )}
                       </div>
                       <div style={{ display: selectedRole === "Care Voice" ? "block" : "none" }}>
