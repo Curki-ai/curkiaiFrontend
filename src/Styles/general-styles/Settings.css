@@ -351,7 +351,12 @@
 .support-table {
   background: #FFFFFF;
   border-radius: 12px;
-  overflow: visible;
+  /* Cap the table height so a large ticket list scrolls WITHIN the
+     support card instead of stretching the whole Settings page. The
+     column header below is sticky so it stays visible while rows
+     scroll. */
+  max-height: 320px;
+  overflow-y: auto;
 }
 
 .support-table-header,
@@ -369,6 +374,10 @@
   font-size: 13px;
   font-weight: 600;
   background: #E5E7EB;
+  /* Pin the column header while the rows below scroll. */
+  position: sticky;
+  top: 0;
+  z-index: 1;
 }
 
 .support-table-row {

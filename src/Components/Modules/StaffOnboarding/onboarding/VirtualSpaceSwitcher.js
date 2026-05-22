@@ -34,6 +34,8 @@ const VirtualSpaceSwitcher = ({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const rootRef = useRef(null);
+  // Ensures the persisted-space restore runs at most once per mount.
+  const restoredRef = useRef(false);
 
   // Headers for an authenticated backend call. The BASE org id goes in
   // x-organization-id so requireSmartOnboardingAdmin gates on base-org
@@ -87,6 +89,27 @@ const VirtualSpaceSwitcher = ({
       onSwitch(baseOrganizationId);
     }
   }, [loaded, spaces, activeOrganizationId, baseOrganizationId, onSwitch]);
+
+  // Restore a persisted virtual-space selection — but only once the real
+  // space list has loaded, and only if the saved space still exists. A stale
+  // entry (e.g. the space was deleted) is removed and ignored, so the app is
+  // never stranded on a dead organizationId.
+  useEffect(() => {
+    if (!loaded || restoredRef.current || !baseOrganizationId) return;
+    restoredRef.current = true;
+    let stored = null;
+    try {
+      stored = localStorage.getItem(`so_active_org_${baseOrganizationId}`);
+    } catch (_) {}
+    if (!stored || stored === baseOrganizationId) return;
+    if (spaces.some((s) => s.organizationId === stored)) {
+      onSwitch(stored);
+    } else {
+      try {
+        localStorage.removeItem(`so_active_org_${baseOrganizationId}`);
+      } catch (_) {}
+    }
+  }, [loaded, spaces, baseOrganizationId, onSwitch]);
 
   // Close the dropdown on an outside click.
   useEffect(() => {

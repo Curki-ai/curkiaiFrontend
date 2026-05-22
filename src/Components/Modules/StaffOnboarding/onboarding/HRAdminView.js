@@ -31,6 +31,7 @@ const HRAdminView = ({
   setHrMode,
   setHrStep,
   onActiveOrgChange,
+  onOrgRemoved,
 }) => {
   const [selectedFile, setSelectedFile] = useState([]);
   const [selectedJd, setSelectedJd] = useState([]);
@@ -111,18 +112,13 @@ const HRAdminView = ({
     };
   }, [user?.email, orgReloadCounter]);
 
-  // Resolve the active workspace once the Main org is known. Defaults to the
-  // Main org; restores a previously-selected virtual space from localStorage.
-  // VirtualSpaceSwitcher validates the restored id and reverts to Main if the
-  // space no longer exists or the user lost access.
+  // Resolve the active workspace once the Main org is known. Always starts on
+  // the Main org — a persisted virtual-space selection is restored by
+  // VirtualSpaceSwitcher only AFTER it confirms the space still exists, so a
+  // deleted space can never strand the app on a dead organizationId.
   useEffect(() => {
     if (!baseOrganizationId || activeOrganizationId) return;
-    let next = baseOrganizationId;
-    try {
-      const stored = localStorage.getItem(`so_active_org_${baseOrganizationId}`);
-      if (stored) next = stored;
-    } catch (_) {}
-    setActiveOrganizationId(next);
+    setActiveOrganizationId(baseOrganizationId);
   }, [baseOrganizationId, activeOrganizationId]);
 
   // Report the active workspace up to HomePage so the HR chat ("Ask AI") and
@@ -1316,17 +1312,19 @@ const HRAdminView = ({
           onClose={() => setOpenAccessManagement(false)}
           onDeleted={() => {
             setOpenAccessManagement(false);
-            // fetchOrganizationId is scoped inside the useEffect above;
-            // bump the counter to re-run it instead.
+            setBaseOrganizationId(null);
+            setActiveOrganizationId(null);
+            // Tell HomePage the org is gone so it swaps to NoOrgEmptyState
+            // immediately — no manual page reload required.
+            if (onOrgRemoved) onOrgRemoved();
             setOrgReloadCounter((n) => n + 1);
           }}
           onNoOrgDetected={() => {
             setOpenAccessManagement(false);
             setBaseOrganizationId(null);
             setActiveOrganizationId(null);
-            // Let the parent re-run the org lookup; if there really is no
-            // staff-onboarding access row the user lands wherever the
-            // module renders for a missing organizationId.
+            // Backend reports no org for this user — swap to NoOrgEmptyState.
+            if (onOrgRemoved) onOrgRemoved();
             setOrgReloadCounter((n) => n + 1);
           }}
           userEmail={user?.email}

@@ -92,7 +92,7 @@ const HRAnalysis = (props) => {
 
             <div>
                 {role === "Admin" ? <HRAdminView role={role} selectedRole={props.selectedRole} user={props?.user} setManualResumeZip={props?.setManualResumeZip}
-                    setShowAIChat={props?.setShowAIChat} setMessages={props?.setMessages} setHrMode={props?.setHrMode} setHrStep={props?.setHrStep} onActiveOrgChange={props?.onActiveOrgChange}/> : <HRStaffView role={role} user={props?.user} />}
+                    setShowAIChat={props?.setShowAIChat} setMessages={props?.setMessages} setHrMode={props?.setHrMode} setHrStep={props?.setHrStep} onActiveOrgChange={props?.onActiveOrgChange} onOrgRemoved={props?.onOrgRemoved}/> : <HRStaffView role={role} user={props?.user} />}
             </div>
         </div>
     );
