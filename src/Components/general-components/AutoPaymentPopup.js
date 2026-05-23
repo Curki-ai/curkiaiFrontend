@@ -63,35 +63,55 @@ const AutoPaymentPopup = ({ onClose, userEmail }) => {
       }
       setLoading(true);
 
-      const response = await fetch(`${API_BASE}/api/trigger-autopayment`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          userEmail: userEmail
-        })
-      });
-
-      console.log("[AutoPaymentPopup] API response status:", response.status);
-
-      const data = await response.json();
-
-      console.log("[AutoPaymentPopup] API response data:", data);
-
-      if (!response.ok) {
-        console.error("[AutoPaymentPopup] Topup request failed:", data);
+      // The backend now reads identity from the verified Firebase token —
+      // no more body-supplied userEmail. The popup stays mounted during
+      // the await so the user sees the "Processing..." state on the
+      // button continuously.
+      const token = await auth.currentUser?.getIdToken();
+      if (!token) {
+        toast.error("Authentication expired — please sign in again.");
         setLoading(false);
         return;
       }
 
-      console.log("[AutoPaymentPopup] Auto topup request successfully sent");
+      const response = await fetch(`${API_BASE}/api/trigger-autopayment`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({}),
+      });
 
-      setLoading(false);
-      onClose();
+      console.log("[AutoPaymentPopup] API response status:", response.status);
 
+      const data = await response.json().catch(() => ({}));
+      console.log("[AutoPaymentPopup] API response data:", data);
+
+      if (!response.ok || data?.ok === false) {
+        console.error("[AutoPaymentPopup] Topup request failed:", data);
+        toast.error(data?.message || "Auto topup failed. Please try again.");
+        setLoading(false);
+        return;
+      }
+
+      console.log("[AutoPaymentPopup] Auto topup completed");
+      toast.success(
+        "Auto topup completed — refreshing to update your balance…"
+      );
+
+      // Keep the popup visible (with the button still in the "Processing"
+      // state) until the page actually reloads, so the user doesn't see a
+      // momentary unresponsive UI between close and refresh. The Stripe
+      // webhook may take a few seconds to credit the balance; if it
+      // hasn't fired yet by the time the page reloads, HomePage's
+      // proactive useEffect will simply re-open this popup on the new
+      // balance read — that's expected and self-corrects once the
+      // webhook lands.
+      window.location.reload();
     } catch (error) {
       console.error("[AutoPaymentPopup] Error while triggering auto topup:", error);
+      toast.error("Something went wrong. Please try again.");
       setLoading(false);
     }
   };

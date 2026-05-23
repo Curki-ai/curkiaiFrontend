@@ -746,6 +746,20 @@ export default function TlcNewCustomerReporting(props) {
     const handleAnalyse = async () => {
         if (!activeTabData) return;
 
+        // Auto-topup balance gate. Dispatch a cancelable intent event;
+        // HomePage's ANALYSIS_INTENT listener inspects the live subscription
+        // balance and, if it's below the per-click safe minimum, opens the
+        // AutoPaymentPopup AND preventDefault()s — making this dispatch
+        // return false. We abort before doing anything else so the user
+        // doesn't see the "Analysing..." spinner over a run that's about to
+        // exceed their balance.
+        const intent = new CustomEvent("ANALYSIS_INTENT", { cancelable: true });
+        const allowed = window.dispatchEvent(intent);
+        if (!allowed) {
+            console.log("[handleAnalyse] aborted by ANALYSIS_INTENT gate");
+            return;
+        }
+
         const {
             startDate,
             endDate,

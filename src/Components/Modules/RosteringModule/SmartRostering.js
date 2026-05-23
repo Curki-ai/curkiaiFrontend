@@ -403,6 +403,10 @@ const SmartRostering = (props) => {
     }, [screen]);
     // 🔹 Call backend rostering API (Controller 1)
     const startBulkProcessing = () => {
+        // Auto-topup balance gate (see HomePage's ANALYSIS_INTENT listener).
+        const intent = new CustomEvent("ANALYSIS_INTENT", { cancelable: true });
+        if (!window.dispatchEvent(intent)) return;
+
         const queue = unallocatedClients
             .filter(c => selectedShiftIds.includes(c.shiftId))
             .map(c => ({
@@ -423,6 +427,10 @@ const SmartRostering = (props) => {
     };
 
     const handleClientClick = async (client) => {
+        // Auto-topup balance gate (see HomePage's ANALYSIS_INTENT listener).
+        const intent = new CustomEvent("ANALYSIS_INTENT", { cancelable: true });
+        if (!window.dispatchEvent(intent)) return;
+
         setLoading(true);
         try {
             const user = visualCareCreds?.user;
@@ -495,6 +503,10 @@ const SmartRostering = (props) => {
 
 
     const handleSubmit = async () => {
+        // Auto-topup balance gate (see HomePage's ANALYSIS_INTENT listener).
+        const intent = new CustomEvent("ANALYSIS_INTENT", { cancelable: true });
+        if (!window.dispatchEvent(intent)) return;
+
         if (!query.trim()) {
             toast.warn("Please enter a query first.");
             return;

@@ -228,6 +228,10 @@ const Client_Event_Reporting = (props) => {
   };
 
   const handleAnalyse = async () => {
+    // Auto-topup balance gate (see HomePage's ANALYSIS_INTENT listener).
+    const intent = new CustomEvent("ANALYSIS_INTENT", { cancelable: true });
+    if (!window.dispatchEvent(intent)) return;
+
     if (selectedFiles.length === 0) {
       toast.warn("Please select at least one file");
       return;

@@ -863,6 +863,10 @@ const TlcNewClientProfitability = (props) => {
     // };
 
     const handleAnalyse = async () => {
+        // Auto-topup balance gate (see HomePage's ANALYSIS_INTENT listener).
+        const intent = new CustomEvent("ANALYSIS_INTENT", { cancelable: true });
+        if (!window.dispatchEvent(intent)) return;
+
         try {
             if (!activeTabData.startDate || !activeTabData.endDate) {
                 toast.warn("Please select date range");

@@ -163,6 +163,21 @@ const HomePage = () => {
   // will store like: "messageIndex_sourceIndex"
   const [feedbackState, setFeedbackState] = useState({});
   const recognizerRef = useRef(null);
+  // Session-scoped guard for the proactive auto-topup popup (see effect
+  // below). True after the user closes the popup without paying, so the
+  // popup doesn't immediately re-pop on the next render while the balance
+  // is still depleted. Cleared automatically when balance climbs back
+  // above the threshold so a future dip can re-open the popup — AND
+  // whenever `selectedRole` changes (see the popup effect), so dismissing
+  // the popup buys peace only until the user switches to a different
+  // module.
+  const autoTopupDismissedRef = useRef(false);
+  // Tracks the selectedRole value the last time the proactive auto-topup
+  // effect ran. Used to detect "the user just switched modules" so we can
+  // reset the dismissed-guard and re-show the popup if balance is still
+  // low — matches the product behaviour "popup reappears on next module
+  // action after the user clicks 'No thanks'".
+  const lastSelectedRoleForTopupRef = useRef(null);
   const handleModalOpen = () => setModalVisible(true);
   const handleModalClose = () => setModalVisible(false);
   const handleLeftModalOpen = () => setLeftModalVisible(true);
@@ -234,7 +249,7 @@ const HomePage = () => {
     "curki.ai",
     "tenderlovingcaredisability.com.au",
     "tenderlovingcare.com.au",
-    "careait.com"
+    // "careait.com" — TEMP: removed for autopay popup testing. Restore before deploying.
   ];
   const tlcDomains = [
     "tenderlovingcaredisability.com.au",
@@ -425,6 +440,94 @@ const HomePage = () => {
     };
 
   }, []);
+
+  // Proactive auto-topup popup gate.
+  //
+  // Watches subscriptionInfo + selectedRole and surfaces AutoPaymentPopup
+  // the moment the token balance dips below the per-click safe minimum.
+  // The popup is *state*-driven, independent of any /increment endpoint
+  // response.
+  //
+  // Dismissal semantics:
+  //   - When the user clicks "No thanks", `autoTopupDismissedRef` is set
+  //     to true (see the popup's onClose below). That keeps the popup
+  //     from immediately re-popping during the *current* module view.
+  //   - The ref CLEARS on two conditions:
+  //       (a) balance climbs back above the threshold (e.g. after a
+  //           successful topup), so a future dip can re-arm the popup;
+  //       (b) the user navigates to a different module — the spec is
+  //           "popup reappears when the user tries to run any module
+  //           again", so a sidebar switch counts.
+  useEffect(() => {
+    if (!subscriptionInfo) return;
+    if (blockedAutoTopupDomains.includes(userDomain)) return;
+    if (subscriptionInfo.subscription_type === "trial") return;
+    if (subscriptionInfo.status !== "active") return;
+
+    const balance = Number(subscriptionInfo.token_balance);
+    if (!Number.isFinite(balance)) return; // backend didn't supply the field
+
+    const PER_CLICK_SAFE_MIN = 150_000;
+
+    if (balance >= PER_CLICK_SAFE_MIN) {
+      autoTopupDismissedRef.current = false;
+      lastSelectedRoleForTopupRef.current = selectedRole;
+      return;
+    }
+
+    // Module-switch clears the dismissed-guard so the popup reappears on
+    // the next module the user actually tries to use.
+    if (
+      lastSelectedRoleForTopupRef.current !== null &&
+      lastSelectedRoleForTopupRef.current !== selectedRole
+    ) {
+      autoTopupDismissedRef.current = false;
+    }
+    lastSelectedRoleForTopupRef.current = selectedRole;
+
+    if (autoTopupDismissedRef.current) return;
+    setShowAutoPaymentPopup(true);
+  }, [subscriptionInfo, userDomain, selectedRole]);
+
+  // Per-action gate for the auto-topup popup.
+  //
+  // Module analyze handlers dispatch a cancelable `ANALYSIS_INTENT`
+  // CustomEvent before kicking off any backend call. If balance is below
+  // the per-click safe minimum, this listener:
+  //   1. Clears the dismissed-guard (so the popup can re-arm even after
+  //      "No thanks").
+  //   2. Opens AutoPaymentPopup.
+  //   3. Calls event.preventDefault().
+  //
+  // `window.dispatchEvent` returns false when preventDefault was called
+  // on a cancelable event, so the dispatching module reads that boolean
+  // and aborts before showing its own "Analysing..." spinner.
+  //
+  // This is the only place the gate logic lives — modules just opt in by
+  // adding a one-liner at the top of their analyze handler.
+  useEffect(() => {
+    const handler = (event) => {
+      if (!subscriptionInfo) return;
+      if (blockedAutoTopupDomains.includes(userDomain)) return;
+      if (subscriptionInfo.subscription_type === "trial") return;
+      if (subscriptionInfo.status !== "active") return;
+
+      const balance = Number(subscriptionInfo.token_balance);
+      if (!Number.isFinite(balance)) return;
+
+      const PER_CLICK_SAFE_MIN = 150_000;
+      if (balance >= PER_CLICK_SAFE_MIN) return;
+
+      console.log(
+        "[ANALYSIS_INTENT gate] balance below threshold — opening AutoPaymentPopup and cancelling intent"
+      );
+      autoTopupDismissedRef.current = false;
+      setShowAutoPaymentPopup(true);
+      event.preventDefault();
+    };
+    window.addEventListener("ANALYSIS_INTENT", handler);
+    return () => window.removeEventListener("ANALYSIS_INTENT", handler);
+  }, [subscriptionInfo, userDomain]);
   const moduleSuggestions = {
     tlc: [
       "Which 10 employees in NDIS Department have the highest overtime hours and overtime $ ?",
@@ -3607,7 +3710,14 @@ const HomePage = () => {
         showAutoPaymentPopup && !blockedAutoTopupDomains.includes(userDomain) && (
           <AutoPaymentPopup
             userEmail={user?.email}
-            onClose={() => setShowAutoPaymentPopup(false)}
+            onClose={() => {
+              // Remember the user dismissed this episode so the proactive
+              // useEffect doesn't immediately re-open it while balance is
+              // still below the threshold. The ref auto-resets when
+              // balance climbs back up.
+              autoTopupDismissedRef.current = true;
+              setShowAutoPaymentPopup(false);
+            }}
           />
         )
       }

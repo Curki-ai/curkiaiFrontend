@@ -37,6 +37,10 @@ const SirsAnalysis = (props) => {
     };
 
     const handleAnalyse = async () => {
+        // Auto-topup balance gate (see HomePage's ANALYSIS_INTENT listener).
+        const intent = new CustomEvent("ANALYSIS_INTENT", { cancelable: true });
+        if (!window.dispatchEvent(intent)) return;
+
         if (sirsReportFiles.length === 0) {
             toast.warn("Please upload the report files.");
             return;
