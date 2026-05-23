@@ -1309,6 +1309,10 @@ const VoiceModule = (props) => {
     };
 
     const startAnalysis = async () => {
+        // Auto-topup balance gate (see HomePage's ANALYSIS_INTENT listener).
+        const intent = new CustomEvent("ANALYSIS_INTENT", { cancelable: true });
+        if (!window.dispatchEvent(intent)) return;
+
         if (!templateFile) return;
         setEditingTemplateId(null);
         setActiveTemplate(null);

@@ -1056,6 +1056,10 @@ const NewFinancialHealth = (props) => {
     };
 
     const handleAnalyse = async () => {
+        // Auto-topup balance gate (see HomePage's ANALYSIS_INTENT listener).
+        const intent = new CustomEvent("ANALYSIS_INTENT", { cancelable: true });
+        if (!window.dispatchEvent(intent)) return;
+
         updateTab({
             savedToHistory: false,
             isFromHistory: false,

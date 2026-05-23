@@ -20,6 +20,14 @@ const NoOrgEmptyState = ({ user, onRegistered }) => {
   const email = user?.email || "";
 
   const handleRegister = async () => {
+    // Auto-topup balance gate. If the signed-in user has a subscription
+    // with a depleted token balance, HomePage's ANALYSIS_INTENT listener
+    // opens the AutoPaymentPopup and preventDefault()s the dispatch — so
+    // a user who emptied their balance can't bypass the popup by deleting
+    // their org and re-registering.
+    const intent = new CustomEvent("ANALYSIS_INTENT", { cancelable: true });
+    if (!window.dispatchEvent(intent)) return;
+
     const trimmed = orgName.trim();
     if (!trimmed) {
       setError("Organization name is required.");

@@ -510,11 +510,16 @@ const SmartOnboardingAccessManagement = ({ onClose, userEmail, organizationId, o
                 data?.deletedAccessRows === 1 ? "" : "s"
               }).`
             );
-            // Hand off to the parent: it should close the modal AND refetch
-            // org state so the UI swaps to NoOrgEmptyState without a reload.
+            // Hand off to the parent. The backend reports `isVirtualSpace`
+            // so the parent can route correctly: a virtual-space delete
+            // should swap the active workspace back to the Main org, NOT
+            // tear down the whole HR view to NoOrgEmptyState.
             setTimeout(() => {
-              if (typeof onDeleted === "function") onDeleted();
-              else if (typeof onClose === "function") onClose();
+              if (typeof onDeleted === "function") {
+                onDeleted({ isVirtualSpace: data?.isVirtualSpace === true });
+              } else if (typeof onClose === "function") {
+                onClose();
+              }
             }, 800);
           } catch (err) {
             setError(err.message || "Failed to delete organization");

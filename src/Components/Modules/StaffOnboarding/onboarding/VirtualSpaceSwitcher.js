@@ -33,6 +33,21 @@ const VirtualSpaceSwitcher = ({
   const [newName, setNewName] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  // mainOrganization describes the parent of the current hierarchy. After
+  // the main org is deleted but virtual spaces survive, baseOrganizationId
+  // is itself a VS — `mainOrganization.exists` is then false and the
+  // dropdown hides the "Main organization" entry. The id field is the
+  // (possibly deleted) main-org id; the name is its display label.
+  const [mainOrganization, setMainOrganization] = useState({
+    organizationId: null,
+    organizationName: "",
+    exists: false,
+  });
+  // True when the supplied baseOrganizationId is itself a virtual space
+  // (because the main org was deleted and by-email resolved the user into
+  // a VS via the user_access fallback). Used to suppress UI affordances
+  // that only make sense when on the main org.
+  const [callerIsVirtualSpace, setCallerIsVirtualSpace] = useState(false);
   const rootRef = useRef(null);
   // Ensures the persisted-space restore runs at most once per mount.
   const restoredRef = useRef(false);
@@ -68,6 +83,20 @@ const VirtualSpaceSwitcher = ({
       if (res.ok && data?.ok) {
         setSpaces(Array.isArray(data.virtualSpaces) ? data.virtualSpaces : []);
         setIsOwner(!!data.isOwner);
+        setMainOrganization(
+          data.mainOrganization && typeof data.mainOrganization === "object"
+            ? {
+                organizationId: data.mainOrganization.organizationId || null,
+                organizationName: data.mainOrganization.organizationName || "",
+                exists: !!data.mainOrganization.exists,
+              }
+            : {
+                organizationId: baseOrganizationId,
+                organizationName: "",
+                exists: true,
+              }
+        );
+        setCallerIsVirtualSpace(!!data.callerIsVirtualSpace);
       }
     } catch (err) {
       console.error("[virtual-space] list failed:", err);
@@ -133,6 +162,12 @@ const VirtualSpaceSwitcher = ({
   };
 
   const handleCreate = async () => {
+    // Auto-topup balance gate. Virtual-space creation is a billable
+    // "create workspace" action — gated by HomePage's ANALYSIS_INTENT
+    // listener for the same reason main-org registration is.
+    const intent = new CustomEvent("ANALYSIS_INTENT", { cancelable: true });
+    if (!window.dispatchEvent(intent)) return;
+
     const name = newName.trim();
     if (!name) {
       setError("Enter a name for the virtual space.");
@@ -168,12 +203,20 @@ const VirtualSpaceSwitcher = ({
   if (!baseOrganizationId || !loaded) return null;
   if (!isOwner && spaces.length === 0) return null;
 
-  const onMain =
-    !activeOrganizationId || activeOrganizationId === baseOrganizationId;
-  const activeName = onMain
+  // The active label is computed from the *actual* org the user is viewing,
+  // not from baseOrganizationId. After main-org deletion baseOrganizationId
+  // is itself a virtual space, so the old `activeOrganizationId ===
+  // baseOrganizationId` shortcut would mislabel the workspace as "Main
+  // organization" while the user is in fact looking at a VS's data.
+  const activeVs = activeOrganizationId
+    ? spaces.find((s) => s.organizationId === activeOrganizationId)
+    : null;
+  const isOnMain =
+    mainOrganization.exists &&
+    activeOrganizationId === mainOrganization.organizationId;
+  const activeName = isOnMain
     ? "Main organization"
-    : spaces.find((s) => s.organizationId === activeOrganizationId)?.name ||
-      "Virtual space";
+    : activeVs?.name || "Virtual space";
 
   return (
     <div className="vs-switcher" ref={rootRef}>
@@ -193,15 +236,17 @@ const VirtualSpaceSwitcher = ({
         <div className="vs-switcher-menu" role="menu">
           <div className="vs-switcher-menu-heading">Workspaces</div>
 
-          <button
-            type="button"
-            className={`vs-switcher-item ${onMain ? "active" : ""}`}
-            onClick={() => handleSelect(baseOrganizationId)}
-            role="menuitem"
-          >
-            <span className="vs-switcher-item-label">Main organization</span>
-            {onMain && <FiCheck className="vs-switcher-item-check" />}
-          </button>
+          {mainOrganization.exists && (
+            <button
+              type="button"
+              className={`vs-switcher-item ${isOnMain ? "active" : ""}`}
+              onClick={() => handleSelect(mainOrganization.organizationId)}
+              role="menuitem"
+            >
+              <span className="vs-switcher-item-label">Main organization</span>
+              {isOnMain && <FiCheck className="vs-switcher-item-check" />}
+            </button>
+          )}
 
           {spaces.map((s) => {
             const isActive = s.organizationId === activeOrganizationId;

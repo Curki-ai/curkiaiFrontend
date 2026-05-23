@@ -34,6 +34,12 @@ const FinancialHealthNoOrgEmptyState = ({
   const email = userEmail || "";
 
   const handleRegister = async () => {
+    // Auto-topup balance gate. See HomePage's ANALYSIS_INTENT listener —
+    // prevents a depleted user from bypassing the popup by deleting +
+    // re-creating their org.
+    const intent = new CustomEvent("ANALYSIS_INTENT", { cancelable: true });
+    if (!window.dispatchEvent(intent)) return;
+
     const trimmed = orgName.trim();
     if (!trimmed) {
       setError("Organization name is required.");

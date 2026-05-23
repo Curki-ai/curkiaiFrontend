@@ -95,9 +95,17 @@ const HRAdminView = ({
           setBaseOrganizationId(firstOrgId);
           return;
         }
+        // by-email came back empty. The user has no main org and no
+        // remaining virtual space (the backend's user_access fallback
+        // would have surfaced one if it existed). Tell HomePage to swap
+        // to NoOrgEmptyState so the user can register a fresh org. This
+        // only fires post-mount: on initial mount HomePage's own lookup
+        // already routes to NoOrgEmptyState without HRAdminView being
+        // rendered at all.
         console.warn(
-          `[organizations] no org for ${email} — leaving organizationId null`
+          `[organizations] no org for ${email} — switching to NoOrgEmptyState`
         );
+        if (typeof onOrgRemoved === "function") onOrgRemoved();
       } catch (error) {
         console.error(`fetchOrganizationId error (attempt ${attempt}):`, error);
         if (!cancelled && attempt < MAX_ATTEMPTS) {
@@ -325,6 +333,10 @@ const HRAdminView = ({
     );
   });
   const handleAnalyze = async () => {
+    // Auto-topup balance gate (see HomePage's ANALYSIS_INTENT listener).
+    const intent = new CustomEvent("ANALYSIS_INTENT", { cancelable: true });
+    if (!window.dispatchEvent(intent)) return;
+
     if (!selectedFile.length || !selectedJd.length) {
       toast.warn("Please upload both Resume ZIP and Job Description PDF.");
       return;
@@ -1312,11 +1324,33 @@ const HRAdminView = ({
           onClose={() => setOpenAccessManagement(false)}
           onDeleted={() => {
             setOpenAccessManagement(false);
-            setBaseOrganizationId(null);
+
+            // Spec:
+            //   - Main org delete leaves child virtual spaces intact, so
+            //     the user may still have a workspace.
+            //   - Virtual-space delete leaves the main org intact.
+            //   - NoOrgEmptyState should appear ONLY when nothing remains.
+            //
+            // Implementation: clear local state and refetch by-email. The
+            // backend's getOrganizationsByEmail falls back to user_access
+            // when the main org is gone, so it surfaces any surviving
+            // virtual space the user still belongs to. fetchOrganizationId
+            // (above) fires onOrgRemoved when that refetch comes back
+            // empty — i.e. when the user truly has nothing left. Anything
+            // else means we auto-resume on whatever workspace remains.
+            //
+            // Clear active first so no stale data flashes for the deleted
+            // workspace; clear the persisted VS selection so the switcher
+            // doesn't try to restore a dead space; clear base so the
+            // "set active = base" effect re-fires once the refetch
+            // resolves the new base.
+            if (baseOrganizationId) {
+              try {
+                localStorage.removeItem(`so_active_org_${baseOrganizationId}`);
+              } catch (_) {}
+            }
             setActiveOrganizationId(null);
-            // Tell HomePage the org is gone so it swaps to NoOrgEmptyState
-            // immediately — no manual page reload required.
-            if (onOrgRemoved) onOrgRemoved();
+            setBaseOrganizationId(null);
             setOrgReloadCounter((n) => n + 1);
           }}
           onNoOrgDetected={() => {
