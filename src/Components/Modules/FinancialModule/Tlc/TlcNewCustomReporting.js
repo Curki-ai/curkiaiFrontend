@@ -1679,13 +1679,6 @@ export default function TlcNewCustomerReporting(props) {
             );
         }
     );
-    const isAnyAccordionOpen =
-        activeTabData.aiAccordion ||
-        activeTabData.page1 ||
-        activeTabData.page2 ||
-        activeTabData.page3 ||
-        activeTabData.page4;
-
     const downloadWord = TlcAiWordExporter({
         markdown: activeTabData.aiReport,
         fileName: `AI_Summary_${formatDateRange()?.replace(/\s+/g, "_")}`,
@@ -1885,6 +1878,7 @@ export default function TlcNewCustomerReporting(props) {
                             justifyContent: "space-between",
                             width: "100%",
                             marginTop: "12px",
+                            marginBottom:"12px"
                         }}
                     >
                         {/* LEFT: TABS */}
@@ -1961,7 +1955,7 @@ export default function TlcNewCustomerReporting(props) {
                 </div>
 
             </div>
-            {!activeTabData.viewingHistory && (
+            {!activeTabData.viewingHistory && !activeTabData.analysisData && (
                 <section className="filters-card" style={{ marginBottom: activeTabData?.isFromHistory ? "0px" : "40px" }}>
                     <div className="filters-grid">
                         <div>
@@ -2179,7 +2173,7 @@ export default function TlcNewCustomerReporting(props) {
 
                     <section
                         ref={reportRef}
-                        className={`dashboard ${!isAnyAccordionOpen ? "dashboard-decrease-margin-bottom" : ""}`}
+                        className="dashboard"
                     >
                         {activeTabData.viewingHistory && (
                             <div
