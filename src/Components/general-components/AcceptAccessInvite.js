@@ -30,6 +30,7 @@ const MODULE_TO_API_PATH = {
   "quality-and-risk-reporting":
     "/api/quality-and-risk-reporting/access/accept-invite",
   "sirs-analysis": "/api/sirs-analysis/access/accept-invite",
+  rostering: "/api/rostering/access/accept-invite",
 };
 
 const MODULE_LABELS = {
@@ -44,6 +45,7 @@ const MODULE_LABELS = {
   "custom-incident-mgmt": "Custom Incident Management",
   "quality-and-risk-reporting": "Quality and Risk Reporting",
   "sirs-analysis": "SIRS Analysis",
+  rostering: "Smart Rostering",
 };
 
 const AcceptAccessInvite = () => {

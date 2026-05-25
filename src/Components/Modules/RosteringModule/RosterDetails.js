@@ -9,7 +9,7 @@ import clockCircleIcon from "../../../Images/clock circle.png"
 import clickHandIcon from "../../../Images/clock hand.png"
 import star_icon from "../../../Images/rostering_star.png"
 import { toast } from "react-toastify";
-const RosterDetails = ({ setScreen, rosteringResponse, API_BASE, selectedClient, visualCareCreds, userEmail, SetIsSmartRosteringDetails, bulkQueue, setBulkQueue,
+const RosterDetails = ({ setScreen, rosteringResponse, API_BASE, selectedClient, visualCareCreds, userEmail, organizationId, SetIsSmartRosteringDetails, bulkQueue, setBulkQueue,
     bulkResults,
     setBulkResults,
     activeTab,
@@ -323,7 +323,13 @@ const RosterDetails = ({ setScreen, rosteringResponse, API_BASE, selectedClient,
                         email: userEmail,
                         role: "RM"
                     }
-                ]
+                ],
+                // organizationId is the canonical scoping key on broadcast
+                // records (replaces email-domain filtering). userEmail is
+                // still sent so the backend can fall back via user_access
+                // for callers that don't have organizationId yet.
+                organizationId,
+                userEmail
             };
 
 

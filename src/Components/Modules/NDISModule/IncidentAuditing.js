@@ -358,6 +358,18 @@ const IncidentAuditing = (props) => {
             setIncidentAuditingProgress(progressValue);
         }, 80);
 
+        const t0 = Date.now();
+        const traceId = Math.random().toString(36).slice(2, 8);
+        console.log(`[IncidentAuditing ${traceId}] >>> START`, {
+            syncEnabled,
+            fileCount: incidentAuditingFiles.length,
+            files: incidentAuditingFiles.map((f) => ({
+                name: f.name,
+                type: f.type,
+                size: f.size,
+            })),
+        });
+
         try {
             const formData = new FormData();
             incidentAuditingFiles.forEach((file) => formData.append("files", file));
@@ -373,10 +385,33 @@ const IncidentAuditing = (props) => {
                 body: formData,
             });
 
+            console.log(`[IncidentAuditing ${traceId}] response received`, {
+                status: response.status,
+                ok: response.ok,
+                contentType: response.headers.get("content-type"),
+                elapsedMs: Date.now() - t0,
+            });
+
+            if (!response.ok) {
+                // Non-SSE error response (e.g. 500 before flushHeaders). Read it
+                // as text so we capture the actual server message.
+                const errBody = await response.text().catch(() => "");
+                console.error(`[IncidentAuditing ${traceId}] HTTP ${response.status} from /incidentAuditing`, {
+                    bodySnippet: errBody.slice(0, 500),
+                });
+                toast.error(
+                    `Server error (${response.status}). Check console for details.`
+                );
+                return;
+            }
+
             const reader = response.body.getReader();
             const decoder = new TextDecoder("utf-8");
 
             let buffer = "";
+            let eventCount = 0;
+            let sawResult = false;
+            let sawError = false;
 
             while (true) {
                 const { value, done } = await reader.read();
@@ -395,8 +430,18 @@ const IncidentAuditing = (props) => {
 
                     try {
                         const data = JSON.parse(jsonStr);
+                        eventCount += 1;
+                        if (eventCount <= 30 || eventCount % 50 === 0) {
+                            console.log(`[IncidentAuditing ${traceId}] SSE #${eventCount}`, {
+                                preview: jsonStr.slice(0, 200),
+                            });
+                        }
                         if (data.message) {
                             setCurrentTask(data.message);
+                        }
+                        if (data.message && /error/i.test(data.message)) {
+                            sawError = true;
+                            console.error(`[IncidentAuditing ${traceId}] SSE reported error`, data);
                         }
 
                         if (
@@ -404,6 +449,11 @@ const IncidentAuditing = (props) => {
                             data.type_of_incident !== undefined &&
                             data.incidents !== undefined
                         ) {
+                            sawResult = true;
+                            console.log(`[IncidentAuditing ${traceId}] received result payload`, {
+                                reportable_incidents: data.reportable_incidents,
+                                incidentCount: data.incidents?.length,
+                            });
                             setResponseData(data);
                             await incrementCareVoiceAnalysisCount(
                                 props?.user?.email?.trim(),
@@ -414,12 +464,22 @@ const IncidentAuditing = (props) => {
                             );
                         }
                     } catch (err) {
-                        console.warn("Non-JSON SSE", jsonStr);
+                        console.warn(`[IncidentAuditing ${traceId}] Non-JSON SSE`, jsonStr);
                     }
                 }
             }
+
+            console.log(`[IncidentAuditing ${traceId}] stream ended`, {
+                eventCount,
+                sawResult,
+                sawError,
+                elapsedMs: Date.now() - t0,
+            });
         } catch (error) {
-            console.error("SSE stream error", error);
+            console.error(`[IncidentAuditing ${traceId}] SSE stream error`, {
+                message: error?.message,
+                stack: error?.stack,
+            });
             toast.error("Something went wrong while processing files.");
         } finally {
             clearInterval(progressInterval);

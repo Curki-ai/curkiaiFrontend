@@ -14,6 +14,7 @@ import { API_BASE } from "../../../config/apiBase";
 
 const RosterHistory = (props) => {
     const userEmail = props?.userEmail
+    const organizationId = props?.organizationId
     // const userEmail = "kris@curki.ai"
     // === state kept as original
     const [selected, setSelected] = useState(null);
@@ -64,14 +65,12 @@ const RosterHistory = (props) => {
     }, [dummyClients]);
 
     useEffect(() => {
-        if (!userEmail) return;
-
-        const domain = userEmail.split("@")[1];
+        if (!organizationId) return;
 
         const fetchRosteringSettings = async () => {
             try {
                 const res = await axios.get(
-                    `${API_BASE}/api/rosteringSettings/${domain}`
+                    `${API_BASE}/api/rosteringSettings/by-org/${encodeURIComponent(organizationId)}`
                 );
 
                 if (res.data?.data?.length) {
@@ -83,7 +82,7 @@ const RosterHistory = (props) => {
         };
 
         fetchRosteringSettings();
-    }, [userEmail]);
+    }, [organizationId]);
     const workflowFlags = rosteringSettings?.workflow_flags || {};
 
     const requireManagerApproval =
@@ -139,7 +138,11 @@ const RosterHistory = (props) => {
     useEffect(() => {
         const fetchClients = async () => {
             try {
-                const res = await axios.get(`${API_BASE}/api/getAllClientsHistory?rmEmail=${userEmail}`);
+                const res = await axios.get(
+                    `${API_BASE}/api/getAllClientsHistory?rmEmail=${encodeURIComponent(userEmail)}${
+                        organizationId ? `&organizationId=${encodeURIComponent(organizationId)}` : ""
+                    }`
+                );
                 const clients = res.data.clients || [];
 
                 // Map API clients -> old dummyClients shape
@@ -212,7 +215,11 @@ const RosterHistory = (props) => {
     // === When a client is selected: fetch their full history and build assignmentsData exactly like old structure
     const fetchClientHistory = async (clientId) => {
         try {
-            const res = await axios.get(`${API_BASE}/api/getClientHistory/${clientId}?rmEmail=${userEmail}`);
+            const res = await axios.get(
+                `${API_BASE}/api/getClientHistory/${clientId}?rmEmail=${encodeURIComponent(userEmail)}${
+                    organizationId ? `&organizationId=${encodeURIComponent(organizationId)}` : ""
+                }`
+            );
             const history = res.data.history || [];
             // console.log("history", history)
             // Build assignments array in old shape

@@ -14,7 +14,6 @@ import { MdOutlineHistory } from "react-icons/md";
 import RosterHistory from "./RosterHistory";
 import { LuDownload } from "react-icons/lu";
 import incrementAnalysisCount from "../FinancialModule/Tlc/TLcAnalysisCount";
-import OnboardingForm from "../../general-components/OnboardingForm";
 import CenteredLoader from "../../general-components/CenteredLoader";
 import { RiSettingsLine } from "react-icons/ri";
 import { FiCheck } from "react-icons/fi";
@@ -22,10 +21,13 @@ import incrementCareVoiceAnalysisCount from "../SupportAtHomeModule/careVoiceCos
 
 import { API_BASE } from "../../../config/apiBase";
 import FinancialHealthNoOrgEmptyState from "../FinancialModule/FinancialHealth/FinancialHealthNoOrgEmptyState";
+import SmartRosteringAccessManagement from "./SmartRosteringAccessManagement";
+// OnboardingForm (legacy Rostering Settings modal) has been superseded by
+// SmartRosteringAccessManagement, which folds settings + invite + team
+// list into a single surface.
 
 const SmartRostering = (props) => {
     const userEmail = props?.user?.email;
-    // const userEmail = "kris@curki.ai";
 
     // Access-management driven gate. Replaces the prior hardcoded
     // RESTRICTED_USERS list — visibility is now controlled by whether the
@@ -207,14 +209,11 @@ const SmartRostering = (props) => {
     // console.log("rosteringMetrics", rosteringMetrics)
 
 
-    // 🔹 rostering managers list
-    const rosteringManagers =
-        rosteringSettings?.rostering?.rostering_managers || [];
-    const isRosteringManager = rosteringManagers.some(
-        rm => rm.email?.toLowerCase() === userEmail?.toLowerCase()
-    );
-    const canUseVisualCare =
-        !!visualCareCreds && isRosteringManager;
+    // Access is now governed by user_access (the by-email lookup at mount).
+    // Any user who reached this dashboard is already a verified member of
+    // the org — gating on the legacy rostering_managers list would hide
+    // the panel from invitees who came through the new access flow.
+    const canUseVisualCare = !!visualCareCreds;
 
     const uploadDisabled = !!canUseVisualCare;  // true when creds exist
     // useEffect(() => {
@@ -259,7 +258,7 @@ const SmartRostering = (props) => {
             const { user, key, secret } = visualCareCreds;
             try {
                 const res = await axios.get(`${API_BASE}/api/getFortnightMetrics`, {
-                    params: { user, key, secret },
+                    params: { user, key, secret, userEmail, organizationId },
                 });
 
                 if (res.data?.success) {
@@ -294,7 +293,7 @@ const SmartRostering = (props) => {
                 const res = await axios.get(
                     `${API_BASE}/getUnallocatedShifts`,
                     {
-                        params: { user, key, secret, userEmail, days },
+                        params: { user, key, secret, userEmail, organizationId, days },
                     }
                 );
 
@@ -456,7 +455,7 @@ const SmartRostering = (props) => {
 
             const response = await axios.post(
                 `${API_BASE}/run-smart-rostering?user=${user}&key=${key}&secret=${secret}`,
-                { inputs, userEmail: userEmail },
+                { inputs, userEmail, organizationId },
                 { headers: { "Content-Type": "application/json" } }
             );
 
@@ -494,7 +493,7 @@ const SmartRostering = (props) => {
 
         const res = await axios.post(
             `${API_BASE}/run-smart-rostering?user=${user}&key=${key}&secret=${secret}`,
-            { inputs, userEmail },
+            { inputs, userEmail, organizationId },
             { headers: { "Content-Type": "application/json" } }
         );
 
@@ -569,7 +568,7 @@ const SmartRostering = (props) => {
 
             const response = await axios.post(
                 `${API_BASE}/run-manifest-filler?user=${user}&key=${key}&secret=${secret}`,
-                { prompt: query, userEmail },
+                { prompt: query, userEmail, organizationId },
                 { headers: { "Content-Type": "application/json" } }
             );
             console.log("response in prompt based rostering", response)
@@ -1084,6 +1083,7 @@ const SmartRostering = (props) => {
                     selectedClient={selectedClient}
                     visualCareCreds={visualCareCreds}
                     userEmail={userEmail}
+                    organizationId={organizationId}
                     SetIsSmartRosteringDetails={props.SetIsSmartRosteringDetails}
                     bulkQueue={bulkQueue}
                     setBulkQueue={setBulkQueue}
@@ -1098,6 +1098,7 @@ const SmartRostering = (props) => {
                 <RosterHistory
                     setScreen={setScreen}
                     userEmail={userEmail}
+                    organizationId={organizationId}
                     SetIsSmartRosteringHistory={props.SetIsSmartRosteringHistory}
                 />
             )}
@@ -1108,10 +1109,18 @@ const SmartRostering = (props) => {
                 </div>
             )}
             {openRosterSetting && (
-                <OnboardingForm
+                <SmartRosteringAccessManagement
                     onClose={() => setOpenRosterSetting(false)}
                     userEmail={userEmail}
                     organizationId={organizationId}
+                    onDeleted={() => {
+                        setOpenRosterSetting(false);
+                        fetchOrganization();
+                    }}
+                    onNoOrgDetected={() => {
+                        setOpenRosterSetting(false);
+                        setOrgLookupStatus("not_found");
+                    }}
                 />
             )}
         </>
