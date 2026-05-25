@@ -1,14 +1,20 @@
 import "./App.css";
+import { lazy, Suspense } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import HomePage from "./Components/general-components/HomePage";
-import InvitePage from "./Components/general-components/AcceptInvitation";
-import AcceptAccessInvite from "./Components/general-components/AcceptAccessInvite";
-import CandidateScreeningTest from "./Components/Modules/StaffOnboarding/onboarding/ScreeningTest";
-import CandidateLogin from "./Components/Modules/StaffOnboarding/candidate/CandidateLogin";
-import CandidateDashboard from "./Components/Modules/StaffOnboarding/candidate/CandidateDashboard";
+import CenteredLoader from "./Components/general-components/CenteredLoader";
+// Route components are code-split so a user landing on `/invite`, `/test/...`,
+// or `/hr-candidate` doesn't pay HomePage's bundle cost. Each lazy import
+// becomes its own webpack chunk.
 import { isCandidateAuthenticated } from "./Components/Modules/StaffOnboarding/candidate/candidateAuth";
+
+const HomePage = lazy(() => import("./Components/general-components/HomePage"));
+const InvitePage = lazy(() => import("./Components/general-components/AcceptInvitation"));
+const AcceptAccessInvite = lazy(() => import("./Components/general-components/AcceptAccessInvite"));
+const CandidateScreeningTest = lazy(() => import("./Components/Modules/StaffOnboarding/onboarding/ScreeningTest"));
+const CandidateLogin = lazy(() => import("./Components/Modules/StaffOnboarding/candidate/CandidateLogin"));
+const CandidateDashboard = lazy(() => import("./Components/Modules/StaffOnboarding/candidate/CandidateDashboard"));
 
 const RequireCandidateAuth = ({ children }) => {
   if (!isCandidateAuthenticated()) {
@@ -41,15 +47,17 @@ function App() {
         theme="light"
         style={{ zIndex: 10001 }}
       />
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/invite" element={<InvitePage />} />
-        <Route path="/access-invite" element={<AcceptAccessInvite />} />
-        <Route path="/test/:test_id" element={<CandidateScreeningTest />} />
-        <Route path="/hr-candidate" element={<CandidateLogin />} />
-        <Route path="/hr-candidate/dashboard" element={dashboardElement} />
-        <Route path="/hr-candidate/dashboard/:tab" element={dashboardElement} />
-      </Routes>
+      <Suspense fallback={<CenteredLoader label="Loading…" />}>
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/invite" element={<InvitePage />} />
+          <Route path="/access-invite" element={<AcceptAccessInvite />} />
+          <Route path="/test/:test_id" element={<CandidateScreeningTest />} />
+          <Route path="/hr-candidate" element={<CandidateLogin />} />
+          <Route path="/hr-candidate/dashboard" element={dashboardElement} />
+          <Route path="/hr-candidate/dashboard/:tab" element={dashboardElement} />
+        </Routes>
+      </Suspense>
     </Router>
   );
 }
