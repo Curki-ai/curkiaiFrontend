@@ -1891,9 +1891,9 @@ export default function TlcNewCustomerReporting(props) {
                             className="tlc-new-actions-buttons"
                             style={{
                                 display: "flex",
-                                flexDirection: "column",
+                                flexDirection: "row",
                                 gap: "8px",
-                                alignItems: "flex-end",
+                                alignItems: "center",
                             }}
                         >
                             <button
@@ -1911,7 +1911,6 @@ export default function TlcNewCustomerReporting(props) {
                                     display: "flex",
                                     alignItems: "center",
                                     gap: "8px",
-                                    marginTop: "17px",
                                     opacity: 0.6,
                                 }}
                             >
@@ -1922,6 +1921,20 @@ export default function TlcNewCustomerReporting(props) {
                                 />
                                 Compare and Analyse
                             </button>
+
+                            {activeTabData?.analysisData && (
+                                <button
+                                    onClick={handleDownloadWordReport}
+                                    className="download-report-btn download-report-btn--inline"
+                                    style={{
+                                        opacity:
+                                            activeTabData.loading || activeTabData.uploading?.accounts ? 0.6 : 1,
+                                    }}
+                                >
+                                    <MdOutlineFileDownload size={16} />
+                                    Download Report
+                                </button>
+                            )}
 
                             {activeTabData.stage === "overview" && !activeTabData.viewingHistory && (
                                 <button
@@ -2475,20 +2488,6 @@ export default function TlcNewCustomerReporting(props) {
 
             {activeTabData.stage !== "loading" && (
                 <section className="history-container">
-                    {activeTabData?.analysisData && (
-                        <button
-                            onClick={handleDownloadWordReport}
-                            className="download-report-btn"
-                            style={{
-                                opacity:
-                                    activeTabData.loading || activeTabData.uploading?.accounts ? 0.6 : 1,
-                            }}
-                        >
-                            <MdOutlineFileDownload size={16} />
-                            Download Report
-                        </button>
-                    )}
-
                     <div
                         className="tlc-new-history-header"
                         style={{

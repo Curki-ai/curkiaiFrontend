@@ -1270,6 +1270,34 @@ body {
   white-space: nowrap;
 }
 
+/* Tab bar has paddingTop: 16px, so tabs sit ~16px below the row's top edge.
+   The action buttons no longer carry the old marginTop: 17px on Compare, so
+   push the whole container down to match the tab row. */
+.tlc-new-actions-buttons {
+  margin-top: 17px;
+}
+
+/* Compact Download Report button — sits inline with Compare and Analyse / Save
+   in the actions row. Overrides both the default .download-report-btn rule
+   and the .tlc-new-page .download-report-btn !important block further down so
+   all three buttons share the same height and visual weight. */
+.tlc-new-page .tlc-new-actions-buttons .download-report-btn--inline {
+  padding: 8px 16px !important;
+  border-radius: 8px !important;
+  font-size: 14px !important;
+  font-weight: 400 !important;
+  margin: 0 !important;
+  border: none !important;
+  gap: 6px;
+  box-shadow: none !important;
+  background: var(--Curki-2nd-Portal-1, #14C8A8) !important;
+}
+
+.tlc-new-page .tlc-new-actions-buttons .download-report-btn--inline:hover:not(:disabled) {
+  transform: none !important;
+  box-shadow: none !important;
+}
+
 /* ------------------ Small desktop / laptop (≤1280px) ------------------ */
 @media (max-width: 1280px) {
   .tlc-new-page .filters-grid {

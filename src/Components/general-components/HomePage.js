@@ -313,7 +313,8 @@ const HomePage = () => {
           userEmail: user?.email,
           message,
           feedbackType: type,
-          feedbackText: feedbackText
+          feedbackText: feedbackText,
+          module: selectedRole || ""
         })
       });
 

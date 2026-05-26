@@ -1506,25 +1506,6 @@ const NewFinancialHealth = (props) => {
 
         return (
             <section className="history-container">
-                {activeTabData?.responseData && (
-                    <div
-                        style={{
-                            width: "100%",
-                            display: "flex",
-                            justifyContent: "flex-end",
-                            marginBottom: "12px",
-                        }}
-                    >
-                        <button
-                            // onClick={handleDownloadReport}
-                            className="download-report-btn"
-                        >
-                            <MdOutlineFileDownload size={16} />
-                            Download Report
-                        </button>
-                    </div>
-                )}
-
                 {/* HEADER with SEARCH BAR */}
                 <div
                     style={{
@@ -2219,9 +2200,9 @@ const NewFinancialHealth = (props) => {
                             className="financial-actions-buttons"
                             style={{
                                 display: "flex",
-                                flexDirection: "column",
+                                flexDirection: "row",
                                 gap: "8px",
-                                alignItems: "flex-end",
+                                alignItems: "center",
                             }}
                         >
                             <button
@@ -2239,7 +2220,6 @@ const NewFinancialHealth = (props) => {
                                     display: "flex",
                                     alignItems: "center",
                                     gap: "8px",
-                                    marginTop: "17px",
                                     opacity: 0.6,
                                 }}
                             >
@@ -2250,6 +2230,15 @@ const NewFinancialHealth = (props) => {
                                 />
                                 Compare and Analyse
                             </button>
+                            {activeTabData?.responseData && (
+                                <button
+                                    // onClick={handleDownloadReport}
+                                    className="download-report-btn download-report-btn--inline"
+                                >
+                                    <MdOutlineFileDownload size={16} />
+                                    Download Report
+                                </button>
+                            )}
                             {!activeTabData.isFromHistory && (
                                 <button
                                     onClick={handleSaveFinancialHistory}
@@ -2268,7 +2257,6 @@ const NewFinancialHealth = (props) => {
                                         fontWeight: 400,
                                         cursor: activeTabData.savedToHistory ? "not-allowed" : "pointer",
                                         opacity: activeTabData.savedToHistory ? 0.6 : 1,
-                                        marginBottom: "10px"
                                     }}
                                 >
                                     {activeTabData.savingHistory

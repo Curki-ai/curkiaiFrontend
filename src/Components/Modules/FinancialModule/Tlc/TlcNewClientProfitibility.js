@@ -1378,25 +1378,6 @@ const TlcNewClientProfitability = (props) => {
 
         return (
             <section className="history-container">
-                {activeTabData?.responseData && (
-                    <div
-                        style={{
-                            width: "100%",
-                            display: "flex",
-                            justifyContent: "flex-end",
-                            marginBottom: "12px",
-                        }}
-                    >
-                        <button
-                            onClick={handleDownloadReport}
-                            className="download-report-btn"
-                        >
-                            <MdOutlineFileDownload size={16} />
-                            Download Report
-                        </button>
-                    </div>
-                )}
-
                 {/* HEADER with SEARCH BAR */}
                 <div
                     className="tlc-cp-history-header"
@@ -1915,9 +1896,9 @@ const TlcNewClientProfitability = (props) => {
                         className="tlc-cp-actions-buttons"
                         style={{
                             display: "flex",
-                            flexDirection: "column",
+                            flexDirection: "row",
                             gap: "8px",
-                            alignItems: "flex-end",
+                            alignItems: "center",
                         }}
                     >
                         <button
@@ -1935,7 +1916,6 @@ const TlcNewClientProfitability = (props) => {
                                 display: "flex",
                                 alignItems: "center",
                                 gap: "8px",
-                                marginTop: "17px",
                                 opacity: 0.6,
                             }}
                         >
@@ -1946,6 +1926,15 @@ const TlcNewClientProfitability = (props) => {
                             />
                             Compare and Analyse
                         </button>
+                        {activeTabData?.responseData && (
+                            <button
+                                onClick={handleDownloadReport}
+                                className="download-report-btn download-report-btn--inline"
+                            >
+                                <MdOutlineFileDownload size={16} />
+                                Download Report
+                            </button>
+                        )}
                         {activeTabData?.responseData && !activeTabData?.isFromHistory && (
                             <button
                                 onClick={handleSaveClientProfitability}
@@ -1959,7 +1948,6 @@ const TlcNewClientProfitability = (props) => {
                                     display: "flex",
                                     alignItems: "center",
                                     gap: "8px",
-                                    marginBottom: "10px",
                                     opacity:
                                         (activeTabData?.isFromHistory || activeTabData?.savedToHistory)
                                             ? 0.6

@@ -330,11 +330,25 @@ body {
 }
 
 /* The Financial tab bar has marginTop: 12px on top of paddingTop: 16px, so the
-   first tab visually sits 28px below the row's top edge. The Compare button
-   only has marginTop: 17px, leaving it 11px higher. Push the button column
-   down 11px so it aligns with the top of the first tab row. */
+   first tab visually sits 28px below the row's top edge. The buttons no longer
+   carry an individual marginTop (they used to be 17px each), so the container
+   itself takes the full 28px offset so all action buttons line up with the
+   first row of tabs. */
 .financial-actions-buttons {
-  margin-top: 11px;
+  margin-top: 28px;
+}
+
+/* Compact Download Report button — sits inline with Compare and Analyse / Save
+   in the post-analysis actions row. Overrides the default .download-report-btn
+   sizing so all three buttons share the same height and visual weight. */
+.financial-actions-buttons .download-report-btn--inline {
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 400;
+  margin: 0;
+  border: none;
+  gap: 6px;
 }
 
 /* ------------------ Small desktop / laptop (≤1280px) ------------------ */
