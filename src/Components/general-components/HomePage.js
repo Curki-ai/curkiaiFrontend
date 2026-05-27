@@ -43,7 +43,7 @@ import SettingsPage from "./Settings";
 import SupportModal from "./SupportModal";
 import TeamMembers from "./TeamMembers";
 import TrialStartedPopup from "./TrialPopup";
-import useSubscriptionStatus from "./NewSubscriptionStatus";
+import { checkSubscriptionStatus } from "./getSubscription";
 import DetailedUsage from "./DetailedUsage";
 import AutoPaymentPopup from "./AutoPaymentPopup";
 import PlansAndBillings from "./PlansAndBillings";
@@ -673,10 +673,35 @@ const HomePage = () => {
       window.removeEventListener("trial-initializing", handleTrialInit);
     };
   }, []);
+  // Fire org/manifest/subscription concurrently on user resolve.
+  // fetchAllCandidates is excluded — it depends on organizationId.
   useEffect(() => {
-    if (user?.email) {
-      fetchOrganizationId(user?.email);
-    }
+    if (!user?.email) return;
+
+    const SUBSCRIPTION_BYPASS_DOMAINS = [
+      "curki.ai",
+      "caringways.com.au",
+      "tenderlovingcaredisability.com.au",
+      "tenderlovingcare.com.au",
+      "allaboutcaring.com.au",
+      "youcareds.com",
+      "contemporarycoordination.com",
+      "careait.com",
+    ];
+
+    const runSubscriptionCheck = async () => {
+      const result = await checkSubscriptionStatus(user.email);
+      const domain = user.email.split("@")[1]?.toLowerCase();
+      const isBypass = SUBSCRIPTION_BYPASS_DOMAINS.includes(domain);
+      setShowPricingModal(isBypass ? false : result.shouldShowPricing);
+      setSubscriptionInfo(result.subscription || null);
+    };
+
+    Promise.all([
+      fetchOrganizationId(user.email),
+      fetchManifest(),
+      runSubscriptionCheck(),
+    ]);
   }, [user]);
   useEffect(() => {
     if (isHRAskAiPage && user?.email) {
@@ -1829,14 +1854,6 @@ const HomePage = () => {
   }, []);
 
   useEffect(() => {
-    if (user?.email) {
-      fetchManifest();
-    }
-  }, [user]);
-
-
-
-  useEffect(() => {
     if (isTlcPage) {
       setSuggestions(moduleSuggestions.tlc);
     } else if (isTlcClientProfitabilityPage) {
@@ -1921,7 +1938,6 @@ const HomePage = () => {
     };
   }, []);
   // SubscriptionStatus(user, setShowPricingModal);
-  useSubscriptionStatus(user, setShowPricingModal, setSubscriptionInfo);
   const resetCareVoiceSession = async () => {
     try {
       if (careVoiceSessionId && careVoiceUserId) {

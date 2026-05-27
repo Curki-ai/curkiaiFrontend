@@ -4,7 +4,6 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import "../../../../Styles/general-styles/ScreenTest.css";
 import { useParams } from "react-router-dom";
-import { getAuth } from "firebase/auth";
 import { API_BASE } from "../../../../config/apiBase";
 
 const BASE_URL = `${API_BASE}/api`;
@@ -12,8 +11,6 @@ const BASE_URL = `${API_BASE}/api`;
 export default function CandidateScreeningTest() {
   const [stage, setStage] = useState("loading");
   const [loading, setLoading] = useState(true);
-  const auth = getAuth();
-  const user = auth.currentUser;
   const [queryData, setQueryData] = useState({
     organisation_id: "",
     candidate_id: "",
@@ -82,7 +79,7 @@ export default function CandidateScreeningTest() {
       organisation_id,
       candidate_id,
       test_id,
-      user?.email || ""
+      ""
     );
   }, []);
 

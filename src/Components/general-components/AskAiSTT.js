@@ -1,4 +1,6 @@
-import * as SpeechSDK from "microsoft-cognitiveservices-speech-sdk";
+// Azure Speech SDK is dynamic-imported on first call to startSpeechRecognition
+// so the ~1.5 MB SDK doesn't ship in HomePage's chunk. Users who never use
+// voice input never download it.
 import { API_BASE } from "../../config/apiBase";
 import incrementCareVoiceAnalysisCount from "../Modules/SupportAtHomeModule/careVoiceCostAnalysis";
 
@@ -22,6 +24,8 @@ const logWithTime = (message, data = "") => {
 export const startSpeechRecognition = async (setTextCallback, userEmail, moduleName, getCurrentText) => {
     try {
         logWithTime("Initializing Azure Speech Configuration");
+
+        const SpeechSDK = await import("microsoft-cognitiveservices-speech-sdk");
 
         const response = await fetch(`${API_BASE}/api/speech-token`);
 

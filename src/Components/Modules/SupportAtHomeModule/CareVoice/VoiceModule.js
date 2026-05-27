@@ -46,16 +46,13 @@ import PromptBlockEditor from "./PromptBlockEditor";
 import incrementAnalysisCount from "../../FinancialModule/Tlc/TLcAnalysisCount";
 import { FiMic } from "react-icons/fi";
 import { extractAudioFromVideo, getTranscriptTextFromAudioBlob } from "./CareVoiceAudioVideoExtract";
-import { Document, Packer, Paragraph, TextRun } from "docx";
+// `docx` is dynamic-imported inside createTranscriptDoc so the library only
+// downloads when a user actually exports a transcript as a Word doc.
 import incrementCareVoiceAnalysisCount from "../careVoiceCostAnalysis";
 import FilePreviewModal from "./FilePreviewModal";
 import docFilePreviewIcon from "../../../../Images/docFilePreviewIcon.svg"
 import Lottie from "lottie-react";
-import selectTemplateAnimation from "../../../../Images/document.json"
-import recordingLottieAnimation from "../../../../Images/recordingAnimation.json";
-import beforeRecordingAnimation from "../../../../Images/beforeRecordingAnimation.json"
 import { HiOutlineDocumentAdd } from "react-icons/hi";
-import generatingDocAnimation from "../../../../Images/generatingDocAnimation.json"
 import generatingDocAnimationVideo from "../../../../Images/generatingDocAnimationVideo.mp4"
 import PulsatingLoader from "../../../general-components/PulsatingLoader";
 import { RiSettingsLine } from "react-icons/ri";
@@ -64,8 +61,27 @@ import "tippy.js/dist/tippy.css";
 import { IoMdInformationCircleOutline } from "react-icons/io";
 import CareVoiceAccessManagement from "./CareVoiceAccessManagement";
 import CareVoiceNoOrgEmptyState from "./CareVoiceNoOrgEmptyState";
-import adminLottie from "../../../../Images/adminPageLottie.json"
 import { API_BASE } from "../../../../config/apiBase";
+
+// adminPageLottie.json alone is 10.4 MB; eager-imported it dominated the
+// Care Voice chunk. Loaders below split each animation into its own chunk
+// that downloads only when the component that renders it mounts.
+const loadSelectTemplateAnimation = () => import("../../../../Images/document.json");
+const loadRecordingLottieAnimation = () => import("../../../../Images/recordingAnimation.json");
+const loadBeforeRecordingAnimation = () => import("../../../../Images/beforeRecordingAnimation.json");
+const loadAdminLottie = () => import("../../../../Images/adminPageLottie.json");
+
+const LazyLottie = ({ loader, ...lottieProps }) => {
+    const [animationData, setAnimationData] = useState(null);
+    useEffect(() => {
+        let cancelled = false;
+        loader().then((m) => { if (!cancelled) setAnimationData(m.default || m); });
+        return () => { cancelled = true; };
+    }, [loader]);
+    if (!animationData) return null;
+    return <Lottie animationData={animationData} {...lottieProps} />;
+};
+
 const VoiceModule = (props) => {
     const userEmail = props?.user?.email;
     // const userEmail = "admin@contemporarycoordination.com"
@@ -289,6 +305,7 @@ const VoiceModule = (props) => {
     }, [uploadedTranscriptFiles]);
 
     const createTranscriptDoc = async (text, filename) => {
+        const { Document, Packer, Paragraph, TextRun } = await import("docx");
         const doc = new Document({
             sections: [
                 {
@@ -2952,8 +2969,8 @@ const VoiceModule = (props) => {
                     <div className="staff-landing-content">
                         {/* Lottie Animation */}
                         <div className="staff-landing-animation">
-                            <Lottie
-                                animationData={selectTemplateAnimation}
+                            <LazyLottie
+                                loader={loadSelectTemplateAnimation}
                                 loop={true}
                                 autoplay={true}
                             />
@@ -3480,8 +3497,8 @@ const VoiceModule = (props) => {
                     {stage !== "processing" && stage !== "completed" && stage !== "review" && !activeTemplate && (
                         <div className="vm-admin-heading">
                             <div className="vm-admin-lottie">
-                                <Lottie
-                                    animationData={adminLottie}
+                                <LazyLottie
+                                    loader={loadAdminLottie}
                                     loop={true}
                                     autoplay={true}
                                     className="vm-admin-lottie-anim"
@@ -3789,8 +3806,8 @@ const VoiceModule = (props) => {
                                 <div className={`staff-rec-circle ${recordMode === "idle" ? "is-before-recording" : ""}`}>
                                     {recordMode === "recording" || recordMode === "paused" ? (
                                         <div className="staff-recording-wrapper">
-                                            <Lottie
-                                                animationData={recordingLottieAnimation}
+                                            <LazyLottie
+                                                loader={loadRecordingLottieAnimation}
                                                 loop={recordMode === "recording"}
                                                 autoplay={recordMode === "recording"}
                                                 pause={recordMode === "paused"}
@@ -3803,8 +3820,8 @@ const VoiceModule = (props) => {
                                         </div>
                                     ) : (
                                         <div className="staff-recording-wrapper">
-                                            <Lottie
-                                                animationData={beforeRecordingAnimation}
+                                            <LazyLottie
+                                                loader={loadBeforeRecordingAnimation}
                                                 loop={true}
                                                 autoplay={true}
                                                 paused={!isSpeaking}
