@@ -1657,7 +1657,7 @@ const HomePage = () => {
         // }
 
         const response = await axios.post(
-          "https://curki-backend-api-container.yellowflower-c21bea82.australiaeast.azurecontainerapps.io/smart-rostering/qa",
+          "https://aca-curki-aibackend-prod-aue-001.agreeabledune-2a557375.australiaeast.azurecontainerapps.io/smart-rostering/qa",
           payload
         );
 
@@ -1704,7 +1704,7 @@ const HomePage = () => {
           }
 
           const response = await axios.post(
-            `https://curki-backend-api-container.yellowflower-c21bea82.australiaeast.azurecontainerapps.io/header_modules/clients_profitability/ask_ai`,
+            `https://aca-curki-aibackend-prod-aue-001.agreeabledune-2a557375.australiaeast.azurecontainerapps.io/header_modules/clients_profitability/ask_ai`,
             payload
           );
 
@@ -1796,7 +1796,7 @@ const HomePage = () => {
       // console.log("Default Ask AI Payload:", payload);
 
       const response = await axios.post(
-        "https://curki-backend-api-container.yellowflower-c21bea82.australiaeast.azurecontainerapps.io/askai",
+        "https://aca-curki-aibackend-prod-aue-001.agreeabledune-2a557375.australiaeast.azurecontainerapps.io/askai",
         payload
       );
 

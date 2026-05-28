@@ -16,7 +16,7 @@ const PricingModal = ({ email }) => {
 
     useEffect(() => {
         if (email && user?.metadata?.creationTime) {
-            fetch(`https://curki-backend-api-container.yellowflower-c21bea82.australiaeast.azurecontainerapps.io/check-payment-status?email=${email}`)
+            fetch(`https://aca-curki-aibackend-prod-aue-001.agreeabledune-2a557375.australiaeast.azurecontainerapps.io/check-payment-status?email=${email}`)
                 .then(res => {
                     if (!res.ok) {
                         throw new Error(`HTTP error! status: ${res.status}`);

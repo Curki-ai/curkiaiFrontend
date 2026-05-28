@@ -1,6 +1,9 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { forwardRef, useEffect, useRef, useState } from "react";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import DatePicker, { registerLocale } from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+import enGB from "date-fns/locale/en-GB";
 import "../../../Styles/NDISModule/IncidentAuditing.css";
 import TlcUploadBox from "../FinancialModule/Tlc/TlcUploadBox";
 import star from "../../../Images/star.png";
@@ -17,6 +20,8 @@ import FinancialHealthNoOrgEmptyState from "../FinancialModule/FinancialHealth/F
 import FinancialHealthAccessManagement from "../FinancialModule/FinancialHealth/FinancialHealthAccessManagement";
 import CenteredLoader from "../../general-components/CenteredLoader";
 
+registerLocale("en-GB", enGB);
+
 const IA_API_BASE = `${BASE_URL}/api/incident-auditing`;
 
 const TASK_QUEUE = [
@@ -28,24 +33,115 @@ const TASK_QUEUE = [
     "Generating final report",
 ];
 
+const QUICK_RANGES = [
+    { label: "Last 7 Days", days: 7 },
+    { label: "Last 30 Days", days: 30 },
+    { label: "Last 3 Months", days: 90 },
+    { label: "Last 6 Months", days: 180 },
+    { label: "Last Year", days: 365 },
+];
+
+const toDisplayDate = (d) =>
+    d.toLocaleDateString("en-AU", { day: "2-digit", month: "short", year: "numeric" });
+
+// Local-timezone-safe Date <-> ISO (YYYY-MM-DD) conversion. We avoid
+// toISOString() because it shifts to UTC and can drift the displayed day.
+const dateToIso = (d) => {
+    if (!d) return "";
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd}`;
+};
+
+const isoToDate = (iso) => {
+    if (!iso) return null;
+    const [y, m, d] = iso.split("-").map(Number);
+    if (!y || !m || !d) return null;
+    return new Date(y, m - 1, d);
+};
+
+const formatDisplay = (d) => {
+    if (!d) return "";
+    const dd = String(d.getDate()).padStart(2, "0");
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    return `${dd}-${mm}-${d.getFullYear()}`;
+};
+
+const CalIcon = ({ className }) => (
+    <svg
+        className={className}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        viewBox="0 0 24 24"
+    >
+        <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+        <line x1="16" y1="2" x2="16" y2="6" />
+        <line x1="8" y1="2" x2="8" y2="6" />
+        <line x1="3" y1="10" x2="21" y2="10" />
+    </svg>
+);
+
+const ChevronIcon = ({ className }) => (
+    <svg
+        className={className}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.5"
+        viewBox="0 0 24 24"
+    >
+        <polyline points="6 9 12 15 18 9" />
+    </svg>
+);
+
+// Custom input rendered inside react-datepicker. Keeps the existing
+// .ia-v2-* visual treatment: purple calendar icon on the left, chevron on the
+// right that rotates while the popup is open. We deliberately ignore the
+// onClick that react-datepicker passes via cloneElement and use our own
+// onToggle so the input behaves as a true toggle (click again = close).
+const DateFieldInput = forwardRef(
+    ({ value, placeholder, isOpen, hasValue, onToggle }, ref) => (
+        <div
+            ref={ref}
+            className={`ia-v2-input-wrap${isOpen ? " ia-v2-input-wrap-open" : ""}`}
+            onClick={onToggle}
+        >
+            <CalIcon className="ia-v2-cal-icon" />
+            <div
+                className={`ia-v2-date-input ia-v2-date-input-picker${
+                    hasValue ? "" : " ia-v2-date-input-placeholder"
+                }`}
+            >
+                {value || placeholder}
+            </div>
+            <ChevronIcon
+                className={`ia-v2-chevron${isOpen ? " ia-v2-chevron-open" : ""}`}
+            />
+        </div>
+    )
+);
+
 const IncidentAuditing = (props) => {
     const [incidentAuditingFiles, setIncidentAuditingFiles] = useState([]);
     const [isIncidentAuditingProcessing, setIsIncidentAuditingProcessing] = useState(false);
     const [incidentAuditingProgress, setIncidentAuditingProgress] = useState(0);
     const [responseData, setResponseData] = useState(null);
     const [syncEnabled, setSyncEnabled] = useState(false);
-    const [startDay, setStartDay] = useState("");
-    const [startMonth, setStartMonth] = useState("");
-    const [endDay, setEndDay] = useState("");
-    const [endMonth, setEndMonth] = useState("");
+    const [startDate, setStartDate] = useState(null);
+    const [endDate, setEndDate] = useState(null);
+    const [startOpen, setStartOpen] = useState(false);
+    const [endOpen, setEndOpen] = useState(false);
+    const [activeQuickRange, setActiveQuickRange] = useState(null);
+    const [showConfirm, setShowConfirm] = useState(false);
+    const [confirmText, setConfirmText] = useState("");
+    const [confirmDays, setConfirmDays] = useState("");
     const [currentTask, setCurrentTask] = useState(TASK_QUEUE[0]);
     const [expandedSources, setExpandedSources] = useState([]);
     const isButtonDisabled = !syncEnabled && incidentAuditingFiles.length === 0;
     const [searchTerm, setSearchTerm] = useState("");
     const [filterReportable, setFilterReportable] = useState("ALL");
     const [filterType, setFilterType] = useState("ALL");
-    const [startYear, setStartYear] = useState("");
-    const [endYear, setEndYear] = useState("");
     const [historyList, setHistoryList] = useState([]);
     const [loadingHistory, setLoadingHistory] = useState(false);
     const [historyLoading, setHistoryLoading] = useState(false);
@@ -108,21 +204,32 @@ const IncidentAuditing = (props) => {
         fetchIncidentHistory();
     }, [props.user]);
 
+    // Close any open date picker when the user clicks outside both inputs
+    // and the popper. Attached only while a picker is open.
+    useEffect(() => {
+        if (!startOpen && !endOpen) return undefined;
+        const onDocMouseDown = (e) => {
+            const inInput = e.target.closest && e.target.closest(".ia-v2-input-wrap");
+            const inPicker =
+                e.target.closest &&
+                e.target.closest(".react-datepicker, #ia-datepicker-portal");
+            if (!inInput && !inPicker) {
+                setStartOpen(false);
+                setEndOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", onDocMouseDown);
+        return () => document.removeEventListener("mousedown", onDocMouseDown);
+    }, [startOpen, endOpen]);
+
     const handleSaveIncidentHistory = async () => {
         if (savingHistory || !responseData) return;
 
         try {
             setSavingHistory(true);
 
-            const fromDate =
-                syncEnabled && startYear && startMonth && startDay
-                    ? `${startYear}-${startMonth}-${startDay}`
-                    : null;
-
-            const toDate =
-                syncEnabled && endYear && endMonth && endDay
-                    ? `${endYear}-${endMonth}-${endDay}`
-                    : null;
+            const fromDate = syncEnabled ? dateToIso(startDate) || null : null;
+            const toDate = syncEnabled ? dateToIso(endDate) || null : null;
 
             const payload = {
                 email: props?.user?.email || "",
@@ -178,26 +285,20 @@ const IncidentAuditing = (props) => {
             const filters = data.filters || {};
             setSyncEnabled(!!filters.syncEnabled);
 
-            if (filters.fromDate) {
-                const [y, m, d] = filters.fromDate.split("-");
-                setStartYear(y || "");
-                setStartMonth(m || "");
-                setStartDay(d || "");
+            const newStart = isoToDate(filters.fromDate);
+            const newEnd = isoToDate(filters.toDate);
+            setStartDate(newStart);
+            setEndDate(newEnd);
+            setActiveQuickRange(null);
+            if (newStart && newEnd) {
+                const diff = Math.round((newEnd - newStart) / 86400000);
+                setConfirmText(`${toDisplayDate(newStart)} – ${toDisplayDate(newEnd)}`);
+                setConfirmDays(`${diff} days`);
+                setShowConfirm(true);
             } else {
-                setStartYear("");
-                setStartMonth("");
-                setStartDay("");
-            }
-
-            if (filters.toDate) {
-                const [y, m, d] = filters.toDate.split("-");
-                setEndYear(y || "");
-                setEndMonth(m || "");
-                setEndDay(d || "");
-            } else {
-                setEndYear("");
-                setEndMonth("");
-                setEndDay("");
+                setShowConfirm(false);
+                setConfirmText("");
+                setConfirmDays("");
             }
 
             await incrementCareVoiceAnalysisCount(
@@ -336,8 +437,10 @@ const IncidentAuditing = (props) => {
         const intent = new CustomEvent("ANALYSIS_INTENT", { cancelable: true });
         if (!window.dispatchEvent(intent)) return;
 
+        const startIso = dateToIso(startDate);
+        const endIso = dateToIso(endDate);
         if (syncEnabled) {
-            if (!startDay || !startMonth || !startYear || !endDay || !endMonth || !endYear) {
+            if (!startIso || !endIso) {
                 toast.error("Please select a start and end date.");
                 return;
             }
@@ -375,8 +478,8 @@ const IncidentAuditing = (props) => {
             incidentAuditingFiles.forEach((file) => formData.append("files", file));
             if (syncEnabled) {
                 formData.append("sync", true);
-                formData.append("fromDate", `${startYear}-${startMonth}-${startDay}`);
-                formData.append("toDate", `${endYear}-${endMonth}-${endDay}`);
+                formData.append("fromDate", startIso);
+                formData.append("toDate", endIso);
                 formData.append("userEmail", props.user.email);
             }
 
@@ -561,12 +664,12 @@ const IncidentAuditing = (props) => {
                         if (!syncEnabled) {
                             setIncidentAuditingFiles([]);
                         } else {
-                            setStartDay("");
-                            setStartMonth("");
-                            setStartYear("");
-                            setEndDay("");
-                            setEndMonth("");
-                            setEndYear("");
+                            setStartDate(null);
+                            setEndDate(null);
+                            setActiveQuickRange(null);
+                            setShowConfirm(false);
+                            setConfirmText("");
+                            setConfirmDays("");
                         }
                     }}
                 >
@@ -576,43 +679,60 @@ const IncidentAuditing = (props) => {
         </div>
     );
 
-    const renderDateSelect = (value, onChange, kind) => {
-        let options;
-        if (kind === "day") {
-            options = Array.from({ length: 31 }, (_, i) => (i + 1).toString().padStart(2, "0"));
-        } else if (kind === "month") {
-            options = Array.from({ length: 12 }, (_, i) => ({
-                value: (i + 1).toString().padStart(2, "0"),
-                label: new Date(0, i).toLocaleString("en-US", { month: "short" }),
-            }));
+    const updateConfirm = (s, e) => {
+        if (s && e) {
+            const diff = Math.round((e - s) / 86400000);
+            setConfirmText(`${toDisplayDate(s)} – ${toDisplayDate(e)}`);
+            setConfirmDays(`${diff} days`);
+            setShowConfirm(true);
         } else {
-            options = Array.from({ length: 20 }, (_, i) =>
-                (new Date().getFullYear() - i).toString()
-            );
+            setShowConfirm(false);
+            setConfirmText("");
+            setConfirmDays("");
         }
+    };
 
-        return (
-            <select
-                className="ia-date-select"
-                value={value}
-                onChange={(e) => onChange(e.target.value)}
-            >
-                <option value="">
-                    {kind === "day" ? "DD" : kind === "month" ? "MM" : "YYYY"}
-                </option>
-                {kind === "month"
-                    ? options.map((o) => (
-                          <option key={o.value} value={o.value}>
-                              {o.label}
-                          </option>
-                      ))
-                    : options.map((o) => (
-                          <option key={o} value={o}>
-                              {o}
-                          </option>
-                      ))}
-            </select>
-        );
+    const handleQuickRange = (days) => {
+        const end = new Date();
+        const start = new Date();
+        start.setDate(end.getDate() - days);
+        setStartDate(start);
+        setEndDate(end);
+        setActiveQuickRange(days);
+        updateConfirm(start, end);
+    };
+
+    const handleStartChange = (date) => {
+        setStartDate(date);
+        setActiveQuickRange(null);
+        // End must always be strictly greater than start — drop end if it isn't.
+        if (date && endDate && endDate <= date) {
+            setEndDate(null);
+            updateConfirm(date, null);
+        } else {
+            updateConfirm(date, endDate);
+        }
+    };
+
+    const handleEndChange = (date) => {
+        setEndDate(date);
+        setActiveQuickRange(null);
+        updateConfirm(startDate, date);
+    };
+
+    // End picker must start at start + 1 day (strictly greater).
+    const minEndDate = startDate
+        ? new Date(startDate.getTime() + 86400000)
+        : undefined;
+
+    const toggleStart = () => {
+        setEndOpen(false);
+        setStartOpen((prev) => !prev);
+    };
+
+    const toggleEnd = () => {
+        setStartOpen(false);
+        setEndOpen((prev) => !prev);
     };
 
     return (
@@ -649,12 +769,12 @@ const IncidentAuditing = (props) => {
                                     setFilterType("ALL");
                                     setExpandedSources([]);
                                     setSyncEnabled(false);
-                                    setStartDay("");
-                                    setStartMonth("");
-                                    setStartYear("");
-                                    setEndDay("");
-                                    setEndMonth("");
-                                    setEndYear("");
+                                    setStartDate(null);
+                                    setEndDate(null);
+                                    setActiveQuickRange(null);
+                                    setShowConfirm(false);
+                                    setConfirmText("");
+                                    setConfirmDays("");
                                     setIncidentAuditingFiles([]);
                                 }}
                             >
@@ -873,32 +993,105 @@ const IncidentAuditing = (props) => {
                                     <FiCalendar size={14} />
                                 </span>
                                 <span className="ia-filters-card-title">Report Date Range</span>
-                                {syncEnabled && (
-                                    <span className="ia-filters-card-hint">
-                                        Required when Sync is enabled
-                                    </span>
-                                )}
+                                <span className="ia-filters-card-hint">
+                                    {syncEnabled
+                                        ? "Required when Sync is enabled"
+                                        : "Select a date range to filter incident reports"}
+                                </span>
                             </div>
 
-                            <div className="ia-filters-grid">
-                                <div className="ia-date-picker">
-                                    <label className="ia-date-picker-label">Start Date</label>
-                                    <div className="ia-date-inputs">
-                                        {renderDateSelect(startDay, setStartDay, "day")}
-                                        {renderDateSelect(startMonth, setStartMonth, "month")}
-                                        {renderDateSelect(startYear, setStartYear, "year")}
-                                    </div>
+                            <div className="ia-v2-date-grid">
+                                <div className="ia-v2-date-col">
+                                    <label className="ia-v2-date-label">Start Date</label>
+                                    <DatePicker
+                                        locale="en-GB"
+                                        selected={startDate}
+                                        onChange={(date) => {
+                                            handleStartChange(date);
+                                            setStartOpen(false);
+                                        }}
+                                        dateFormat="dd-MM-yyyy"
+                                        placeholderText="dd-mm-yyyy"
+                                        showPopperArrow={false}
+                                        popperPlacement="bottom-start"
+                                        portalId="ia-datepicker-portal"
+                                        open={startOpen}
+                                        customInput={
+                                            <DateFieldInput
+                                                isOpen={startOpen}
+                                                hasValue={!!startDate}
+                                                placeholder="dd-mm-yyyy"
+                                                onToggle={toggleStart}
+                                            />
+                                        }
+                                    />
                                 </div>
 
-                                <div className="ia-date-picker">
-                                    <label className="ia-date-picker-label">End Date</label>
-                                    <div className="ia-date-inputs">
-                                        {renderDateSelect(endDay, setEndDay, "day")}
-                                        {renderDateSelect(endMonth, setEndMonth, "month")}
-                                        {renderDateSelect(endYear, setEndYear, "year")}
-                                    </div>
+                                <div className="ia-v2-arrow">→</div>
+
+                                <div className="ia-v2-date-col">
+                                    <label className="ia-v2-date-label">End Date</label>
+                                    <DatePicker
+                                        locale="en-GB"
+                                        selected={endDate}
+                                        onChange={(date) => {
+                                            handleEndChange(date);
+                                            setEndOpen(false);
+                                        }}
+                                        minDate={minEndDate}
+                                        dateFormat="dd-MM-yyyy"
+                                        placeholderText="dd-mm-yyyy"
+                                        showPopperArrow={false}
+                                        popperPlacement="bottom-start"
+                                        portalId="ia-datepicker-portal"
+                                        open={endOpen}
+                                        customInput={
+                                            <DateFieldInput
+                                                isOpen={endOpen}
+                                                hasValue={!!endDate}
+                                                placeholder="dd-mm-yyyy"
+                                                onToggle={toggleEnd}
+                                            />
+                                        }
+                                    />
                                 </div>
                             </div>
+
+                            <div className="ia-v2-quick-row">
+                                <span className="ia-v2-quick-label">Quick Range</span>
+                                {QUICK_RANGES.map(({ label, days }) => (
+                                    <button
+                                        key={days}
+                                        type="button"
+                                        className={`ia-v2-pill${
+                                            activeQuickRange === days ? " active" : ""
+                                        }`}
+                                        onClick={() => handleQuickRange(days)}
+                                    >
+                                        {label}
+                                    </button>
+                                ))}
+                            </div>
+
+                            {showConfirm && (
+                                <div className="ia-v2-confirm show">
+                                    <svg
+                                        className="ia-v2-confirm-icon"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="2.5"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            d="M5 13l4 4L19 7"
+                                        />
+                                    </svg>
+                                    <span className="ia-v2-confirm-text">{confirmText}</span>
+                                    <span className="ia-v2-confirm-days">{confirmDays}</span>
+                                </div>
+                            )}
                         </section>
 
                         {/* Upload section — TlcUploadBox sits inside our own glass

@@ -79,7 +79,7 @@ const IncidentReport = (props) => {
 
                 try {
                     const response = await axios.post(
-                        "https://curki-backend-api-container.yellowflower-c21bea82.australiaeast.azurecontainerapps.io/support-at-home/incident/report",
+                        "https://aca-curki-aibackend-prod-aue-001.agreeabledune-2a557375.australiaeast.azurecontainerapps.io/support-at-home/incident/report",
                         { file_type: "row", row: rowDict }
                     );
                     if (response?.data?.data) {

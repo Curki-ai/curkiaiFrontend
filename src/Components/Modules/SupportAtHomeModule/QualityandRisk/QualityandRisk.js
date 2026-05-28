@@ -66,7 +66,7 @@ const QualityandRisk = (props) => {
             });
 
             const response = await axios.post(
-                "https://curki-backend-api-container.yellowflower-c21bea82.australiaeast.azurecontainerapps.io/support-at-home/quality-risk/report",
+                "https://aca-curki-aibackend-prod-aue-001.agreeabledune-2a557375.australiaeast.azurecontainerapps.io/support-at-home/quality-risk/report",
                 formData,
             );
 

@@ -169,7 +169,7 @@ const Qfr = (props) => {
 
                     let standardEndpoint = "";
                     if (props.selectedRole === "Quarterly Financial Reporting") {
-                        standardEndpoint = "https://curki-backend-api-container.yellowflower-c21bea82.australiaeast.azurecontainerapps.io/support-at-home/qfr/populate";
+                        standardEndpoint = "https://aca-curki-aibackend-prod-aue-001.agreeabledune-2a557375.australiaeast.azurecontainerapps.io/support-at-home/qfr/populate";
                     }
 
                     const stdAPIRes = await axios.post(
@@ -205,7 +205,7 @@ const Qfr = (props) => {
                         formData.append("context", "None");
 
                         const uploadRes = await axios.post(
-                            "https://curki-backend-api-container.yellowflower-c21bea82.australiaeast.azurecontainerapps.io/financial_reporting",
+                            "https://aca-curki-aibackend-prod-aue-001.agreeabledune-2a557375.australiaeast.azurecontainerapps.io/financial_reporting",
                             formData
                         );
 
@@ -261,7 +261,7 @@ const Qfr = (props) => {
                 console.log('SuumariseFor', summariseForm);
                 let standardSummariseEndpoint = '';
                 if (props.selectedRole === "Quarterly Financial Reporting") {
-                    standardSummariseEndpoint = "https://curki-backend-api-container.yellowflower-c21bea82.australiaeast.azurecontainerapps.io/support-at-home/qfr/report";
+                    standardSummariseEndpoint = "https://aca-curki-aibackend-prod-aue-001.agreeabledune-2a557375.australiaeast.azurecontainerapps.io/support-at-home/qfr/report";
                 }
                 const summaryResponse = await axios.post(
                     standardSummariseEndpoint,
@@ -283,7 +283,7 @@ const Qfr = (props) => {
                 try {
                     let standardVisulaiseEndpoint = '';
                     if (props.selectedRole === "Quarterly Financial Reporting") {
-                        standardVisulaiseEndpoint = "https://curki-backend-api-container.yellowflower-c21bea82.australiaeast.azurecontainerapps.io/support-at-home/qfr/visualise";
+                        standardVisulaiseEndpoint = "https://aca-curki-aibackend-prod-aue-001.agreeabledune-2a557375.australiaeast.azurecontainerapps.io/support-at-home/qfr/visualise";
                     }
                     const visualiseResponse = await axios.post(
                         standardVisulaiseEndpoint,

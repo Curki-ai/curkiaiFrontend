@@ -18,7 +18,7 @@ import { toast } from "react-toastify";
 import { RiSettingsLine } from "react-icons/ri";
 
 const BASE_URL =
-  "https://curki-backend-api-container.yellowflower-c21bea82.australiaeast.azurecontainerapps.io";
+  "https://aca-curki-aibackend-prod-aue-001.agreeabledune-2a557375.australiaeast.azurecontainerapps.io";
 const CEIM_API_BASE = `${API_BASE}/api/client-event-incident-mgmt`;
 
 const Client_Event_Reporting = (props) => {

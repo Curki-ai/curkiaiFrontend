@@ -57,7 +57,7 @@ const OldSignIn = ({ show, onClose }) => {
         // Mailchimp Welcome flow
         try {
           const mailchimpRes = await fetch(
-            "https://curki-backend-api-container.yellowflower-c21bea82.australiaeast.azurecontainerapps.io/mailchimp/contact",
+            "https://aca-curki-aibackend-prod-aue-001.agreeabledune-2a557375.australiaeast.azurecontainerapps.io/mailchimp/contact",
             {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -142,7 +142,7 @@ const OldSignIn = ({ show, onClose }) => {
         // Mailchimp Welcome flow
         try {
           const mailchimpRes = await fetch(
-            "https://curki-backend-api-container.yellowflower-c21bea82.australiaeast.azurecontainerapps.io/mailchimp/contact",
+            "https://aca-curki-aibackend-prod-aue-001.agreeabledune-2a557375.australiaeast.azurecontainerapps.io/mailchimp/contact",
             {
               method: "POST",
               headers: { "Content-Type": "application/json" },

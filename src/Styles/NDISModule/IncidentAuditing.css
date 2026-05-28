@@ -264,67 +264,237 @@
 .ia-filters-card-hint {
     margin-left: auto;
     font-size: 12px;
-    color: #6b7280;
-    font-weight: 500;
-}
-
-.ia-filters-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: clamp(14px, 1.2vw, 22px);
+    color: #9CA3AF;
+    font-weight: 400;
 }
 
 /* ============================================================
-   DATE PICKERS
+   REPORT DATE RANGE — v2
+   Two equal-width native date inputs with a centered arrow,
+   purple calendar icons on the left, quick-range pills, and a
+   confirmation bar that appears once both dates are set.
    ============================================================ */
-.ia-date-picker {
+.ia-v2-date-grid {
+    display: grid;
+    grid-template-columns: 1fr 32px 1fr;
+    align-items: end;
+}
+
+.ia-v2-date-col {
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    text-align: left;
+    gap: 6px;
 }
 
-.ia-date-picker-label {
+.ia-v2-date-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #9CA3AF;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding-left: 2px;
+}
+
+.ia-v2-input-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.ia-v2-cal-icon {
+    position: absolute;
+    left: 13px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #8B5CF6;
+    width: 15px;
+    height: 15px;
+    pointer-events: none;
+    flex-shrink: 0;
+}
+
+/* react-datepicker wrapper must fill the column or the custom input
+   collapses to its content width. */
+.ia-v2-date-col .react-datepicker-wrapper,
+.ia-v2-date-col .react-datepicker__input-container {
+    width: 100%;
+    display: block;
+}
+
+.ia-v2-date-input {
+    width: 100%;
+    padding: 10px 38px 10px 38px;
+    background: #FFFFFF;
+    border: 1.5px solid #E5E3F5;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #1E1B3A;
+    cursor: pointer;
+    transition: border-color 160ms ease, box-shadow 160ms ease;
+    box-sizing: border-box;
+    font-family: inherit;
+    height: 44px;
+    letter-spacing: 0.02em;
+    display: flex;
+    align-items: center;
+    user-select: none;
+}
+.ia-v2-date-input-placeholder {
+    color: #B0B3C6;
+    font-weight: 500;
+}
+.ia-v2-input-wrap:hover .ia-v2-date-input {
+    border-color: rgba(108, 76, 220, 0.45);
+}
+.ia-v2-input-wrap-open .ia-v2-date-input {
+    border-color: #6C4CDC;
+    box-shadow: 0 0 0 3px rgba(108, 76, 220, 0.12);
+}
+
+.ia-v2-chevron {
+    position: absolute;
+    right: 13px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #8B5CF6;
+    width: 14px;
+    height: 14px;
+    pointer-events: none;
+    transition: transform 180ms ease;
+}
+.ia-v2-chevron-open {
+    transform: translateY(-50%) rotate(180deg);
+}
+
+/* ---- react-datepicker popup theming (purple system) ---- */
+/* Popup is rendered via portalId at body level to escape the filters card's
+   backdrop-filter (which would otherwise clip it). */
+#ia-datepicker-portal,
+.react-datepicker-popper {
+    z-index: 9999;
+}
+.react-datepicker {
+    font-family: inherit;
+    border: 1.5px solid rgba(139, 92, 246, 0.22);
+    border-radius: 14px;
+    box-shadow: 0 12px 32px rgba(108, 76, 220, 0.18);
+    overflow: hidden;
+}
+.react-datepicker__header {
+    background: linear-gradient(135deg, #faf8ff 0%, #f4ecff 100%);
+    border-bottom: 1px solid #ede9fe;
+}
+.react-datepicker__current-month,
+.react-datepicker__day-name {
+    color: #1e1b3a;
+    font-weight: 600;
+}
+.react-datepicker__day--selected,
+.react-datepicker__day--keyboard-selected {
+    background: linear-gradient(135deg, #6C4CDC 0%, #8B5CF6 100%);
+    color: #fff;
+    border-radius: 8px;
+}
+.react-datepicker__day--selected:hover,
+.react-datepicker__day--keyboard-selected:hover {
+    background: linear-gradient(135deg, #5b21b6 0%, #7C3AED 100%);
+}
+.react-datepicker__day:hover {
+    background: #f4ecff;
+    color: #6C4CDC;
+    border-radius: 8px;
+}
+.react-datepicker__day--disabled {
+    color: #d1d5db;
+    cursor: not-allowed;
+}
+.react-datepicker__day--disabled:hover {
+    background: transparent;
+    color: #d1d5db;
+}
+.react-datepicker__navigation-icon::before {
+    border-color: #6C4CDC;
+}
+
+.ia-v2-arrow {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: 13px;
+    color: #C4B5FD;
+    font-size: 18px;
+    user-select: none;
+}
+
+/* Quick Range row */
+.ia-v2-quick-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(139, 92, 246, 0.1);
+    flex-wrap: wrap;
+}
+
+.ia-v2-quick-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #9CA3AF;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.ia-v2-pill {
+    padding: 5px 13px;
+    border-radius: 20px;
+    border: 1.5px solid rgba(139, 92, 246, 0.22);
+    background: rgba(239, 234, 253, 0.4);
+    color: #6C4CDC;
     font-size: 12px;
     font-weight: 600;
-    color: #4f5273;
-    letter-spacing: -0.005em;
-}
-
-.ia-date-inputs {
-    display: flex;
-    gap: 10px;
-}
-
-.ia-date-select {
-    flex: 1;
-    appearance: none;
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    padding: 10px 32px 10px 12px;
-    font-size: 14px;
-    font-family: inherit;
-    font-weight: 500;
-    color: #1e1b3a;
-    border: 1.5px solid #e0dff0;
-    border-radius: 12px;
-    background-color: #ffffff;
-    background-image: url("data:image/svg+xml;charset=UTF-8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='%236c4cdc'><path d='M4 6l4 4 4-4'/></svg>");
-    background-repeat: no-repeat;
-    background-position: right 10px center;
-    background-size: 12px;
     cursor: pointer;
-    transition: border-color 180ms ease, box-shadow 180ms ease;
+    transition: all 150ms ease;
+    white-space: nowrap;
+    line-height: 1.4;
+    font-family: inherit;
+}
+.ia-v2-pill:hover {
+    background: rgba(108, 76, 220, 0.1);
+    border-color: rgba(108, 76, 220, 0.5);
+}
+.ia-v2-pill.active {
+    background: linear-gradient(135deg, #6C4CDC 0%, #8B5CF6 100%);
+    color: #fff;
+    border-color: transparent;
+    box-shadow: 0 2px 10px rgba(108, 76, 220, 0.28);
 }
 
-.ia-date-select:hover {
-    border-color: #c0bde0;
+/* Confirmation bar */
+.ia-v2-confirm {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+    padding: 7px 14px;
+    background: rgba(237, 233, 254, 0.5);
+    border-radius: 10px;
+    border: 1px solid rgba(139, 92, 246, 0.12);
 }
-
-.ia-date-select:focus {
-    outline: none;
-    border-color: #6c4cdc;
-    box-shadow: 0 0 0 3px rgba(108, 76, 220, 0.12);
+.ia-v2-confirm.show    { display: flex; }
+.ia-v2-confirm-icon    { width: 14px; height: 14px; flex-shrink: 0; color: #7C3AED; }
+.ia-v2-confirm-text    { font-size: 13px; color: #5B21B6; font-weight: 600; }
+.ia-v2-confirm-days    {
+    margin-left: auto;
+    font-size: 11px;
+    color: #8B5CF6;
+    font-weight: 500;
+    background: rgba(139, 92, 246, 0.1);
+    padding: 2px 8px;
+    border-radius: 10px;
 }
 
 /* ============================================================
@@ -1279,9 +1449,13 @@
         gap: 12px;
     }
 
-    .ia-filters-grid {
+    .ia-v2-date-grid {
         grid-template-columns: 1fr;
         gap: 14px;
+    }
+
+    .ia-v2-arrow {
+        display: none;
     }
 
     .ia-summary-grid {
@@ -1354,16 +1528,6 @@
 
     .ia-history-container {
         margin-top: 48px;
-    }
-}
-
-@media (max-width: 720px) {
-    .ia-date-inputs {
-        flex-wrap: wrap;
-    }
-
-    .ia-date-select {
-        min-width: 0;
     }
 }
 

@@ -327,7 +327,7 @@ const TlcNewClientProfitability = (props) => {
             }
         }
     }, [activeTabData?.isFromHistory, setClientProfitabilityAiHistoryPayload]);
-    // const BASE_URL = "https://curki-backend-api-container.yellowflower-c21bea82.australiaeast.azurecontainerapps.io"
+    // const BASE_URL = "https://aca-curki-aibackend-prod-aue-001.agreeabledune-2a557375.australiaeast.azurecontainerapps.io"
     // 🔹 MOCK FILTER OPTIONS (SHOWCASE ONLY)
     const optionsState = [
         { label: "New South Wales", value: "New South Wales" },
@@ -1081,7 +1081,7 @@ const TlcNewClientProfitability = (props) => {
             };
 
             const res = await fetch(
-                `https://curki-backend-api-container.yellowflower-c21bea82.australiaeast.azurecontainerapps.io/header_modules/clients_profitability/ai_analysis`,
+                `https://aca-curki-aibackend-prod-aue-001.agreeabledune-2a557375.australiaeast.azurecontainerapps.io/header_modules/clients_profitability/ai_analysis`,
                 {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },

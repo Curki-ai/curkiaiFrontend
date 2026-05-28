@@ -683,10 +683,10 @@ const UploaderPage = () => {
 
                     let standardEndpoint = "";
                     if (selectedRole === "Financial Health") {
-                        standardEndpoint = "https://curki-backend-api-container.yellowflower-c21bea82.australiaeast.azurecontainerapps.io/header-modules/financial/populate";
+                        standardEndpoint = "https://aca-curki-aibackend-prod-aue-001.agreeabledune-2a557375.australiaeast.azurecontainerapps.io/header-modules/financial/populate";
                     } else if (selectedRole === "Quarterly Financial Reporting") {
                         // console.log('Deepak');
-                        standardEndpoint = "https://curki-backend-api-container.yellowflower-c21bea82.australiaeast.azurecontainerapps.io/support-at-home/qfr/populate";
+                        standardEndpoint = "https://aca-curki-aibackend-prod-aue-001.agreeabledune-2a557375.australiaeast.azurecontainerapps.io/support-at-home/qfr/populate";
                     }
 
                     const stdAPIRes = await axios.post(
@@ -722,7 +722,7 @@ const UploaderPage = () => {
                         formData.append("context", "None");
 
                         const uploadRes = await axios.post(
-                            "https://curki-backend-api-container.yellowflower-c21bea82.australiaeast.azurecontainerapps.io/financial_reporting",
+                            "https://aca-curki-aibackend-prod-aue-001.agreeabledune-2a557375.australiaeast.azurecontainerapps.io/financial_reporting",
                             formData
                         );
 
@@ -778,10 +778,10 @@ const UploaderPage = () => {
                 console.log('SuumariseFor', summariseForm);
                 let standardSummariseEndpoint = '';
                 if (selectedRole === "Financial Health") {
-                    standardSummariseEndpoint = "https://curki-backend-api-container.yellowflower-c21bea82.australiaeast.azurecontainerapps.io/header-modules/financial/report";
+                    standardSummariseEndpoint = "https://aca-curki-aibackend-prod-aue-001.agreeabledune-2a557375.australiaeast.azurecontainerapps.io/header-modules/financial/report";
                 } else if (selectedRole === "Quarterly Financial Reporting") {
                     // console.log('Deepak');
-                    standardSummariseEndpoint = "https://curki-backend-api-container.yellowflower-c21bea82.australiaeast.azurecontainerapps.io/support-at-home/qfr/report";
+                    standardSummariseEndpoint = "https://aca-curki-aibackend-prod-aue-001.agreeabledune-2a557375.australiaeast.azurecontainerapps.io/support-at-home/qfr/report";
                 }
                 const summaryResponse = await axios.post(
                     standardSummariseEndpoint,
@@ -803,10 +803,10 @@ const UploaderPage = () => {
                 try {
                     let standardVisulaiseEndpoint = '';
                     if (selectedRole === "Financial Health") {
-                        standardVisulaiseEndpoint = "https://curki-backend-api-container.yellowflower-c21bea82.australiaeast.azurecontainerapps.io/header-modules/financial/visualise";
+                        standardVisulaiseEndpoint = "https://aca-curki-aibackend-prod-aue-001.agreeabledune-2a557375.australiaeast.azurecontainerapps.io/header-modules/financial/visualise";
                     } else if (selectedRole === "Quarterly Financial Reporting") {
                         // console.log('Deepak');
-                        standardVisulaiseEndpoint = "https://curki-backend-api-container.yellowflower-c21bea82.australiaeast.azurecontainerapps.io/support-at-home/qfr/visualise ";
+                        standardVisulaiseEndpoint = "https://aca-curki-aibackend-prod-aue-001.agreeabledune-2a557375.australiaeast.azurecontainerapps.io/support-at-home/qfr/visualise ";
                     }
                     const visualiseResponse = await axios.post(
                         standardVisulaiseEndpoint,
@@ -860,7 +860,7 @@ const UploaderPage = () => {
 
                     try {
                         const sirsResponse = await axios.post(
-                            "https://curki-backend-api-container.yellowflower-c21bea82.australiaeast.azurecontainerapps.io/support-at-home/sirs/analyze",
+                            "https://aca-curki-aibackend-prod-aue-001.agreeabledune-2a557375.australiaeast.azurecontainerapps.io/support-at-home/sirs/analyze",
                             { input_row: rowDict }
                         );
 
@@ -895,7 +895,7 @@ const UploaderPage = () => {
                     });
 
                     const payrollResponse = await axios.post(
-                        "https://curki-backend-api-container.yellowflower-c21bea82.australiaeast.azurecontainerapps.io/support-at-home/custom-reporting/tlc/payroll",
+                        "https://aca-curki-aibackend-prod-aue-001.agreeabledune-2a557375.australiaeast.azurecontainerapps.io/support-at-home/custom-reporting/tlc/payroll",
                         payrollForm,
                         { responseType: 'blob' }
                     );
@@ -917,7 +917,7 @@ const UploaderPage = () => {
                     summaryForm.append("file", payrollFile);
 
                     const summaryResponse = await axios.post(
-                        "https://curki-backend-api-container.yellowflower-c21bea82.australiaeast.azurecontainerapps.io/support-at-home/custom-reporting/tlc/payroll_summary",
+                        "https://aca-curki-aibackend-prod-aue-001.agreeabledune-2a557375.australiaeast.azurecontainerapps.io/support-at-home/custom-reporting/tlc/payroll_summary",
                         summaryForm
                     );
 
@@ -1085,7 +1085,7 @@ const UploaderPage = () => {
 
                 try {
                     const response = await axios.post(
-                        "https://curki-backend-api-container.yellowflower-c21bea82.australiaeast.azurecontainerapps.io/support-at-home/incident-reporting-dca/report",
+                        "https://aca-curki-aibackend-prod-aue-001.agreeabledune-2a557375.australiaeast.azurecontainerapps.io/support-at-home/incident-reporting-dca/report",
                         formData,
                         {
                             headers: {
@@ -1159,7 +1159,7 @@ const UploaderPage = () => {
 
                     try {
                         const response = await axios.post(
-                            "https://curki-backend-api-container.yellowflower-c21bea82.australiaeast.azurecontainerapps.io/header-modules/care-plan-analysis/analyze",
+                            "https://aca-curki-aibackend-prod-aue-001.agreeabledune-2a557375.australiaeast.azurecontainerapps.io/header-modules/care-plan-analysis/analyze",
                             { input_row: rowDict }
                         );
 
@@ -1206,7 +1206,7 @@ const UploaderPage = () => {
 
                     try {
                         const response = await axios.post(
-                            "https://curki-backend-api-container.yellowflower-c21bea82.australiaeast.azurecontainerapps.io/incident",
+                            "https://aca-curki-aibackend-prod-aue-001.agreeabledune-2a557375.australiaeast.azurecontainerapps.io/incident",
                             { file_type: "row", row: rowDict }
                         );
                         if (response?.data?.data) {
@@ -1244,7 +1244,7 @@ const UploaderPage = () => {
                 });
 
                 const response = await axios.post(
-                    "https://curki-backend-api-container.yellowflower-c21bea82.australiaeast.azurecontainerapps.io/support-at-home/quality-risk/report",
+                    "https://aca-curki-aibackend-prod-aue-001.agreeabledune-2a557375.australiaeast.azurecontainerapps.io/support-at-home/quality-risk/report",
                     formData,
                 );
 
@@ -1298,7 +1298,7 @@ const UploaderPage = () => {
 
         try {
             const response = await axios.post(
-                'https://curki-backend-api-container.yellowflower-c21bea82.australiaeast.azurecontainerapps.io/askai',
+                'https://aca-curki-aibackend-prod-aue-001.agreeabledune-2a557375.australiaeast.azurecontainerapps.io/askai',
                 payload
             );
 

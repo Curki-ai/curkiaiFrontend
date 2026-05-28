@@ -643,7 +643,7 @@ export default function TlcCustomerReporting(props) {
       console.log("ai payload", aiPayload)
       // ✅ Step 3: Send directly (no re-wrapping or redeclaration)
       const res = await fetch(
-        "https://curki-backend-api-container.yellowflower-c21bea82.australiaeast.azurecontainerapps.io/tlc/payroll/ai-analysis-report",
+        "https://aca-curki-aibackend-prod-aue-001.agreeabledune-2a557375.australiaeast.azurecontainerapps.io/tlc/payroll/ai-analysis-report",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
