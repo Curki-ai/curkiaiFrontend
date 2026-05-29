@@ -1823,7 +1823,7 @@ const TlcNewClientProfitability = (props) => {
                         alignItems: "flex-start",
                         justifyContent: "space-between",
                         width: "100%",
-                        marginTop: "12px",
+                        // marginTop: "12px",
                     }}
                 >
                     {/* LEFT: UI TABS */}

@@ -451,7 +451,7 @@
        exactly so switching modules causes ZERO visual movement and no
        purple background tint. */
 .page-containersss {
-  background: #fbfaff;
+  /* background: #fbfaff; */
   color: #1e1b3a;
   font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
 }
