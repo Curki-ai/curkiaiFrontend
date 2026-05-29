@@ -1,7 +1,7 @@
 # Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
 # More GitHub Actions for Azure: https://github.com/Azure/actions
 
-name: Build and deploy Node.js app to Azure Web App - app-curki-ai-frontend-prod-aue-001
+name: Build and deploy Node.js app to Azure Web App - app-curki-frontend-prod-aue-001
 
 on:
   push:
@@ -65,6 +65,6 @@ jobs:
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'app-curki-ai-frontend-prod-aue-001'
+          app-name: 'app-curki-frontend-prod-aue-001'
           slot-name: 'Production'
           package: .
