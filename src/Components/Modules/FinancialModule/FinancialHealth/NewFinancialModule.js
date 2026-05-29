@@ -559,7 +559,7 @@ const NewFinancialHealth = (props) => {
                 alignItems: "center",
                 marginBottom: "16px",
                 paddingTop: "16px",
-                marginTop: "12px",
+                // marginTop: "12px",
             }}
         >
             {tabs.map(tab => (
@@ -1892,9 +1892,9 @@ const NewFinancialHealth = (props) => {
                             className="financial-actions-buttons"
                             style={{
                                 display: "flex",
-                                flexDirection: "column",
+                                flexDirection: "row",
                                 gap: "8px",
-                                alignItems: "flex-end",
+                                alignItems: "center",
                             }}
                         >
                             <button
@@ -1912,7 +1912,6 @@ const NewFinancialHealth = (props) => {
                                     display: "flex",
                                     alignItems: "center",
                                     gap: "8px",
-                                    marginTop: "17px",
                                     opacity: 0.6,
                                 }}
                             >

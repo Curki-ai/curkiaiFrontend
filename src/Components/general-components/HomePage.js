@@ -2159,7 +2159,7 @@ const HomePage = () => {
                     </div>
                   )}
                 </div>
-                {isSoftwareConnectPage && (
+                {isSoftwareConnectPage && !showSettings && !showUsageDetails && !showTeamMembers && (
                   <div
                     className="api-key-help-btn"
                     onClick={() => setShowAIChat(true)}

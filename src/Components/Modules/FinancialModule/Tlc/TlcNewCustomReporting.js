@@ -1877,8 +1877,8 @@ export default function TlcNewCustomerReporting(props) {
                             alignItems: "flex-start",
                             justifyContent: "space-between",
                             width: "100%",
-                            marginTop: "12px",
-                            marginBottom:"12px"
+                            // marginTop: "12px",
+                            // marginBottom:"12px"
                         }}
                     >
                         {/* LEFT: TABS */}

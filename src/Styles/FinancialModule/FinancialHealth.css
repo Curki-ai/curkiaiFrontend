@@ -329,13 +329,11 @@ body {
   align-items: flex-start !important;
 }
 
-/* The Financial tab bar has marginTop: 12px on top of paddingTop: 16px, so the
-   first tab visually sits 28px below the row's top edge. The buttons no longer
-   carry an individual marginTop (they used to be 17px each), so the container
-   itself takes the full 28px offset so all action buttons line up with the
-   first row of tabs. */
+/* Tab bar has paddingTop: 16px, so tabs sit ~16px below the row's top edge.
+   Match that offset on the action buttons so Compare and Analyse aligns with
+   the tab row — same convention as .tlc-new-actions-buttons. */
 .financial-actions-buttons {
-  margin-top: 28px;
+  margin-top: 17px;
 }
 
 /* Compact Download Report button — sits inline with Compare and Analyse / Save
