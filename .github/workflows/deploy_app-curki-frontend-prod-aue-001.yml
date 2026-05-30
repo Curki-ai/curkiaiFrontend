@@ -6,7 +6,7 @@ name: Build and deploy Node.js app to Azure Web App - app-curki-frontend-prod-au
 on:
   push:
     branches:
-      - curki-frontend-prod
+      - main
   workflow_dispatch:
 
 jobs:
