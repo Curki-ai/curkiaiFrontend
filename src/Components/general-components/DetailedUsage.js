@@ -8,6 +8,7 @@ import React, {
 import axios from "axios";
 import "../../Styles/general-styles/DetailedUsage.css";
 import { API_BASE } from "../../config/apiBase";
+import { auth } from "../../firebase";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -22,7 +23,12 @@ import { Line } from "react-chartjs-2";
 import { IoArrowBackOutline } from "react-icons/io5";
 import { FiZap, FiDollarSign, FiMessageCircle, FiFileText, FiActivity } from "react-icons/fi";
 import { HiOutlineChevronDown, HiOutlineUserGroup, HiOutlineUser } from "react-icons/hi";
+import { FiLayers } from "react-icons/fi";
 import CustomRangeSelect from "./DetailedUsageCustomSelect";
+
+// Virtual Spaces only exist for Staff Onboarding. The key must match the
+// MODULE_TABS entry / backend registry key.
+const STAFF_ONBOARDING_KEY = "staff-onboarding";
 
 ChartJS.register(
   CategoryScale,
@@ -155,6 +161,64 @@ const ViewModeSelect = ({ value, onChange }) => {
   );
 };
 
+// Virtual Space picker — shown only on the Staff Onboarding tab when the
+// parent organization has one or more virtual spaces. Selecting a space
+// rescopes every Plan Usage figure to that space's organizationId. Mirrors
+// the ViewModeSelect look-and-feel (reuses the du2-vm classes).
+const VirtualSpaceSelect = ({ value, onChange, options }) => {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  const current = options.find((o) => o.value === value) || options[0];
+
+  useEffect(() => {
+    const onClick = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, []);
+
+  return (
+    <div className={`du2-vm ${open ? "du2-vm-open" : ""}`} ref={ref}>
+      <button
+        type="button"
+        className="du2-vm-trigger"
+        onClick={() => setOpen((v) => !v)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+      >
+        <FiLayers className="du2-vm-icon" size={16} />
+        <span className="du2-vm-label">{current?.label || "Virtual space"}</span>
+        <HiOutlineChevronDown
+          className={`du2-vm-chevron ${open ? "du2-vm-chevron-open" : ""}`}
+          size={16}
+        />
+      </button>
+      {open && (
+        <div className="du2-vm-menu" role="listbox">
+          {options.map(({ value: v, label }) => (
+            <button
+              type="button"
+              key={v}
+              className={`du2-vm-item ${value === v ? "du2-vm-item-active" : ""}`}
+              role="option"
+              aria-selected={value === v}
+              onClick={() => {
+                onChange(v);
+                setOpen(false);
+              }}
+            >
+              <FiLayers size={16} />
+              <span>{label}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 // Subtle horizontal-scroll wrapper with fading edges so the tabs row hints
 // at overflow without showing a scrollbar. Edges fade out as you scroll
 // toward them.
@@ -212,6 +276,25 @@ const DetailedUsage = ({ user, onBack }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  const isStaffOnboarding = activeModule.key === STAFF_ONBOARDING_KEY;
+
+  // Staff Onboarding's AI Q&A is the HR chat, not a generic "Ask AI" button —
+  // so the questions metric is labelled "HR Questions" on that tab only.
+  const questionsLabel = isStaffOnboarding ? "HR Questions" : "Ask AI questions";
+
+  // Virtual Space selection (Staff Onboarding only). `vsOptions` holds the
+  // selectable workspaces ([Main organization, ...spaces]); `selectedOrgId`
+  // is the org all the figures below are scoped to. Null until the spaces
+  // list resolves — until then we fall back to the /me-resolved org.
+  const [vsOptions, setVsOptions] = useState([]);
+  const [vsMainOrgId, setVsMainOrgId] = useState(null);
+  const [selectedOrgId, setSelectedOrgId] = useState(null);
+
+  // The org every usage figure is scoped to: the chosen virtual space on the
+  // Staff Onboarding tab, otherwise the /me-resolved org.
+  const effectiveOrgId =
+    isStaffOnboarding && selectedOrgId ? selectedOrgId : organizationId;
+
   // Resolve which org the signed-in user belongs to in the active module's
   // user_access. The backend /me endpoint hides the per-module routing.
   useEffect(() => {
@@ -244,23 +327,95 @@ const DetailedUsage = ({ user, onBack }) => {
     };
   }, [userEmail, activeModule.key]);
 
+  // Load the virtual spaces for the parent org (Staff Onboarding only) so the
+  // picker can list them. Reuses the canonical /organizations/virtual-spaces
+  // endpoint, which returns the real main-org id and every space the caller
+  // belongs to. On any other module we clear the picker state.
+  useEffect(() => {
+    if (!isStaffOnboarding || !organizationId) {
+      setVsOptions([]);
+      setVsMainOrgId(null);
+      setSelectedOrgId(null);
+      return;
+    }
+    let cancelled = false;
+    const fetchSpaces = async () => {
+      try {
+        const headers = { "Content-Type": "application/json" };
+        if (userEmail) headers["x-user-email"] = userEmail;
+        headers["x-organization-id"] = String(organizationId);
+        if (auth.currentUser) {
+          try {
+            const token = await auth.currentUser.getIdToken();
+            if (token) headers["Authorization"] = `Bearer ${token}`;
+          } catch (e) {
+            console.warn("[DetailedUsage] getIdToken failed:", e?.message);
+          }
+        }
+        const res = await axios.get(
+          `${API_BASE}/api/organizations/virtual-spaces`,
+          { headers }
+        );
+        if (cancelled) return;
+        const data = res.data || {};
+        const spaces = Array.isArray(data.virtualSpaces)
+          ? data.virtualSpaces
+          : [];
+        // No spaces → no picker; usage stays on the resolved org.
+        if (spaces.length === 0) {
+          setVsOptions([]);
+          setVsMainOrgId(null);
+          setSelectedOrgId(null);
+          return;
+        }
+        const mainId = data.mainOrganization?.organizationId || organizationId;
+        const mainLabel =
+          data.mainOrganization?.organizationName || "Main organization";
+        const options = [
+          { value: mainId, label: mainLabel },
+          ...spaces.map((s) => ({
+            value: s.organizationId,
+            label: s.name || "Virtual space",
+          })),
+        ];
+        setVsOptions(options);
+        setVsMainOrgId(mainId);
+        // Default to the main org each time the list (re)loads.
+        setSelectedOrgId((prev) =>
+          prev && options.some((o) => o.value === prev) ? prev : mainId
+        );
+      } catch (err) {
+        if (cancelled) return;
+        // Non-fatal: without the picker the tab still shows the resolved org.
+        console.warn("[DetailedUsage] virtual-spaces fetch failed:", err?.message);
+        setVsOptions([]);
+        setVsMainOrgId(null);
+        setSelectedOrgId(null);
+      }
+    };
+    fetchSpaces();
+    return () => {
+      cancelled = true;
+    };
+  }, [isStaffOnboarding, organizationId, userEmail]);
+
   useEffect(() => {
     let cancelled = false;
     const fetchUsage = async () => {
-      if (!organizationId) return;
+      if (!effectiveOrgId) return;
       setLoading(true);
       setError("");
       try {
         const [summaryRes, timelineRes] = await Promise.all([
           axios.get(
             `${API_BASE}/api/usage/v2/org/${encodeURIComponent(
-              organizationId
+              effectiveOrgId
             )}/summary`,
             { params: { module: activeModule.key, range } }
           ),
           axios.get(
             `${API_BASE}/api/usage/v2/org/${encodeURIComponent(
-              organizationId
+              effectiveOrgId
             )}/timeline`,
             { params: { module: activeModule.key, range } }
           ),
@@ -282,7 +437,7 @@ const DetailedUsage = ({ user, onBack }) => {
     return () => {
       cancelled = true;
     };
-  }, [organizationId, activeModule.key, range]);
+  }, [effectiveOrgId, activeModule.key, range]);
 
   const sortedUsers = useMemo(() => {
     const list = Array.isArray(summary?.byUser) ? [...summary.byUser] : [];
@@ -324,7 +479,7 @@ const DetailedUsage = ({ user, onBack }) => {
           borderWidth: 2.5,
         },
         {
-          label: "Ask AI",
+          label: activeModule.key === STAFF_ONBOARDING_KEY ? "HR Questions" : "Ask AI",
           data: points.map((p) => p.askAi || 0),
           borderColor: "#16c79a",
           backgroundColor: "rgba(22, 199, 154, 0.06)",
@@ -468,6 +623,13 @@ const DetailedUsage = ({ user, onBack }) => {
           )}
         </div>
         <div className="du2-hero-controls">
+          {isStaffOnboarding && vsOptions.length > 0 && (
+            <VirtualSpaceSelect
+              value={selectedOrgId || vsMainOrgId}
+              onChange={setSelectedOrgId}
+              options={vsOptions}
+            />
+          )}
           <ViewModeSelect value={viewMode} onChange={setViewMode} />
           <CustomRangeSelect value={range} onChange={setRange} />
         </div>
@@ -506,7 +668,7 @@ const DetailedUsage = ({ user, onBack }) => {
             <StatCard
               tone="green"
               icon={<FiMessageCircle />}
-              label="Ask AI questions"
+              label={questionsLabel}
               value={formatNumber(totals.askAi)}
             />
             {showsDocsStat(activeModule.key) && (
@@ -564,6 +726,7 @@ const DetailedUsage = ({ user, onBack }) => {
                   users={sortedUsers}
                   selfEmailLower={userEmailLower}
                   showsDocs={showsDocsStat(activeModule.key)}
+                  questionsLabel={questionsLabel}
                 />
               )}
             </div>
@@ -584,14 +747,14 @@ const StatCard = ({ tone, icon, label, value }) => (
   </div>
 );
 
-const UserTable = ({ users, selfEmailLower, showsDocs }) => (
+const UserTable = ({ users, selfEmailLower, showsDocs, questionsLabel = "Ask AI" }) => (
   <div className={`du2-table ${showsDocs ? "du2-table-cv" : ""}`}>
     <div className="du2-thead">
       <div>User</div>
       <div>Role</div>
       <div className="du2-num">Tokens</div>
       {/* <div className="du2-num">AI cost</div> */}
-      <div className="du2-num">Ask AI</div>
+      <div className="du2-num">{questionsLabel}</div>
       {showsDocs && <div className="du2-num">Docs</div>}
       <div className="du2-num">Actions</div>
     </div>
@@ -635,7 +798,7 @@ const UserTable = ({ users, selfEmailLower, showsDocs }) => (
             {formatCost(u.aiCost)}
           </div> */}
           <div className="du2-num">
-            <span className="du2-mobile-label">Ask AI</span>
+            <span className="du2-mobile-label">{questionsLabel}</span>
             {formatNumber(u.askAi)}
           </div>
           {showsDocs && (
