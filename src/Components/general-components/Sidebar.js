@@ -66,6 +66,7 @@ const Sidebar = ({
   setMajorTypeOfReport,
   setReportFiles,
   user,
+  isOwner,
   handleLogout,
   setShowSignIn,
   setShowDropdown,
@@ -604,14 +605,29 @@ const Sidebar = ({
                   </div>
 
 
+                  {/* View Details (Plan Usage) is owner-only. Non-owners still
+                      see the row, but it's greyed out and unclickable. */}
                   <div
-                    className="usage-details"
-                    onClick={() => {
-                      setShowProfilePanel(false);
-                      setActiveItem("");
-                      openUsageDetails();
+                    className={`usage-details ${isOwner ? "" : "usage-details-disabled"}`}
+                    onClick={
+                      isOwner
+                        ? () => {
+                            setShowProfilePanel(false);
+                            setActiveItem("");
+                            openUsageDetails();
+                          }
+                        : undefined
+                    }
+                    style={{
+                      cursor: isOwner ? "pointer" : "not-allowed",
+                      opacity: isOwner ? 1 : 0.45,
                     }}
-                    style={{ cursor: "pointer" }}
+                    title={
+                      isOwner
+                        ? undefined
+                        : "Only the organization owner can view detailed plan usage"
+                    }
+                    aria-disabled={!isOwner}
                   >
                     <p>View Details</p>
                     <img src={viewDetailsSideBarRight} className="profile-item-arrow" />

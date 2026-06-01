@@ -228,6 +228,10 @@ const HomePage = () => {
   const [showCandidateModal, setShowCandidateModal] = useState(false);
   const [candidatesData, setCandidatesData] = useState([]);
   const [organizationId, setOrganizationId] = useState(null);
+  // Caller's role in the resolved Staff Onboarding org ("owner" | "admin" …),
+  // taken from the by-email lookup. Drives owner-only affordances such as the
+  // sidebar "View Details" (Plan Usage) button.
+  const [userOrgRole, setUserOrgRole] = useState(null);
   // Active HR workspace — mirrors the virtual-space selection inside
   // HRAdminView (reported up via the onActiveOrgChange callback). The HR chat
   // and resume-screening calls must target the space the user is in, not the
@@ -610,6 +614,7 @@ const HomePage = () => {
       const firstOrgId = data?.organizations?.[0]?.organizationId;
       if (res.ok && firstOrgId) {
         setOrganizationId(firstOrgId);
+        setUserOrgRole(data?.organizations?.[0]?.role || null);
         setOrgLookupStatus("found");
         if (data.justActivated) {
           toast.success(
@@ -622,6 +627,7 @@ const HomePage = () => {
       // No org found for this email. Surface a "not_found" status so the HR
       // admin view can render the register/ask-to-be-invited empty state.
       setOrganizationId(null);
+      setUserOrgRole(null);
       setOrgLookupStatus("not_found");
       console.warn(
         `[organizations] no org for ${email} — rendering empty state`
@@ -1891,7 +1897,13 @@ const HomePage = () => {
     setCareVoiceSessionId(null);
     setCareVoiceUserId(null);
     setCareVoiceStarted(false);
-    setCareVoiceFiles([]);
+    // NOTE: careVoiceFiles is intentionally NOT cleared on role switch.
+    // VoiceModule stays mounted (toggled via display:none), so its open
+    // "Generated Documents" panel keeps reading props.careVoiceFiles. Clearing
+    // it here wiped the docs while the panel stayed open, leaving only the
+    // loading-video fallback when the user returned to Care Voice. The files
+    // are reset deliberately via the "New Template" button (handleResetAll)
+    // and resetCareVoiceSession instead.
     // clear textarea safely
     if (textareaRef.current) {
       textareaRef.current.value = "";
@@ -1988,6 +2000,7 @@ const HomePage = () => {
                   majorTypeofReport={majorTypeofReport}
                   setMajorTypeOfReport={setMajorTypeOfReport}
                   user={user}
+                  isOwner={userOrgRole === "owner"}
                   handleLogout={handleLogout}
                   setShowDropdown={setShowDropdown}
                   setShowSignIn={setShowSignIn}
