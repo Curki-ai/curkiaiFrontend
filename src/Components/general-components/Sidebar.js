@@ -129,17 +129,25 @@ const Sidebar = ({
   useEffect(() => {
     if (!user?.email) return;
 
-    const domain = user.email.split("@")[1].toLowerCase();
+    const email = user.email.toLowerCase();
 
     const fetchUsageSummary = async () => {
       try {
         setUsageLoading(true);
 
+        // Per-user usage (combined across all modules) from the usage-v2
+        // controller. This is the signed-in user's own usage, not a domain
+        // rollup — so there are no plan limits/percentages and the card shows
+        // raw counts.
         const res = await axios.get(
-          `${API_BASE}/api/analysis/${domain}?range=year`,
+          `${API_BASE}/api/usage/v2/user/${encodeURIComponent(email)}/summary?range=year`,
         );
         console.log("Usage summary response:", res);
-        setUsageSummary(res.data);
+        const totals = res.data?.totals || {};
+        setUsageSummary({
+          totalTokensUsed: totals.tokens || 0,
+          totalSmsUsed: totals.sms || 0,
+        });
       } catch (err) {
         console.error("Usage fetch error:", err);
       } finally {
