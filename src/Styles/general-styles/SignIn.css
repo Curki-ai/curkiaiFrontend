@@ -138,6 +138,58 @@ input::placeholder {
   background-color: #513acc;
 }
 
+/* Verify email ("Check Your Inbox") step */
+.verify-inbox {
+  text-align: center;
+}
+
+.verify-inbox-title {
+  font-size: 33px;
+  font-weight: 700;
+  font-family: Inter;
+}
+
+.verify-inbox-subtitle {
+  font-size: 16px;
+  font-weight: 500;
+  font-family: Inter;
+  color: #707493;
+  margin-top: 6px;
+  margin-bottom: 30px;
+}
+
+.verify-inbox-email {
+  font-weight: 500;
+  color: #0E0C16;
+}
+
+.verify-inbox-instructions {
+  font-size: 14px;
+  font-weight: 500;
+  font-family: Inter;
+  color: #707493;
+  line-height: 20px;
+  margin-bottom: 30px;
+}
+
+.verify-inbox-instructions-primary {
+  color: #2E3050;
+}
+
+.verify-inbox-instructions strong {
+  font-weight: 700;
+  color: #0E0C16;
+}
+
+.verify-inbox-switch {
+  font-size: 14px;
+  font-weight: 600;
+  font-family: Inter;
+  color: #707493;
+  margin-top: 20px;
+  cursor: pointer;
+}
+
 .register-text {
   font-size: 14px;
   color: #969AB8;

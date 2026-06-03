@@ -3,7 +3,32 @@
    from their email. POSTs the token to the matching module's accept-invite
    endpoint, shows the result inline, and surfaces a toast on success. */
 
+/* This route renders standalone (HomePage never mounts), so the Inter webfont
+   normally pulled in by UploaderPage.css isn't loaded here. Without it the
+   embedded SignIn modal — whose headings use a bare font-family: 'Inter' with
+   no fallback — drops to the browser's default serif. Load Inter explicitly so
+   the login/signup UI matches the rest of the app. Must stay above all rules
+   (CSS requires @import to precede other statements). */
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+
+/* HomePage loads a global `* { box-sizing: border-box }` reset (UploaderPage.css)
+   that this standalone route does not. Without it the embedded SignIn modal —
+   whose card is sized with max-width PLUS large horizontal padding — renders
+   ~160px wider here than on the main login page, and its controls look
+   stretched. Re-apply the same box model, scoped to the modal subtree only, so
+   the login/signup UI is pixel-identical to the main app and nothing else on
+   this page is affected. */
+.overlay-sign,
+.overlay-sign * {
+  box-sizing: border-box;
+}
+
 .aai-page {
+  /* border-box so the 24px padding is included inside the 100vh height
+     instead of being added on top of it — otherwise the page is 100vh + 48px
+     tall and shows a vertical scrollbar this route shouldn't have. (On the
+     main app the global reset already makes everything border-box.) */
+  box-sizing: border-box;
   min-height: 100vh;
   display: flex;
   align-items: center;

@@ -45,6 +45,7 @@ const SignIn = ({ show, onClose }) => {
   const [isagreedToTc, setIsagreedToTc] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [isCreatingAccount, setIsCreatingAccount] = useState(false);
+  const [isResending, setIsResending] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -178,6 +179,74 @@ const SignIn = ({ show, onClose }) => {
   const isValidEmail = (email) => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   };
+
+  // Maps Firebase / network errors to a friendly message for toast display.
+  const getAuthErrorMessage = (err) => {
+    switch (err?.code) {
+      case "auth/too-many-requests":
+        return "Too many attempts. Please wait a few minutes and try again.";
+      case "auth/wrong-password":
+      case "auth/invalid-credential":
+        return "Incorrect password. Try again or reset it.";
+      case "auth/user-not-found":
+        return "No account found with this email.";
+      case "auth/email-already-in-use":
+        return "An account already exists with this email.";
+      case "auth/invalid-email":
+        return "Please enter a valid email address.";
+      case "auth/weak-password":
+        return "Password is too weak. Use at least 8 characters.";
+      case "auth/network-request-failed":
+        return "Network error. Check your connection and try again.";
+      default:
+        return (
+          err?.message?.replace("Firebase: ", "") ||
+          "Something went wrong. Please try again."
+        );
+    }
+  };
+
+  // Sends the branded verification email via the backend, falling back to
+  // Firebase's default email if that fails. Never throws — shows a toast on
+  // failure and returns true only if some verification email was sent.
+  const sendVerificationEmailWithFallback = async (user) => {
+    if (!user) return false;
+
+    let sent = false;
+    try {
+      const verifyRes = await fetch(
+        `${API_BASE}/api/user/send-verification-email`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: user.email, name }),
+        }
+      );
+      sent = verifyRes.ok;
+      if (!sent) {
+        console.error(
+          "Custom verification email failed, falling back to Firebase default."
+        );
+      }
+    } catch (verifyError) {
+      console.error(
+        "Custom verification email request errored, falling back to Firebase default:",
+        verifyError
+      );
+    }
+
+    if (!sent) {
+      try {
+        await sendEmailVerification(user);
+        sent = true;
+      } catch (fbError) {
+        console.error("Firebase fallback verification failed:", fbError);
+        toast.error(getAuthErrorMessage(fbError));
+      }
+    }
+
+    return sent;
+  };
   const handleContinueWithEmail = async () => {
     setError("");
 
@@ -209,13 +278,8 @@ const SignIn = ({ show, onClose }) => {
       }
 
     } catch (err) {
-      // ✅ Handle invalid email nicely
-      if (err.code === "auth/invalid-email") {
-        setError("Please enter a valid email address.");
-      } else {
-        setError("Something went wrong. Please try again.");
-      }
-
+      console.error("Continue with email failed:", err);
+      toast.error(getAuthErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -315,13 +379,17 @@ const SignIn = ({ show, onClose }) => {
       } catch (mailchimpError) {
         console.error("Failed to sync with Mailchimp:", mailchimpError);
       }
-      await sendEmailVerification(user);
+      // Send our branded verification email via the backend (matches the
+      // module invite design). Fall back to Firebase's default email if the
+      // backend call fails so signup is never blocked.
+      await sendVerificationEmailWithFallback(user);
       localStorage.setItem("emailForVerification", email);
       setStep("verify-email");
       setIsCreatingAccount(false);
       return;
     } catch (err) {
-      setError(err.message);
+      console.error("Sign up failed:", err);
+      toast.error(getAuthErrorMessage(err));
     } finally {
       setIsCreatingAccount(false); // Hide loader
     }
@@ -332,13 +400,35 @@ const SignIn = ({ show, onClose }) => {
       return;
     }
 
+    // Send our branded reset email via the backend; fall back to Firebase's
+    // default email only if the backend call fails so the user is never stuck.
+    let sent = false;
     try {
-      await sendPasswordResetEmail(auth, email);
-      toast.success("Password reset email sent! Check your inbox.");
-    } catch (error) {
-      console.log(error);
-      setError("Failed to send reset email. Try again.");
+      const res = await fetch(
+        `${API_BASE}/api/user/send-password-reset-email`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email }),
+        }
+      );
+      sent = res.ok;
+    } catch (err) {
+      console.error("Branded reset email request errored:", err);
     }
+
+    if (!sent) {
+      try {
+        await sendPasswordResetEmail(auth, email);
+        sent = true;
+      } catch (error) {
+        console.error("Firebase reset fallback failed:", error);
+        toast.error(getAuthErrorMessage(error));
+        return;
+      }
+    }
+
+    toast.success("Password reset email sent! Check your inbox.");
   };
 
   const handleLoginwithEmailPassword = async (e) => {
@@ -353,16 +443,8 @@ const SignIn = ({ show, onClose }) => {
       toast.success("Login successful!");
       onClose();
     } catch (err) {
-      if (
-        err.code === "auth/wrong-password" ||
-        err.code === "auth/invalid-credential"
-      ) {
-        setError("Incorrect password. Try again or reset it.");
-      } else if (err.code === "auth/user-not-found") {
-        setError("No account found with this email.");
-      } else {
-        setError("Something went wrong. Please try again.");
-      }
+      console.error("Login failed:", err);
+      toast.error(getAuthErrorMessage(err));
     } finally {
       setIsLoggingIn(false);
     }
@@ -451,7 +533,14 @@ const SignIn = ({ show, onClose }) => {
 
 
     } catch (err) {
-      setError(err.message);
+      console.error("Google Sign-In failed:", err);
+      // Ignore user-initiated popup cancellations — not real errors.
+      if (
+        err.code !== "auth/popup-closed-by-user" &&
+        err.code !== "auth/cancelled-popup-request"
+      ) {
+        toast.error(getAuthErrorMessage(err));
+      }
     } finally {
       setLoading(false);
     }
@@ -813,25 +902,32 @@ const SignIn = ({ show, onClose }) => {
           </div>
         }
         {step === "verify-email" &&
-          <div>
-            <div style={{ textAlign: 'center', fontSize: '33px', fontWeight: '700', fontFamily: 'Inter' }}>Check Your Inbox</div>
-            <div style={{ fontSize: '16px', color: '#707493', fontWeight: '500', marginTop: '6px', textAlign: 'center', marginBottom: '30px' }}>We’ve sent a verification link to<br></br><span style={{ fontWeight: '500', color: '#0E0C16' }}>{email}</span>
+          <div className="verify-inbox">
+            <div className="verify-inbox-title">Check Your Inbox</div>
+            <div className="verify-inbox-subtitle">We’ve sent a verification link to<br></br><span className="verify-inbox-email">{email}</span>
             </div>
-            <div style={{ fontSize: '14px', fontWeight: '500', fontFamily: 'Inter', color: '#707493', marginBottom: '30px', lineHeight: '20px' }}>
-              Open the email and click the link to verify your account.<br></br>If you don’t see it, please check your spam or junk folder.
+            <div className="verify-inbox-instructions">
+              <span className="verify-inbox-instructions-primary">Open the email and click the link to verify your account.</span><br></br>If you don’t see it, please also check spam or junk folder.
             </div>
             <button className="signin-btn"
+              disabled={isResending}
               onClick={async () => {
                 const user = auth.currentUser;
-                if (user) {
-                  await sendEmailVerification(user);
-                  toast.success("Verification email resent!");
+                if (!user) return;
+                setIsResending(true);
+                try {
+                  const sent = await sendVerificationEmailWithFallback(user);
+                  if (sent) {
+                    toast.success("Verification email resent!");
+                  }
+                } finally {
+                  setIsResending(false);
                 }
               }}>
-              Resend
+              {isResending ? "Resending..." : "Resend"}
             </button>
             <div
-              style={{ fontSize: '14px', fontWeight: '600', marginTop: '20px', cursor: 'pointer', color: '#707493', fontFamily: 'Inter' }}
+              className="verify-inbox-switch"
               onClick={() => { setStep(''); setPassword(''); setEmail('') }}
             >
               Use another account

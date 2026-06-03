@@ -5,9 +5,11 @@ import {
   HiOutlineShieldCheck,
   HiOutlineCheckCircle,
   HiOutlineExclamation,
+  HiOutlineMail,
 } from "react-icons/hi";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "../../firebase";
+import SignIn from "./SignIn";
 import curkiLogo from "../../Images/Black_logo.png";
 import { API_BASE } from "../../config/apiBase";
 import "../../Styles/general-styles/AcceptAccessInvite.css";
@@ -53,22 +55,32 @@ const AcceptAccessInvite = () => {
   const navigate = useNavigate();
   const token = (params.get("token") || "").trim();
   const moduleSlug = (params.get("module") || "").trim();
+  const moduleLabel = MODULE_LABELS[moduleSlug] || "this module";
 
-  // "loading" | "success" | "error"
-  const [phase, setPhase] = useState("loading");
-  const [message, setMessage] = useState("Verifying your invitation…");
+  // "ready" | "loading" | "success" | "error"
+  // "ready" is the new default: we show the invitation acceptance page UI
+  // first and only call accept-invite once the user clicks Accept (and, if
+  // needed, signs in). The old behaviour auto-fired on mount and dead-ended
+  // signed-out users at an error screen.
+  const [phase, setPhase] = useState("ready");
+  const [message, setMessage] = useState(
+    `You've been invited to join ${moduleLabel} on Curki. Accept your invitation to get started.`
+  );
   const [details, setDetails] = useState(null);
-  // Guards against React 18 StrictMode double-invoke in dev which would
-  // otherwise fire two POSTs; the second hits an already-cleared token and
-  // returns 404 even though the first succeeded.
+  // Controls the embedded SignIn (login/signup) modal.
+  const [showSignIn, setShowSignIn] = useState(false);
+  // Guards against double POSTs (React 18 StrictMode dev double-invoke, or a
+  // user double-clicking Accept). The second POST would hit an already-cleared
+  // token and return 404 even though the first succeeded.
   const firedRef = useRef(false);
+  // Set true when the user clicks Accept while signed out. Once they finish
+  // login/signup we read this to auto-resume the accept flow without a second
+  // click.
+  const pendingAcceptRef = useRef(false);
 
+  // Validate the link up front. A malformed link can never be accepted, so we
+  // surface the error immediately rather than waiting for a click.
   useEffect(() => {
-    if (firedRef.current) return;
-    firedRef.current = true;
-
-    const moduleLabel = MODULE_LABELS[moduleSlug] || "this module";
-
     if (!token || !moduleSlug) {
       setPhase("error");
       setMessage(
@@ -76,113 +88,155 @@ const AcceptAccessInvite = () => {
       );
       return;
     }
-
-    const apiPath = MODULE_TO_API_PATH[moduleSlug];
-    if (!apiPath) {
+    if (!MODULE_TO_API_PATH[moduleSlug]) {
       setPhase("error");
       setMessage(
         "Unknown module on this invitation link. Please use the link from your email."
       );
-      return;
     }
+  }, [token, moduleSlug]);
 
-    // Backend now requires firebase_uid on accept-invite so it can write
-    // the membership into payment_plans. Wait for Firebase auth state to
-    // settle before firing — onAuthStateChanged returns synchronously
-    // when a user is already signed in.
-    const waitForFirebaseUid = () =>
-      new Promise((resolve) => {
-        if (auth.currentUser?.uid) {
-          resolve(auth.currentUser.uid);
-          return;
-        }
-        const timer = setTimeout(() => {
+  // Backend requires a verified firebase_uid + Bearer token on accept-invite so
+  // it can write the membership into payment_plans. Wait for Firebase auth
+  // state to settle before firing — onAuthStateChanged returns synchronously
+  // when a user is already signed in.
+  const waitForFirebaseUid = () =>
+    new Promise((resolve) => {
+      if (auth.currentUser?.uid) {
+        resolve(auth.currentUser.uid);
+        return;
+      }
+      const timer = setTimeout(() => {
+        unsubscribe();
+        resolve(null);
+      }, 4000);
+      const unsubscribe = onAuthStateChanged(auth, (u) => {
+        if (u?.uid) {
+          clearTimeout(timer);
           unsubscribe();
-          resolve(null);
-        }, 4000);
-        const unsubscribe = onAuthStateChanged(auth, (u) => {
-          if (u?.uid) {
-            clearTimeout(timer);
-            unsubscribe();
-            resolve(u.uid);
-          }
-        });
+          resolve(u.uid);
+        }
       });
+    });
 
-    const run = async () => {
+  // Performs the actual accept-invite POST. Called only once we know the user
+  // is signed in (either they already were, or they just completed the
+  // embedded login/signup).
+  const runAccept = async () => {
+    if (firedRef.current) return;
+    const apiPath = MODULE_TO_API_PATH[moduleSlug];
+    if (!apiPath) return;
+
+    firedRef.current = true;
+    setPhase("loading");
+    setMessage("Accepting your invitation…");
+
+    try {
+      const firebase_uid = await waitForFirebaseUid();
+      if (!firebase_uid) {
+        // Auth didn't settle — let the user retry by clicking Accept again.
+        firedRef.current = false;
+        setPhase("ready");
+        setMessage(
+          `You've been invited to join ${moduleLabel} on Curki. Accept your invitation to get started.`
+        );
+        toast.error("Please sign in to accept the invitation.");
+        return;
+      }
+
+      // The access-management surface is gated by verifyFirebaseToken
+      // — every request must carry a valid Bearer Firebase ID token.
+      let bearerToken = "";
       try {
-        const firebase_uid = await waitForFirebaseUid();
-        if (!firebase_uid) {
-          setPhase("error");
-          setMessage(
-            "Please sign in to your Curki account first, then click the invitation link again."
-          );
-          toast.error("Sign in before accepting the invitation.");
-          return;
-        }
-
-        // The access-management surface is gated by verifyFirebaseToken
-        // — every request must carry a valid Bearer Firebase ID token.
-        let bearerToken = "";
-        try {
-          bearerToken = await auth.currentUser.getIdToken();
-        } catch (err) {
-          console.warn("[AcceptAccessInvite] getIdToken failed:", err?.message);
-        }
-
-        const headers = { "Content-Type": "application/json" };
-        if (bearerToken) headers.Authorization = `Bearer ${bearerToken}`;
-
-        const res = await fetch(`${API_BASE}${apiPath}`, {
-          method: "POST",
-          headers,
-          body: JSON.stringify({ token, firebase_uid }),
-        });
-        const data = await res.json().catch(() => ({}));
-
-        if (!res.ok || !data?.success) {
-          const errMsg =
-            data?.error || "We couldn't verify this invitation link.";
-          setPhase("error");
-          setMessage(errMsg);
-          toast.error(errMsg);
-          return;
-        }
-
-        const u = data.data || {};
-        setDetails({
-          email: u.email,
-          name: u.name,
-          role: u.role,
-          moduleLabel,
-        });
-
-        if (data.already_accepted) {
-          setPhase("success");
-          setMessage(
-            `You've already accepted this invitation. You can sign in to ${moduleLabel} with ${u.email}.`
-          );
-          toast.info("This invitation was already accepted.");
-        } else {
-          setPhase("success");
-          setMessage(
-            `Your access to ${moduleLabel} is now active. Welcome aboard!`
-          );
-          toast.success(`Invitation accepted — welcome to ${moduleLabel}!`);
-        }
+        bearerToken = await auth.currentUser.getIdToken();
       } catch (err) {
+        console.warn("[AcceptAccessInvite] getIdToken failed:", err?.message);
+      }
+
+      const headers = { "Content-Type": "application/json" };
+      if (bearerToken) headers.Authorization = `Bearer ${bearerToken}`;
+
+      const res = await fetch(`${API_BASE}${apiPath}`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ token, firebase_uid }),
+      });
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok || !data?.success) {
         const errMsg =
-          err?.message || "Network error. Please try the link again.";
+          data?.error || "We couldn't verify this invitation link.";
+        // Allow another attempt (e.g. signed in with the wrong email) — clear
+        // the guard so a corrected sign-in can retry.
+        firedRef.current = false;
         setPhase("error");
         setMessage(errMsg);
         toast.error(errMsg);
+        return;
       }
-    };
 
-    run();
-  }, [token, moduleSlug]);
+      const u = data.data || {};
+      setDetails({
+        email: u.email,
+        name: u.name,
+        role: u.role,
+        moduleLabel,
+      });
+
+      if (data.already_accepted) {
+        setPhase("success");
+        setMessage(
+          `You've already accepted this invitation. You can sign in to ${moduleLabel} with ${u.email}.`
+        );
+        toast.info("This invitation was already accepted.");
+      } else {
+        setPhase("success");
+        setMessage(
+          `Your access to ${moduleLabel} is now active. Welcome aboard!`
+        );
+        toast.success(`Invitation accepted — welcome to ${moduleLabel}!`);
+      }
+    } catch (err) {
+      const errMsg =
+        err?.message || "Network error. Please try the link again.";
+      firedRef.current = false;
+      setPhase("error");
+      setMessage(errMsg);
+      toast.error(errMsg);
+    }
+  };
+
+  // Accept button handler. If the user is already signed in we accept right
+  // away; otherwise we open the login/signup modal and remember to resume the
+  // accept once they're authenticated.
+  const handleAccept = () => {
+    if (auth.currentUser?.uid) {
+      runAccept();
+    } else {
+      pendingAcceptRef.current = true;
+      setShowSignIn(true);
+    }
+  };
+
+  // SignIn calls onClose only after a successful login / Google sign-in /
+  // verified email signup. That's exactly when we want to resume the pending
+  // accept — no second click required.
+  const handleSignInClose = () => {
+    setShowSignIn(false);
+    if (pendingAcceptRef.current) {
+      pendingAcceptRef.current = false;
+      runAccept();
+    }
+  };
 
   const renderIcon = () => {
+    if (phase === "ready") {
+      return (
+        <div className="aai-icon-wrap aai-icon-wrap-loading">
+          <HiOutlineMail size={30} />
+        </div>
+      );
+    }
     if (phase === "loading") {
       return (
         <div className="aai-icon-wrap aai-icon-wrap-loading">
@@ -205,7 +259,9 @@ const AcceptAccessInvite = () => {
   };
 
   const title =
-    phase === "loading"
+    phase === "ready"
+      ? `You're invited to ${moduleLabel}`
+      : phase === "loading"
       ? "Accepting your invitation…"
       : phase === "success"
       ? "You're all set"
@@ -241,7 +297,14 @@ const AcceptAccessInvite = () => {
           </div>
         )}
 
-        {phase !== "loading" && (
+        {phase === "ready" && (
+          <button type="button" className="aai-cta" onClick={handleAccept}>
+            <HiOutlineShieldCheck size={16} />
+            Accept invitation
+          </button>
+        )}
+
+        {(phase === "success" || phase === "error") && (
           <button
             type="button"
             className="aai-cta"
@@ -252,6 +315,12 @@ const AcceptAccessInvite = () => {
           </button>
         )}
       </div>
+
+      {/* Embedded login/signup. SignIn fires onClose only after a successful
+          auth (login / Google / verified signup); handleSignInClose then
+          auto-resumes the pending accept so the user never has to click
+          Accept a second time. */}
+      <SignIn show={showSignIn} onClose={handleSignInClose} />
     </div>
   );
 };
