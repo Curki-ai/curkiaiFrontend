@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getAuth, signInWithEmailAndPassword,createUserWithEmailAndPassword, GoogleAuthProvider,FacebookAuthProvider, signInWithPopup,signOut,sendPasswordResetEmail,fetchSignInMethodsForEmail,sendEmailVerification,onAuthStateChanged} from "firebase/auth";
+import { getAuth, signInWithEmailAndPassword,createUserWithEmailAndPassword, GoogleAuthProvider,FacebookAuthProvider, signInWithPopup,signOut,sendPasswordResetEmail,fetchSignInMethodsForEmail,sendEmailVerification,onAuthStateChanged,verifyPasswordResetCode,confirmPasswordReset,applyActionCode,checkActionCode} from "firebase/auth";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCufXDRIMO6sNftQ0LibCebw2hOC67cCf0",
@@ -23,4 +23,4 @@ const getCount = async () => 0;
 const incrementCount = async () => {};
 const onCountChange = () => {};
 
-export { auth, googleProvider,facebookProvider, signInWithEmailAndPassword,createUserWithEmailAndPassword,signInWithPopup,signOut,getCount,incrementCount,onCountChange,sendPasswordResetEmail,fetchSignInMethodsForEmail,sendEmailVerification,onAuthStateChanged};
+export { auth, googleProvider,facebookProvider, signInWithEmailAndPassword,createUserWithEmailAndPassword,signInWithPopup,signOut,getCount,incrementCount,onCountChange,sendPasswordResetEmail,fetchSignInMethodsForEmail,sendEmailVerification,onAuthStateChanged,verifyPasswordResetCode,confirmPasswordReset,applyActionCode,checkActionCode};

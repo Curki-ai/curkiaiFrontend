@@ -1,0 +1,189 @@
+/* Custom Firebase email-action handler page (password reset / email verify).
+   Standalone public route — HomePage never mounts here, so load Inter
+   explicitly and apply box-sizing locally (same approach as
+   AcceptAccessInvite.css). @import must precede all other rules. */
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+
+.fah-page {
+  box-sizing: border-box;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: linear-gradient(135deg, #f6f4ff 0%, #f8fafc 100%);
+  font-family: 'Inter', sans-serif;
+}
+
+.fah-page * {
+  box-sizing: border-box;
+}
+
+.fah-card {
+  background: #ffffff;
+  width: min(440px, 100%);
+  padding: 40px 36px;
+  border-radius: 18px;
+  box-shadow: 0 24px 64px rgba(31, 31, 64, 0.12),
+    0 0 0 1px rgba(108, 76, 220, 0.06);
+  text-align: center;
+  animation: fah-slide-up 0.3s ease;
+}
+
+@keyframes fah-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fah-logo {
+  width: 140px;
+  margin: 0 auto 24px;
+  display: block;
+}
+
+.fah-icon-wrap {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+}
+
+.fah-icon-wrap-loading {
+  background: linear-gradient(135deg, #efeafd 0%, #ddd5fa 100%);
+  color: #6c4cdc;
+}
+
+.fah-icon-wrap-success {
+  background: linear-gradient(135deg, #d8f5e3 0%, #b3eccc 100%);
+  color: #16803c;
+}
+
+.fah-icon-wrap-error {
+  background: linear-gradient(135deg, #fde2e2 0%, #fbc7c7 100%);
+  color: #b3261e;
+}
+
+.fah-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1f1f40;
+  margin-bottom: 8px;
+}
+
+.fah-message {
+  font-size: 16px;
+  color: #4f5273;
+  line-height: 1.55;
+  margin-bottom: 24px;
+}
+
+.fah-message strong {
+  color: #1f1f40;
+  font-weight: 600;
+}
+
+.fah-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  text-align: left;
+}
+
+.fah-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.fah-input {
+  width: 100%;
+  padding: 14px 44px 14px 16px;
+  border: 1px solid #e3e1ee;
+  border-radius: 10px;
+  font-size: 14px;
+  font-family: inherit;
+  color: #1f1f40;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.fah-input:focus {
+  border-color: #6c4cdc;
+  box-shadow: 0 0 0 3px rgba(108, 76, 220, 0.12);
+}
+
+.fah-eye {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #8b8b8b;
+  display: flex;
+  align-items: center;
+  padding: 4px;
+}
+
+.fah-form-error {
+  font-size: 14px;
+  color: #b3261e;
+  font-weight: 500;
+}
+
+.fah-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: #6c4cdc;
+  color: #ffffff;
+  border: none;
+  padding: 12px 26px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.08s ease,
+    box-shadow 0.15s ease;
+  margin-top: 6px;
+}
+
+.fah-cta:hover:not(:disabled) {
+  background: #5a3fc4;
+  box-shadow: 0 4px 12px rgba(108, 76, 220, 0.25);
+}
+
+.fah-cta:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.fah-cta:disabled {
+  background: #a3a0b4;
+  cursor: default;
+}
+
+.fah-spinner {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  border: 3px solid #e6e0f7;
+  border-top-color: #6c4cdc;
+  border-radius: 50%;
+  animation: fah-spin 0.7s linear infinite;
+}
+
+@keyframes fah-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

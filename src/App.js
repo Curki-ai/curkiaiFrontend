@@ -12,6 +12,7 @@ import { isCandidateAuthenticated } from "./Components/Modules/StaffOnboarding/c
 const HomePage = lazy(() => import("./Components/general-components/HomePage"));
 const InvitePage = lazy(() => import("./Components/general-components/AcceptInvitation"));
 const AcceptAccessInvite = lazy(() => import("./Components/general-components/AcceptAccessInvite"));
+const FirebaseActionHandler = lazy(() => import("./Components/general-components/FirebaseActionHandler"));
 const CandidateScreeningTest = lazy(() => import("./Components/Modules/StaffOnboarding/onboarding/ScreeningTest"));
 const CandidateLogin = lazy(() => import("./Components/Modules/StaffOnboarding/candidate/CandidateLogin"));
 const CandidateDashboard = lazy(() => import("./Components/Modules/StaffOnboarding/candidate/CandidateDashboard"));
@@ -52,6 +53,7 @@ function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/invite" element={<InvitePage />} />
           <Route path="/access-invite" element={<AcceptAccessInvite />} />
+          <Route path="/auth/action" element={<FirebaseActionHandler />} />
           <Route path="/test/:test_id" element={<CandidateScreeningTest />} />
           <Route path="/hr-candidate" element={<CandidateLogin />} />
           <Route path="/hr-candidate/dashboard" element={dashboardElement} />

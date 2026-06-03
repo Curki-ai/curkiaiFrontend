@@ -84,7 +84,6 @@ const LazyLottie = ({ loader, ...lottieProps }) => {
 
 const VoiceModule = (props) => {
     const userEmail = props?.user?.email;
-    // const userEmail = "admin@contemporarycoordination.com"
     const ALLOWED_USERS = [
         "mboutros@tenderlovingcaredisability.com.au",
         "rjodeh@tenderlovingcaredisability.com.au",
