@@ -562,7 +562,11 @@
 .cv-access-table-header,
 .cv-access-table-row {
   display: grid;
-  grid-template-columns: 2.2fr 0.8fr 0.8fr 0.9fr;
+  /* minmax(0, …) stops any single row's wider content (e.g. the longer
+     "Resend Invitation" button) from expanding its track and stealing width
+     from the other tracks — each row is its own grid, so without this the
+     resend row's columns would drift out of line with the rest. */
+  grid-template-columns: minmax(0, 2.2fr) minmax(0, 0.8fr) minmax(0, 0.8fr) minmax(0, 0.9fr);
   gap: 12px;
   padding: 12px 18px;
   align-items: center;
@@ -790,6 +794,35 @@
 }
 
 .cv-access-revoke-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ── RESEND INVITATION BUTTON (shown in place of Revoke once an invite's
+   48h link has expired) ── */
+.cv-access-resend-btn {
+  border: 1px solid #d6cef7;
+  background: #f3f0ff;
+  color: #5b3fd1;
+  padding: 5px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.12s ease, border-color 0.12s ease, transform 0.08s ease;
+}
+
+.cv-access-resend-btn:hover:not(:disabled) {
+  background: #e9e3ff;
+  border-color: #b9a9f2;
+}
+
+.cv-access-resend-btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.cv-access-resend-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }

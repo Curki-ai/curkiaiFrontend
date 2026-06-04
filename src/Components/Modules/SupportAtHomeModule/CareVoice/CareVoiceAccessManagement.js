@@ -134,6 +134,7 @@ const CareVoiceAccessManagement = ({ onClose, userEmail, onDeleted, onNoOrgDetec
   const [loading, setLoading] = useState(false);
   const [inviting, setInviting] = useState(false);
   const [revokingId, setRevokingId] = useState("");
+  const [resendingId, setResendingId] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [pendingRemoval, setPendingRemoval] = useState(null);
@@ -247,6 +248,28 @@ const CareVoiceAccessManagement = ({ onClose, userEmail, onDeleted, onNoOrgDetec
     setPendingRemoval(user);
   };
 
+  // Re-send an invitation whose link has lapsed. Hits the access module's
+  // /users/:id/resend endpoint, which mints a fresh token + 48h expiry and
+  // re-emails the invitee. No confirm dialog — resending is non-destructive.
+  const handleResend = async (user) => {
+    if (!user?.id) return;
+    setError(""); setSuccess(""); setResendingId(user.id);
+    try {
+      const res = await fetch(
+        `${API_BASE}/users/${encodeURIComponent(user.id)}/resend`,
+        { method: "POST", headers: await requestHeaders() }
+      );
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.error || "Failed to resend invitation");
+      setSuccess(`Invitation resent to ${user.email}`);
+      await fetchUsers();
+    } catch (err) {
+      setError(err.message || "Failed to resend invitation");
+    } finally {
+      setResendingId("");
+    }
+  };
+
   const confirmRemove = async () => {
     const user = pendingRemoval;
     if (!user?.id) return;
@@ -274,6 +297,18 @@ const CareVoiceAccessManagement = ({ onClose, userEmail, onDeleted, onNoOrgDetec
     !!userEmail &&
     !!user?.email &&
     user.email.trim().toLowerCase() === userEmail.trim().toLowerCase();
+
+  // A pending invite is "expired" once its 48h link has lapsed. The backend
+  // stamps inviteExpiresAt on every invited row and returns it in the list
+  // payload; an expired invite swaps its Revoke action for "Resend Invitation".
+  const isInviteExpired = (user) => {
+    if (!user || isSelf(user) || user.role === "owner") return false;
+    if (user.status !== "invited" && user.status !== "pending") return false;
+    const expiresAt = user.inviteExpiresAt
+      ? new Date(user.inviteExpiresAt).getTime()
+      : NaN;
+    return Number.isFinite(expiresAt) && expiresAt < Date.now();
+  };
 
   const selfEntry = userEmail
     ? { id: `self:${userEmail.toLowerCase()}`, name: "You", email: userEmail, role: "admin", status: "active" }
@@ -467,7 +502,17 @@ const CareVoiceAccessManagement = ({ onClose, userEmail, onDeleted, onNoOrgDetec
 
                       {/* Actions */}
                       <div className="cv-access-actions-cell">
-                        {(u.status === "invited" || u.status === "active") && !isSelf(u) && u.role !== "owner" ? (
+                        {isInviteExpired(u) ? (
+                          <button
+                            type="button"
+                            className="cv-access-resend-btn"
+                            onClick={() => handleResend(u)}
+                            disabled={resendingId === u.id}
+                            aria-label={`Resend invitation to ${u.email}`}
+                          >
+                            {resendingId === u.id ? "Resending…" : "Resend Invitation"}
+                          </button>
+                        ) : (u.status === "invited" || u.status === "active") && !isSelf(u) && u.role !== "owner" ? (
                           <button
                             type="button"
                             className="cv-access-revoke-btn"
