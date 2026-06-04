@@ -84,17 +84,17 @@ const LazyLottie = ({ loader, ...lottieProps }) => {
 
 const VoiceModule = (props) => {
     const userEmail = props?.user?.email;
-    const ALLOWED_USERS = [
-        "mboutros@tenderlovingcaredisability.com.au",
-        "rjodeh@tenderlovingcaredisability.com.au",
-        "ryounes@tenderlovingcaredisability.com.au",
-        "stickner@tenderlovingcaredisability.com.au",
-        "bastruc@tenderlovingcaredisability.com.au",
-        "yzaki@tenderlovingcare.com.au"
-    ];
-    const isAllowedUsers = ALLOWED_USERS.includes(
-        (userEmail || "").toLowerCase()
-    );
+    // const ALLOWED_USERS = [
+    //     "mboutros@tenderlovingcaredisability.com.au",
+    //     "rjodeh@tenderlovingcaredisability.com.au",
+    //     "ryounes@tenderlovingcaredisability.com.au",
+    //     "stickner@tenderlovingcaredisability.com.au",
+    //     "bastruc@tenderlovingcaredisability.com.au",
+    //     "yzaki@tenderlovingcare.com.au"
+    // ];
+    // const isAllowedUsers = ALLOWED_USERS.includes(
+    //     (userEmail || "").toLowerCase()
+    // );
     const tlcDomainArray = ["tenderlovingcaredisability.com.au", "tenderlovingcare.com.au"]
     const notAllowedDomain = tlcDomainArray.includes(userEmail?.split("@")[1]);
 
@@ -2743,31 +2743,31 @@ const VoiceModule = (props) => {
 
         console.log("Full reset done");
     };
-    if (!isAllowedUsers && notAllowedDomain) {
-        return (
-            <div style={{
-                textAlign: "center",
-                padding: "120px 20px",
-                fontFamily: "Inter, sans-serif",
-                color: "#1f2937"
-            }}>
-                {/* <img
-                    src={TlcLogo}
-                    alt="Access Denied"
-                    style={{ width: "80px", opacity: 0.8, marginBottom: "20px" }}
-                /> */}
+    // if (!isAllowedUsers && notAllowedDomain) {
+    //     return (
+    //         <div style={{
+    //             textAlign: "center",
+    //             padding: "120px 20px",
+    //             fontFamily: "Inter, sans-serif",
+    //             color: "#1f2937"
+    //         }}>
+    //             {/* <img
+    //                 src={TlcLogo}
+    //                 alt="Access Denied"
+    //                 style={{ width: "80px", opacity: 0.8, marginBottom: "20px" }}
+    //             /> */}
 
-                <h2 style={{ fontSize: "24px", marginBottom: "12px", color: "#6C4CDC" }}>
-                    Access Restricted 🚫
-                </h2>
+    //             <h2 style={{ fontSize: "24px", marginBottom: "12px", color: "#6C4CDC" }}>
+    //                 Access Restricted 🚫
+    //             </h2>
 
-                <p style={{ fontSize: "16px", color: "#555" }}>
-                    Sorry, your account (<strong>{userEmail}</strong>)
-                    is not authorized to view this page.
-                </p>
-            </div>
-        )
-    }
+    //             <p style={{ fontSize: "16px", color: "#555" }}>
+    //                 Sorry, your account (<strong>{userEmail}</strong>)
+    //                 is not authorized to view this page.
+    //             </p>
+    //         </div>
+    //     )
+    // }
 
     // No org → show the create-organization screen. Mirrors the Smart
     // Onboarding "no org → register" flow. We render this AFTER the
