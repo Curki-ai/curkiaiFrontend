@@ -1055,6 +1055,76 @@ const NewFinancialHealth = (props) => {
         }
     };
 
+    // Format a Date (or date-ish value) as a local "YYYY-MM-DD" string for the
+    // stored-file upload/analysis endpoints.
+    const formatLocalDate = (date) => {
+        if (!date) return "";
+        const d = date instanceof Date ? date : new Date(date);
+        if (Number.isNaN(d.getTime())) return "";
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, "0");
+        const day = String(d.getDate()).padStart(2, "0");
+        return `${y}-${m}-${day}`;
+    };
+
+    // Persist the currently-selected files to Blob Storage + metadata so they
+    // can later be retrieved by date range (+ state). Non-blocking: a storage
+    // failure must never break the immediate analysis. State tagging: exactly
+    // one selected state => that state; none/multiple => "ALL_STATES".
+    const persistUploadedFiles = async () => {
+        try {
+            const files = activeTabData.selectedFiles || [];
+            if (!files.length) return;
+            if (!startDate || !endDate) return;
+
+            const fd = new FormData();
+            files.forEach((f) => fd.append("files", f));
+            const st = activeTabData.selectedState || [];
+            fd.append("state", st.length === 1 ? st[0].value : "ALL_STATES");
+            fd.append("startDate", formatLocalDate(startDate));
+            fd.append("endDate", formatLocalDate(endDate));
+            fd.append("provider", selectedActor);
+
+            await fetch(`${BASE_URL}/api/financial-v2/files/upload`, {
+                method: "POST",
+                body: fd,
+            });
+        } catch (err) {
+            console.warn("[financial-health] persist upload failed:", err?.message);
+        }
+    };
+
+    // Poll a date-range analysis job until it completes. Resolves with the
+    // analyzer result (same shape as the upload response) or rejects on
+    // failure/cancellation.
+    const pollFinancialJob = (jobId) =>
+        new Promise((resolve, reject) => {
+            const interval = setInterval(async () => {
+                try {
+                    const statusRes = await fetch(
+                        `${BASE_URL}/api/financial-v2/files/job-status/${jobId}`
+                    );
+                    const statusData = await statusRes.json();
+
+                    if (statusData.status === "completed") {
+                        clearInterval(interval);
+                        resolve(statusData.result);
+                    } else if (statusData.status === "failed") {
+                        clearInterval(interval);
+                        reject(new Error(statusData.error || "Analysis failed"));
+                    } else if (
+                        statusData.status === "cancelled" ||
+                        statusData.status === "not_found"
+                    ) {
+                        clearInterval(interval);
+                        reject(new Error("Analysis was cancelled"));
+                    }
+                } catch (err) {
+                    // Transient network error — keep polling.
+                }
+            }, 2000);
+        });
+
     const handleAnalyse = async () => {
         // Auto-topup balance gate (see HomePage's ANALYSIS_INTENT listener).
         const intent = new CustomEvent("ANALYSIS_INTENT", { cancelable: true });
@@ -1084,9 +1154,8 @@ const NewFinancialHealth = (props) => {
         const hasFiles = activeTabData.selectedFiles.length > 0;
         const hasDateRange = startDate && endDate;
 
-        if (!syncEnabled && !hasFiles) {
-            console.log("Please turn on sync or select file.")
-            toast.warn("Please turn on sync or select file.");
+        if (!syncEnabled && !hasFiles && !hasDateRange) {
+            toast.warn("Please turn on sync, select a file, or choose a date range.");
             return;
         }
 
@@ -1156,14 +1225,7 @@ const NewFinancialHealth = (props) => {
             formData.append("provider", selectedActor);
             formData.append("fromDate", fromDate);
             formData.append("toDate", toDate);
-            if (type === "upload") {
-                if (activeTabData.selectedFiles.length === 0) {
-                    toast.warn("No files selected for upload.");
-                    updateTab({
-                        loading: false,
-                    });
-                    return;
-                }
+            if (type === "upload" && hasFiles) {
                 activeTabData.selectedFiles.forEach(file =>
                     formData.append("files", file)
                 );
@@ -1217,8 +1279,8 @@ const NewFinancialHealth = (props) => {
                 props.setFinancialAiPayload(askAiFrames);
                 props.setFinancialAiHistoryPayload([]);
 
-            } else {
-
+            } else if (hasFiles) {
+                // ── Option 1: Upload files and analyse them immediately ──
                 const reportEndpoint =
                     `${BASE_URL}/report-middleware`;
                 updateTab({
@@ -1233,6 +1295,12 @@ const NewFinancialHealth = (props) => {
                         })),
                     });
                 }
+
+                // Persist the uploaded files to Blob Storage + metadata so they
+                // can be retrieved later by date range. Awaited but non-fatal:
+                // a storage failure must not break the immediate analysis.
+                await persistUploadedFiles();
+
                 const analysisRes = await axios.post(
                     reportEndpoint,
                     formData,
@@ -1248,11 +1316,51 @@ const NewFinancialHealth = (props) => {
                 analysisData = analysisRes.data;
 
                 console.log("Analysis API response of type upload:", analysisData);
-                // const dataframes = tablesToAskAiDataframes(analysisData?.normalized_files?.tables);
                 updateTab({
                     askAiDataframes: analysisData?.csv_data
                 })
-                // console.log("Extracted dataframes for AI:", dataframes);
+                props.setFinancialAiPayload(analysisData?.csv_data);
+                props.setFinancialAiHistoryPayload([]);
+            } else {
+                // ── Option 2: Analyse previously uploaded files by date range ──
+                // No files selected: retrieve stored files matching the chosen
+                // date range (+ optional state filter) and analyse them via the
+                // async job + polling flow. State rule: no state selected =>
+                // the backend uses the "ALL States" file(s) for the range.
+                updateTab({
+                    uploading: false,
+                    progressStage: "analysing",
+                });
+
+                const finalStates = activeTabData.selectedState.map(s => s.value);
+
+                const jobId = crypto.randomUUID();
+                const startRes = await fetch(
+                    `${BASE_URL}/api/financial-v2/files/analyze-by-date`,
+                    {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            jobId,
+                            startDate: formatLocalDate(startDate),
+                            endDate: formatLocalDate(endDate),
+                            states: finalStates,
+                            provider: selectedActor,
+                            email: userEmail,
+                        }),
+                    }
+                );
+                const startData = await startRes.json().catch(() => ({}));
+                if (!startRes.ok) {
+                    throw new Error(startData.error || "Failed to start analysis");
+                }
+
+                analysisData = await pollFinancialJob(jobId);
+
+                updateTab({
+                    progressStage: "preparing",
+                    askAiDataframes: analysisData?.csv_data,
+                });
                 props.setFinancialAiPayload(analysisData?.csv_data);
                 props.setFinancialAiHistoryPayload([]);
             }
@@ -1472,7 +1580,9 @@ const NewFinancialHealth = (props) => {
     };
 
     const isButtonDisabled =
-        !syncEnabled && activeTabData.selectedFiles.length === 0;
+        !syncEnabled &&
+        activeTabData.selectedFiles.length === 0 &&
+        !(startDate && endDate);
 
 
     useEffect(() => {
