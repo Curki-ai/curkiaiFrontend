@@ -1126,6 +1126,20 @@ const NewFinancialHealth = (props) => {
         });
 
     const handleAnalyse = async () => {
+        // Restrict analysis to internal (careait, curki.ai) and TLC accounts.
+        // "tenderlovingcare" matches both tenderlovingcaredisability.com.au and
+        // tenderlovingcare.com.au.
+        const analysisDomain = (userEmail || "").split("@")[1]?.toLowerCase() || "";
+        const allowedAnalysis = ["curki.ai", "careait", "tenderlovingcare"].some(
+            (k) => analysisDomain.includes(k)
+        );
+        if (!allowedAnalysis) {
+            toast.warn(
+                "You are not authorized to run this analysis"
+            );
+            return;
+        }
+
         // Auto-topup balance gate (see HomePage's ANALYSIS_INTENT listener).
         const intent = new CustomEvent("ANALYSIS_INTENT", { cancelable: true });
         if (!window.dispatchEvent(intent)) return;

@@ -19,31 +19,29 @@ const HRAnalysis = (props) => {
     );
     const tlcDomainArray = ["tenderlovingcaredisability.com.au", "tenderlovingcare.com.au"]
     const notAllowedDomain = tlcDomainArray.includes(userEmail?.split("@")[1]);
-    if (!isAllowedUsers && notAllowedDomain) {
-        return (
-            <div style={{
-                textAlign: "center",
-                padding: "120px 20px",
-                fontFamily: "Inter, sans-serif",
-                color: "#1f2937"
-            }}>
-                {/* <img
-                    src={TlcLogo}
-                    alt="Access Denied"
-                    style={{ width: "80px", opacity: 0.8, marginBottom: "20px" }}
-                /> */}
-
-                <h2 style={{ fontSize: "24px", marginBottom: "12px", color: "#6C4CDC" }}>
-                    Access Restricted 🚫
-                </h2>
-
-                <p style={{ fontSize: "16px", color: "#555" }}>
-                    Sorry, your account (<strong>{userEmail}</strong>)
-                    is not authorized to view this page.
-                </p>
-            </div>
-        )
-    }
+    // if (!isAllowedUsers && notAllowedDomain) {
+    //     return (
+    //         <div style={{
+    //             textAlign: "center",
+    //             padding: "120px 20px",
+    //             fontFamily: "Inter, sans-serif",
+    //             color: "#1f2937"
+    //         }}>
+    //             {/* <img
+    //                 src={TlcLogo}
+    //                 alt="Access Denied"
+    //                 style={{ width: "80px", opacity: 0.8, marginBottom: "20px" }}
+    //             /> */}
+    //             <h2 style={{ fontSize: "24px", marginBottom: "12px", color: "#6C4CDC" }}>
+    //                 Access Restricted 🚫
+    //             </h2>
+    //             <p style={{ fontSize: "16px", color: "#555" }}>
+    //                 Sorry, your account (<strong>{userEmail}</strong>)
+    //                 is not authorized to view this page.
+    //             </p>
+    //         </div>
+    //     )
+    // }
     return (
         <div style={{ padding: "20px" }}>
             {/* <div id="so-who-row">
