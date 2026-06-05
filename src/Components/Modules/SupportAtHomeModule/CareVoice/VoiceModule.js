@@ -63,7 +63,8 @@ import { API_BASE } from "../../../../config/apiBase";
 
 // `docx` is dynamic-imported inside createTranscriptDoc so the library only
 // downloads when a user actually exports a transcript as a Word doc.
-const generatingDocAnimationVideo = "/assets/generatingDocAnimationVideo.mp4";
+const generatingDocAnimationVideo =
+  "/assets/generatingDocAnimationVideo.mp4";
 
 // adminPageLottie.json alone is 10.4 MB; eager-imported it dominated the
 // Care Voice chunk. Loaders below split each animation into its own chunk
@@ -3022,27 +3023,29 @@ const VoiceModule = (props) => {
                     )}
                 </div>
 
-                {role === "Admin" && (
-                    <button
-                        className="access-mgmt-trigger-btn"
-                        onClick={() => setOpenAccessManagement(true)}
+                <div className="voice-top-actions">
+                    {role === "Admin" && (
+                        <button
+                            className="access-mgmt-trigger-btn"
+                            onClick={() => setOpenAccessManagement(true)}
+                            type="button"
+                        >
+                            <RiSettingsLine size={18} color="#707493" />
+                            Access Management
+                        </button>
+                    )}
+                    {/* Connect to Sage is available to both Admin and Staff — staff
+                        generate documents (recording / transcript upload) and replay
+                        them once a document exists. */}
+                    {/* <button
+                        className="access-mgmt-trigger-btn access-mgmt-trigger-btn--accent"
+                        onClick={() => setOpenSageConnect(true)}
                         type="button"
                     >
-                        <RiSettingsLine size={18} color="#707493" />
-                        Access Management
-                    </button>
-                )}
-                {/* Connect to Sage is available to both Admin and Staff — staff
-                    generate documents (recording / transcript upload) and replay
-                    them once a document exists. */}
-                <button
-                    className="access-mgmt-trigger-btn"
-                    onClick={() => setOpenSageConnect(true)}
-                    type="button"
-                >
-                    <HiOutlineSparkles size={18} color="#707493" />
-                    Connect to Sage
-                </button>
+                        <HiOutlineSparkles size={18} color="#6C4CDC" />
+                        Connect to Sage
+                    </button> */}
+                </div>
             </div>
 
 
@@ -4587,15 +4590,17 @@ const VoiceModule = (props) => {
                 />
             )}
 
-            {openSageConnect && (
-                <SageConnect
-                    onClose={() => setOpenSageConnect(false)}
-                    userEmail={userEmail}
-                    userName={sageUserName}
-                    replayReady={sageDocReady}
-                    buildReplayData={buildSageReplayData}
-                />
-            )}
+            {/* Sage drawer is always mounted so its arrow handle stays pinned to
+                the right edge; `open` is the controlled toggle (also driven by the
+                "Connect to Sage" button above and by the handle itself). */}
+            <SageConnect
+                open={openSageConnect}
+                onOpenChange={setOpenSageConnect}
+                userEmail={userEmail}
+                userName={sageUserName}
+                replayReady={sageDocReady}
+                buildReplayData={buildSageReplayData}
+            />
         </div>
     );
 };

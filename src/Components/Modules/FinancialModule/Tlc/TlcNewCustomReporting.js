@@ -145,6 +145,11 @@ export default function TlcNewCustomerReporting(props) {
     }, [activeTab, tabs]);
     const userEmail = props?.user?.email?.trim();
     // const userEmail = "bastruc@tenderlovingcaredisability.com.au"
+    // TLC users: "Sync With Your System" toggle is disabled (unclickable)
+    const isTlcUser = (() => {
+        const analysisDomain = (userEmail || "").split("@")[1]?.toLowerCase() || "";
+        return ["tenderlovingcare"].some((k) => analysisDomain.includes(k));
+    })();
     const setTlcPayrollAskAiConversationHistory = props.setTlcPayrollAskAiConversationHistory; // ✅ NEW
     const tlcPayrollAskAiConversationHistory = props.tlcPayrollAskAiConversationHistory; // ✅ NEW
 
@@ -954,8 +959,11 @@ export default function TlcNewCustomerReporting(props) {
                     analysisResult: dummyData.analysisResult,
                 };
             } else {
-                if (isAllowed) {
-                    // 🔵 TLC FLOW (GET + query params)
+                if (isAllowed && !activeTabData.syncEnabled) {
+                    // 🔵 TLC FLOW / FILE ONE (GET + query params)
+                    // Allowed (TLC) users with Sync OFF → file-based TLC filter flow.
+                    // Normal (non-allowed) users always fall through to the
+                    // normal payroll flow below, regardless of the switch.
                     const url = `${BASE_URL}/payroll/filter?${query.toString()}`;
                     // console.log("TLC API URL:", url);
 
@@ -964,6 +972,7 @@ export default function TlcNewCustomerReporting(props) {
 
                 } else {
                     // 🟢 NORMAL PAYROLL FLOW (POST body)
+                    // Sync ON → use the normal payroll flow
                     const url = `${BASE_URL}/api/normal-payroll/analyze`;
                     // console.log("Normal Payroll API URL:", url);
 
@@ -1826,8 +1835,11 @@ export default function TlcNewCustomerReporting(props) {
 
                         {/* CUSTOM SWITCH */}
                         <div
-                            onClick={() =>
-                                updateTab({ syncEnabled: !activeTabData.syncEnabled })
+                            onClick={
+                                isTlcUser
+                                    ? undefined
+                                    : () =>
+                                          updateTab({ syncEnabled: !activeTabData.syncEnabled })
                             }
                             style={{
                                 width: "40px",
@@ -1839,7 +1851,9 @@ export default function TlcNewCustomerReporting(props) {
                                 display: "flex",
                                 alignItems: "center",
                                 padding: "2px",
-                                cursor: "pointer",
+                                cursor: isTlcUser ? "not-allowed" : "pointer",
+                                opacity: isTlcUser ? 0.5 : 1,
+                                pointerEvents: isTlcUser ? "none" : "auto",
                                 transition: "all 0.2s ease",
                             }}
                         >

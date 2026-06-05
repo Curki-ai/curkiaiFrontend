@@ -2,16 +2,33 @@ import React, { useEffect, useRef, useState } from "react";
 import { API_BASE as ROOT_API_BASE } from "../../../../config/apiBase";
 import { auth } from "../../../../firebase";
 import { HiOutlineSparkles } from "react-icons/hi";
-import { FiCopy, FiPlay, FiLink, FiSlash, FiRefreshCw } from "react-icons/fi";
+import {
+  FiCopy,
+  FiPlay,
+  FiLink,
+  FiSlash,
+  FiRefreshCw,
+  FiTrash2,
+  FiChevronLeft,
+  FiChevronRight,
+  FiChevronDown,
+  FiTerminal,
+  FiX,
+} from "react-icons/fi";
+import "../../../../Styles/SupportAtHomeModule/CareVoice/SageConnect.css";
 
-// Curki Sage — minimal "Connect to Sage (extension)" surface.
+// Curki Sage — "Connect to Sage (extension)" surface as a right-side drawer.
 //
-// Models the Access Management modal pattern but stays deliberately small:
-//   • Connect    → mints a v2d pairing code and shows it to paste into Sage.
-//   • Disconnect → revokes the code.
-//   • Workflow   → lists the org's saved training workflows (from Cosmos).
-//   • Replay     → triggers a replay of the selected workflow, passing the
-//                  training data + the latest run's placeholders/values + doc.
+//   • Arrow handle  → a persistent tab on the right edge; clicking it slides the
+//                     drawer in/out (toggle).
+//   • Connect       → mints a v2d pairing code to paste into Sage.
+//   • Disconnect    → revokes the code.
+//   • Workflows     → lists the org's saved training workflows, each labelled
+//                     with the creator's name; one is selectable for replay.
+//   • Replay        → triggers a replay of the selected workflow.
+//   • Delete        → removes a saved workflow (Yes/No confirm dialog).
+//   • Logs          → friendly activity events from the extension, shown one at
+//                     a time with prev/next navigation.
 //
 // The broker lives in the middleware at /api/care-voice/sage and the deployed
 // Sage Chrome extension dials it directly over its SSE tunnel.
@@ -21,23 +38,51 @@ const API_BASE =
   process.env.REACT_APP_SAGE_BASE_URL || `${ROOT_API_BASE}/sage`;
 
 // The broker keeps a paired session alive for ~12h, but the dashboard's
-// connection state otherwise lives only in this component — closing the modal
-// (unmount) or reloading the page would drop the code and falsely show "Not
-// connected" while the extension is still paired. Persist the code so we can
-// re-attach to the live session on mount.
+// connection state otherwise lives only in this component — reloading the page
+// would drop the code and falsely show "Not connected" while the extension is
+// still paired. Persist the code so we can re-attach to the live session.
 const CODE_STORAGE_KEY = `sage:${MODULE}:code`;
+const LOG_CAP = 200; // keep the log buffer bounded
 
-const SageConnect = ({ onClose, userEmail, userName, replayReady, buildReplayData }) => {
+const SageConnect = ({
+  open = false,
+  onOpenChange,
+  onClose,
+  userEmail,
+  userName,
+  replayReady,
+  buildReplayData,
+}) => {
   const [code, setCode] = useState(null);
   const [connState, setConnState] = useState("idle"); // idle | waiting | connected | offline
   const [workflows, setWorkflows] = useState([]);
   const [selectedId, setSelectedId] = useState("");
   const [loadingWf, setLoadingWf] = useState(false);
+  const [ddOpen, setDdOpen] = useState(false); // workflow dropdown open/closed
+  const ddRef = useRef(null);
   const [minting, setMinting] = useState(false);
   const [replaying, setReplaying] = useState(false);
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
+
+  // Delete-workflow confirmation
+  const [deleteTarget, setDeleteTarget] = useState(null); // workflow object
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
+
+  // Activity logs (one shown at a time)
+  const [logs, setLogs] = useState([]);
+  const [logIdx, setLogIdx] = useState(0);
+  const followRef = useRef(true); // auto-advance to newest unless user navigated back
+
   const pollRef = useRef(null);
+  const actRef = useRef(null);
+
+  const setPanel = (next) => {
+    if (typeof onOpenChange === "function") onOpenChange(next);
+    else if (!next && typeof onClose === "function") onClose();
+  };
+  const togglePanel = () => setPanel(!open);
 
   // Authenticated headers — Firebase ID token (verified server-side) plus the
   // legacy identity headers. x-user-name becomes the workflow's creator name.
@@ -78,9 +123,12 @@ const SageConnect = ({ onClose, userEmail, userName, replayReady, buildReplayDat
   useEffect(() => {
     fetchWorkflows();
     // Re-attach to a still-live paired session from a previous open / page load.
-    // pollStatus resolves it to connected/waiting, or clears it on 404/410.
     let stored = null;
-    try { stored = localStorage.getItem(CODE_STORAGE_KEY); } catch { /* ignore */ }
+    try {
+      stored = localStorage.getItem(CODE_STORAGE_KEY);
+    } catch {
+      /* ignore */
+    }
     if (stored) {
       setCode(stored);
       setConnState("waiting");
@@ -88,6 +136,7 @@ const SageConnect = ({ onClose, userEmail, userName, replayReady, buildReplayDat
     }
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
+      if (actRef.current) clearInterval(actRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -102,8 +151,13 @@ const SageConnect = ({ onClose, userEmail, userName, replayReady, buildReplayDat
       if (res.status === 404 || res.status === 410) {
         setConnState("offline");
         setCode(null);
-        try { localStorage.removeItem(CODE_STORAGE_KEY); } catch { /* ignore */ }
+        try {
+          localStorage.removeItem(CODE_STORAGE_KEY);
+        } catch {
+          /* ignore */
+        }
         if (pollRef.current) clearInterval(pollRef.current);
+        if (actRef.current) clearInterval(actRef.current);
         return;
       }
       const data = await res.json();
@@ -113,11 +167,47 @@ const SageConnect = ({ onClose, userEmail, userName, replayReady, buildReplayDat
     }
   };
 
+  // Drain the broker's buffered friendly events and append to the log feed.
+  const pollActivity = async (activeCode) => {
+    try {
+      const res = await fetch(
+        `${API_BASE}/session/${encodeURIComponent(activeCode)}/activity`,
+        { headers: await headers() }
+      );
+      if (!res.ok) return;
+      const data = await res.json();
+      const incoming = Array.isArray(data?.activity) ? data.activity : [];
+      if (incoming.length) {
+        setLogs((prev) => [...prev, ...incoming].slice(-LOG_CAP));
+      }
+    } catch {
+      /* transient — next tick retries */
+    }
+  };
+
   const startPolling = (activeCode) => {
     if (pollRef.current) clearInterval(pollRef.current);
+    if (actRef.current) clearInterval(actRef.current);
     pollStatus(activeCode);
+    pollActivity(activeCode);
     pollRef.current = setInterval(() => pollStatus(activeCode), 3000);
+    actRef.current = setInterval(() => pollActivity(activeCode), 3000);
   };
+
+  // Keep the visible log pinned to the newest entry while the user is following.
+  useEffect(() => {
+    if (followRef.current) setLogIdx(Math.max(0, logs.length - 1));
+  }, [logs.length]);
+
+  // Close the workflow dropdown when clicking outside it.
+  useEffect(() => {
+    if (!ddOpen) return undefined;
+    const onDown = (e) => {
+      if (ddRef.current && !ddRef.current.contains(e.target)) setDdOpen(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [ddOpen]);
 
   const handleConnect = async () => {
     setError("");
@@ -133,7 +223,11 @@ const SageConnect = ({ onClose, userEmail, userName, replayReady, buildReplayDat
       if (!res.ok) throw new Error(data?.detail || "Failed to create code");
       setCode(data.code);
       setConnState("waiting");
-      try { localStorage.setItem(CODE_STORAGE_KEY, data.code); } catch { /* ignore */ }
+      try {
+        localStorage.setItem(CODE_STORAGE_KEY, data.code);
+      } catch {
+        /* ignore */
+      }
       setInfo("Code ready — paste it into the Sage side panel to pair.");
       try {
         await navigator.clipboard.writeText(data.code);
@@ -153,8 +247,13 @@ const SageConnect = ({ onClose, userEmail, userName, replayReady, buildReplayDat
     const activeCode = code;
     setCode(null);
     setConnState("idle");
-    try { localStorage.removeItem(CODE_STORAGE_KEY); } catch { /* ignore */ }
+    try {
+      localStorage.removeItem(CODE_STORAGE_KEY);
+    } catch {
+      /* ignore */
+    }
     if (pollRef.current) clearInterval(pollRef.current);
+    if (actRef.current) clearInterval(actRef.current);
     try {
       await fetch(`${API_BASE}/session/${encodeURIComponent(activeCode)}/revoke`, {
         method: "POST",
@@ -181,11 +280,13 @@ const SageConnect = ({ onClose, userEmail, userName, replayReady, buildReplayDat
     setError("");
     setInfo("");
     if (!code) return setError("Connect to Sage first.");
-    if (!replayReady) return setError("Generate a document first — replay re-enters that run's data.");
+    if (!replayReady)
+      return setError(
+        "Generate a document first — replay re-enters that run's data."
+      );
     if (!selectedId) return setError("Select a workflow to replay.");
     setReplaying(true);
     try {
-      // Pull the full workflow (incl. the embedded plan) from Cosmos.
       const wfRes = await fetch(
         `${API_BASE}/workflows/${encodeURIComponent(selectedId)}`,
         { headers: await headers() }
@@ -194,9 +295,6 @@ const SageConnect = ({ onClose, userEmail, userName, replayReady, buildReplayDat
       if (!wfRes.ok) throw new Error(wfData?.detail || "Failed to load workflow");
       const workflow = wfData?.data?.workflow || null;
 
-      // Run-time data for v2d: the latest generation's placeholders/values JSON
-      // plus the generated document. The extension re-enters this into the
-      // live form using the recorded workflow + plan as the training data.
       const replayData =
         typeof buildReplayData === "function" ? buildReplayData() : {};
 
@@ -223,8 +321,49 @@ const SageConnect = ({ onClose, userEmail, userName, replayReady, buildReplayDat
     }
   };
 
+  // ── Delete workflow ───────────────────────────────────────────────────────
+  const askDelete = (wf) => {
+    if (!wf) return;
+    setDeleteError("");
+    setDeleteTarget(wf);
+  };
+  const closeDelete = () => {
+    if (deleting) return;
+    setDeleteTarget(null);
+    setDeleteError("");
+  };
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    setDeleteError("");
+    try {
+      const res = await fetch(
+        `${API_BASE}/workflows/${encodeURIComponent(deleteTarget.id)}`,
+        { method: "DELETE", headers: await headers() }
+      );
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.detail || "Failed to delete workflow");
+      if (selectedId === deleteTarget.id) setSelectedId("");
+      setDeleteTarget(null);
+      setInfo("Workflow deleted.");
+      fetchWorkflows();
+    } catch (err) {
+      setDeleteError(err.message || "Failed to delete workflow");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  // ── Logs navigation ───────────────────────────────────────────────────────
+  const total = logs.length;
+  const current = total ? logs[Math.min(logIdx, total - 1)] : null;
+
   const dotColor =
-    connState === "connected" ? "#34d399" : connState === "waiting" ? "#f59e0b" : "#9aa0b4";
+    connState === "connected"
+      ? "#16c79a"
+      : connState === "waiting"
+      ? "#f59e0b"
+      : "#9aa0b4";
   const statusText =
     connState === "connected"
       ? "Sage connected"
@@ -234,215 +373,337 @@ const SageConnect = ({ onClose, userEmail, userName, replayReady, buildReplayDat
       ? "Code expired"
       : "Not connected";
 
+  const selectedWf = workflows.find((w) => w.id === selectedId) || null;
+  const replayDisabled = replaying || !code || !selectedId || !replayReady;
+  const replayBlocker = !code
+    ? "Connect to Sage first — pair the extension above."
+    : !replayReady
+    ? "Generate a document first — replay re-enters that run’s data into the live form."
+    : !selectedId
+    ? "Select a workflow to replay."
+    : "";
+
+  const logLevelColor = (lvl) =>
+    lvl === "error" ? "#f87171" : lvl === "warn" ? "#fbbf24" : "#7dd3fc";
+  const fmtTime = (ts) => {
+    if (!ts) return "";
+    try {
+      return new Date(ts).toLocaleTimeString();
+    } catch {
+      return "";
+    }
+  };
+
   return (
-    <div style={S.overlay} role="presentation" onClick={onClose}>
-      <div style={S.modal} role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
-        {/* Header */}
-        <div style={S.header}>
-          <div style={S.headerIcon}>
-            <HiOutlineSparkles size={20} />
-          </div>
-          <div style={{ flex: 1 }}>
-            <div style={S.title}>Connect to Sage</div>
-            <div style={S.subtitle}>
-              Pair the Sage browser extension, then replay a saved training workflow into the live form.
-            </div>
-          </div>
-          <button type="button" style={S.close} onClick={onClose} aria-label="Close">
-            ×
-          </button>
-        </div>
+    <>
+      {/* ── Drawer (slides in/out) + arrow handle ─────────────────────────── */}
+      <div
+        className={`sage-drawer${open ? " is-open" : ""}`}
+        role="dialog"
+        aria-modal="false"
+        aria-label="Connect to Sage"
+      >
+        {/* Arrow handle — sticks out of the drawer's left edge, slides with it */}
+        <button
+          type="button"
+          className="sage-handle"
+          onClick={togglePanel}
+          aria-label={open ? "Close Sage panel" : "Open Sage panel"}
+          title={open ? "Close Sage panel" : "Open Sage panel"}
+        >
+          {open ? <FiChevronRight size={20} /> : <FiChevronLeft size={20} />}
+        </button>
 
-        <div style={S.body}>
-          {/* Connection */}
-          <div style={S.section}>
-            <div style={S.sectionTitle}>
-              <FiLink size={14} /> Connection
+        <div className="sage-panel">
+          {/* Header */}
+          <div className="sage-header">
+            <div className="sage-header-icon">
+              <HiOutlineSparkles size={20} />
             </div>
-            {!code ? (
-              <button type="button" style={S.primaryBtn} onClick={handleConnect} disabled={minting}>
-                <FiLink size={15} /> {minting ? "Connecting…" : "Connect to Sage"}
-              </button>
-            ) : (
-              <>
-                <div style={S.codeRow}>
-                  <code style={S.code}>{code}</code>
-                  <button type="button" style={S.ghostBtn} onClick={copyCode} title="Copy">
-                    <FiCopy size={15} />
-                  </button>
-                </div>
-                <button type="button" style={S.dangerBtn} onClick={handleDisconnect}>
-                  <FiSlash size={14} /> Disconnect
-                </button>
-              </>
-            )}
-            <div style={S.statusPill}>
-              <span style={{ ...S.dot, background: dotColor }} />
-              {statusText}
-            </div>
-          </div>
-
-          {/* Replay */}
-          <div style={S.section}>
-            <div style={S.sectionTitleRow}>
-              <div style={S.sectionTitle}>
-                <FiPlay size={14} /> Replay a workflow
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div className="sage-title">Connect to Sage</div>
+              <div className="sage-subtitle">
+                Pair the Sage extension, then replay a saved workflow into the
+                live form.
               </div>
-              <button
-                type="button"
-                style={S.iconBtn}
-                onClick={fetchWorkflows}
-                disabled={loadingWf}
-                title="Refresh workflows"
-                aria-label="Refresh workflows"
-              >
-                <FiRefreshCw size={14} />
-              </button>
             </div>
-            <select
-              style={S.select}
-              value={selectedId}
-              onChange={(e) => setSelectedId(e.target.value)}
+            <button
+              type="button"
+              className="sage-close"
+              onClick={() => setPanel(false)}
+              aria-label="Close"
             >
-              <option value="">
-                {loadingWf
-                  ? "Loading workflows…"
-                  : workflows.length
-                  ? "Select a workflow…"
-                  : "No saved workflows yet"}
-              </option>
-              {workflows.map((w) => (
-                <option key={w.id} value={w.id}>
-                  {w.name}
-                  {w.createdByName ? ` · ${w.createdByName}` : ""}
-                  {w.createdAt ? ` · ${new Date(w.createdAt).toLocaleDateString()}` : ""}
-                </option>
-              ))}
-            </select>
-            {(() => {
-              const replayDisabled =
-                replaying || !code || !selectedId || !replayReady;
-              // Tell the user exactly what's still missing — otherwise a disabled
-              // button reads as "nothing happens" with no explanation.
-              const replayBlocker = !code
-                ? "Connect to Sage first — pair the extension above."
-                : !replayReady
-                ? "Generate a document first — replay re-enters that run’s data into the live form."
-                : !selectedId
-                ? "Select a workflow to replay."
-                : "";
-              return (
+              <FiX size={18} />
+            </button>
+          </div>
+
+          <div className="sage-body">
+            {/* Connection */}
+            <div className="sage-section">
+              <div className="sage-section-title">
+                <FiLink size={14} /> Connection
+              </div>
+              {!code ? (
+                <button
+                  type="button"
+                  className="sage-btn-primary"
+                  onClick={handleConnect}
+                  disabled={minting}
+                >
+                  <FiLink size={15} /> {minting ? "Connecting…" : "Connect to Sage"}
+                </button>
+              ) : (
                 <>
+                  <div className="sage-code-row">
+                    <code className="sage-code">{code}</code>
+                    <button
+                      type="button"
+                      className="sage-btn-ghost"
+                      onClick={copyCode}
+                      title="Copy"
+                      aria-label="Copy pairing code"
+                    >
+                      <FiCopy size={15} />
+                    </button>
+                  </div>
                   <button
                     type="button"
-                    style={{
-                      ...S.primaryBtn,
-                      ...(replayDisabled ? S.primaryBtnDisabled : {}),
-                    }}
-                    onClick={handleReplay}
-                    disabled={replayDisabled}
+                    className="sage-btn-danger"
+                    onClick={handleDisconnect}
                   >
-                    <FiPlay size={15} /> {replaying ? "Triggering…" : "Run Replay"}
+                    <FiSlash size={14} /> Disconnect
                   </button>
-                  {replayBlocker && <div style={S.hint}>{replayBlocker}</div>}
                 </>
-              );
-            })()}
-          </div>
+              )}
+              <div className="sage-status-pill">
+                <span
+                  className={`sage-dot${
+                    connState === "connected" ? " is-live" : ""
+                  }`}
+                  style={{ background: dotColor }}
+                />
+                {statusText}
+              </div>
+            </div>
 
-          {error && <div style={S.error}>⚠ {error}</div>}
-          {info && <div style={S.info}>✓ {info}</div>}
+            {/* Replay */}
+            <div className="sage-section">
+              <div className="sage-section-title-row">
+                <div className="sage-section-title">
+                  <FiPlay size={14} /> Replay a workflow
+                </div>
+                <button
+                  type="button"
+                  className="sage-icon-btn"
+                  onClick={fetchWorkflows}
+                  disabled={loadingWf}
+                  title="Refresh workflows"
+                  aria-label="Refresh workflows"
+                >
+                  <FiRefreshCw size={14} />
+                </button>
+              </div>
+
+              {/* Workflow dropdown — opens a menu of workflows, each with its
+                  creator's name and a delete icon. */}
+              <div className="sage-dd" ref={ddRef}>
+                <button
+                  type="button"
+                  className="sage-dd-trigger"
+                  onClick={() => setDdOpen((o) => !o)}
+                  disabled={loadingWf || workflows.length === 0}
+                  aria-haspopup="listbox"
+                  aria-expanded={ddOpen}
+                >
+                  <span
+                    className={`sage-dd-trigger-text${
+                      selectedWf ? "" : " is-placeholder"
+                    }`}
+                  >
+                    {loadingWf
+                      ? "Loading workflows…"
+                      : selectedWf
+                      ? selectedWf.name
+                      : workflows.length
+                      ? "Select a workflow…"
+                      : "No saved workflows yet"}
+                  </span>
+                  <FiChevronDown
+                    size={16}
+                    className={`sage-dd-chevron${ddOpen ? " is-open" : ""}`}
+                  />
+                </button>
+
+                {ddOpen && workflows.length > 0 && (
+                  <div className="sage-dd-menu" role="listbox">
+                    {workflows.map((w) => {
+                      const sel = w.id === selectedId;
+                      const creator =
+                        w.createdByName || w.createdByEmail || "Unknown";
+                      const date = w.createdAt
+                        ? new Date(w.createdAt).toLocaleDateString()
+                        : "";
+                      return (
+                        <div
+                          key={w.id}
+                          role="option"
+                          aria-selected={sel}
+                          className={`sage-dd-item${sel ? " is-selected" : ""}`}
+                          onClick={() => {
+                            setSelectedId(w.id);
+                            setDdOpen(false);
+                          }}
+                        >
+                          <div className="sage-wf-info">
+                            <span className="sage-wf-name">{w.name}</span>
+                            <span className="sage-wf-meta">
+                              <span className="sage-wf-by">by {creator}</span>
+                              {date ? ` · ${date}` : ""}
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            className="sage-wf-delete"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              askDelete(w);
+                            }}
+                            title="Delete this workflow"
+                            aria-label={`Delete workflow ${w.name}`}
+                          >
+                            <FiTrash2 size={15} />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              <button
+                type="button"
+                className="sage-btn-primary"
+                onClick={handleReplay}
+                disabled={replayDisabled}
+              >
+                <FiPlay size={15} /> {replaying ? "Triggering…" : "Run Replay"}
+              </button>
+
+              {replayBlocker && <div className="sage-hint">{replayBlocker}</div>}
+            </div>
+
+            {/* Logs — one at a time */}
+            <div className="sage-section">
+              <div className="sage-section-title-row">
+                <div className="sage-section-title">
+                  <FiTerminal size={14} /> Sage logs
+                </div>
+                {total > 0 && (
+                  <div className="sage-log-counter">
+                    {Math.min(logIdx + 1, total)} / {total}
+                  </div>
+                )}
+              </div>
+
+              <div className="sage-log-card">
+                {current ? (
+                  <>
+                    <div className="sage-log-top">
+                      <span
+                        className="sage-log-dot"
+                        style={{ background: logLevelColor(current.level) }}
+                      />
+                      <span className="sage-log-level">
+                        {(current.level || "info").toUpperCase()}
+                      </span>
+                      <span className="sage-log-time">{fmtTime(current.ts)}</span>
+                    </div>
+                    <div className="sage-log-msg">{current.message}</div>
+                  </>
+                ) : (
+                  <div className="sage-log-empty">
+                    {code
+                      ? "No activity yet — logs from Sage appear here."
+                      : "Connect to Sage to stream activity logs."}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {error && <div className="sage-alert sage-alert-error">⚠ {error}</div>}
+            {info && <div className="sage-alert sage-alert-info">✓ {info}</div>}
+          </div>
         </div>
       </div>
-    </div>
-  );
-};
 
-// Self-contained styles — keeps this minimal surface to a single file.
-const S = {
-  overlay: {
-    position: "fixed", inset: 0, background: "rgba(15,16,32,0.55)",
-    display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000,
-  },
-  modal: {
-    width: "min(480px, 92vw)", background: "#fff", borderRadius: 16,
-    boxShadow: "0 24px 60px rgba(0,0,0,0.25)", overflow: "hidden",
-    fontFamily: "inherit",
-  },
-  header: {
-    display: "flex", alignItems: "flex-start", gap: 12, padding: "18px 20px",
-    borderBottom: "1px solid #ecebf5",
-  },
-  headerIcon: {
-    width: 38, height: 38, borderRadius: 10, display: "grid", placeItems: "center",
-    background: "linear-gradient(135deg,#a78bfa,#6c4cdc)", color: "#fff", flexShrink: 0,
-  },
-  title: { fontSize: 16, fontWeight: 700, color: "#1c1b2e" },
-  subtitle: { fontSize: 12.5, color: "#707493", marginTop: 2, lineHeight: 1.4 },
-  close: {
-    border: "none", background: "transparent", fontSize: 24, lineHeight: 1,
-    color: "#9aa0b4", cursor: "pointer",
-  },
-  body: { padding: 20, display: "flex", flexDirection: "column", gap: 18 },
-  section: {
-    border: "1px solid #ecebf5", borderRadius: 12, padding: 14,
-    display: "flex", flexDirection: "column", gap: 10,
-  },
-  sectionTitle: {
-    display: "flex", alignItems: "center", gap: 7, fontSize: 12.5,
-    fontWeight: 700, color: "#5b21b6", textTransform: "uppercase", letterSpacing: 0.4,
-  },
-  sectionTitleRow: {
-    display: "flex", alignItems: "center", justifyContent: "space-between",
-  },
-  iconBtn: {
-    display: "inline-flex", alignItems: "center", justifyContent: "center",
-    width: 28, height: 28, border: "1px solid #ddd9ee", borderRadius: 8,
-    background: "#f6f5fc", color: "#5b21b6", cursor: "pointer",
-  },
-  primaryBtn: {
-    display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8,
-    padding: "10px 16px", border: "none", borderRadius: 9, cursor: "pointer",
-    background: "#7c3aed", color: "#fff", fontWeight: 600, fontSize: 14,
-  },
-  primaryBtnDisabled: {
-    background: "#c4b5fd", cursor: "not-allowed", opacity: 0.7,
-  },
-  ghostBtn: {
-    display: "inline-flex", alignItems: "center", justifyContent: "center",
-    padding: "9px 11px", border: "1px solid #ddd9ee", borderRadius: 9,
-    background: "#f6f5fc", color: "#5b21b6", cursor: "pointer",
-  },
-  dangerBtn: {
-    display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7,
-    padding: "8px 14px", border: "1px solid #f3c9c9", borderRadius: 9,
-    background: "#fff5f5", color: "#c0392b", cursor: "pointer", fontWeight: 600, fontSize: 13,
-  },
-  codeRow: { display: "flex", gap: 8, alignItems: "center" },
-  code: {
-    flex: 1, fontFamily: "ui-monospace, monospace", fontWeight: 700, fontSize: 17,
-    letterSpacing: 1.5, textAlign: "center", padding: "11px 12px", borderRadius: 9,
-    background: "#f6f5fc", border: "1px solid #ddd9ee", color: "#5b21b6",
-  },
-  statusPill: {
-    display: "inline-flex", alignItems: "center", gap: 8, alignSelf: "flex-start",
-    padding: "5px 12px", borderRadius: 999, fontSize: 12, fontWeight: 600,
-    color: "#5a5f74", background: "#f4f4f9", border: "1px solid #ecebf5",
-  },
-  dot: { width: 9, height: 9, borderRadius: "50%" },
-  hint: { fontSize: 11.5, color: "#9094ab", lineHeight: 1.4 },
-  select: {
-    width: "100%", padding: "10px 12px", borderRadius: 9, border: "1px solid #ddd9ee",
-    background: "#fff", color: "#1c1b2e", fontSize: 14,
-  },
-  error: {
-    background: "#fff5f5", color: "#c0392b", border: "1px solid #f3c9c9",
-    borderRadius: 9, padding: "9px 12px", fontSize: 13,
-  },
-  info: {
-    background: "#f0fbf4", color: "#1d7a46", border: "1px solid #c6ecd5",
-    borderRadius: 9, padding: "9px 12px", fontSize: 13,
-  },
+      {/* ── Delete confirmation (mirrors the candidate-delete dialog) ──────── */}
+      {deleteTarget && (
+        <div className="sage-cd-overlay" role="presentation" onClick={closeDelete}>
+          <div
+            className="sage-cd-dialog"
+            onClick={(e) => e.stopPropagation()}
+            role="alertdialog"
+            aria-modal="true"
+            aria-label="Delete workflow"
+          >
+            <div className="sage-cd-icon" aria-hidden="true">
+              <svg
+                width="22"
+                height="22"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M3 6h18"></path>
+                <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+                <path d="M10 11v6"></path>
+                <path d="M14 11v6"></path>
+              </svg>
+            </div>
+
+            <h3 className="sage-cd-title">Delete workflow?</h3>
+            <p className="sage-cd-desc">
+              {`Are you sure you want to delete `}
+              <strong className="sage-cd-strong">
+                {deleteTarget.name || "this workflow"}
+              </strong>
+              {`? This action cannot be undone.`}
+            </p>
+
+            {deleteError && (
+              <div className="sage-cd-error" role="alert">
+                {deleteError}
+              </div>
+            )}
+
+            <div className="sage-cd-actions">
+              <button
+                type="button"
+                className="sage-cd-btn sage-cd-btn-secondary"
+                onClick={closeDelete}
+                disabled={deleting}
+              >
+                No
+              </button>
+              <button
+                type="button"
+                className="sage-cd-btn sage-cd-btn-danger"
+                onClick={confirmDelete}
+                disabled={deleting}
+                autoFocus
+              >
+                {deleting ? "Deleting…" : "Yes, delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
 };
 
 export default SageConnect;

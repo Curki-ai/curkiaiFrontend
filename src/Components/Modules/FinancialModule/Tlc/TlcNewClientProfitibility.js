@@ -199,6 +199,11 @@ const TlcNewClientProfitability = (props) => {
 
     const userEmail = user?.email;
     // const userEmail = "bastruc@tenderlovingcaredisability.com.au"
+    // TLC users: "Sync With Your System" toggle is disabled (unclickable)
+    const isTlcUser = (() => {
+        const analysisDomain = (userEmail || "").split("@")[1]?.toLowerCase() || "";
+        return ["tenderlovingcare"].some((k) => analysisDomain.includes(k));
+    })();
 
     // Access-management driven state. Mirrors NewFinancialModule.js — the
     // org lookup feeds organizationId (history scope), currentUserRole (Access
@@ -1787,7 +1792,7 @@ const TlcNewClientProfitability = (props) => {
                     </span>
 
                     <div
-                        onClick={() => setSyncEnabled(!syncEnabled)}
+                        onClick={isTlcUser ? undefined : () => setSyncEnabled(!syncEnabled)}
                         style={{
                             width: "40px",
                             height: "22px",
@@ -1796,7 +1801,9 @@ const TlcNewClientProfitability = (props) => {
                             display: "flex",
                             alignItems: "center",
                             padding: "2px",
-                            cursor: "pointer",
+                            cursor: isTlcUser ? "not-allowed" : "pointer",
+                            opacity: isTlcUser ? 0.5 : 1,
+                            pointerEvents: isTlcUser ? "none" : "auto",
                             transition: "all 0.2s ease",
                         }}
                     >

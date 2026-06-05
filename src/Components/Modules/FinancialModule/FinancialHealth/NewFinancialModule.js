@@ -247,6 +247,11 @@ const NewFinancialHealth = (props) => {
     const userEmail = props.user?.email;
     // const userEmail = "gjavier@tenderlovingcaredisability.com.au";
     // const userEmail = "bastruc@tenderlovingcaredisability.com.au"
+    // TLC users: "Sync With Your System" toggle is disabled (unclickable)
+    const isTlcUser = (() => {
+        const analysisDomain = (userEmail || "").split("@")[1]?.toLowerCase() || "";
+        return ["tenderlovingcare"].some((k) => analysisDomain.includes(k));
+    })();
     // Access-management driven state.
     //   orgLookupStatus: "loading" | "found" | "not_found"
     //   userStates:      empty array means "All States" (no scoping)
@@ -1960,7 +1965,7 @@ const NewFinancialHealth = (props) => {
                             </span>
 
                             <div
-                                onClick={() => setSyncEnabled(!syncEnabled)}
+                                onClick={isTlcUser ? undefined : () => setSyncEnabled(!syncEnabled)}
                                 style={{
                                     width: "40px",
                                     height: "22px",
@@ -1969,7 +1974,9 @@ const NewFinancialHealth = (props) => {
                                     display: "flex",
                                     alignItems: "center",
                                     padding: "2px",
-                                    cursor: "pointer",
+                                    cursor: isTlcUser ? "not-allowed" : "pointer",
+                                    opacity: isTlcUser ? 0.5 : 1,
+                                    pointerEvents: isTlcUser ? "none" : "auto",
                                     transition: "all 0.2s ease",
                                 }}
                             >
@@ -2267,7 +2274,7 @@ const NewFinancialHealth = (props) => {
                             </span>
 
                             <div
-                                onClick={() => setSyncEnabled(!syncEnabled)}
+                                onClick={isTlcUser ? undefined : () => setSyncEnabled(!syncEnabled)}
                                 style={{
                                     width: "40px",
                                     height: "22px",
@@ -2276,7 +2283,9 @@ const NewFinancialHealth = (props) => {
                                     display: "flex",
                                     alignItems: "center",
                                     padding: "2px",
-                                    cursor: "pointer",
+                                    cursor: isTlcUser ? "not-allowed" : "pointer",
+                                    opacity: isTlcUser ? 0.5 : 1,
+                                    pointerEvents: isTlcUser ? "none" : "auto",
                                     transition: "all 0.2s ease",
                                 }}
                             >
