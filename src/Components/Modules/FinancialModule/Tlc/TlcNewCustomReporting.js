@@ -26,7 +26,6 @@ import TlcPayrollHistoryIcon from "../../../../Images/TlcPayrollHistory.png"
 import UploadTlcIcon from "../../../../Images/UploadTlcIcon.png";
 import { RiDeleteBin6Line } from "react-icons/ri";
 import TlcPayrollDownloadIcon from "../../../../Images/TlcPayrollDownloadIcon.png"
-import { dummyData, dummyPayload } from "./TlcPayrollDummyData";
 import TlcSaveButton from "../../../../Images/Tlc_Save_Button.png"
 import TlcCompareAnalyseIcon from "../../../../Images/Tlc_Compare_Analyse_Icon.png"
 import TlcAiWordExporter, { addSectionWithGraphsToWord, parseMarkdownToDocx } from "./TlcAiWordExporter";
@@ -45,6 +44,8 @@ import FinancialHealthNoOrgEmptyState from "../FinancialHealth/FinancialHealthNo
 import FinancialHealthAccessManagement from "../FinancialHealth/FinancialHealthAccessManagement";
 import CenteredLoader from "../../../general-components/CenteredLoader";
 import { RiSettingsLine } from "react-icons/ri";
+
+const loadDummyData = () => import("./TlcPayrollDummyData");
 
 const HtmlFigure = memo(function HtmlFigure({ htmlString }) {
     const parsed = useMemo(
@@ -947,6 +948,7 @@ export default function TlcNewCustomerReporting(props) {
 
             if (USE_DUMMY_DATA) {
                 console.log("Using dummy payroll data");
+                const { dummyData, dummyPayload } = await loadDummyData();
                 analyzeData = {
                     payload: dummyPayload,
                     analysisResult: dummyData.analysisResult,
@@ -1309,6 +1311,7 @@ export default function TlcNewCustomerReporting(props) {
         }
         if (USE_DUMMY_DATA) {
             console.log("Using dummy AI markdown");
+            const { dummyData } = await loadDummyData();
 
             updateTab({
                 aiReport: dummyData?.reportMarkdown,

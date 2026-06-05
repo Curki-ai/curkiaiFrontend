@@ -46,22 +46,24 @@ import PromptBlockEditor from "./PromptBlockEditor";
 import incrementAnalysisCount from "../../FinancialModule/Tlc/TLcAnalysisCount";
 import { FiMic } from "react-icons/fi";
 import { extractAudioFromVideo, getTranscriptTextFromAudioBlob } from "./CareVoiceAudioVideoExtract";
-// `docx` is dynamic-imported inside createTranscriptDoc so the library only
-// downloads when a user actually exports a transcript as a Word doc.
 import incrementCareVoiceAnalysisCount from "../careVoiceCostAnalysis";
 import FilePreviewModal from "./FilePreviewModal";
 import docFilePreviewIcon from "../../../../Images/docFilePreviewIcon.svg"
 import Lottie from "lottie-react";
-import { HiOutlineDocumentAdd } from "react-icons/hi";
-import generatingDocAnimationVideo from "../../../../Images/generatingDocAnimationVideo.mp4"
+import { HiOutlineDocumentAdd, HiOutlineSparkles } from "react-icons/hi";
 import PulsatingLoader from "../../../general-components/PulsatingLoader";
 import { RiSettingsLine } from "react-icons/ri";
 import Tippy from "@tippyjs/react";
 import "tippy.js/dist/tippy.css";
 import { IoMdInformationCircleOutline } from "react-icons/io";
 import CareVoiceAccessManagement from "./CareVoiceAccessManagement";
+import SageConnect from "./SageConnect";
 import CareVoiceNoOrgEmptyState from "./CareVoiceNoOrgEmptyState";
 import { API_BASE } from "../../../../config/apiBase";
+
+// `docx` is dynamic-imported inside createTranscriptDoc so the library only
+// downloads when a user actually exports a transcript as a Word doc.
+const generatingDocAnimationVideo = "/assets/generatingDocAnimationVideo.mp4";
 
 // adminPageLottie.json alone is 10.4 MB; eager-imported it dominated the
 // Care Voice chunk. Loaders below split each animation into its own chunk
@@ -126,6 +128,38 @@ const VoiceModule = (props) => {
     const [role, setRole] = useState("Admin");
     const [currentUserRole, setCurrentUserRole] = useState(null);
     const [openAccessManagement, setOpenAccessManagement] = useState(false);
+    const [openSageConnect, setOpenSageConnect] = useState(false);
+    // Connecting to Sage can happen anytime (before or after generation), but a
+    // replay needs a generated document — this flips true once one exists so the
+    // SageConnect modal can enable its Replay button.
+    const [sageDocReady, setSageDocReady] = useState(false);
+    // Holds the latest voice→document run's artifacts so a Sage replay can pass
+    // the generated document along with the placeholders/values used to fill it.
+    const lastSageDocRef = useRef(null);
+    // Builds the v2d replay run-time data: the placeholders/values JSON the
+    // filler extracted (e.g. {PARTICIPANT_NAME:"…"}) + the generated document.
+    // Falls back to the active template's field mappings only if a run hasn't
+    // produced extracted_data yet.
+    const buildSageReplayData = () => {
+        const latest = lastSageDocRef.current;
+        let placeholders = latest?.extracted_data || null;
+        if (!placeholders) {
+            try {
+                placeholders = selectedTemplate?.mappings
+                    ? JSON.parse(selectedTemplate.mappings)
+                    : null;
+            } catch {
+                placeholders = null;
+            }
+        }
+        const document = latest
+            ? { filename: latest.filename, base64: latest.base64 }
+            : null;
+        return { placeholders, document };
+    };
+    // Display name for stamping the workflow creator and the x-user-name header.
+    const sageUserName =
+        props?.user?.displayName || props?.user?.name || userEmail || "";
     const [templateFile, setTemplateFile] = useState(null);
     const [sampleFiles, setSampleFiles] = useState([]);
     const [sessionId, setSessionId] = useState(null);
@@ -1969,6 +2003,12 @@ const VoiceModule = (props) => {
                 const filename = "Generated_Document.docx";
 
                 const docs = [{ filename, base64: data.filled_document }];
+                lastSageDocRef.current = {
+                    filename,
+                    base64: data.filled_document,
+                    extracted_data: data?.extracted_data || null,
+                };
+                setSageDocReady(true);
 
                 setGeneratedDocs(docs);
                 // downloadBase64File(data.filled_document, filename);
@@ -2114,7 +2154,7 @@ const VoiceModule = (props) => {
         if (data.success && data.filled_document) {
             const filename = `${tpl.templateName}_${file.name}.docx`;
 
-            const doc = { filename, base64: data.filled_document, sasUrl: data?.sasUrl };
+            const doc = { filename, base64: data.filled_document, sasUrl: data?.sasUrl, extracted_data: data?.extracted_data };
             if (userEmail) {
                 await incrementCareVoiceAnalysisCount(
                     userEmail,
@@ -2173,7 +2213,7 @@ const VoiceModule = (props) => {
 
         if (data.success && data.filled_document) {
             const filename = `${tpl.templateName}_combined.docx`;
-            const doc = { filename, base64: data.filled_document, sasUrl: data?.sasUrl };
+            const doc = { filename, base64: data.filled_document, sasUrl: data?.sasUrl, extracted_data: data?.extracted_data };
             if (userEmail) {
                 await incrementCareVoiceAnalysisCount(
                     userEmail,
@@ -2330,6 +2370,16 @@ const VoiceModule = (props) => {
                 }
             }
             docsToSend.push(doc);
+            // Remember the latest generated doc + its extracted placeholder/values
+            // JSON so a Sage replay can carry both.
+            if (doc.base64) {
+                lastSageDocRef.current = {
+                    filename: doc.filename,
+                    base64: doc.base64,
+                    extracted_data: doc.extracted_data || null,
+                };
+                setSageDocReady(true);
+            }
 
             const byteCharacters = atob(doc.base64);
             const byteNumbers = new Array(byteCharacters.length)
@@ -2448,6 +2498,29 @@ const VoiceModule = (props) => {
 
                                 generatedFiles.push(fileObj);
                                 docsToSend.push(doc);
+
+                                // Capture the latest doc so Sage replay is enabled
+                                // for the recording/audio path too (staff records →
+                                // document → replay). base64 is read from the blob;
+                                // extracted_data is the placeholder/values map if the
+                                // backend returned one.
+                                try {
+                                    const b64 = await new Promise((resolve, reject) => {
+                                        const r = new FileReader();
+                                        r.onloadend = () => resolve(String(r.result).split(",")[1] || "");
+                                        r.onerror = reject;
+                                        r.readAsDataURL(blob);
+                                    });
+                                    lastSageDocRef.current = {
+                                        filename: doc.filename || `${file.name}_document.docx`,
+                                        base64: b64,
+                                        extracted_data: doc.extracted_data || null,
+                                    };
+                                    setSageDocReady(true);
+                                } catch (e) {
+                                    /* non-fatal — Sage replay just stays disabled */
+                                }
+
                                 docsGeneratedSoFar++;
                                 totalDocsExpected++;
 
@@ -2959,6 +3032,17 @@ const VoiceModule = (props) => {
                         Access Management
                     </button>
                 )}
+                {/* Connect to Sage is available to both Admin and Staff — staff
+                    generate documents (recording / transcript upload) and replay
+                    them once a document exists. */}
+                <button
+                    className="access-mgmt-trigger-btn"
+                    onClick={() => setOpenSageConnect(true)}
+                    type="button"
+                >
+                    <HiOutlineSparkles size={18} color="#707493" />
+                    Connect to Sage
+                </button>
             </div>
 
 
@@ -4500,6 +4584,16 @@ const VoiceModule = (props) => {
                         setOrgLookupStatus("not_found");
                     }}
                     userEmail={userEmail}
+                />
+            )}
+
+            {openSageConnect && (
+                <SageConnect
+                    onClose={() => setOpenSageConnect(false)}
+                    userEmail={userEmail}
+                    userName={sageUserName}
+                    replayReady={sageDocReady}
+                    buildReplayData={buildSageReplayData}
                 />
             )}
         </div>
