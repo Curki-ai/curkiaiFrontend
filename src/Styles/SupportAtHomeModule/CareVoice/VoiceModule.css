@@ -1901,6 +1901,16 @@
     gap: 12px;
   }
 
+  /* Stack the action buttons full-width on small screens */
+  .voice-top-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .voice-top-actions .access-mgmt-trigger-btn {
+    flex: 1 1 160px;
+  }
+
   .voice-field {
     width: 100%;
   }
@@ -3299,15 +3309,64 @@
    nothing is duplicated.
 =================================================================*/
 
-/* Access Management trigger — clearer affordance, focus ring */
+/* Top-bar action buttons (Access Management / Connect to Sage) — keep them
+   grouped on the right and never let them shrink so the label can't wrap. */
+.voice-top-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+/* Access Management / Connect to Sage trigger — clean secondary button */
 .access-mgmt-trigger-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 9px 16px;
+  height: 40px;
+  border: 1px solid #e5e0f5;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #4b3f72;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;            /* keeps the label on a single line */
   cursor: pointer;
+  box-shadow: 0 1px 2px rgba(75, 63, 114, 0.06);
+  transition: background 0.16s ease, border-color 0.16s ease,
+    box-shadow 0.16s ease, transform 0.08s ease;
+}
+
+.access-mgmt-trigger-btn:hover {
+  background: #f7f5ff;
+  border-color: #c9bef0;
+  box-shadow: 0 2px 6px rgba(75, 63, 114, 0.12);
+}
+
+.access-mgmt-trigger-btn:active {
+  transform: translateY(1px);
 }
 
 .access-mgmt-trigger-btn:focus-visible {
   outline: none;
   border-color: #6C4CDC;
   box-shadow: 0 0 0 3px rgba(108, 76, 220, 0.18);
+}
+
+/* Connect to Sage — subtle accent to mark the AI action */
+.access-mgmt-trigger-btn--accent {
+  background: linear-gradient(135deg, #f4f2ff, #ece7ff);
+  border-color: #d6cdf7;
+  color: #6C4CDC;
+}
+
+.access-mgmt-trigger-btn--accent:hover {
+  background: linear-gradient(135deg, #ece7ff, #e2dbff);
+  border-color: #c0b2f0;
+  box-shadow: 0 2px 8px rgba(108, 76, 220, 0.18);
 }
 
 /* Admin heading — tighten vertical rhythm */
