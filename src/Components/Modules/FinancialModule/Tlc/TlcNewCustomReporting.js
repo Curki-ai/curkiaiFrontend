@@ -1462,14 +1462,26 @@ export default function TlcNewCustomerReporting(props) {
             }
 
             updateTab({ viewingHistory: true });
-            setTimeout(() => {
-                if (pageRef.current) {
-                    pageRef.current.scrollTo({
-                        top: 0,
-                        behavior: "smooth",
-                    });
+            // Smoothly scroll back to the top on every history selection. The real
+            // scroll container is an ancestor div in HomePage (height:100vh;
+            // overflow-y:auto), NOT the window — so window.scrollTo did nothing and
+            // only the first load (which reset that div on mount) appeared to work.
+            // Walk up from the module root to the nearest scrollable ancestor and
+            // scroll it. The 300ms delay lets the new report's charts/images reflow
+            // in first so the smooth animation isn't cancelled mid-scroll.
+            const scrollPageToTop = () => {
+                let el = pageRef.current;
+                while (el) {
+                    const oy = window.getComputedStyle(el).overflowY;
+                    if ((oy === "auto" || oy === "scroll") && el.scrollHeight > el.clientHeight) {
+                        el.scrollTo({ top: 0, behavior: "smooth" });
+                        return;
+                    }
+                    el = el.parentElement;
                 }
-            }, 100);
+                window.scrollTo({ top: 0, behavior: "smooth" });
+            };
+            setTimeout(scrollPageToTop, 300);
             await incrementCareVoiceAnalysisCount(userEmail, "history-click", 0, "payroll-analysis", 0)
         } catch (err) {
             console.error("❌ Error loading analysis:", err);
@@ -1763,8 +1775,7 @@ export default function TlcNewCustomerReporting(props) {
                     }}
                 >
                     {/* LEFT SIDE */}
-                    <div className="tlc-new-header-left" style={{ display: "flex", alignItems: "center", gap: "24px" }}>
-                        {/* WHO ARE YOU */}
+                    {/* <div className="tlc-new-header-left" style={{ display: "flex", alignItems: "center", gap: "24px" }}>
                         <div
                             className="tlc-new-actor-group"
                             style={{
@@ -1796,8 +1807,8 @@ export default function TlcNewCustomerReporting(props) {
                                         key={item}
                                         onClick={() => updateTab({ whoAreYou: item })}
                                         style={{
-                                            width: "92px",              // ✅ SAME WIDTH
-                                            textAlign: "center",        // ✅ text centered
+                                            width: "92px",              
+                                            textAlign: "center",        
                                             padding: "6px 0",
                                             fontSize: "13px",
                                             fontWeight: 500,
@@ -1815,10 +1826,10 @@ export default function TlcNewCustomerReporting(props) {
                         </div>
 
 
-                    </div>
+                    </div> */}
 
                     {/* RIGHT SIDE – SYNC */}
-                    <div className="tlc-new-sync-group" style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                    <div className="tlc-new-sync-group" style={{ display: "flex", alignItems: "center", gap: "12px",marginLeft:"auto" }}>
                         {(currentUserRole === "admin" || currentUserRole === "owner") && (
                             <button
                                 type="button"

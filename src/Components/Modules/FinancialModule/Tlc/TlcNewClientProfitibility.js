@@ -1268,14 +1268,26 @@ const TlcNewClientProfitability = (props) => {
 
                 isFromHistory: true,
             });
-            setTimeout(() => {
-                if (pageRef.current) {
-                    pageRef.current.scrollTo({
-                        top: 0,
-                        behavior: "smooth",
-                    });
+            // Smoothly scroll back to the top on every history selection. The real
+            // scroll container is an ancestor div in HomePage (height:100vh;
+            // overflow-y:auto), NOT the window — so window.scrollTo did nothing and
+            // only the first load (which reset that div on mount) appeared to work.
+            // Walk up from the module root to the nearest scrollable ancestor and
+            // scroll it. The 300ms delay lets the new report's charts/images reflow
+            // in first so the smooth animation isn't cancelled mid-scroll.
+            const scrollPageToTop = () => {
+                let el = pageRef.current;
+                while (el) {
+                    const oy = window.getComputedStyle(el).overflowY;
+                    if ((oy === "auto" || oy === "scroll") && el.scrollHeight > el.clientHeight) {
+                        el.scrollTo({ top: 0, behavior: "smooth" });
+                        return;
+                    }
+                    el = el.parentElement;
                 }
-            }, 100);
+                window.scrollTo({ top: 0, behavior: "smooth" });
+            };
+            setTimeout(scrollPageToTop, 300);
             // console.log("record.responseData.table", record.responseData.table)
             if (record?.responseData?.table) {
                 onPrepareAiPayload({
@@ -1718,7 +1730,7 @@ const TlcNewClientProfitability = (props) => {
                 </div>
             )}
             <div className="financial-header">
-                <div
+                {/* <div
                     className="role-selector"
                     style={{ display: "flex", gap: "24px", alignItems: "center" }}
                 >
@@ -1728,18 +1740,7 @@ const TlcNewClientProfitability = (props) => {
                             setSelectedActor(val === "Aged Care" ? "aged-care" : "NDIS");
                         }}
                     />
-
-                    {/* <div style={{ minWidth: "180px" }}>
-                        <MultiSelectCustom
-                            options={optionsRole}
-                            selected={activeTabData.selectedRole}
-                            setSelected={(v) => updateTab({ selectedRole: v })}
-                            placeholder="Role"
-                            leftIcon={TlcPayrollRoleIcon}
-                            rightIcon={TlcPayrollRoleDownArrowIcon}
-                        />
-                    </div> */}
-                </div>
+                </div> */}
                 <div style={{ display: 'flex', gap: '6px', alignItems: 'center', justifyContent: 'center' }}>
                     {/* <h1 className="titless">CLIENTS PROFITABILITY</h1> */}
                     {/* <Tippy
@@ -1776,7 +1777,7 @@ const TlcNewClientProfitability = (props) => {
                         icons={false} // ✅ No icons
                     />
                 </div> */}
-                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "12px", marginLeft: "auto" }}>
                     {(currentUserRole === "admin" || currentUserRole === "owner") && (
                         <button
                             type="button"

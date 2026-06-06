@@ -1011,14 +1011,26 @@ const NewFinancialHealth = (props) => {
         }
         finally {
             setHistoryLoading(false);
-            setTimeout(() => {
-                if (pageRef.current) {
-                    pageRef.current.scrollTo({
-                        top: 0,
-                        behavior: "smooth",
-                    });
+            // Smoothly scroll back to the top on every history selection. The real
+            // scroll container is an ancestor div in HomePage (height:100vh;
+            // overflow-y:auto), NOT the window — so window.scrollTo did nothing and
+            // only the first load (which reset that div on mount) appeared to work.
+            // Walk up from the module root to the nearest scrollable ancestor and
+            // scroll it. The 300ms delay lets the new report's charts/images reflow
+            // in first so the smooth animation isn't cancelled mid-scroll.
+            const scrollPageToTop = () => {
+                let el = pageRef.current;
+                while (el) {
+                    const oy = window.getComputedStyle(el).overflowY;
+                    if ((oy === "auto" || oy === "scroll") && el.scrollHeight > el.clientHeight) {
+                        el.scrollTo({ top: 0, behavior: "smooth" });
+                        return;
+                    }
+                    el = el.parentElement;
                 }
-            }, 100);
+                window.scrollTo({ top: 0, behavior: "smooth" });
+            };
+            setTimeout(scrollPageToTop, 300);
         }
     };
 
@@ -1088,7 +1100,6 @@ const NewFinancialHealth = (props) => {
             fd.append("state", st.length === 1 ? st[0].value : "ALL_STATES");
             fd.append("startDate", formatLocalDate(startDate));
             fd.append("endDate", formatLocalDate(endDate));
-            fd.append("provider", selectedActor);
 
             await fetch(`${BASE_URL}/api/financial-v2/files/upload`, {
                 method: "POST",
@@ -1241,7 +1252,6 @@ const NewFinancialHealth = (props) => {
             // Append required fields
             formData.append("type", type);
             formData.append("userEmail", userEmail);
-            formData.append("provider", selectedActor);
             formData.append("fromDate", fromDate);
             formData.append("toDate", toDate);
             if (type === "upload" && hasFiles) {
@@ -1260,7 +1270,6 @@ const NewFinancialHealth = (props) => {
                 const apiPayload = {
                     type,
                     userEmail,
-                    provider: selectedActor,
                     fromDate,
                     toDate,
                 };
@@ -1364,7 +1373,6 @@ const NewFinancialHealth = (props) => {
                             startDate: formatLocalDate(startDate),
                             endDate: formatLocalDate(endDate),
                             states: finalStates,
-                            provider: selectedActor,
                             email: userEmail,
                         }),
                     }
@@ -1906,7 +1914,7 @@ const NewFinancialHealth = (props) => {
                     {/* Header Section */}
 
                     <div className="financial-header">
-                        <div
+                        {/* <div
                             className="role-selector"
                             style={{ display: "flex", gap: "24px", alignItems: "center" }}
                         >
@@ -1916,19 +1924,7 @@ const NewFinancialHealth = (props) => {
                                     setSelectedActor(val === "Aged Care" ? "aged-care" : "NDIS");
                                 }}
                             />
-
-                            {/* <div style={{ minWidth: "180px" }}>
-                                <MultiSelectCustom
-                                    options={optionsRole}
-                                    selected={activeTabData.selectedRole}
-                                    setSelected={(vals) => updateTab({ selectedRole: vals })}
-                                    placeholder="Role"
-                                    leftIcon={TlcPayrollRoleIcon}
-                                    rightIcon={TlcPayrollRoleDownArrowIcon}
-                                />
-
-                            </div> */}
-                        </div>
+                        </div> */}
 
 
                         {/* <h1 className="titless">FINANCIAL HEALTH</h1> */}
@@ -1949,7 +1945,7 @@ const NewFinancialHealth = (props) => {
                                 icons={false} // ✅ No icons
                             />
                         </div> */}
-                        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "12px" ,marginLeft:"auto"}}>
                             {(currentUserRole === "admin" || currentUserRole === "owner") && (
                                 <button
                                     type="button"

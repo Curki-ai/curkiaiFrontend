@@ -140,11 +140,11 @@
 }
 
 .sb-section-heading {
-  color: rgba(255, 255, 255, 0.55);
+  color: #70718f; /* Figma: section eyebrow label */
   font-size: 11px;
   font-weight: 600;
   font-family: 'Inter', sans-serif;
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
   text-transform: uppercase;
   padding: 6px 16px 4px 16px;
   margin: 0;
@@ -324,5 +324,240 @@
 
   .sb-section-items .role-item p {
     font-size: 12px;
+  }
+}
+
+
+/* ============================================================
+   AI Associate cards (Figma redesign)
+   ------------------------------------------------------------
+   Each report group is now an expandable card fronted by an AI
+   "associate" — avatar, name, and role. Expanding reveals the
+   group's reports over a purple gradient, with the active report
+   pinned as a white pill (matching the .active-role treatment
+   used elsewhere in the app).
+   ============================================================ */
+
+.sb-agent-list {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 8px 10px 0 10px;
+}
+
+/* Collapsed card — Figma: subtle white edge-light gradient, no border */
+.sb-agent-card {
+  border-radius: 8px;
+  background: linear-gradient(
+    104deg,
+    rgba(255, 255, 255, 0.08) 0%,
+    rgba(255, 255, 255, 0.032) 48%,
+    rgba(255, 255, 255, 0.08) 100%
+  );
+  overflow: hidden;
+  transition: background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.sb-agent-card:hover {
+  background: linear-gradient(
+    104deg,
+    rgba(255, 255, 255, 0.12) 0%,
+    rgba(255, 255, 255, 0.05) 48%,
+    rgba(255, 255, 255, 0.12) 100%
+  );
+}
+
+/* Expanded card — Figma: dark→Curki-purple diagonal gradient */
+.sb-agent-card.expanded,
+.sb-agent-card.expanded:hover {
+  background: linear-gradient(132deg, #14121d 8%, #6c4cdc 84%);
+  box-shadow: 0 10px 24px rgba(108, 76, 220, 0.28);
+}
+
+/* Direct-action card (Zoe, Alex) — the whole card is a button. When its
+   module is the active one it takes the same purple gradient as an
+   expanded card so the selection reads clearly. */
+.sb-agent-card--direct {
+  cursor: pointer;
+}
+
+.sb-agent-card--direct.active,
+.sb-agent-card--direct.active:hover {
+  background: linear-gradient(132deg, #14121d 8%, #6c4cdc 84%);
+  box-shadow: 0 10px 24px rgba(108, 76, 220, 0.28);
+}
+
+.sb-agent-card--direct.active .sb-agent-role {
+  background: #2e1f67;
+}
+
+.sb-agent-card--direct:focus-visible {
+  outline: 2px solid #8b6ff0;
+  outline-offset: 2px;
+}
+
+.sb-agent-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 11px;
+  cursor: pointer;
+}
+
+.sb-agent-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.sb-agent-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+/* Name + chevron share one row so the expand/collapse arrow lines up with
+   the agent name (not the vertical centre of the avatar). */
+.sb-agent-name-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+}
+
+.sb-agent-name {
+  margin: 0;
+  color: #ffffff;
+  font-family: 'Inter', sans-serif;
+  font-size: 16px; /* Figma 15 → nearest on app scale */
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+/* Role pill — Figma: tiny muted #bbb label. Subtle white-gradient chip on
+   collapsed cards; solid deep-purple (#2e1f67) on expanded cards. */
+.sb-agent-role {
+  color: #bbbbbb;
+  font-family: 'Inter', sans-serif;
+  font-size: 9px;
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: 0.2px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: linear-gradient(
+    161deg,
+    rgba(255, 255, 255, 0) 5%,
+    rgba(255, 255, 255, 0.1) 74%
+  );
+  /* Size to content and never truncate — the role label must be fully
+     visible (e.g. "Rostering Manager"). */
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.sb-agent-card.expanded .sb-agent-role {
+  background: #2e1f67;
+}
+
+.sb-agent-chevron {
+  flex-shrink: 0;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 12px;
+  transition: transform 0.2s ease;
+}
+
+.sb-agent-chevron.open {
+  transform: rotate(180deg);
+}
+
+.sb-agent-items {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 2px 9px 9px 9px;
+}
+
+.sb-agent-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.16s ease;
+}
+
+.sb-agent-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.sb-agent-item img {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.sb-agent-item p {
+  margin: 0;
+  color: #c0bbd3; /* Figma: inactive report label */
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.2;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* Active report — Figma: translucent white fill, white label (NOT a solid
+   white pill with dark text). */
+.sb-agent-item.active,
+.sb-agent-item.active:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.sb-agent-item.active img {
+  opacity: 1;
+}
+
+.sb-agent-item.active p {
+  color: #ffffff;
+  font-weight: 500;
+}
+
+
+/* ---------- AI Associate card responsive ---------- */
+
+@media (max-width: 1100px) {
+  .sb-agent-list {
+    padding-left: 8px;
+    padding-right: 8px;
+    gap: 10px;
+  }
+
+  .sb-agent-header {
+    padding: 10px 12px;
+    gap: 10px;
+  }
+
+  .sb-agent-avatar {
+    width: 40px;
+    height: 40px;
+  }
+
+  .sb-agent-items {
+    padding-left: 8px;
+    padding-right: 8px;
   }
 }

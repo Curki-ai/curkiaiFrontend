@@ -34,6 +34,10 @@ import purpleIncidentAuditing from '../../Images/puple_incident_Auditing.png';
 import whiteIncidentAuditing from '../../Images/white_incident_Auditing.png';
 import voiceModuleIcon from '../../Images/voiceModuleIcon.png';
 import voiceModuleIconWhite from '../../Images/voiceModuleWhiteIcon.png';
+import oliverAi from '../../Images/oliver_ai.png';
+import zoeAi from '../../Images/zoe_ai.png';
+import alexAi from '../../Images/alex_ai.png';
+import willAi from '../../Images/will_ai.png';
 import adminProfileDown from "../../Images/adminProfileDownArrow.svg";
 import adminProfileRight from "../../Images/adminProfilerightArrow.svg";
 import adminProfileUpgrade from "../../Images/adminProfileUpgrade.svg";
@@ -46,7 +50,7 @@ import lock from "../../Images/lock.png";
 import { IoIosContact, IoIosLogOut } from "react-icons/io";
 import sideBarLogout from "../../Images/sideBarLogout.svg"
 import viewDetailsSideBarRight from "../../Images/viewDetailsRightArrow.svg"
-import { FaChevronUp } from "react-icons/fa";
+import { FaChevronUp, FaChevronDown } from "react-icons/fa";
 import PricingPlansModal from "./NewPricingModal";
 import axios from "axios";
 
@@ -78,7 +82,7 @@ const Sidebar = ({
   closeAllPanels
 }) => {
   // console.log(activeReportType);
-  const [showRoles, setShowRoles] = useState(true);
+  // const [showRoles, setShowRoles] = useState(true); // legacy — pre-redesign roles toggle
   // const [activeItem, setActiveItem] = useState("Care Services & elgibility Analysis"); careplan
   const [activeItem, setActiveItem] = useState("Financial Health");
   const [showProfilePanel, setShowProfilePanel] = useState(false);
@@ -88,6 +92,11 @@ const Sidebar = ({
   const [usageSummary, setUsageSummary] = useState(null);
   const [usageLoading, setUsageLoading] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  // The card that owns the currently-active module is always expanded and
+  // stays open until the user switches to a different module. `browseAgent`
+  // is an optional second card the user has expanded to peek into before
+  // committing to one of its modules.
+  const [browseAgent, setBrowseAgent] = useState(null);
   console.log("user", user)
 
   const truncate = (text, maxLength = 25) => {
@@ -172,10 +181,10 @@ const Sidebar = ({
         (usageSummary.smsUsagePercent / 100)
       )
       : 0;
-  const toggleRoles = () => {
-    // setShowRoles(!showRoles);
-    setShowUploadReport(false);
-  };
+  // const toggleRoles = () => {
+  //   // setShowRoles(!showRoles);
+  //   setShowUploadReport(false);
+  // };
   const ConnectButton = [
     "Connect Your Systems"
   ]
@@ -185,23 +194,25 @@ const Sidebar = ({
     "Clients Profitability",
     // "Client Profitability & Service",
   ];
-  const AiAutomationButtons = [
-    "Smart Rostering",
-    "Smart Onboarding (Staff)",
-    "Care Voice"
-  ];
   const NDISButton = [
     "Participant Events & Incident Management",
     "Incident Auditing"
   ];
-  const AgedCareButton = [
-    "Quality and Risk Reporting",
-    "SIRS Analysis",
-    "Incident Report",
-    "Custom Incident Management",
-    // "Quarterly Financial Reporting",
-    // "Annual Financial Reporting",
-  ]
+  // Legacy report groups — kept (commented) from before the AI-associate
+  // sidebar redesign so they can be restored if needed.
+  // const AiAutomationButtons = [
+  //   "Smart Rostering",
+  //   "Smart Onboarding (Staff)",
+  //   "Care Voice"
+  // ];
+  // const AgedCareButton = [
+  //   "Quality and Risk Reporting",
+  //   "SIRS Analysis",
+  //   "Incident Report",
+  //   "Custom Incident Management",
+  //   // "Quarterly Financial Reporting",
+  //   // "Annual Financial Reporting",
+  // ];
 
   const roleIcons = {
     "Financial Health": { white: whiteFinancial, purple: purpleFinanicial },
@@ -224,6 +235,108 @@ const Sidebar = ({
       purple: voiceModuleIcon,
     },
   };
+
+  // ---- AI-associate card model -------------------------------------------
+  // Each associate is an expandable card whose children are the existing
+  // reports. The click behaviour is preserved per group: Finance items don't
+  // touch majorTypeOfReport, AI-Automation items set "AI AUTOMATION", and the
+  // incident items run the original NDIS flow.
+  const handleFinanceItem = (role) => {
+    setSelectedRole(role);
+    setActiveItem(role);
+    setBrowseAgent(null);
+    closeAllPanels();
+    setShowProfilePanel(false);
+  };
+
+  const handleAiAutomationItem = (report) => {
+    setSelectedRole(report);
+    setActiveItem(report);
+    setBrowseAgent(null);
+    setMajorTypeOfReport("AI AUTOMATION");
+    closeAllPanels();
+    setShowProfilePanel(false);
+  };
+
+  const handleNdisItem = (report) => {
+    setSelectedRole(report);
+    setActiveItem(report);
+    setBrowseAgent(null);
+    setActiveReportType(report);
+    setShowReport(false);
+    setShowFinalZipReport(false);
+    setShowUploadReport(true);
+    setMajorTypeOfReport("NDIS");
+    if (analysedReportdata) setAnalysedReportdata(null);
+    closeAllPanels();
+    setShowProfilePanel(false);
+  };
+
+  const agentSections = [
+    {
+      heading: "Finance and Operations",
+      agents: [
+        {
+          id: "oliver",
+          name: "Oliver AI",
+          role: "CFO Associate",
+          avatar: oliverAi,
+          items: roles,
+          onItemClick: handleFinanceItem,
+        },
+      ],
+    },
+    {
+      heading: "AI Automation",
+      agents: [
+        {
+          id: "zoe",
+          name: "Zoe AI",
+          role: "V2D Associate",
+          avatar: zoeAi,
+          // Zoe is itself a single module — no dropdown; the card opens
+          // Care Voice directly.
+          direct: true,
+          items: ["Care Voice"],
+          onItemClick: handleAiAutomationItem,
+        },
+        {
+          id: "alex",
+          name: "Alex AI",
+          role: "HR Manager",
+          avatar: alexAi,
+          // Alex opens Smart Onboarding directly — no dropdown.
+          direct: true,
+          items: ["Smart Onboarding (Staff)"],
+          onItemClick: handleAiAutomationItem,
+        },
+        {
+          id: "will",
+          name: "Will AI",
+          role: "Rostering Manager",
+          avatar: willAi,
+          items: NDISButton,
+          onItemClick: handleNdisItem,
+        },
+      ],
+    },
+  ];
+
+  // Which expandable card owns the active module (null for the direct
+  // cards, which have no dropdown). This card is always shown expanded.
+  const activeOwnerId =
+    agentSections
+      .flatMap((section) => section.agents)
+      .find((agent) => !agent.direct && agent.items.includes(activeItem))?.id ||
+    null;
+
+  // The active module's card can't be collapsed; toggling a header only
+  // opens/closes the optional browse card.
+  const toggleAgent = (id) => {
+    if (id === activeOwnerId) return;
+    setBrowseAgent((prev) => (prev === id ? null : id));
+  };
+
   const ProfileItem = ({ icon, text, arrow, highlight }) => (
     <div className={`profile-item ${highlight ? "highlight" : ""}`}>
 
@@ -277,6 +390,112 @@ const Sidebar = ({
           );
         })}
 
+        {agentSections.map((section) => (
+          <div className="sb-section" key={section.heading}>
+            <div className="sb-section-heading">{section.heading}</div>
+            <div className="sb-agent-list">
+              {section.agents.map((agent) => {
+                // Direct agents (Zoe, Alex) are themselves a single module:
+                // the whole card is the button — no chevron, no dropdown.
+                if (agent.direct) {
+                  const moduleName = agent.items[0];
+                  const isActive = activeItem === moduleName;
+                  return (
+                    <div
+                      key={agent.id}
+                      className={`sb-agent-card sb-agent-card--direct ${isActive ? "active" : ""}`}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => {
+                        setBrowseAgent(null);
+                        agent.onItemClick(moduleName);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          setBrowseAgent(null);
+                          agent.onItemClick(moduleName);
+                        }
+                      }}
+                    >
+                      <div className="sb-agent-header">
+                        <img
+                          src={agent.avatar}
+                          alt={agent.name}
+                          className="sb-agent-avatar"
+                        />
+                        <div className="sb-agent-meta">
+                          <p className="sb-agent-name">{agent.name}</p>
+                          <span className="sb-agent-role">{agent.role}</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+
+                const isExpanded =
+                  agent.id === activeOwnerId || agent.id === browseAgent;
+                return (
+                  <div
+                    key={agent.id}
+                    className={`sb-agent-card ${isExpanded ? "expanded" : ""}`}
+                  >
+                    <div
+                      className="sb-agent-header"
+                      onClick={() => toggleAgent(agent.id)}
+                    >
+                      <img
+                        src={agent.avatar}
+                        alt={agent.name}
+                        className="sb-agent-avatar"
+                      />
+                      <div className="sb-agent-meta">
+                        <div className="sb-agent-name-row">
+                          <p className="sb-agent-name">{agent.name}</p>
+                          <FaChevronDown
+                            className={`sb-agent-chevron ${isExpanded ? "open" : ""}`}
+                          />
+                        </div>
+                        <span className="sb-agent-role">{agent.role}</span>
+                      </div>
+                    </div>
+
+                    {isExpanded && (
+                      <div className="sb-agent-items">
+                        {agent.items.map((item) => {
+                          const icon = roleIcons[item];
+                          const isActive = activeItem === item;
+                          return (
+                            <div
+                              key={item}
+                              className={`sb-agent-item ${isActive ? "active" : ""}`}
+                              onClick={() => agent.onItemClick(item)}
+                            >
+                              {icon ? (
+                                <img
+                                  src={icon.white}
+                                  alt={`${item} icon`}
+                                />
+                              ) : (
+                                <img src={lock} alt="lock" />
+                              )}
+                              <p>{item}</p>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+
+        {/* ============================================================
+            Legacy sidebar sections (pre AI-associate redesign).
+            Kept commented for reference / quick rollback.
+            ------------------------------------------------------------
         {showRoles && (
           <div className="sb-section">
             <div className="sb-section-heading">Aged Care / NDIS</div>
@@ -442,6 +661,7 @@ const Sidebar = ({
             })}
           </div>
         </div>
+            ============================================================ */}
       </div>
       <div className="profile-wrapper">
 
