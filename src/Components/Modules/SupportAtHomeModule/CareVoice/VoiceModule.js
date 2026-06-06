@@ -59,12 +59,16 @@ import { IoMdInformationCircleOutline } from "react-icons/io";
 import CareVoiceAccessManagement from "./CareVoiceAccessManagement";
 import SageConnect from "./SageConnect";
 import CareVoiceNoOrgEmptyState from "./CareVoiceNoOrgEmptyState";
+import GeneratingDocument from "./GeneratingDocument";
 import { API_BASE } from "../../../../config/apiBase";
 
 // `docx` is dynamic-imported inside createTranscriptDoc so the library only
 // downloads when a user actually exports a transcript as a Word doc.
-const generatingDocAnimationVideo =
-  "/assets/generatingDocAnimationVideo.mp4";
+
+// DEV ONLY: flip to true to preview the "Generating Document" loading
+// animation in the app without running the real generation flow (no API
+// calls, no recording/upload needed). MUST stay false in committed code.
+const PREVIEW_GENERATING_ANIMATION = false;
 
 // adminPageLottie.json alone is 10.4 MB; eager-imported it dominated the
 // Care Voice chunk. Loaders below split each animation into its own chunk
@@ -262,7 +266,6 @@ const VoiceModule = (props) => {
     const [generatedDocsSasUrls, setGeneratedDocsSasUrls] = useState([])
     const [previewIndex, setPreviewIndex] = useState(null);
     const feedbackTextareaRef = useRef(null);
-    const generatingDocVideoRef = useRef(null);
     const [isSpeaking, setIsSpeaking] = useState(false);
     const [isEmailingDocs, setIsEmailingDocs] = useState(false);
     // Add this useEffect
@@ -272,28 +275,6 @@ const VoiceModule = (props) => {
         }
     }, [showFeedbackBox]);
 
-    // Warm the HTTP cache for the generating-docs video so it starts
-    // instantly when isCareVoiceGeneratingDocs flips on — otherwise the
-    // browser does a cold fetch + buffer at the worst possible moment.
-    useEffect(() => {
-        fetch(generatingDocAnimationVideo).catch(() => { });
-    }, []);
-
-    const showGeneratingDocsVideo =
-        props?.careVoiceFiles?.length === 0 || props?.isCareVoiceGeneratingDocs;
-
-    useEffect(() => {
-        if (!showGeneratingDocsVideo) return;
-        const video = generatingDocVideoRef.current;
-        if (!video) return;
-        try {
-            video.load();
-            const playPromise = video.play();
-            if (playPromise && typeof playPromise.catch === "function") {
-                playPromise.catch(() => { });
-            }
-        } catch (_) { }
-    }, [showGeneratingDocsVideo]);
     // Add this function to handle file preview
     const handleFilePreview = (doc, index) => {
         setPreviewDoc(doc);
@@ -1927,6 +1908,18 @@ const VoiceModule = (props) => {
     };
 
     const submitToDocumentFiller = async () => {
+        // DEV PREVIEW: skip the real generation flow and just show the
+        // "Generating Document" animation by flipping the same states the
+        // real flow sets. See PREVIEW_GENERATING_ANIMATION at top of file.
+        if (PREVIEW_GENERATING_ANIMATION) {
+            setShowGeneratedFilesUI(true);
+            setIsGeneratingFile(true);
+            setFileStage("generating");
+            setFileProgress(0);
+            if (setIsCareVoiceGeneratingDocs) setIsCareVoiceGeneratingDocs(true);
+            if (setIsCareVoiceLocked) setIsCareVoiceLocked(true);
+            return;
+        }
         if (
             !selectedTemplate ||
             (selectedTemplate.isMulti && selectedTemplate.templates.length === 0)
@@ -2232,6 +2225,15 @@ const VoiceModule = (props) => {
     const submitMultipleTranscripts = async () => {
         setShowGeneratedFilesUI(true);
         if (setIsCareVoiceLocked) setIsCareVoiceLocked(true);
+        // DEV PREVIEW: skip the real generation flow and just show the
+        // "Generating Document" animation. See PREVIEW_GENERATING_ANIMATION.
+        if (PREVIEW_GENERATING_ANIMATION) {
+            setIsGeneratingFile(true);
+            setFileStage("generating");
+            setFileProgress(0);
+            if (setIsCareVoiceGeneratingDocs) setIsCareVoiceGeneratingDocs(true);
+            return;
+        }
         if (
             !selectedTemplate ||
             !selectedTemplate.isMulti ||
@@ -4125,10 +4127,12 @@ const VoiceModule = (props) => {
                                             : submitToDocumentFiller
                                     }
                                     disabled={
-                                        fileStage !== null ||
-                                        !selectedTemplate ||
-                                        (selectedTemplate?.isMulti && selectedTemplate.templates.length === 0) ||
-                                        uploadedTranscriptFiles.length === 0
+                                        !PREVIEW_GENERATING_ANIMATION && (
+                                            fileStage !== null ||
+                                            !selectedTemplate ||
+                                            (selectedTemplate?.isMulti && selectedTemplate.templates.length === 0) ||
+                                            uploadedTranscriptFiles.length === 0
+                                        )
                                     }
                                 >
                                     {fileStage === "generating"
@@ -4367,12 +4371,13 @@ const VoiceModule = (props) => {
             )} */}
 
             {role === "Staff" && showGeneratedFilesUI && (
-                <div className="generated-docs-container" style={
-                    props?.careVoiceFiles?.length === 0 ||
-                        props?.isCareVoiceGeneratingDocs
-                        ? { background: "white" }
-                        : {}
-                }>
+                <div className={`generated-docs-container${(props?.careVoiceFiles?.length === 0 ||
+                    props?.isCareVoiceGeneratingDocs) ? " is-generating" : ""}`} style={
+                        props?.careVoiceFiles?.length === 0 ||
+                            props?.isCareVoiceGeneratingDocs
+                            ? { background: "white" }
+                            : {}
+                    }>
                     <div className="generated-docs-header">
                         <h3 className="generated-docs-title">
                             {!props?.isCareVoiceGeneratingDocs
@@ -4384,16 +4389,7 @@ const VoiceModule = (props) => {
                     {props?.careVoiceFiles?.length === 0 ||
                         props?.isCareVoiceGeneratingDocs ? (
                         <div className="genratingDocLottieDiv">
-                            <video
-                                ref={generatingDocVideoRef}
-                                className="generating-docs-video"
-                                src={generatingDocAnimationVideo}
-                                autoPlay
-                                loop
-                                muted
-                                playsInline
-                                preload="auto"
-                            />
+                            <GeneratingDocument />
                         </div>
                     ) : (
                         <>

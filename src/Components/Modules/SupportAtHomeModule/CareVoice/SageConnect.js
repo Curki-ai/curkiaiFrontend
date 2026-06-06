@@ -16,6 +16,7 @@ import {
   FiX,
 } from "react-icons/fi";
 import "../../../../Styles/SupportAtHomeModule/CareVoice/SageConnect.css";
+import "../../../../Styles/SupportAtHomeModule/CareVoice/SageHandleExperiments.css";
 
 // Curki Sage — "Connect to Sage (extension)" surface as a right-side drawer.
 //
@@ -407,6 +408,7 @@ const SageConnect = ({
         <button
           type="button"
           className="sage-handle"
+          data-variant="ring"
           onClick={togglePanel}
           aria-label={open ? "Close Sage panel" : "Open Sage panel"}
           title={open ? "Close Sage panel" : "Open Sage panel"}
