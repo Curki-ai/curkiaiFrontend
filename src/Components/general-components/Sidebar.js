@@ -38,6 +38,7 @@ import oliverAi from '../../Images/oliver_ai.png';
 import zoeAi from '../../Images/zoe_ai.png';
 import alexAi from '../../Images/alex_ai.png';
 import willAi from '../../Images/will_ai.png';
+import jamesAi from '../../Images/james_ai.png';
 import adminProfileDown from "../../Images/adminProfileDownArrow.svg";
 import adminProfileRight from "../../Images/adminProfilerightArrow.svg";
 import adminProfileUpgrade from "../../Images/adminProfileUpgrade.svg";
@@ -315,6 +316,17 @@ const Sidebar = ({
           name: "Will AI",
           role: "Rostering Manager",
           avatar: willAi,
+          // Will opens Smart Rostering directly — no dropdown.
+          direct: true,
+          items: ["Smart Rostering"],
+          onItemClick: handleAiAutomationItem,
+        },
+        {
+          id: "james",
+          name: "James AI",
+          role: "Compliance Manager",
+          avatar: jamesAi,
+          // Expandable: holds the incident modules.
           items: NDISButton,
           onItemClick: handleNdisItem,
         },
