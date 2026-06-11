@@ -70,7 +70,7 @@
 .fmp-header {
     height: 48px;
     background: #fff;
-    border-bottom: 1px solid #e2e8f0;
+    /* border-bottom: 1px solid #e2e8f0; */
     padding: 0 24px;
     display: flex;
     align-items: center;
@@ -323,7 +323,7 @@
 .fmp-header {
     height: 48px;
     background: #fff;
-    border-bottom: 1px solid #e2e8f0;
+    /* border-bottom: 1px solid #e2e8f0; */
     padding: 0 24px;
     display: flex;
     align-items: center;

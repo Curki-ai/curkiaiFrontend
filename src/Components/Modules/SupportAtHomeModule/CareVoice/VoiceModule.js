@@ -227,6 +227,9 @@ const VoiceModule = (props) => {
         aiResponse: false,
         generatedTemplate: false,
     });
+    // Template-details workspace tab (replaces the old AI Response / Generated
+    // Template accordions). One panel is always visible.
+    const [activeTemplateTab, setActiveTemplateTab] = useState("aiResponse");
     const [editingNameId, setEditingNameId] = useState(null);
     const [tempName, setTempName] = useState("");
 
@@ -3289,71 +3292,74 @@ const VoiceModule = (props) => {
                                 </div>
                             </div>
 
-                            {/* AI RESPONSE ACCORDION */}
-                            <AccordionHeader
-                                icon={TlcPayrollInsightIcon}
-                                title="AI Response"
-                                subtitle="You requested two changes"
-                                isOpen={templateAccordions.aiResponse}
-                                onClick={() =>
-                                    setTemplateAccordions(prev => ({
-                                        ...prev,
-                                        aiResponse: !prev.aiResponse
-                                    }))
-                                }
-                            />
+                            {/* WORKSPACE TABS (replaces the AI Response / Generated Template accordions) */}
+                            <div className="vm-workspace">
+                                <div className="vm-workspace-tabs" role="tablist" aria-label="Template workspace">
+                                    <button
+                                        type="button"
+                                        role="tab"
+                                        aria-selected={activeTemplateTab === "aiResponse"}
+                                        className={`vm-workspace-tab ${activeTemplateTab === "aiResponse" ? "is-active" : ""}`}
+                                        onClick={() => setActiveTemplateTab("aiResponse")}
+                                    >
+                                        {/* <span className="vm-workspace-tab-icon" aria-hidden="true">
+                                            <img src={TlcPayrollInsightIcon} alt="" />
+                                        </span> */}
+                                        <span className="vm-workspace-tab-label">AI Response</span>
+                                    </button>
 
-                            {templateAccordions.aiResponse && (
-                                <div className="analysis-box">
+                                    <button
+                                        type="button"
+                                        role="tab"
+                                        aria-selected={activeTemplateTab === "generatedTemplate"}
+                                        className={`vm-workspace-tab ${activeTemplateTab === "generatedTemplate" ? "is-active" : ""}`}
+                                        onClick={() => setActiveTemplateTab("generatedTemplate")}
+                                    >
+                                        {/* <span className="vm-workspace-tab-icon" aria-hidden="true">
+                                            <img src={AdminTemplateViewIcon} alt="" />
+                                        </span> */}
+                                        <span className="vm-workspace-tab-label">Generated Template</span>
+                                        {/* {mapperRows.length > 0 && (
+                                            <span className="vm-workspace-tab-count">{mapperRows.length}</span>
+                                        )} */}
+                                    </button>
+                                </div>
 
-                                    <PromptBlockEditor
-                                        value={editedPrompt || activeTemplate?.prompt || ""}
-                                        onChange={(val) => setEditedPrompt(val)}
-                                        rightSlot={
-                                            <button
-                                                type="button"
-                                                className="vm-prompt-save-btn"
-                                                disabled={savingPrompt}
-                                                onClick={savePromptDirectly}
-                                            >
-                                                {savingPrompt ? "Saving..." : "Save"}
-                                            </button>
-                                        }
-                                    />
+                                <div className="vm-workspace-panel" role="tabpanel" key={activeTemplateTab}>
+                                    {activeTemplateTab === "aiResponse" && (
+                                        <div className="analysis-box">
+                                            <PromptBlockEditor
+                                                value={editedPrompt || activeTemplate?.prompt || ""}
+                                                onChange={(val) => setEditedPrompt(val)}
+                                                rightSlot={
+                                                    <button
+                                                        type="button"
+                                                        className="vm-prompt-save-btn"
+                                                        disabled={savingPrompt}
+                                                        onClick={savePromptDirectly}
+                                                    >
+                                                        {savingPrompt ? "Saving..." : "Save"}
+                                                    </button>
+                                                }
+                                            />
 
-                                    {promptSavedToast && (
-                                        <div className="vm-prompt-saved-toast">
-                                            ✅ Saved
+                                            {promptSavedToast && (
+                                                <div className="vm-prompt-saved-toast">
+                                                    ✅ Saved
+                                                </div>
+                                            )}
                                         </div>
                                     )}
+
+                                    {activeTemplateTab === "generatedTemplate" && (
+                                        <FieldMapperPro
+                                            mapperRows={mapperRows}
+                                            setMapperRows={setMapperRows}
+                                            mapperMode={mapperMode}
+                                        />
+                                    )}
                                 </div>
-                            )}
-
-
-
-
-
-                            {/* GENERATED TEMPLATE ACCORDION */}
-                            <AccordionHeader
-                                icon={AdminTemplateViewIcon}
-                                title="Generated Template"
-                                subtitle={`${mapperRows.length} fields generated`}
-                                isOpen={templateAccordions.generatedTemplate}
-                                onClick={() =>
-                                    setTemplateAccordions(prev => ({
-                                        ...prev,
-                                        generatedTemplate: !prev.generatedTemplate
-                                    }))
-                                }
-                            />
-
-                            {templateAccordions.generatedTemplate && (
-                                <FieldMapperPro
-                                    mapperRows={mapperRows}
-                                    setMapperRows={setMapperRows}
-                                    mapperMode={mapperMode}
-                                />
-                            )}
+                            </div>
 
                         </div>
                     )}

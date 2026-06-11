@@ -11,7 +11,7 @@ import PulsatingLoader from "../../general-components/PulsatingLoader";
 import { IoIosArrowUp, IoIosArrowDown } from "react-icons/io";
 import { RiDeleteBin6Line, RiSettingsLine } from "react-icons/ri";
 import { GoArrowLeft } from "react-icons/go";
-import { FiCalendar, FiFilter, FiSearch, FiUpload } from "react-icons/fi";
+import { FiCalendar, FiFilter, FiSearch } from "react-icons/fi";
 import { HiOutlineSparkles } from "react-icons/hi";
 import incrementCareVoiceAnalysisCount from "../SupportAtHomeModule/careVoiceCostAnalysis";
 import { API_BASE as BASE_URL } from "../../../config/apiBase";
@@ -316,7 +316,26 @@ const IncidentAuditing = (props) => {
             toast.error("Failed to load history");
         } finally {
             setHistoryLoading(false);
-            window.scrollTo({ top: 0, behavior: "smooth" });
+            // Smoothly scroll back to the top on every history selection. The real
+            // scroll container is an ancestor div in HomePage (height:100vh;
+            // overflow-y:auto), NOT the window — so window.scrollTo did nothing and
+            // only the first load (which reset that div on mount) appeared to work.
+            // Walk up from the module root to the nearest scrollable ancestor and
+            // scroll it. The 300ms delay lets the new dashboard reflow in first so
+            // the smooth animation isn't cancelled mid-scroll.
+            const scrollPageToTop = () => {
+                let el = pageRef.current;
+                while (el) {
+                    const oy = window.getComputedStyle(el).overflowY;
+                    if ((oy === "auto" || oy === "scroll") && el.scrollHeight > el.clientHeight) {
+                        el.scrollTo({ top: 0, behavior: "smooth" });
+                        return;
+                    }
+                    el = el.parentElement;
+                }
+                window.scrollTo({ top: 0, behavior: "smooth" });
+            };
+            setTimeout(scrollPageToTop, 300);
         }
     };
 
@@ -646,7 +665,7 @@ const IncidentAuditing = (props) => {
                         className="ia-access-mgmt-btn"
                         onClick={() => setOpenAccessManagement(true)}
                     >
-                        <RiSettingsLine size={16} />
+                        <RiSettingsLine size={18} />
                         Access Management
                     </button>
                 )}
@@ -792,7 +811,7 @@ const IncidentAuditing = (props) => {
                                         className="ia-access-mgmt-btn"
                                         onClick={() => setOpenAccessManagement(true)}
                                     >
-                                        <RiSettingsLine size={16} />
+                                        <RiSettingsLine size={18} />
                                         Access Management
                                     </button>
                                 </div>
@@ -1094,45 +1113,29 @@ const IncidentAuditing = (props) => {
                             )}
                         </section>
 
-                        {/* Upload section — TlcUploadBox sits inside our own glass
-                            card so it gets the same surface treatment as the other
-                            page sections. The card header + decorative orb wrap
-                            the box; the box keeps its own drop-area chrome. */}
+                        {/* Upload section — mirrors the new Financial module
+                            upload: a single clean dashed drop area
+                            (.data-upload-card), no extra glass wrapper or
+                            nested frame. */}
                         <section
-                            className={`ia-upload-card ${
-                                syncEnabled ? "ia-upload-card-disabled" : ""
+                            className={`ia-upload-section ${
+                                syncEnabled ? "ia-upload-section-disabled" : ""
                             }`}
                         >
-                            <div className="ia-upload-card-header">
-                                <span className="ia-filters-icon-wrap">
-                                    <FiUpload size={14} />
+                            <TlcUploadBox
+                                id="incident-auditing-files"
+                                title="Upload Incident Reports"
+                                subtitle=".XLSX, .CSV, .XLS, .PDF, .DOC"
+                                accept=".xlsx,.csv,.xls,.pdf,.doc"
+                                files={incidentAuditingFiles}
+                                setFiles={setIncidentAuditingFiles}
+                                multiple
+                            />
+                            {syncEnabled && (
+                                <span className="ia-upload-disabled-hint">
+                                    Disabled while Sync is on
                                 </span>
-                                <div className="ia-upload-card-text">
-                                    <span className="ia-upload-card-title">
-                                        Upload Incident Reports
-                                    </span>
-                                    <span className="ia-upload-card-subtitle">
-                                        Drop your incident files here — we'll do the rest.
-                                    </span>
-                                </div>
-                                {syncEnabled && (
-                                    <span className="ia-upload-disabled-hint">
-                                        Disabled while Sync is on
-                                    </span>
-                                )}
-                            </div>
-
-                            <div className="ia-upload-card-body">
-                                <TlcUploadBox
-                                    id="incident-auditing-files"
-                                    title="Click below to upload"
-                                    subtitle=".XLSX, .CSV, .XLS, .PDF, .DOC"
-                                    accept=".xlsx,.csv,.xls,.pdf,.doc"
-                                    files={incidentAuditingFiles}
-                                    setFiles={setIncidentAuditingFiles}
-                                    multiple
-                                />
-                            </div>
+                            )}
                         </section>
 
                         {/* Analyse CTA */}

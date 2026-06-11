@@ -11,8 +11,8 @@
      - light, premium card surface with a soft layered shadow
      - calm, one-time entrance (the perpetual glow/float is removed)
      - clean Inter type on the 14 / 16 / 24 scale
-   The existing light per-card gradient, top accent bar, status dot and
-   accent-coloured number are kept — they're part of what makes it pretty.
+   The existing light per-card gradient, top accent bar and accent-coloured
+   number are kept — they're part of what makes it pretty.
    ============================================================ */
 
 /* ---- Grid ---- */
@@ -97,10 +97,12 @@
   animation: none;
 }
 
+/* Remove the coloured status dot before each label (reviewer feedback —
+   it was unnecessary). display:none wins over the base pseudo so the label
+   text starts flush left. */
 .resume-top-cards .candidate-meta-data p::before {
-  width: 7px;
-  height: 7px;
-  margin-right: 8px;
+  display: none;
+  content: none;
 }
 
 /* ---- Number (keeps its per-card accent colour from the base stylesheet) ---- */
