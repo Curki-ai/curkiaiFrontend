@@ -1245,6 +1245,19 @@ export default function TlcNewCustomerReporting(props) {
             const markdownReport = activeTabData.aiReport || activeTabData.analysisData?.report_md || "";
 
             // console.log("markdown in save history", markdownReport)
+
+            // Non-TLC users have NO payroll rows stored in csv_files_data under
+            // their org, so persist the raw analysis payload alongside the
+            // history record. On history-load it feeds Ask AI directly instead
+            // of re-querying an empty org-scoped container. TLC users keep their
+            // existing flow (payload omitted → backend re-queries csv_files_data).
+            const analysisDomain = (userEmail || "").split("@")[1]?.toLowerCase() || "";
+            const isTlcCustomer = [
+                "tenderlovingcaredisability.com.au",
+                "tenderlovingcare.com.au",
+            ].includes(analysisDomain);
+            const rawPayload = activeTabData.analysisData?.payload || null;
+
             const response = await fetch(
                 `${BASE_URL}/payroll/save`,
                 {
@@ -1254,7 +1267,8 @@ export default function TlcNewCustomerReporting(props) {
                         analysisData: enrichedAnalysis,
                         email,
                         organizationId: organizationId || null,
-                        markdown: markdownReport
+                        markdown: markdownReport,
+                        payload: isTlcCustomer ? null : rawPayload,
                     }),
                 }
             );
@@ -1479,6 +1493,23 @@ export default function TlcNewCustomerReporting(props) {
             updateTab({ tlcPayrollAskAiConversationHistory: [], tlcAskAiHistoryPayload: data.data.analysisResult });
             if (tabs.find(t => t.id === activeTab)) {
                 props.setTlcAskAiHistoryPayload(data.data.analysisResult);
+            }
+
+            // Non-TLC history: a raw payload was saved with this record. Feed it
+            // to Ask AI as a DIRECT payload (Case 1) so it doesn't re-query the
+            // org-scoped csv_files_data (which has no rows for this org). TLC
+            // history is untouched and keeps using the re-query path.
+            const histDomain = (userEmail || "").split("@")[1]?.toLowerCase() || "";
+            const isTlcCustomerHist = [
+                "tenderlovingcaredisability.com.au",
+                "tenderlovingcare.com.au",
+            ].includes(histDomain);
+            if (!isTlcCustomerHist) {
+                const loadedPayload = data.data.payload || null;
+                updateTab({ tlcAskAiPayload: loadedPayload });
+                if (tabs.find(t => t.id === activeTab)) {
+                    props.setTlcAskAiPayload?.(loadedPayload || "");
+                }
             }
 
             if (!res.ok) throw new Error(data.error || "Failed to fetch analysis");
