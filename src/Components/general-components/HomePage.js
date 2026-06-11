@@ -1768,7 +1768,9 @@ const HomePage = () => {
               tlcAskAiHistoryPayload,  // existing parameter
               question: finalQuery,
               userEmail: userEmail,
-              conversation_history: cleanHistory  // new parameter for conversation
+              conversation_history: cleanHistory,  // new parameter for conversation
+              // Scope csv_files_data reads to the caller's organization.
+              organizationId: organizationId || null
             }
           );
 

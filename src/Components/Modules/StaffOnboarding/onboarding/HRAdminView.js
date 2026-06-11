@@ -1,9 +1,12 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { toast } from "react-toastify";
+import { RiTeamLine, RiBarChartBoxLine, RiClipboardLine, RiShieldCheckLine } from "react-icons/ri";
 import { auth } from "../../../../firebase";
 import "../../../../Styles/general-styles/SmartOnboarding.enhanced.css";
 import "../../../../Styles/general-styles/ResumeScreening.css";
 import "../../../../Styles/general-styles/NewSmartOnboardingHrView.css"
+// Loaded last: refined, scoped KPI-card styling (only .resume-top-cards).
+import "../../../../Styles/general-styles/HrKpiCards.css";
 import StaffOnboarding from "./StaffOnboarding";
 import StaffComplianceDashboard from "./StaffComplianceDashboard";
 import UploadFiles from "../../../general-components/UploadFiles";
@@ -580,7 +583,7 @@ const HRAdminView = ({
               {/* Stats */}
               <div className="resume-top-cards">
                 <div className="resume-top-card">
-                  <div className="resume-icon blue">👥</div>
+                  <div className="resume-icon blue"><RiTeamLine /></div>
                   <div className="candidate-meta-data">
                     <p>OVERALL CANDIDATES</p>
                     {showCandidatesSkeleton ? (
@@ -592,7 +595,7 @@ const HRAdminView = ({
                 </div>
 
                 <div className="resume-top-card">
-                  <div className="resume-icon purple">📊</div>
+                  <div className="resume-icon purple"><RiBarChartBoxLine /></div>
                   <div className="candidate-meta-data">
                     <p>ACTIVE PIPELINE</p>
                     {showCandidatesSkeleton ? (
@@ -610,7 +613,7 @@ const HRAdminView = ({
                 </div>
 
                 <div className="resume-top-card">
-                  <div className="resume-icon orange">📋</div>
+                  <div className="resume-icon orange"><RiClipboardLine /></div>
                   <div className="candidate-meta-data">
                     <p>IN TEST STAGE</p>
                     {showCandidatesSkeleton ? (
@@ -630,7 +633,7 @@ const HRAdminView = ({
                 </div>
 
                 <div className="resume-top-card">
-                  <div className="resume-icon green">✔</div>
+                  <div className="resume-icon green"><RiShieldCheckLine /></div>
                   <div className="candidate-meta-data">
                     <p>VERIFIED READY</p>
                     {showCandidatesSkeleton ? (

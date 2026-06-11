@@ -797,6 +797,21 @@ export default function TlcNewCustomerReporting(props) {
                 return;
             }
         }
+
+        // Non-TLC (normal) users must select a file; stored analysis is TLC-only.
+        const analysisDomain = (userEmail || "").split("@")[1]?.toLowerCase() || "";
+        const isTlcCustomer = [
+            "tenderlovingcaredisability.com.au",
+            "tenderlovingcare.com.au",
+        ].includes(analysisDomain);
+        const hasAnyUploadedFile = ["payroll", "people", "employee"].some(
+            (t) => (activeTabData[`${t}Files`] || []).length > 0
+        );
+        if (!isTlcCustomer && !hasAnyUploadedFile) {
+            toast.warn("Please select a file for analysis.");
+            return;
+        }
+
         try {
             updateTab({
                 loading: true,
@@ -866,33 +881,41 @@ export default function TlcNewCustomerReporting(props) {
                     return;
                 }
 
-                // If everything is valid, upload first
-                console.log("All uploaded files are valid. Uploading before analysis...");
-                try {
-                    updateTab({ uploading: true, progressStage: "uploading" });
-                    const formData = new FormData();
-                    inputs.forEach((input) => {
-                        Array.from(input.files).forEach((file) => formData.append("files", file));
-                    });
+                // TLC users persist their files first (stored → filtered later).
+                // Non-TLC users SKIP storage — their file is analysed in-memory
+                // below via the same /payroll/upload-latest endpoint.
+                if (isTlcCustomer) {
+                    console.log("TLC user — uploading/storing files before analysis...");
+                    try {
+                        updateTab({ uploading: true, progressStage: "uploading" });
+                        const formData = new FormData();
+                        inputs.forEach((input) => {
+                            Array.from(input.files).forEach((file) => formData.append("files", file));
+                        });
+                        formData.append("userEmail", userEmail);
+                        formData.append("organizationId", organizationId);
 
-                    const uploadRes = await fetch(
-                        `${BASE_URL}/payroll/upload-latest`,
-                        { method: "POST", body: formData }
-                    );
+                        const uploadRes = await fetch(
+                            `${BASE_URL}/payroll/upload-latest`,
+                            { method: "POST", body: formData }
+                        );
 
-                    const uploadData = await uploadRes.json();
+                        const uploadData = await uploadRes.json();
 
-                    if (!uploadRes.ok) {
-                        throw new Error(uploadData.error || "File upload failed.");
+                        if (!uploadRes.ok) {
+                            throw new Error(uploadData.error || "File upload failed.");
+                        }
+
+                        console.log("Files uploaded successfully before analysis.");
+                        updateTab({ progressStage: "analysing" });
+                    } catch (uploadErr) {
+                        console.error("❌ Upload failed:", uploadErr);
+                        toast.error("Some files failed to upload. Continuing with existing data…");
+                    } finally {
+                        updateTab({ uploading: false });
                     }
-
-                    console.log("Files uploaded successfully before analysis.");
+                } else {
                     updateTab({ progressStage: "analysing" });
-                } catch (uploadErr) {
-                    console.error("❌ Upload failed:", uploadErr);
-                    toast.error("Some files failed to upload. Continuing with existing data…");
-                } finally {
-                    updateTab({ uploading: false });
                 }
             } else {
                 lastManualWithFilesRef.current = false;
@@ -947,6 +970,11 @@ export default function TlcNewCustomerReporting(props) {
                 query.append("role", selectedRole.map((r) => r.value).join(","));
 
             query.append("userEmail", userEmail);
+            // Scope payroll data to the caller's organization so users only
+            // see their own org's data.
+            if (organizationId) {
+                query.append("organizationId", organizationId);
+            }
 
 
             let analyzeData;
@@ -959,11 +987,35 @@ export default function TlcNewCustomerReporting(props) {
                     analysisResult: dummyData.analysisResult,
                 };
             } else {
-                if (isAllowed && !activeTabData.syncEnabled) {
-                    // 🔵 TLC FLOW / FILE ONE (GET + query params)
-                    // Allowed (TLC) users with Sync OFF → file-based TLC filter flow.
-                    // Normal (non-allowed) users always fall through to the
-                    // normal payroll flow below, regardless of the switch.
+                if (!isTlcCustomer) {
+                    // 🟠 NON-TLC FLOW: analyse the uploaded file IN-MEMORY.
+                    // Same /payroll/upload-latest endpoint, but for non-TLC users
+                    // it parses + filters + returns the result without storing.
+                    const formData = new FormData();
+                    inputs.forEach((input) => {
+                        Array.from(input.files).forEach((file) => formData.append("files", file));
+                    });
+                    formData.append("userEmail", userEmail);
+                    if (organizationId) formData.append("organizationId", organizationId);
+                    formData.append("start", startFormatted);
+                    formData.append("end", endFormatted);
+                    if (finalStates.length) formData.append("state", finalStates.join(","));
+                    if (selectedDepartment.length)
+                        formData.append("department", selectedDepartment.map((d) => d.value).join(","));
+                    if (selectedEmploymentType.length)
+                        formData.append("employmentType", selectedEmploymentType.map((e) => e.value).join(","));
+                    if (selectedRole.length)
+                        formData.append("role", selectedRole.map((r) => r.value).join(","));
+
+                    const analyzeRes = await fetch(`${BASE_URL}/payroll/upload-latest`, {
+                        method: "POST",
+                        body: formData,
+                    });
+                    const data = await analyzeRes.json();
+                    analyzeData = { payload: data.payload, analysisResult: data.analysisResult };
+
+                } else if (!activeTabData.syncEnabled) {
+                    // 🔵 TLC FLOW (GET + query params) → reads stored data.
                     const url = `${BASE_URL}/payroll/filter?${query.toString()}`;
                     // console.log("TLC API URL:", url);
 

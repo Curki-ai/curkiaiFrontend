@@ -807,6 +807,12 @@ const TlcNewClientProfitability = (props) => {
                 formData.append("endDate", formatLocalDate(activeTabData.endDate));
             }
 
+            // Scope uploaded files to the caller's organization.
+            if (organizationId) {
+                formData.append("organizationId", organizationId);
+            }
+            formData.append("email", userEmail);
+
             const res = await fetch(
                 `${BASE_URL}/api/analyzeClientsProfitability/client-profitability/upload`,
                 {
@@ -891,6 +897,14 @@ const TlcNewClientProfitability = (props) => {
                 toast.warn("Please select date range");
                 return;
             }
+
+            // Non-TLC (normal) users must select a file; stored / date-based
+            // analysis is TLC-customer only.
+            if (!isTlcUser && !activeTabData.selectedFiles.length) {
+                toast.warn("Please select a file for analysis.");
+                return;
+            }
+
             if (userStates.length > 0 && activeTabData.selectedState.length > 0) {
                 const selectedStates = activeTabData.selectedState.map((s) => s.value);
 
@@ -917,6 +931,9 @@ const TlcNewClientProfitability = (props) => {
 
             // 🔹 Step 1: If files selected → upload first
             let currentBatchId = batchId;
+            // Capture the tab this analysis belongs to so a tab switch mid-run
+            // can't misapply the result — supports multiple tabs analysing at once.
+            const analyzeTabId = activeTab;
 
             if (activeTabData.selectedFiles.length > 0) {
 
@@ -925,6 +942,36 @@ const TlcNewClientProfitability = (props) => {
 
                 if (!uploadResult) {
                     updateTab({ loading: false });
+                    return;
+                }
+
+                // 🟠 NON-TLC: the upload endpoint analysed the files in-memory and
+                // returned the result directly (no storage, no job). Apply it to
+                // THIS tab specifically (via setTabs, not updateTab) and stop.
+                if (!isTlcUser && uploadResult.analysisResult) {
+                    const result = uploadResult.analysisResult;
+                    setTabs(prev => prev.map(t => t.id === analyzeTabId ? {
+                        ...t,
+                        responseData: result,
+                        stage: "overview",
+                        loading: false,
+                        uploading: false,
+                        progressStage: "idle",
+                        name: (t.startDate && t.endDate)
+                            ? `${t.startDate.getDate()}-${t.startDate.getMonth() + 1}-${t.startDate.getFullYear()} - ${t.endDate.getDate()}-${t.endDate.getMonth() + 1}-${t.endDate.getFullYear()}`
+                            : t.name,
+                    } : t));
+                    // Only push the AI payload if the user is still viewing this tab.
+                    if (activeTab === analyzeTabId) {
+                        onPrepareAiPayload({ table_data: result?.table });
+                    }
+                    await incrementCareVoiceAnalysisCount(
+                        userEmail,
+                        "ai-analysis",
+                        result?.llm_cost?.total_usd,
+                        "client-profitability",
+                        result?.llm_cost?.token_usage
+                    );
                     return;
                 }
 
@@ -972,7 +1019,9 @@ const TlcNewClientProfitability = (props) => {
                         endDate: formatLocalDate(activeTabData.endDate),
                         email: userEmail,
                         batchId: currentBatchId,
-                        states: finalStates
+                        states: finalStates,
+                        // Scope the analyse fetch to the caller's organization.
+                        organizationId: organizationId || null
                     }),
                 }
             );

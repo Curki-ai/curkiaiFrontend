@@ -2709,6 +2709,49 @@ const VoiceModule = (props) => {
         }
     }, [props.isMobileOrTablet]);
 
+    // The loading screens ("Analyzing with AI" for admins, "Generating
+    // Document" for staff) have no real content to scroll to, yet their
+    // animation stack can run a few pixels past the viewport and surface the
+    // page scrollbar. Lock page scroll while a loader is mounted and release
+    // it on cleanup. Scoped to these stages only via a root <html> class, so
+    // every other screen keeps its normal scrolling/layout untouched.
+    const isCareVoiceLoading =
+        stage === "processing" ||
+        (showGeneratedFilesUI &&
+            (props?.careVoiceFiles?.length === 0 || props?.isCareVoiceGeneratingDocs));
+
+    useEffect(() => {
+        if (!isCareVoiceLoading) return undefined;
+
+        // The app's scrollable region is an inner container in HomePage
+        // (a flex column with height:100vh; overflow-y:auto), NOT <html> — so
+        // we can't just lock the document root. Walk up from this module and
+        // lock every scrollable ancestor, then restore exactly what we changed
+        // on cleanup. <html> is locked too as a harmless fallback. Nothing
+        // else is touched, so other screens keep their normal scrolling.
+        const start = document.querySelector(".voice-container");
+        const locked = [];
+
+        document.documentElement.classList.add("cv-loading-lock");
+
+        let node = start ? start.parentElement : null;
+        while (node && node !== document.documentElement) {
+            const overflowY = window.getComputedStyle(node).overflowY;
+            if (overflowY === "auto" || overflowY === "scroll" || overflowY === "overlay") {
+                locked.push({ el: node, prev: node.style.overflowY });
+                node.style.overflowY = "hidden";
+            }
+            node = node.parentElement;
+        }
+
+        return () => {
+            document.documentElement.classList.remove("cv-loading-lock");
+            locked.forEach(({ el, prev }) => {
+                el.style.overflowY = prev;
+            });
+        };
+    }, [isCareVoiceLoading]);
+
     // Resolve the caller's organization on mount (or whenever userEmail
     // changes). The same lookup feeds three things:
     //   - organizationId (UUID)  → used by every template endpoint below

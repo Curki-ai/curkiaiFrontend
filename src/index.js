@@ -27,6 +27,32 @@ window.addEventListener('unhandledrejection', (event) => {
   }
 });
 
+// ----- Suppress hover "jump"/flicker while scrolling -----
+// Many cards and buttons across the app pair `transition: all` with a
+// `:hover { transform: translateY(...) }` lift. While the user scrolls, the
+// stationary cursor keeps crossing these elements and re-firing their hover
+// state, so they appear to move up/down or flicker. We flag <body> as
+// `is-scrolling` during active scroll (capture phase so inner scroll
+// containers count too, since scroll events don't bubble) and clear it shortly
+// after scrolling stops. CSS then disables hover interactions for that brief
+// window only — no visual design changes.
+let scrollIdleTimer = null;
+window.addEventListener(
+  'scroll',
+  () => {
+    const { body } = document;
+    if (!body) return;
+    if (!body.classList.contains('is-scrolling')) {
+      body.classList.add('is-scrolling');
+    }
+    if (scrollIdleTimer) clearTimeout(scrollIdleTimer);
+    scrollIdleTimer = setTimeout(() => {
+      body.classList.remove('is-scrolling');
+    }, 150);
+  },
+  { capture: true, passive: true }
+);
+
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>

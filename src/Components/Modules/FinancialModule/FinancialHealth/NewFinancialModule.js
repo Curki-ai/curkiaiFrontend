@@ -1184,6 +1184,17 @@ const NewFinancialHealth = (props) => {
         const hasFiles = activeTabData.selectedFiles.length > 0;
         const hasDateRange = startDate && endDate;
 
+        // Non-TLC (normal) users must analyse an uploaded file; stored /
+        // date-based analysis is TLC-customer only.
+        const isTlcCustomer = [
+            "tenderlovingcaredisability.com.au",
+            "tenderlovingcare.com.au",
+        ].includes(analysisDomain);
+        if (!isTlcCustomer && !hasFiles) {
+            toast.warn("Please select a file for analysis.");
+            return;
+        }
+
         if (!syncEnabled && !hasFiles && !hasDateRange) {
             toast.warn("Please turn on sync, select a file, or choose a date range.");
             return;
@@ -1252,12 +1263,37 @@ const NewFinancialHealth = (props) => {
             // Append required fields
             formData.append("type", type);
             formData.append("userEmail", userEmail);
+            // Backend requires a provider; always send NDIS for now.
+            formData.append("provider", "NDIS");
             formData.append("fromDate", fromDate);
             formData.append("toDate", toDate);
+            // Scope to the caller's organization.
+            if (organizationId) {
+                formData.append("organizationId", organizationId);
+            }
             if (type === "upload" && hasFiles) {
                 activeTabData.selectedFiles.forEach(file =>
                     formData.append("files", file)
                 );
+            }
+
+            // TLC users: also persist the uploaded file to financial file_data so
+            // it can be re-analysed later (like payroll / client-profitability).
+            // Fire-and-forget — must not block or fail the analysis. The backend
+            // rejects non-TLC, so we gate here too.
+            if (isTlcCustomer && type === "upload" && hasFiles) {
+                const storeForm = new FormData();
+                activeTabData.selectedFiles.forEach(f => storeForm.append("files", f));
+                storeForm.append("email", userEmail);
+                if (organizationId) storeForm.append("organizationId", organizationId);
+                if (startDate) storeForm.append("startDate", startDate.toISOString());
+                if (endDate) storeForm.append("endDate", endDate.toISOString());
+                if (Array.isArray(activeTabData.selectedState) && activeTabData.selectedState.length === 1) {
+                    storeForm.append("state", activeTabData.selectedState[0].value);
+                }
+                fetch(`${BASE_URL}/api/financial-v2/files/upload`, { method: "POST", body: storeForm })
+                    .then(() => console.log("[fh] uploaded file stored to file_data (TLC)"))
+                    .catch(err => console.warn("[fh] file_data store failed:", err));
             }
 
             // --- Step 1: Call Analysis API ---
@@ -1270,8 +1306,12 @@ const NewFinancialHealth = (props) => {
                 const apiPayload = {
                     type,
                     userEmail,
+                    // Backend requires a provider; always send NDIS for now.
+                    provider: "NDIS",
                     fromDate,
                     toDate,
+                    // Scope to the caller's organization.
+                    organizationId: organizationId || null,
                 };
                 updateTab({
                     uploading: false,

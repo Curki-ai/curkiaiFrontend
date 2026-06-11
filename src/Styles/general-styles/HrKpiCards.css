@@ -1,0 +1,125 @@
+/* ============================================================
+   HR ADMIN — KPI SUMMARY CARDS  (stunning, light)
+   Overall Candidates · Active Pipeline · In Test Stage · Verified Ready
+
+   Loaded LAST in HRAdminView.js and scoped to `.resume-top-cards`, so it
+   refines the cards without editing the two shared stylesheets (and without
+   touching any other onboarding screen).
+
+   Design intent (per ui-ux-pro-max guidance):
+     - crisp SVG icons in soft accent tiles (no more emojis)
+     - light, premium card surface with a soft layered shadow
+     - calm, one-time entrance (the perpetual glow/float is removed)
+     - clean Inter type on the 14 / 16 / 24 scale
+   The existing light per-card gradient, top accent bar, status dot and
+   accent-coloured number are kept — they're part of what makes it pretty.
+   ============================================================ */
+
+/* ---- Grid ---- */
+.resume-top-cards {
+  gap: 18px;
+}
+
+/* ---- Card surface ---- */
+.resume-top-cards .resume-top-card {
+  align-items: center;
+  gap: 16px;
+  padding: 22px;
+  border-radius: 18px;
+  border: 1px solid rgba(16, 24, 40, 0.05);
+  /* soft, light, layered depth */
+  box-shadow:
+    0 1px 2px rgba(16, 24, 40, 0.04),
+    0 12px 26px -14px rgba(16, 24, 40, 0.16);
+}
+
+/* One-time staggered entrance. (0,3,0) so it replaces the perpetual
+   border-glow/float (defined at (0,2,0)) regardless of bundle order.
+   The per-card hover lift in the base stylesheet is left intact. */
+.resume-top-cards .resume-top-card:nth-child(1) {
+  animation: kpiCardIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.04s both;
+}
+.resume-top-cards .resume-top-card:nth-child(2) {
+  animation: kpiCardIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.10s both;
+}
+.resume-top-cards .resume-top-card:nth-child(3) {
+  animation: kpiCardIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.16s both;
+}
+.resume-top-cards .resume-top-card:nth-child(4) {
+  animation: kpiCardIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.22s both;
+}
+
+@keyframes kpiCardIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ---- Icon tile: crisp SVG, keep the tinted gradient, drop perpetual motion.
+   The extra `.resume-top-card` segment makes these (0,3,0) so they reliably
+   beat the icon's float/pulse rules. ---- */
+.resume-top-cards .resume-top-card .resume-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  font-size: 22px;
+  animation: none;
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.resume-top-cards .resume-top-card .resume-icon svg {
+  width: 1em;
+  height: 1em;
+  display: block;
+}
+
+/* Accent colour for each icon glyph */
+.resume-top-cards .resume-icon.blue svg   { color: #2563eb; }
+.resume-top-cards .resume-icon.purple svg { color: #6c4cdc; }
+.resume-top-cards .resume-icon.orange svg { color: #ea7a17; }
+.resume-top-cards .resume-icon.green svg  { color: #0ea371; }
+
+.resume-top-cards .resume-top-card:hover .resume-icon {
+  transform: scale(1.08) rotate(-3deg);
+}
+
+/* ---- Label ---- */
+.resume-top-cards .candidate-meta-data {
+  gap: 7px;
+}
+
+.resume-top-cards .candidate-meta-data p {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.045em;
+  line-height: 1.2;
+  color: #6b7585;
+  margin: 0;
+  animation: none;
+}
+
+.resume-top-cards .candidate-meta-data p::before {
+  width: 7px;
+  height: 7px;
+  margin-right: 8px;
+}
+
+/* ---- Number (keeps its per-card accent colour from the base stylesheet) ---- */
+.resume-top-cards .candidate-meta-data h2 {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+  animation: none;
+}
+
+/* ---- Respect reduced-motion preferences ---- */
+@media (prefers-reduced-motion: reduce) {
+  .resume-top-cards .resume-top-card:nth-child(n) {
+    animation: none;
+  }
+  .resume-top-cards .resume-top-card:hover .resume-icon {
+    transform: none;
+  }
+}

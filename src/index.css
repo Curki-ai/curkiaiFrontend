@@ -12,6 +12,16 @@ code {
     monospace;
 }
 
+/* While the page (or any inner container) is actively scrolling, ignore
+   pointer hover so cards/buttons with a `:hover { transform: translateY() }`
+   lift don't repeatedly trigger under the stationary cursor and appear to
+   jump up/down or flicker. The flag is cleared ~150ms after scrolling stops
+   (see index.js), so normal hover still works when the page is at rest.
+   This does not block scrolling itself. */
+body.is-scrolling * {
+  pointer-events: none !important;
+}
+
 /* Global page scrollbar (matches the gradient style used in the
    Financial / TLC modules). Selectors scoped to html so they
    override the unscoped ::-webkit-scrollbar rules elsewhere

@@ -16,7 +16,6 @@ const TlcUploadBox = ({
 }) => {
   const getFileIcon = (fileName = "") => {
     const ext = fileName.split(".").pop().toLowerCase();
-    console.log("File extension:", ext); // Debug log 
     switch (ext) {
       // ===== DOCUMENTS =====
       case "jpg":
@@ -119,10 +118,29 @@ const TlcUploadBox = ({
             const selected = Array.from(e.target.files || []);
             if (!selected.length) return;
 
-            // ✅ ALWAYS pass array to parent
-            setFiles(multiple ? selected : [selected[0]]);
+            if (!multiple) {
+              setFiles([selected[0]]);
+            } else {
+              // Append to the existing selection instead of replacing it.
+              // The OS dialog only ever returns files from a single folder,
+              // so without this, picking from a second folder would wipe out
+              // everything chosen earlier. De-dupe on name+size+lastModified.
+              setFiles((prev) => {
+                const existing = Array.isArray(prev) ? prev : [];
+                const keyOf = (f) => `${f.name}__${f.size}__${f.lastModified}`;
+                const seen = new Set(existing.map(keyOf));
+                const merged = [...existing];
+                selected.forEach((f) => {
+                  if (!seen.has(keyOf(f))) {
+                    seen.add(keyOf(f));
+                    merged.push(f);
+                  }
+                });
+                return merged;
+              });
+            }
 
-            // ✅ allow re-selecting same file
+            // ✅ allow re-selecting the same file
             e.target.value = "";
           }}
         />

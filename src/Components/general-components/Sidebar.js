@@ -304,7 +304,7 @@ const Sidebar = ({
         {
           id: "alex",
           name: "Alex AI",
-          role: "HR Manager",
+          role: "HR Associate",
           avatar: alexAi,
           // Alex opens Smart Onboarding directly — no dropdown.
           direct: true,
@@ -314,7 +314,7 @@ const Sidebar = ({
         {
           id: "will",
           name: "Will AI",
-          role: "Rostering Manager",
+          role: "Rostering Associate",
           avatar: willAi,
           // Will opens Smart Rostering directly — no dropdown.
           direct: true,
@@ -324,7 +324,7 @@ const Sidebar = ({
         {
           id: "james",
           name: "James AI",
-          role: "Compliance Manager",
+          role: "Compliance Associate",
           avatar: jamesAi,
           // Expandable: holds the incident modules.
           items: NDISButton,
