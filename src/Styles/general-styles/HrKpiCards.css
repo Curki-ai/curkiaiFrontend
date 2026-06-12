@@ -1,5 +1,5 @@
 /* ============================================================
-   HR ADMIN — KPI SUMMARY CARDS  (stunning, light)
+   HR ADMIN — KPI SUMMARY CARDS  (premium, light)
    Overall Candidates · Active Pipeline · In Test Stage · Verified Ready
 
    Loaded LAST in HRAdminView.js and scoped to `.resume-top-cards`, so it
@@ -7,12 +7,14 @@
    touching any other onboarding screen).
 
    Design intent (per ui-ux-pro-max guidance):
-     - crisp SVG icons in soft accent tiles (no more emojis)
-     - light, premium card surface with a soft layered shadow
-     - calm, one-time entrance (the perpetual glow/float is removed)
-     - clean Inter type on the 14 / 16 / 24 scale
-   The existing light per-card gradient, top accent bar and accent-coloured
-   number are kept — they're part of what makes it pretty.
+     - FILLED vibrant gradient icon tiles with white glyphs + a coloured
+       glow  (replaces the flat pastel tint — the big visible upgrade)
+     - a soft decorative accent glow in the top-right corner of every card
+     - a clean, glassy surface with a layered shadow + top highlight
+     - deeper, higher-contrast accent numbers on the 14 / 24 type scale
+     - one calm staggered entrance (no perpetual glow/float)
+   The light per-card surface, the coloured top accent bar and the
+   accent-coloured number are kept — they're part of what makes it pretty.
    ============================================================ */
 
 /* ---- Grid ---- */
@@ -20,32 +22,46 @@
   gap: 18px;
 }
 
-/* ---- Card surface ---- */
+/* ---- Card surface ----
+   Equal-specificity (0,2,0) base: light glassy surface, layered shadow
+   with a crisp inner top highlight. */
 .resume-top-cards .resume-top-card {
   align-items: center;
-  gap: 16px;
-  padding: 22px;
-  border-radius: 18px;
-  border: 1px solid rgba(16, 24, 40, 0.05);
-  /* soft, light, layered depth */
+  gap: 18px;
+  padding: 22px 24px;
+  border-radius: 22px;
+  border: 1px solid rgba(16, 24, 40, 0.06);
   box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
     0 1px 2px rgba(16, 24, 40, 0.04),
-    0 12px 26px -14px rgba(16, 24, 40, 0.16);
+    0 16px 32px -18px rgba(16, 24, 40, 0.22);
 }
 
-/* One-time staggered entrance. (0,3,0) so it replaces the perpetual
-   border-glow/float (defined at (0,2,0)) regardless of bundle order.
-   The per-card hover lift in the base stylesheet is left intact. */
+/* Per-card surface = soft accent glow (top-right) over a light wash.
+   (0,3,0) beats the base sheet's gradient AND replaces the perpetual
+   border-glow animation with a single calm entrance. */
 .resume-top-cards .resume-top-card:nth-child(1) {
+  background:
+    radial-gradient(130px 110px at 100% 0%, rgba(59, 130, 246, 0.16), transparent 72%),
+    linear-gradient(160deg, #ffffff 0%, #f3f8ff 100%);
   animation: kpiCardIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.04s both;
 }
 .resume-top-cards .resume-top-card:nth-child(2) {
+  background:
+    radial-gradient(130px 110px at 100% 0%, rgba(108, 76, 220, 0.16), transparent 72%),
+    linear-gradient(160deg, #ffffff 0%, #f6f3ff 100%);
   animation: kpiCardIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.10s both;
 }
 .resume-top-cards .resume-top-card:nth-child(3) {
+  background:
+    radial-gradient(130px 110px at 100% 0%, rgba(249, 115, 22, 0.15), transparent 72%),
+    linear-gradient(160deg, #ffffff 0%, #fff7ef 100%);
   animation: kpiCardIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.16s both;
 }
 .resume-top-cards .resume-top-card:nth-child(4) {
+  background:
+    radial-gradient(130px 110px at 100% 0%, rgba(16, 185, 129, 0.15), transparent 72%),
+    linear-gradient(160deg, #ffffff 0%, #f1fdf7 100%);
   animation: kpiCardIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.22s both;
 }
 
@@ -54,13 +70,13 @@
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* ---- Icon tile: crisp SVG, keep the tinted gradient, drop perpetual motion.
+/* ---- Icon tile: FILLED vibrant gradient + white glyph + coloured glow.
    The extra `.resume-top-card` segment makes these (0,3,0) so they reliably
-   beat the icon's float/pulse rules. ---- */
+   beat the base icon tint/float/pulse rules. ---- */
 .resume-top-cards .resume-top-card .resume-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 14px;
+  width: 52px;
+  height: 52px;
+  border-radius: 15px;
   font-size: 22px;
   animation: none;
   transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -70,13 +86,33 @@
   width: 1em;
   height: 1em;
   display: block;
+  color: #ffffff;
 }
 
-/* Accent colour for each icon glyph */
-.resume-top-cards .resume-icon.blue svg   { color: #2563eb; }
-.resume-top-cards .resume-icon.purple svg { color: #6c4cdc; }
-.resume-top-cards .resume-icon.orange svg { color: #ea7a17; }
-.resume-top-cards .resume-icon.green svg  { color: #0ea371; }
+.resume-top-cards .resume-icon.blue {
+  background: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    0 6px 16px -4px rgba(37, 99, 235, 0.55);
+}
+.resume-top-cards .resume-icon.purple {
+  background: linear-gradient(135deg, #a78bfa 0%, #6c4cdc 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    0 6px 16px -4px rgba(108, 76, 220, 0.55);
+}
+.resume-top-cards .resume-icon.orange {
+  background: linear-gradient(135deg, #fbbf24 0%, #ea7a17 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    0 6px 16px -4px rgba(234, 122, 23, 0.55);
+}
+.resume-top-cards .resume-icon.green {
+  background: linear-gradient(135deg, #34d399 0%, #0ea371 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    0 6px 16px -4px rgba(14, 163, 113, 0.55);
+}
 
 .resume-top-cards .resume-top-card:hover .resume-icon {
   transform: scale(1.08) rotate(-3deg);
@@ -84,7 +120,7 @@
 
 /* ---- Label ---- */
 .resume-top-cards .candidate-meta-data {
-  gap: 7px;
+  gap: 8px;
 }
 
 .resume-top-cards .candidate-meta-data p {
@@ -92,7 +128,7 @@
   font-weight: 600;
   letter-spacing: 0.045em;
   line-height: 1.2;
-  color: #6b7585;
+  color: #5b6675;
   margin: 0;
   animation: none;
 }
@@ -105,7 +141,8 @@
   content: none;
 }
 
-/* ---- Number (keeps its per-card accent colour from the base stylesheet) ---- */
+/* ---- Number: 24px hero, deeper accent for better contrast on the light
+   surface. (0,4,1) beats the base sheet's per-card colour rules. ---- */
 .resume-top-cards .candidate-meta-data h2 {
   font-size: 24px;
   font-weight: 800;
@@ -115,6 +152,11 @@
   font-variant-numeric: tabular-nums;
   animation: none;
 }
+
+.resume-top-cards .resume-top-card:nth-child(1) .candidate-meta-data h2 { color: #1d4ed8; }
+.resume-top-cards .resume-top-card:nth-child(2) .candidate-meta-data h2 { color: #5b34c9; }
+.resume-top-cards .resume-top-card:nth-child(3) .candidate-meta-data h2 { color: #ea580c; }
+.resume-top-cards .resume-top-card:nth-child(4) .candidate-meta-data h2 { color: #059669; }
 
 /* ---- Respect reduced-motion preferences ---- */
 @media (prefers-reduced-motion: reduce) {

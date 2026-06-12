@@ -559,9 +559,10 @@ body {
 .financial-main-container .filters-card,
 .financial-main-container .reports-box,
 .financial-main-container .charts-grid {
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  /* backdrop-filter:blur removed — it re-rasterised every scroll frame and
+     made these cards visibly judder/shift during fast scroll. Solid surface
+     looks identical over the near-white page and scrolls cleanly. */
+  background: #ffffff;
   border: 1.5px solid rgba(139, 92, 246, 0.18);
   border-radius: 20px;
   padding: clamp(16px, 1.4vw, 24px);
@@ -604,10 +605,9 @@ body {
   display: flex;
   gap: 8px;
   padding: 6px;
-  background: rgba(255, 255, 255, 0.7);
+  /* backdrop-filter:blur removed (scroll-jank); opaque tint keeps the look */
+  background: rgba(255, 255, 255, 0.95);
   border-radius: 14px;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
 }
 
 /* --- Primary CTAs — onboarding 135deg gradient, 14px radius --- */
@@ -765,9 +765,8 @@ body {
 
 /* --- History panel: section card surface --- */
 .financial-main-container .history-container {
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  /* backdrop-filter:blur removed (scroll-jank) */
+  background: #ffffff;
   border: 1.5px solid rgba(139, 92, 246, 0.18);
   border-radius: 20px;
   padding: clamp(16px, 1.4vw, 24px);
@@ -932,10 +931,9 @@ body {
 
 /* --- WhoAreYou (Aged Care / NDIS) actor toggle — soft pill container --- */
 .financial-main-container .role-selector {
-  background: rgba(255, 255, 255, 0.6);
+  /* backdrop-filter:blur removed (scroll-jank) */
+  background: rgba(255, 255, 255, 0.95);
   border-radius: 14px;
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
 }
 
 /* --- Reduced motion preferences --- */

@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Pencil, CheckCircle2, XCircle } from "lucide-react";
+import normalizeMarkdownTables from "../../../general-components/normalizeMarkdownTables";
 import "../../../../Styles/SupportAtHomeModule/CareVoice/PromptBlockEditor.css";
 
 const isTitleCaseHeading = (t) =>
@@ -10,7 +11,18 @@ const isTitleCaseHeading = (t) =>
 const isPipeFieldHeading = (t) =>
     /^[A-Z0-9_]+\s*\|\s*(text|date|phone|email|boolean|number)\s*\|\s*(required|optional)/i.test(t);
 
+// A single markdown table row: trimmed line that starts with a pipe.
+const isTableRow = (line = "") => /^\s*\|/.test(line) && line.includes("|");
+
+// A block that is (at least partly) a markdown table: 2+ pipe rows.
+const blockIsTable = (block = "") =>
+    block.split("\n").filter((l) => isTableRow(l)).length >= 2;
+
 const shouldHideBlock = (block = "") => {
+    // Never hide a block that contains a markdown table — tables the user
+    // inserts must always survive and stay visible.
+    if (blockIsTable(block)) return false;
+
     const t = block.toLowerCase();
 
     if (
@@ -66,6 +78,13 @@ const splitPromptIntoBlocks = (text) => {
         return false;
     };
 
+    // Mark every line that belongs to a table region (a run of 2+ pipe rows),
+    // so tables are kept intact and never split by heading detection.
+    const rawTable = lines.map(isTableRow);
+    const inTable = rawTable.map(
+        (v, idx) => v && (rawTable[idx - 1] || rawTable[idx + 1])
+    );
+
     const blocks = [];
     let buf = [];
 
@@ -76,9 +95,20 @@ const splitPromptIntoBlocks = (text) => {
     };
 
     lines.forEach((line, i) => {
-        if (isHeading(line, i) && buf.length > 0) {
+        const enteringTable = inTable[i] && !inTable[i - 1];
+        const leavingTable = !inTable[i] && inTable[i - 1];
+
+        // Isolate the table: flush whatever precedes it, and flush the table
+        // itself before the following content starts.
+        if ((enteringTable || leavingTable) && buf.length > 0) {
             pushBuf();
         }
+
+        // Table rows are never headings; only check non-table lines.
+        if (!inTable[i] && isHeading(line, i) && buf.length > 0) {
+            pushBuf();
+        }
+
         buf.push(line);
     });
 
@@ -93,8 +123,16 @@ const splitPromptIntoBlocks = (text) => {
 
     const merged = [];
     for (const b of blocks) {
-        if (b.length < 25 && merged.length > 0) {
-            merged[merged.length - 1] = merged[merged.length - 1] + "\n" + b;
+        const prev = merged[merged.length - 1];
+        // Merge tiny fragments into the previous block — but never fold a table
+        // into its neighbour (or a neighbour into a table); tables stay atomic.
+        if (
+            b.length < 25 &&
+            merged.length > 0 &&
+            !blockIsTable(b) &&
+            !blockIsTable(prev)
+        ) {
+            merged[merged.length - 1] = prev + "\n" + b;
         } else {
             merged.push(b);
         }
@@ -107,6 +145,10 @@ const Block = ({ block, onSave }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [buffer, setBuffer] = useState(block);
     const textareaRef = useRef(null);
+
+    // Normalise tables for display only; the raw `block` is kept untouched so
+    // editing and saving preserve the original source.
+    const renderBlock = useMemo(() => normalizeMarkdownTables(block), [block]);
 
     useEffect(() => setBuffer(block), [block]);
 
@@ -187,7 +229,7 @@ const Block = ({ block, onSave }) => {
                         },
                     }}
                 >
-                    {block}
+                    {renderBlock}
                 </ReactMarkdown>
             </div>
 
