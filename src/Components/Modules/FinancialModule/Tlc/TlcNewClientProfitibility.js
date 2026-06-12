@@ -899,8 +899,10 @@ const TlcNewClientProfitability = (props) => {
             }
 
             // Non-TLC (normal) users must select a file; stored / date-based
-            // analysis is TLC-customer only.
-            if (!isTlcUser && !activeTabData.selectedFiles.length) {
+            // analysis is TLC-customer only. Internal Curki/Care AIT staff may
+            // also run date-based analysis with no file selected.
+            const isInternalViewer = ["curki.ai", "careait.com"].includes(analysisDomain);
+            if (!isTlcUser && !isInternalViewer && !activeTabData.selectedFiles.length) {
                 toast.warn("Please select a file for analysis.");
                 return;
             }

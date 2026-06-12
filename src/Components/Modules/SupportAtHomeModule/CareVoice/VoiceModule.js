@@ -701,6 +701,27 @@ const VoiceModule = (props) => {
             // ✅ update RAW prompt too (important for saveTemplate)
             setRawPrompt(promptToSave);
 
+            // ✅ persist a pending override so a hard refresh (which reads from
+            // the backend, which may still be lagging) keeps showing the saved
+            // prompt until the backend's copy matches.
+            recordPromptOverride(organizationId, activeTemplate.id, promptToSave);
+
+            // ✅ optimistically reflect the saved prompt in the list + cache so
+            // reopening the template (after "back") shows it immediately, even
+            // before/independent of the background refetch below.
+            setTemplates((prev) => {
+                const next = (prev || []).map((t) =>
+                    t.id === activeTemplate.id ? { ...t, prompt: promptToSave } : t
+                );
+                try {
+                    sessionStorage.setItem(
+                        templatesCacheKey(organizationId),
+                        JSON.stringify(next)
+                    );
+                } catch (_) { /* quota / private mode — ignore */ }
+                return next;
+            });
+
             // ✅ refresh template list
             fetchTemplates();
 
@@ -1079,19 +1100,83 @@ const VoiceModule = (props) => {
     // and clears on browser close.
     const templatesCacheKey = (orgId) => `cv:templates:${orgId}`;
 
+    // Pending prompt saves, persisted so they survive a hard refresh. The
+    // backend can lag a few seconds after a PUT, so a fresh GET may still return
+    // the OLD prompt and wipe a table the user just saved. We keep the saved
+    // prompt as an override until the backend's copy matches it (then drop it),
+    // with a TTL so a normalising backend can never make it stick forever.
+    const PROMPT_OVERRIDE_TTL_MS = 5 * 60 * 1000;
+    const promptOverridesKey = (orgId) => `cv:promptOverrides:${orgId}`;
+
+    const readPromptOverrides = (orgId) => {
+        try {
+            const raw = JSON.parse(localStorage.getItem(promptOverridesKey(orgId)) || "{}");
+            const now = Date.now();
+            let changed = false;
+            const valid = {};
+            Object.entries(raw || {}).forEach(([id, entry]) => {
+                if (entry && now - entry.ts < PROMPT_OVERRIDE_TTL_MS) valid[id] = entry;
+                else changed = true;
+            });
+            if (changed) {
+                localStorage.setItem(promptOverridesKey(orgId), JSON.stringify(valid));
+            }
+            return valid;
+        } catch (_) {
+            return {};
+        }
+    };
+
+    const writePromptOverrides = (orgId, overrides) => {
+        try {
+            localStorage.setItem(promptOverridesKey(orgId), JSON.stringify(overrides));
+        } catch (_) { /* quota / private mode — ignore */ }
+    };
+
+    const recordPromptOverride = (orgId, templateId, prompt) => {
+        const overrides = readPromptOverrides(orgId);
+        overrides[templateId] = { prompt, ts: Date.now() };
+        writePromptOverrides(orgId, overrides);
+    };
+
+    // Apply pending overrides to a freshly-fetched list, and clear any override
+    // the backend has now caught up on.
+    const applyPromptOverrides = (orgId, list) => {
+        const overrides = readPromptOverrides(orgId);
+        if (!Object.keys(overrides).length) return list || [];
+        let changed = false;
+        const merged = (list || []).map((t) => {
+            const entry = overrides[t.id];
+            if (!entry) return t;
+            if (t.prompt === entry.prompt) {
+                delete overrides[t.id]; // backend caught up
+                changed = true;
+                return t;
+            }
+            return { ...t, prompt: entry.prompt }; // keep the saved prompt
+        });
+        if (changed) writePromptOverrides(orgId, overrides);
+        return merged;
+    };
+
     const fetchTemplates = async () => {
         if (!organizationId) return;
         try {
+            // Cache-bust + no-store so a just-saved prompt is never masked by a
+            // stale HTTP-cached response (the "needs 2-3 refreshes" bug).
             const res = await fetch(
-                `${API_BASE}/api/voiceModuleTemplate?organizationId=${encodeURIComponent(organizationId)}`
+                `${API_BASE}/api/voiceModuleTemplate?organizationId=${encodeURIComponent(organizationId)}&_t=${Date.now()}`,
+                { cache: "no-store" }
             );
             const data = await res.json();
             if (data.success) {
-                setTemplates(data?.data);
+                // Guard against backend write-lag clobbering a just-saved prompt.
+                const merged = applyPromptOverrides(organizationId, data?.data || []);
+                setTemplates(merged);
                 try {
                     sessionStorage.setItem(
                         templatesCacheKey(organizationId),
-                        JSON.stringify(data?.data || [])
+                        JSON.stringify(merged)
                     );
                 } catch (_) { /* quota / private mode — ignore */ }
             }
@@ -1109,7 +1194,7 @@ const VoiceModule = (props) => {
             if (cached) {
                 const parsed = JSON.parse(cached);
                 if (Array.isArray(parsed) && parsed.length > 0) {
-                    setTemplates(parsed);
+                    setTemplates(applyPromptOverrides(organizationId, parsed));
                 }
             }
         } catch (_) { /* ignore */ }

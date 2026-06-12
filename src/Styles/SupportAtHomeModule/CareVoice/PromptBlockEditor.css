@@ -34,6 +34,45 @@
     line-height: 1.7;
 }
 
+/* --- TABLES (rendered via remark-gfm) --- */
+.pbe-markdown table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 14px 0;
+    font-size: 14px;
+    background: #fff;
+    border: 1px solid #e6e6ef;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.pbe-markdown th,
+.pbe-markdown td {
+    padding: 10px 14px;
+    text-align: left;
+    vertical-align: top;
+    border-bottom: 1px solid #ecebf3;
+}
+
+.pbe-markdown th + th,
+.pbe-markdown td + td {
+    border-left: 1px solid #ecebf3;
+}
+
+.pbe-markdown th {
+    background: #f5f3ff;
+    font-weight: 600;
+    color: #1a1748;
+}
+
+.pbe-markdown tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.pbe-markdown tbody tr:hover {
+    background: #faf9ff;
+}
+
 /* hover info */
 .pbe-hover {
     position: absolute;

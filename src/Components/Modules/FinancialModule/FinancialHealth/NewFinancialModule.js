@@ -33,7 +33,6 @@ import TlcPayrollTypeIcon from "../../../../Images/TlcPayrollType.png"
 import TlcPayrollStateIcon from "../../../../Images/TlcPayrollStateIcon.png"
 import TlcPayrollHistoryIcon from "../../../../Images/TlcPayrollHistory.png"
 import TlcCompareAnalyseIcon from "../../../../Images/Tlc_Compare_Analyse_Icon.png"
-import WhoAreYouToggle from "../WhoAreYouToggle";
 import "../../../../Styles/FinancialModule/TlcNewCustomReporting.css";
 import { RiDeleteBin6Line } from "react-icons/ri";
 import { useRef } from "react";
@@ -64,7 +63,6 @@ const NewFinancialHealth = (props) => {
 
     const [isConsentChecked, setIsConsentChecked] = useState(false);
     // New Addition......
-    const [selectedActor, setSelectedActor] = useState("NDIS");
     const [syncEnabled, setSyncEnabled] = useState(false);
 
     const [title, setTitle] = useState("");
@@ -1185,12 +1183,14 @@ const NewFinancialHealth = (props) => {
         const hasDateRange = startDate && endDate;
 
         // Non-TLC (normal) users must analyse an uploaded file; stored /
-        // date-based analysis is TLC-customer only.
+        // date-based analysis is TLC-customer only. Internal Curki/Care AIT
+        // staff may also run date-based analysis with no file selected.
         const isTlcCustomer = [
             "tenderlovingcaredisability.com.au",
             "tenderlovingcare.com.au",
         ].includes(analysisDomain);
-        if (!isTlcCustomer && !hasFiles) {
+        const isInternalViewer = ["curki.ai", "careait.com"].includes(analysisDomain);
+        if (!isTlcCustomer && !isInternalViewer && !hasFiles) {
             toast.warn("Please select a file for analysis.");
             return;
         }
@@ -1263,8 +1263,6 @@ const NewFinancialHealth = (props) => {
             // Append required fields
             formData.append("type", type);
             formData.append("userEmail", userEmail);
-            // Backend requires a provider; always send NDIS for now.
-            formData.append("provider", "NDIS");
             formData.append("fromDate", fromDate);
             formData.append("toDate", toDate);
             // Scope to the caller's organization.
@@ -1306,8 +1304,6 @@ const NewFinancialHealth = (props) => {
                 const apiPayload = {
                     type,
                     userEmail,
-                    // Backend requires a provider; always send NDIS for now.
-                    provider: "NDIS",
                     fromDate,
                     toDate,
                     // Scope to the caller's organization.
@@ -2256,13 +2252,6 @@ const NewFinancialHealth = (props) => {
                             className="role-selector"
                             style={{ display: "flex", gap: "24px", alignItems: "center" }}
                         >
-                            <WhoAreYouToggle
-                                value={selectedActor === "aged-care" ? "Aged Care" : "NDIS"}
-                                onChange={(val) => {
-                                    setSelectedActor(val === "Aged Care" ? "aged-care" : "NDIS");
-                                }}
-                            />
-
                             <div style={{ minWidth: "180px" }}>
                                 <MultiSelectCustom
                                     options={optionsRole}
