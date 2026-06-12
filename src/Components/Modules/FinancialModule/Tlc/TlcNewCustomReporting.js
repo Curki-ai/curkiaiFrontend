@@ -799,15 +799,18 @@ export default function TlcNewCustomerReporting(props) {
         }
 
         // Non-TLC (normal) users must select a file; stored analysis is TLC-only.
+        // Internal Curki/Care AIT staff may also run date-based analysis with no
+        // file selected.
         const analysisDomain = (userEmail || "").split("@")[1]?.toLowerCase() || "";
         const isTlcCustomer = [
             "tenderlovingcaredisability.com.au",
             "tenderlovingcare.com.au",
         ].includes(analysisDomain);
+        const isInternalViewer = ["curki.ai", "careait.com"].includes(analysisDomain);
         const hasAnyUploadedFile = ["payroll", "people", "employee"].some(
             (t) => (activeTabData[`${t}Files`] || []).length > 0
         );
-        if (!isTlcCustomer && !hasAnyUploadedFile) {
+        if (!isTlcCustomer && !isInternalViewer && !hasAnyUploadedFile) {
             toast.warn("Please select a file for analysis.");
             return;
         }
@@ -987,10 +990,12 @@ export default function TlcNewCustomerReporting(props) {
                     analysisResult: dummyData.analysisResult,
                 };
             } else {
-                if (!isTlcCustomer) {
+                if (!isTlcCustomer && hasAnyUploadedFile) {
                     // 🟠 NON-TLC FLOW: analyse the uploaded file IN-MEMORY.
                     // Same /payroll/upload-latest endpoint, but for non-TLC users
                     // it parses + filters + returns the result without storing.
+                    // Internal Curki/Care AIT viewers with NO file fall through to
+                    // the stored-data filter branch below (TLC data, no org scope).
                     const formData = new FormData();
                     inputs.forEach((input) => {
                         Array.from(input.files).forEach((file) => formData.append("files", file));
