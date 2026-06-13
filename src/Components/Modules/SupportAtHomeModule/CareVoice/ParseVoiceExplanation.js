@@ -1,5 +1,4 @@
 export const parseVoiceExplanation = (text) => {
-    console.log("text", text)
     if (!text) return [];
 
     const blocks = text

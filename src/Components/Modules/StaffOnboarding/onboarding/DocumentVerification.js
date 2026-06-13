@@ -53,7 +53,6 @@ const fetchOrganisation = async (email, preferredOrgId) => {
       `${BASE_URL}/get-organization-by-candidate`,
       { params }
     );
-    console.log("Organisation fetch response:", res.data);
     if (res.data?.ok) {
       setOrganisationId(
         res.data.organisation_id
@@ -97,7 +96,6 @@ const fetchOrganisation = async (email, preferredOrgId) => {
 
   const handleSubmit = async () => {
     if (!organisationId || !candidateId) {
-      console.log("Submitting with orgId:", organisationId, "candidateId:", candidateId);
       setMessage(
         "Missing organisation or candidate"
       );

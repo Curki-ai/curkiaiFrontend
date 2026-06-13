@@ -67,7 +67,6 @@ export const editModuleApi = async (id, title) => {
 };
 
 export const deleteModuleApi = async (id) => {
-    console.log('deleteModuleApi called with id:', id);
     try {
         const res = await axios.delete(`${BASE_URL}/deleteModule`, {
             headers: { "Content-Type": "application/json" },

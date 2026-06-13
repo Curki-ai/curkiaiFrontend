@@ -218,7 +218,6 @@ const acceptRecording = async () => {
     
     try {
         if (platformType !== "windows" || platformType !== "mac") {
-            console.log("ANDROID detected, using backend voice pipeline");
             setGenerationStage("generating");
             await processVoiceRecordingAndroid();
             setGenerationStage(null);

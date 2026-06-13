@@ -101,7 +101,6 @@ export default function CandidateScreeningTest() {
           }
         }
       );
-      console.log("fetchTestView response", res.data);
       if (res.data?.ok) {
         setTestData(res.data);
         setQuestions(
@@ -319,7 +318,6 @@ export default function CandidateScreeningTest() {
       </div>
     );
   }
-  console.log("testData", testData)
   return (
     <div className="screening-root">
       {stage === "intro" && (

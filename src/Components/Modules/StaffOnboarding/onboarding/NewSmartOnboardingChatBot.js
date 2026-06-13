@@ -28,7 +28,6 @@ const SmartOnboardingChat = ({
     const [selectedCandidates, setSelectedCandidates] = useState([]);
     const [shortlistLoading, setShortlistLoading] = useState(false);
     const [expandedIndex, setExpandedIndex] = useState(null);
-    console.log("candidates", candidates)
     const [chat, setChat] = useState([
         {
             type: "bot",
@@ -71,9 +70,7 @@ const SmartOnboardingChat = ({
                 conversation_history: chat,
                 admin_name: user?.displayName || "HR Admin"
             };
-            console.log("Payload being sent:", payload);
             const res = await axios.post(`${API_BASE}/api/hr-chat`, payload);
-            console.log("res.data:", res.data);
             if (res.data?.ok) {
                 const completedEvent = res.data.events?.find(
                     (item) => item.event === "staff_onboarding.hr_session_completed"
@@ -106,7 +103,6 @@ const SmartOnboardingChat = ({
 
     // 👈 MODIFIED: API CALL WITH SINGLE FILE LIST
     const handleBulkScreening = async () => {
-        console.log("handleBulkScreening started");
 
         if (uploadedFiles.length === 0) {
             toast.warn("Please upload files");
@@ -146,7 +142,6 @@ const SmartOnboardingChat = ({
                 appendBot("Screening failed.");
             }
         } catch (error) {
-            console.log("screen-bulk error:", error.response?.data || error.message);
             appendBot("Bulk screening failed.");
         } finally {
             setScreeningLoading(false);

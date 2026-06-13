@@ -13,7 +13,6 @@ import { API_BASE as SOCKET_HOST } from "../../../../config/apiBase";
 const BASE_URL =
   process.env.REACT_APP_LMS_V2_BASE_URL || `${SOCKET_HOST}/api/lms-v2`;
 
-console.log("[LMS v2] API base:", BASE_URL);
 
 // ── Admin email injection ────────────────────────────────────────────────
 // The LMS v2 admin endpoints are gated by requireOrgAccess on the backend,
@@ -59,7 +58,6 @@ const logErr = (label, err) => {
 export const listCoursesApi = async (organizationId) => {
   try {
     const res = await axios.get(`${BASE_URL}/courses`, { params: { organizationId } });
-    console.log(`${tag("listCourses")} ✓ ${res.status}`, { count: (res.data?.courses || []).length });
     return res.data?.courses || [];
   } catch (err) {
     logErr("listCourses", err);
@@ -75,10 +73,6 @@ export const createCourseApi = async ({ organizationId, adminEmail, course }) =>
       course,
     });
     const created = res.data?.course;
-    console.log(`${tag("createCourse")} ✓ ${res.status}`, {
-      id: created?.id,
-      etag: created?._etag,
-    });
     return created;
   } catch (err) {
     logErr("createCourse", err);
@@ -91,7 +85,6 @@ export const getCourseApi = async ({ organizationId, courseId }) => {
     const res = await axios.get(`${BASE_URL}/courses/${courseId}`, {
       params: { organizationId },
     });
-    console.log(`${tag("getCourse")} ✓ ${res.status}`, { courseId });
     return res.data?.course;
   } catch (err) {
     logErr("getCourse", err);
@@ -108,10 +101,6 @@ export const updateCourseApi = async ({ organizationId, courseId, course, etag }
       { organizationId, course, etag },
       { params: { organizationId } }
     );
-    console.log(`${tag("updateCourse")} ✓ ${res.status}`, {
-      courseId,
-      newEtag: res.data?.course?._etag,
-    });
     return res.data?.course;
   } catch (err) {
     logErr("updateCourse", err);
@@ -124,7 +113,6 @@ export const deleteCourseApi = async ({ organizationId, courseId }) => {
     const res = await axios.delete(`${BASE_URL}/courses/${courseId}`, {
       params: { organizationId },
     });
-    console.log(`${tag("deleteCourse")} ✓ ${res.status}`, { courseId });
     return res.data;
   } catch (err) {
     logErr("deleteCourse", err);
@@ -230,10 +218,8 @@ const getLmsSocket = () => {
     reconnectionDelay: 1000,
   });
   _lmsSocket.on("connect", () => {
-    console.log(`${tag("socket")} ✓ connected`, _lmsSocket.id);
   });
   _lmsSocket.on("disconnect", (reason) => {
-    console.log(`${tag("socket")} ✗ disconnected`, reason);
   });
   return _lmsSocket;
 };

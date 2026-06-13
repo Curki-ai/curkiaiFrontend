@@ -51,7 +51,6 @@ export const addSectionWithGraphsToWord = async ({
         `[data-report-section="${sectionKey}"]`
     );
 
-    console.log("🔍 sectionEl:", sectionEl);
 
     if (!sectionEl) {
         console.warn(`❌ No section found for ${sectionKey}`);
@@ -79,7 +78,6 @@ export const addSectionWithGraphsToWord = async ({
 
     const charts = sectionEl.querySelectorAll(".chart-visualizer-card");
 
-    console.log(`📊 Charts found in ${sectionKey}:`, charts.length);
 
 
 
@@ -92,7 +90,6 @@ export const addSectionWithGraphsToWord = async ({
 
         if (!chart.offsetWidth || !chart.offsetHeight) continue;
         if (shouldSkipExport(chart)) {
-            console.log("Skipping chart block because it contains table");
             continue;
         }
 
@@ -116,7 +113,6 @@ export const addSectionWithGraphsToWord = async ({
     //TABLE EXPORT (Payroll Comparison ka last table)
     const tables = sectionEl.querySelectorAll(".table-box");
 
-    console.log(`📋 Tables found in ${sectionKey}:`, tables.length);
 
     for (let i = 0; i < tables.length; i++) {
         const table = tables[i];
@@ -127,7 +123,6 @@ export const addSectionWithGraphsToWord = async ({
 
         if (!table.offsetWidth || !table.offsetHeight) continue;
         if (shouldSkipExport(table)) {
-            console.log("Skipping table block because it contains table");
             continue;
         }
         const { data, width, height } = await captureNode(table);

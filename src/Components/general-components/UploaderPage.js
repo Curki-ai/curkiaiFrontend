@@ -321,8 +321,6 @@ const UploadReports = ({ files, setFiles, title, subtitle, removeFile, fileforma
 
     const handleFileChange = (e) => {
         let selectedFiles = Array.from(e.target.files);
-        console.log('Deepak',isProcessing)
-        console.log(selectedFiles);
         if (!multiple && selectedFiles.length > 0) {
             // Always replace with the latest uploaded file
             selectedFiles = [selectedFiles[selectedFiles.length - 1]];
@@ -679,7 +677,6 @@ const UploaderPage = () => {
                     formData.append("template", sheetBlob, `${sheetName}.xlsx`);
                     reportFiles.forEach((file) => formData.append("source_files", file, file.name));
                     formData.append("metric_name", metric);
-                    console.log(stdTemplatePath);
 
                     let standardEndpoint = "";
                     if (selectedRole === "Financial Health") {
@@ -775,7 +772,6 @@ const UploaderPage = () => {
 
                 const summariseForm = new FormData();
                 summariseForm.append("file", mergedFile);
-                console.log('SuumariseFor', summariseForm);
                 let standardSummariseEndpoint = '';
                 if (selectedRole === "Financial Health") {
                     standardSummariseEndpoint = "https://aca-curki-aibackend-prod-aue-001.agreeabledune-2a557375.australiaeast.azurecontainerapps.io/header-modules/financial/report";
@@ -787,7 +783,6 @@ const UploaderPage = () => {
                     standardSummariseEndpoint,
                     summariseForm
                 );
-                console.log('DeepakAnalyis', summaryResponse);
                 setReport(summaryResponse.data?.analysis || "No summary available.");
 
                 // Visualisation only for Financial Health
@@ -812,7 +807,6 @@ const UploaderPage = () => {
                         standardVisulaiseEndpoint,
                         visualiseForm
                     );
-                    console.log(visualiseResponse);
                     const attachments = visualiseResponse.data?.attachments || [];
 
                     if (attachments.length > 0) {
@@ -887,7 +881,6 @@ const UploaderPage = () => {
                 }
                 clearInterval(interval);
             } else if (selectedRole === 'Custom Reporting') {
-                console.log('doing custom Reporting.......');
                 try {
                     const payrollForm = new FormData();
                     reportFiles.forEach((file, index) => {
@@ -900,7 +893,6 @@ const UploaderPage = () => {
                         { responseType: 'blob' }
                     );
                     
-                    console.log('payrollResponse',payrollResponse);
                     const payrollBlob = new Blob([payrollResponse.data], {
                         type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                     });
@@ -910,7 +902,6 @@ const UploaderPage = () => {
                     });
                     setPayRollReport(payrollFile);
 
-                    console.log(payrollFile);
 
                     // Step 2: Summary API
                     const summaryForm = new FormData();
@@ -1105,7 +1096,6 @@ const UploaderPage = () => {
                         error: error?.response?.data?.error || error.message,
                     });
                 }
-                console.log(allResponses)
             }
 
             // Set progress to 100% when complete
@@ -1248,7 +1238,6 @@ const UploaderPage = () => {
                     formData,
                 );
 
-                console.log('reponse', response);
 
                 if (response.status === 200 && response.data?.report) {
                     const allReports = response.data.report;
@@ -1302,7 +1291,6 @@ const UploaderPage = () => {
                 payload
             );
 
-            console.log("API Response:", response.data);
 
             const botReply = response.data?.response?.text || response.data?.response || "No response from server.";
 

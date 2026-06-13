@@ -259,7 +259,6 @@ export default function TlcCustomerReporting(props) {
 
       if (hasAnyFile) {
         lastManualWithFilesRef.current = true;
-        console.log("Upload path selected — validating uploaded files...");
 
         const invalidUploads = [];
 
@@ -307,7 +306,6 @@ export default function TlcCustomerReporting(props) {
         }
 
         // If everything is valid, upload first
-        console.log("All uploaded files are valid. Uploading before analysis...");
         try {
           updateTab({ uploading: true });
           updateTab({ uploading: true, progressStage: "uploading" });
@@ -327,7 +325,6 @@ export default function TlcCustomerReporting(props) {
             throw new Error(uploadData.error || "File upload failed.");
           }
 
-          console.log("Files uploaded successfully before analysis.");
           updateTab({ progressStage: "analysing" });
         } catch (uploadErr) {
           console.error("❌ Upload failed:", uploadErr);
@@ -338,7 +335,6 @@ export default function TlcCustomerReporting(props) {
       } else {
         lastManualWithFilesRef.current = false;
         updateTab({ progressStage: "analysing" });
-        console.log("No files selected. Proceeding with existing database data...");
       }
 
       // -------------------------------
@@ -388,7 +384,6 @@ export default function TlcCustomerReporting(props) {
       }
       updateTab({ progressStage: "preparing" });
       await new Promise(resolve => setTimeout(resolve, 800));
-      console.log("Analysis data received successfully.");
       justRanManualAnalysisRef.current = true;
       updateTab({
         analysisData: { ...analyzeData.analysisResult, payload: analyzeData.payload },
@@ -549,7 +544,6 @@ export default function TlcCustomerReporting(props) {
         return;
       }
 
-      console.log("Save response:", result);
       toast.success("✅ Analysis data saved successfully!");
       // ✅ Optional: Mark as saved to prevent double-save
       updateTab({ isFromHistory: true });
@@ -634,13 +628,11 @@ export default function TlcCustomerReporting(props) {
       // ✅ Step 2: Start loading
       updateTab({ aiLoading: true, aiReport: null });
 
-      console.log("Sending full payload to AI Analysis API...");
       const userEmail = props?.user?.email?.trim()?.toLowerCase();
       // const userEmail = "kris@curki.ai"
       if (userEmail === "kris@curki.ai") {
         aiPayload.env = "sandbox";   // exactly payload = { ..., env: "sandbox" }
       }
-      console.log("ai payload", aiPayload)
       // ✅ Step 3: Send directly (no re-wrapping or redeclaration)
       const res = await fetch(
         "https://aca-curki-aibackend-prod-aue-001.agreeabledune-2a557375.australiaeast.azurecontainerapps.io/tlc/payroll/ai-analysis-report",

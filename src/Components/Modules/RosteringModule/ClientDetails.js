@@ -10,8 +10,6 @@ const ClientDetailsPage = ({
   onBroadcastClick,
   smsBroadcasted,
 }) => {
-  console.log(supportWorkers);
-  console.log("client",client);
   if (smsBroadcasted) {
     return <BroadcastSuccess imageSrc={tickImage} message="SMS Broadcasted" />;
   }

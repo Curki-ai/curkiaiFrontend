@@ -385,7 +385,6 @@ const HomePage = () => {
 
       if (!isListening) {
 
-        console.log("Starting speech recognition");
 
         setIsListening(true);
         setIsSTTActive(true); // LOCK SEND BUTTON
@@ -422,7 +421,6 @@ const HomePage = () => {
 
       } else {
 
-        console.log("Stopping speech recognition");
 
         stopSpeechRecognition(recognizerRef.current);
 
@@ -546,9 +544,6 @@ const HomePage = () => {
       const PER_CLICK_SAFE_MIN = 150_000;
       if (balance >= PER_CLICK_SAFE_MIN) return;
 
-      console.log(
-        "[ANALYSIS_INTENT gate] balance below threshold — opening AutoPaymentPopup and cancelling intent"
-      );
       autoTopupDismissedRef.current = false;
       setShowAutoPaymentPopup(true);
       event.preventDefault();
@@ -601,16 +596,12 @@ const HomePage = () => {
     const RETRY_DELAY_MS = 1500;
     if (attempt === 1) setOrgLookupStatus("loading");
     try {
-      console.log(
-        `Fetching organizationId for: ${email} (attempt ${attempt}/${MAX_ATTEMPTS})`
-      );
       const firebase_uid = user?.uid || "";
       const url =
         `${API_BASE}/api/organizations/by-email?email=${encodeURIComponent(email)}` +
         (firebase_uid ? `&firebase_uid=${encodeURIComponent(firebase_uid)}` : "");
       const res = await fetch(url);
       const data = await res.json();
-      console.log("Organizations by-email response:", data);
       const firstOrgId = data?.organizations?.[0]?.organizationId;
       if (res.ok && firstOrgId) {
         setOrganizationId(firstOrgId);
@@ -621,7 +612,6 @@ const HomePage = () => {
             "Welcome! Your invitation to Curki Smart Onboarding has been accepted."
           );
         }
-        console.log("organizationId set:", firstOrgId);
         return;
       }
       // No org found for this email. Surface a "not_found" status so the HR
@@ -644,10 +634,6 @@ const HomePage = () => {
     try {
       if (!user?.email || !organizationId) return;
 
-      console.log("Fetching all candidates for:", {
-        admin_email: user.email,
-        organization_id: hrActiveOrgId
-      });
 
       const res = await axios.get(
         `${API_BASE}/api/get-all-candidates`,
@@ -659,13 +645,11 @@ const HomePage = () => {
         }
       );
 
-      console.log("getAllCandidates response:", res.data);
 
       if (res.data?.ok) {
         setCandidatesData(res.data.candidates || []);
       }
     } catch (error) {
-      console.log("fetchAllCandidates error:", error);
     }
   };
   useEffect(() => {
@@ -837,9 +821,6 @@ const HomePage = () => {
     });
   };
   const startCareVoiceSession = async () => {
-    console.log("isCareVoiceGeneratingDocs", isCareVoiceGeneratingDocs);
-    console.log("totalCareVoiceDocsToGenerate", totalCareVoiceDocsToGenerate);
-    console.log("generatedCareVoiceDocsCount", generatedCareVoiceDocsCount);
     try {
       if (isCareVoiceLocked) {
         toast.warn("Please wait until your documents are ready before starting Ask AI.");
@@ -859,7 +840,6 @@ const HomePage = () => {
       const formData = new FormData();
       formData.append("firebaseUid", user?.uid);
       const session_id = `session_${crypto.randomUUID()}`;
-      console.log("session id", session_id)
       formData.append("session_id", session_id);
 
       const filteredFiles = careVoiceFiles.filter(file =>
@@ -880,7 +860,6 @@ const HomePage = () => {
       );
 
       const data = await res.json();
-      console.log("data in care voice ask ai start", data)
       if (!data.success) throw new Error("Start failed");
 
       setCareVoiceSessionId(data.data.session_id);
@@ -932,7 +911,6 @@ const HomePage = () => {
         formData,
         { headers: { "Content-Type": "multipart/form-data" } }
       );
-      console.log("Bulk screening response", res.data);
       if (res.data?.ok) {
         const list = (res.data.candidates || []).map((item) => ({
           ...item.screener,
@@ -963,7 +941,6 @@ const HomePage = () => {
         });
       }
     } catch (err) {
-      console.log(err);
       setMessages((prev) => [
         ...prev.filter(msg => !msg.temp),
         {
@@ -989,7 +966,6 @@ const HomePage = () => {
           selected_indices: selectedCandidates
         }
       );
-      console.log("Shortlist response", data);
       setScreenedResults(data.data.shortlisted || []);
       setMessages((prev) => [
         ...prev,
@@ -1002,7 +978,6 @@ const HomePage = () => {
       setHrStep("IDLE");
       await fetchAllCandidates();
     } catch (err) {
-      console.log(err);
     } finally {
       setShortlistLoading(false);
     }
@@ -1098,11 +1073,9 @@ const HomePage = () => {
     ]);
   };
   const handleHRChatWithSocket = async (finalQuery, tempMessageId) => {
-    console.log("[HomePage] Starting HR Chat", finalQuery);
 
     // Function to update the temp message - USE FUNCTIONAL UPDATE
     const updateTempMessage = (newText, isStreaming = true) => {
-      console.log("[HR CHAT] Updating message:", newText);
 
       setMessages((prev) =>
         prev.map((msg) =>
@@ -1186,13 +1159,11 @@ const HomePage = () => {
       setJdFiles([]);
       setResumeFiles([]);
     }
-    console.log("payload for HR chat", payload);
     try {
       const sent = sendHRChat({
         payload,
 
         onEvent: (type, data) => {
-          console.log("[HR CHAT] Event received:", type, data);
 
           // Defensive filter: drop idle/welcome chatter that can otherwise
           // briefly flash in the chat (e.g. "Connected. Send a message or
@@ -1215,7 +1186,6 @@ const HomePage = () => {
             const candidate = data?.message || "Processing...";
             if (isIdleNoise(candidate)) return;
             newText = candidate;
-            console.log("[HR CHAT] Setting status message:", newText);
             updateTempMessage(newText, true);
           }
           else if (type === "event") {
@@ -1252,14 +1222,11 @@ const HomePage = () => {
           const finalText = data?.message || "Done";
 
           const tools = data?.payload?.tool_results || [];
-          console.log("tools main data", data);
-          console.log("[HR CHAT] Tools results:", tools);
 
           const bulkScreen = tools.find(
             (t) => t.tool === "shortlist_screened" && t.ok
           );
 
-          console.log("[HR CHAT] Bulk screen result:", bulkScreen);
 
           if (bulkScreen) {
             let candidates = [];
@@ -1280,7 +1247,6 @@ const HomePage = () => {
               }
             }
 
-            console.log("Parsed candidates:", candidates);
 
             setHrScreenedCandidates(candidates);
             setScreenedResults(candidates);
@@ -1482,7 +1448,6 @@ const HomePage = () => {
           );
 
           const data = await response.json();
-          console.log("Care Voice Query Response:", data);
           const botReply = data?.data?.answer || "No response";
           const sources = data?.data?.sources || [];
 
@@ -1540,7 +1505,6 @@ const HomePage = () => {
           );
 
           // ✅ Update with the NEW conversation history from response
-          console.log("response.data in financial health ask ai", response.data)
           setFinancialAiHistoryPayload(response.data?.conversation_history || []);
           await incrementCareVoiceAnalysisCount(
             user?.email?.trim().toLowerCase(),
@@ -1633,7 +1597,6 @@ const HomePage = () => {
             form,
             { headers: { "Content-Type": "multipart/form-data" } }
           );
-          console.log("response.data in manual rostering", response.data)
           const botReply =
             response.data?.answer ||
             response.data?.response ||
@@ -1667,7 +1630,6 @@ const HomePage = () => {
           payload
         );
 
-        console.log("Smart Rostering response ask ai response:", response);
 
         const botReply = response.data?.answer || "No response";
 
@@ -1686,7 +1648,6 @@ const HomePage = () => {
 
       // 🟢 TLC CLIENT PROFITABILITY MODE
       if (isTlcClientProfitabilityPage) {
-        console.log("🟡 TLC Client Profitability Ask AI triggered");
 
         try {
           // ✅ Build history from your local messages state
@@ -1730,7 +1691,6 @@ const HomePage = () => {
           setClientProfitabilityAiHistoryPayload(updatedHistory);
 
           // Count usage for Client Profitability
-          console.log("response?.data", response?.data)
           if (user?.email) {
             try {
               const email = user.email.trim().toLowerCase();
@@ -2051,7 +2011,7 @@ const HomePage = () => {
                   full viewport at every scroll position (previously a
                   taller-than-viewport page left a white gap below the
                   sidebar). */}
-              <div style={{ flex: 1, minWidth: 0, height: "100vh", overflowY: "auto" }}>
+              <div className="app-scroll-region" style={{ flex: 1, minWidth: 0, height: "100vh", overflowY: "auto" }}>
                 <div
                   className="typeofreportmaindiv"
                   style={{

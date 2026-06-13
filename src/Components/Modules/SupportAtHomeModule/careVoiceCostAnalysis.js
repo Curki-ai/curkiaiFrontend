@@ -15,7 +15,6 @@ const incrementCareVoiceAnalysisCount = async (userEmail, buttonType, AiAnalysis
     });
 
     const data = await res.json();
-    console.log("data in incrementCareVoiceAnalysisCount", data)
     //Trigger popup when backend starts auto topup
     if (
       res.status === 403 &&

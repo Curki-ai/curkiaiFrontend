@@ -60,7 +60,6 @@ const NoOrgEmptyState = ({ user, onRegistered }) => {
         setSubmitting(false);
         return;
       }
-      console.log("[NoOrgEmptyState] register success:", data);
       setSubmitting(false);
       setShowModal(false);
       setOrgName("");

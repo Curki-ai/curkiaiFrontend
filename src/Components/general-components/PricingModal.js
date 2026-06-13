@@ -24,7 +24,6 @@ const PricingModal = ({ email }) => {
                     return res.json();
                 })
                 .then(data => {
-                    console.log("✅ API Response Body:", data);
                     const status = data.status === 'paid' ? 'paid' : 'not paid';
                     setPaymentStatus(status);
 
@@ -38,10 +37,9 @@ const PricingModal = ({ email }) => {
                             paymentTime: paymentTime,
                             paymentStatus: status,
                         })
-                            .then(() => console.log('✅ Payment info updated in DB'))
+                            .then(() => {})
                             .catch((error) => console.error('❌ Failed to update DB:', error));
                     } else {
-                        console.log('ℹ️ Payment not completed, skipping DB update.');
                     }
                 })
                 .catch(err => {

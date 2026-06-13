@@ -29,7 +29,6 @@ const InvitePage = () => {
       try {
         const res = await fetch(`${BASE_URL}/details/${token}`);
         const data = await res.json();
-        console.log("data",data)
         if (res.ok) {
           setInviteDetails(data);
         } else {

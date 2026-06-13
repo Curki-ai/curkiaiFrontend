@@ -176,7 +176,6 @@ export default function TlcNewCustomerReporting(props) {
                 `${BASE_URL}/api/payroll/organizations/by-email?email=${encodeURIComponent(userEmail)}` +
                 (firebase_uid ? `&firebase_uid=${encodeURIComponent(firebase_uid)}` : "")
             );
-            console.log("Organization lookup response:", res);
             const data = await res.json();
             const first = data?.organizations?.[0];
             if (res.ok && data?.ok && first?.organizationId) {
@@ -327,7 +326,6 @@ export default function TlcNewCustomerReporting(props) {
             }
 
             const parsedRanges = result.data;
-            console.log("Parsed search ranges:", parsedRanges);
 
             if (!parsedRanges || parsedRanges.length === 0) {
                 setFilteredHistoryList([]);
@@ -342,7 +340,6 @@ export default function TlcNewCustomerReporting(props) {
                 // Try multiple possible locations for filters
                 const filters = historyItem.analysisResult?.filters || historyItem.filters || {};
                 const { start, end, state } = filters;
-                console.log(`Checking history item`, start, end, state);
                 if (!start || !end) return false;
 
                 const historyStart = new Date(start);
@@ -356,17 +353,12 @@ export default function TlcNewCustomerReporting(props) {
                         const rangeEnd = new Date(range.End);
 
                         // Check for ANY overlap between the two date ranges
-                        console.log("history start", historyStart)
-                        console.log("history end", historyEnd)
-                        console.log("range start", rangeStart)
-                        console.log("range end", rangeEnd)
 
 
                         const datesMatch = !(
                             historyEnd < rangeStart ||
                             historyStart > rangeEnd
                         );
-                        console.log("Dates match?", datesMatch);
                         if (!datesMatch) matches = false;
                     }
 
@@ -391,8 +383,7 @@ export default function TlcNewCustomerReporting(props) {
                 });
             });
 
-            console.log(`Found ${filtered.length} matching history items`);
-            console.log("Filtered items:", filtered); // Debug: see what matched
+             // Debug: see what matched
             setFilteredHistoryList(filtered);
             setSearchMode(true);
 
@@ -665,7 +656,6 @@ export default function TlcNewCustomerReporting(props) {
         const blob = await Packer.toBlob(doc);
         saveAs(blob, `Payroll_Report_${formatDateRange()}.docx`);
         try {
-            console.log("Starting excel export request");
 
             const excelRes = await fetch(`${BASE_URL}/api/export-html-excel`, {
                 method: "POST",
@@ -683,7 +673,6 @@ export default function TlcNewCustomerReporting(props) {
                 throw new Error(excelData.message || "Excel export failed");
             }
 
-            console.log("Excel response received");
 
             const link = document.createElement("a");
             link.href = excelData.excelDownloadBlob;
@@ -693,7 +682,6 @@ export default function TlcNewCustomerReporting(props) {
             link.click();
             document.body.removeChild(link);
 
-            console.log("Excel downloaded successfully");
 
         } catch (error) {
             console.error("Excel download failed:", error);
@@ -762,7 +750,6 @@ export default function TlcNewCustomerReporting(props) {
         const intent = new CustomEvent("ANALYSIS_INTENT", { cancelable: true });
         const allowed = window.dispatchEvent(intent);
         if (!allowed) {
-            console.log("[handleAnalyse] aborted by ANALYSIS_INTENT gate");
             return;
         }
 
@@ -838,7 +825,6 @@ export default function TlcNewCustomerReporting(props) {
 
             if (hasAnyFile) {
                 lastManualWithFilesRef.current = true;
-                console.log("Upload path selected — validating uploaded files...");
 
                 const invalidUploads = [];
 
@@ -888,7 +874,6 @@ export default function TlcNewCustomerReporting(props) {
                 // Non-TLC users SKIP storage — their file is analysed in-memory
                 // below via the same /payroll/upload-latest endpoint.
                 if (isTlcCustomer) {
-                    console.log("TLC user — uploading/storing files before analysis...");
                     try {
                         updateTab({ uploading: true, progressStage: "uploading" });
                         const formData = new FormData();
@@ -909,7 +894,6 @@ export default function TlcNewCustomerReporting(props) {
                             throw new Error(uploadData.error || "File upload failed.");
                         }
 
-                        console.log("Files uploaded successfully before analysis.");
                         updateTab({ progressStage: "analysing" });
                     } catch (uploadErr) {
                         console.error("❌ Upload failed:", uploadErr);
@@ -923,7 +907,6 @@ export default function TlcNewCustomerReporting(props) {
             } else {
                 lastManualWithFilesRef.current = false;
                 updateTab({ progressStage: "analysing" });
-                console.log("No files selected. Proceeding with existing database data...");
             }
 
             // -------------------------------
@@ -983,7 +966,6 @@ export default function TlcNewCustomerReporting(props) {
             let analyzeData;
 
             if (USE_DUMMY_DATA) {
-                console.log("Using dummy payroll data");
                 const { dummyData, dummyPayload } = await loadDummyData();
                 analyzeData = {
                     payload: dummyPayload,
@@ -1062,7 +1044,6 @@ export default function TlcNewCustomerReporting(props) {
                     };
                 }
 
-                console.log("Analysis API response:", analyzeData);
             }
 
             // console.log("analyzeData.payload", analyzeData.payload)
@@ -1089,7 +1070,6 @@ export default function TlcNewCustomerReporting(props) {
             }
             updateTab({ progressStage: "preparing" });
             await new Promise(resolve => setTimeout(resolve, 800));
-            console.log("Analysis data received successfully.");
             justRanManualAnalysisRef.current = true;
             updateTab({
                 analysisData: { ...analyzeData.analysisResult, payload: analyzeData.payload },
@@ -1358,7 +1338,6 @@ export default function TlcNewCustomerReporting(props) {
                 }
                 const res = await fetch(`${BASE_URL}/payroll/history?${params.toString()}`);
                 const data = await res.json();
-                console.log("Fetched history data:", data);
                 if (!res.ok) throw new Error(data.error || "Failed to fetch history");
                 const filteredHistory = userStates.length
                     ? data.data.filter(item =>
@@ -1390,7 +1369,6 @@ export default function TlcNewCustomerReporting(props) {
             return;
         }
         if (USE_DUMMY_DATA) {
-            console.log("Using dummy AI markdown");
             const { dummyData } = await loadDummyData();
 
             updateTab({
@@ -1463,7 +1441,6 @@ export default function TlcNewCustomerReporting(props) {
                 aiLoading: false,
                 aiProgress: 100,
             });
-            console.log("data in report", data)
             try {
                 if (userEmail) {
                     await incrementCareVoiceAnalysisCount(userEmail, "report-generation", data?.ai_analysis_cost, "payroll-analysis", data?.token_usage);

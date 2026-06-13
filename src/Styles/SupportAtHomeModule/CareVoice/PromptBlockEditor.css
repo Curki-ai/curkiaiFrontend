@@ -228,7 +228,13 @@
     padding: 18px;
     outline: none;
     border: none;
-    resize: vertical;
+    /* Grow with content instead of scrolling internally — the textarea is
+       auto-sized to its scrollHeight in JS, so the whole page scrolls the
+       prompt (matching the Visual tab). resize:none + overflow:hidden keep it
+       a single continuous block with no inner scrollbar to trap the wheel. */
+    resize: none;
+    overflow: hidden;
+    box-sizing: border-box;
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
         "Liberation Mono", "Courier New", monospace;
     font-size: 13px;

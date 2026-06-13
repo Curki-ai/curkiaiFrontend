@@ -61,7 +61,6 @@ export const useHRChat = () => {
   const EVENT_DELAY_MS = 200;
 
   useEffect(() => {
-    console.log(`[HR CHAT] Connecting to ${HR_WS_HOST}`);
     const newSocket = io(HR_WS_HOST, {
       transports: ["websocket"],
       reconnection: true,
@@ -70,12 +69,10 @@ export const useHRChat = () => {
     });
 
     newSocket.on("connect", () => {
-      console.log("[HR CHAT] Connected", newSocket.id);
       setIsConnected(true);
     });
 
     newSocket.on("disconnect", (reason) => {
-      console.log("[HR CHAT] Disconnected", reason);
       setIsConnected(false);
     });
 
@@ -138,7 +135,6 @@ export const useHRChat = () => {
     });
 
     newSocket.on("hr_candidates_shortlisted", (data) => {
-      console.log("[HR CHAT] hr_candidates_shortlisted", data);
       if (typeof window !== "undefined") {
         window.dispatchEvent(
           new CustomEvent("hr:candidates-shortlisted", { detail: data })
@@ -169,7 +165,6 @@ export const useHRChat = () => {
 
   const sendHRChat = ({ payload, onEvent, onComplete, onError }) => {
     if (!socket?.connected) {
-      console.log("[HR CHAT] Socket not connected");
       return false;
     }
 
@@ -182,13 +177,6 @@ export const useHRChat = () => {
       firstEventShown: false
     };
 
-    console.log("[HR CHAT] Outgoing payload", {
-      workflow_phase: payload?.workflow_phase,
-      message_len: (payload?.message || "").length,
-      attachments: (payload?.attachments || []).length,
-      conv_history: (payload?.conversation_history || []).length,
-      has_screened_candidates: payload?.screened_candidates != null
-    });
 
     socket.emit("hr_chat", payload);
     return true;
