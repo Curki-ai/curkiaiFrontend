@@ -15,8 +15,6 @@ const UploadFiles = ({ files, setFiles, title, subtitle, removeFile, fileformat,
 
     const handleFileChange = (e) => {
         let selectedFiles = Array.from(e.target.files);
-        console.log('Deepak', isProcessing)
-        console.log(selectedFiles);
         if (!multiple && selectedFiles.length > 0) {
             // Always replace with the latest uploaded file
             selectedFiles = [selectedFiles[selectedFiles.length - 1]];

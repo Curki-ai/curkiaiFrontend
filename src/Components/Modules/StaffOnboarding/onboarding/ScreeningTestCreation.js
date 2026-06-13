@@ -181,7 +181,6 @@ const ScreeningTestCreation = (props) => {
       });
       if (res.data?.ok) setPreviousTests(res.data.tests || []);
     } catch (error) {
-      console.log("fetchTests error:", error);
     } finally {
       setLoadingTests(false);
     }

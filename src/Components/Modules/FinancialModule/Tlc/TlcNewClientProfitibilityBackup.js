@@ -30,7 +30,6 @@ import { API_BASE as BASE_URL } from "../../../../config/apiBase";
 const TlcNewClientProfitability = (props) => {
     const onPrepareAiPayload = props.onPrepareAiPayload;
     const user = props.user
-    console.log("user in client profitibility", user)
     const userEmail = user?.email
     // console.log("useremail in profitibility",userEmail)
     const [startMonth, setStartMonth] = useState("");
@@ -288,7 +287,6 @@ const TlcNewClientProfitability = (props) => {
             });
 
             const uploadData = await uploadRes.json();
-            console.log("UPLOAD RESPONSE", uploadData);
 
             const ids = uploadData.files?.map(f => f.documentId) || [];
             setDocumentIds(ids);
@@ -302,10 +300,7 @@ const TlcNewClientProfitability = (props) => {
 
 
     const handleFinalAnalysis = async (finalPayload) => {
-        console.log("props.tlcClientProfitabilityPayload in handleFinal analysis", props?.tlcClientProfitabilityPayload)
-        console.log("finalPayload", finalPayload)
         try {
-            console.log("🔄 Starting final analysis request...");
             const analyzeRes = await fetch(
                 `${BASE_URL}/tlcClientProfitibility/analyze-from-files?userEmail=${userEmail}`,
                 {
@@ -321,7 +316,6 @@ const TlcNewClientProfitability = (props) => {
             }
 
             const analyzeData = await analyzeRes.json();
-            console.log("✅ FINAL ANALYSIS RESPONSE:", analyzeData);
             setResponseData(analyzeData);
             return analyzeData;
         } catch (error) {
@@ -357,9 +351,7 @@ const TlcNewClientProfitability = (props) => {
                 const uploadData = await handleUpload();
                 sessionId = uploadData?.sessionId || null;
 
-                console.log("🆔 SESSION FROM UPLOAD:", sessionId);
             } else {
-                console.log("📝 No upload → prepare without sessionId");
             }
 
             // 🚫 Pass undefined if null → so query string omits sessionId
@@ -367,7 +359,6 @@ const TlcNewClientProfitability = (props) => {
 
             // Prepare analysis
             const prepareData = await handlePrepareAnalysis(safeSessionId);
-            console.log("PREPARE DATA:", prepareData);
 
             if (!prepareData?.ok) {
                 alert("Prepare failed");
@@ -398,9 +389,8 @@ const TlcNewClientProfitability = (props) => {
             const from = formatYearMonth(startDate);
             const to = formatYearMonth(endDate);
 
-            console.log("from", from); // 2025-07
-            console.log("to", to);     // 2025-10
-            console.log("📊 Preparing analysis with:", { from, to, sessionId });
+             // 2025-07
+                 // 2025-10
 
             // BASE URL
             let url = `${BASE_URL}/tlcClientProfitibility/prepare-analysis-data?from=${from}&to=${to}`;
@@ -410,7 +400,6 @@ const TlcNewClientProfitability = (props) => {
                 url += `&sessionId=${sessionId}`;
             }
 
-            console.log("➡️ FINAL PREPARE URL:", url);
 
             const prepareRes = await fetch(url, { method: "GET" });
 
@@ -443,7 +432,6 @@ const TlcNewClientProfitability = (props) => {
                 }
             );
             const data = await res.json();
-            console.log("AI PREPARE:", data);
             return data;
         } catch (err) {
             console.error("AI prepare error:", err);
@@ -463,7 +451,6 @@ const TlcNewClientProfitability = (props) => {
 
 
             const data = await res.json();
-            console.log("AI SUMMARY:", data);
 
             setAiSummary(data.summary_md || data.report_md || "");
         } catch (err) {
@@ -699,7 +686,6 @@ const TlcNewClientProfitability = (props) => {
 
     }, [responseData]);
     const handleDownloadReport = ()=>{
-        console.log("report download")
     }
     const renderHistorySection = () => (
         <section className="history-container">
@@ -756,7 +742,6 @@ const TlcNewClientProfitability = (props) => {
         </section>
     );
 
-    console.log("directFinalTable", directFinalTable)
 
     if (isAllowed === false) {
         return (

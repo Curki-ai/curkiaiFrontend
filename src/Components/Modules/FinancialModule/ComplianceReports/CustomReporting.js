@@ -34,14 +34,12 @@ const CustomReporting = (props) => {
             setCustomProgress((prev) => (prev < 92 ? prev + 2 : prev));
         }, 5000);
 
-        console.log('doing custom Reporting.......');
         try {
             const driveForm = new FormData();
             customReportFiles.forEach((file) => {
                 driveForm.append("files", file); 
             });
 
-            console.log("Uploading to Google Drive API...",driveForm);
             const driveResponse = await axios.post(
                 `${API_BASE}/upload-to-drive`,
                 driveForm,
@@ -50,7 +48,6 @@ const CustomReporting = (props) => {
                 }
             );
 
-            console.log("✅ Drive upload response:", driveResponse.data);
             const payrollForm = new FormData();
             customReportFiles.forEach((file, index) => {
                 payrollForm.append(`source${index + 1}`, file, file.name);
@@ -62,7 +59,6 @@ const CustomReporting = (props) => {
                 { responseType: 'blob' }
             );
 
-            console.log('payrollResponse', payrollResponse);
             const payrollBlob = new Blob([payrollResponse.data], {
                 type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             });
@@ -72,7 +68,6 @@ const CustomReporting = (props) => {
             });
             setPayRollReport(payrollFile);
 
-            console.log(payrollFile);
 
             // Step 2: Summary API
             const summaryForm = new FormData();

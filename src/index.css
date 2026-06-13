@@ -22,6 +22,29 @@ body.is-scrolling * {
   pointer-events: none !important;
 }
 
+/* ...but the SCROLL CONTAINERS themselves must keep pointer-events, otherwise
+   wheel scrolling stalls mid-gesture. The page body does not scroll — an inner
+   100vh region does — so if that region is also made `pointer-events: none`,
+   the second wheel tick (once `is-scrolling` is set) hit-tests straight through
+   to <body>, which isn't scrollable, and the scroll stops until the 150ms idle
+   timer clears the flag. Re-enabling pointer-events only on the scroll
+   container lets the wheel event re-target to it (its children stay disabled,
+   so hover flicker is still suppressed) and scrolling stays smooth top-to-bottom.
+   Covers the tagged main region plus the inline-overflow panels (AI chat, etc.). */
+body.is-scrolling .app-scroll-region,
+body.is-scrolling [style*="overflow-y: auto"],
+body.is-scrolling [style*="overflow-y: scroll"],
+body.is-scrolling [style*="overflow: auto"],
+body.is-scrolling [style*="overflow: scroll"],
+/* The Rostering "Available Staff" list scrolls internally (class-based
+   overflow, so not matched above). Keep its pointer-events so the wheel scrolls
+   the list itself instead of falling through to the page mid-gesture — paired
+   with overscroll-behavior:contain on it, the inner and outer scrolls stay
+   fully independent. */
+body.is-scrolling .roster-staff-section {
+  pointer-events: auto !important;
+}
+
 /* Global page scrollbar (matches the gradient style used in the
    Financial / TLC modules). Selectors scoped to html so they
    override the unscoped ::-webkit-scrollbar rules elsewhere

@@ -69,6 +69,10 @@
   max-height: 650px;
   /* Adjust height if needed */
   overflow-y: auto;
+  /* Isolate this inner scroll from the page: the wheel scrolls only the staff
+     list, and reaching its top/bottom does NOT chain into the outer page
+     scroll — so scrolling the list never nudges the main page. */
+  overscroll-behavior: contain;
   padding-right: 10px;
   scrollbar-width: thin;
 }

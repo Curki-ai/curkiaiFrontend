@@ -482,15 +482,6 @@ const IncidentAuditing = (props) => {
 
         const t0 = Date.now();
         const traceId = Math.random().toString(36).slice(2, 8);
-        console.log(`[IncidentAuditing ${traceId}] >>> START`, {
-            syncEnabled,
-            fileCount: incidentAuditingFiles.length,
-            files: incidentAuditingFiles.map((f) => ({
-                name: f.name,
-                type: f.type,
-                size: f.size,
-            })),
-        });
 
         try {
             const formData = new FormData();
@@ -507,12 +498,6 @@ const IncidentAuditing = (props) => {
                 body: formData,
             });
 
-            console.log(`[IncidentAuditing ${traceId}] response received`, {
-                status: response.status,
-                ok: response.ok,
-                contentType: response.headers.get("content-type"),
-                elapsedMs: Date.now() - t0,
-            });
 
             if (!response.ok) {
                 // Non-SSE error response (e.g. 500 before flushHeaders). Read it
@@ -554,9 +539,6 @@ const IncidentAuditing = (props) => {
                         const data = JSON.parse(jsonStr);
                         eventCount += 1;
                         if (eventCount <= 30 || eventCount % 50 === 0) {
-                            console.log(`[IncidentAuditing ${traceId}] SSE #${eventCount}`, {
-                                preview: jsonStr.slice(0, 200),
-                            });
                         }
                         if (data.message) {
                             setCurrentTask(data.message);
@@ -572,10 +554,6 @@ const IncidentAuditing = (props) => {
                             data.incidents !== undefined
                         ) {
                             sawResult = true;
-                            console.log(`[IncidentAuditing ${traceId}] received result payload`, {
-                                reportable_incidents: data.reportable_incidents,
-                                incidentCount: data.incidents?.length,
-                            });
                             setResponseData(data);
                             await incrementCareVoiceAnalysisCount(
                                 props?.user?.email?.trim(),
@@ -591,12 +569,6 @@ const IncidentAuditing = (props) => {
                 }
             }
 
-            console.log(`[IncidentAuditing ${traceId}] stream ended`, {
-                eventCount,
-                sawResult,
-                sawError,
-                elapsedMs: Date.now() - t0,
-            });
         } catch (error) {
             console.error(`[IncidentAuditing ${traceId}] SSE stream error`, {
                 message: error?.message,

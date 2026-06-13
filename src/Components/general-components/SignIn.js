@@ -169,7 +169,6 @@ const SignIn = ({ show, onClose }) => {
       if (!response.ok) {
         console.error("DB Save Error:", data);
       } else {
-        console.log("User saved in DB:", data);
       }
     } catch (error) {
       console.error("Failed to save user in DB:", error);
@@ -349,7 +348,6 @@ const SignIn = ({ show, onClose }) => {
           templateParams,
           "hp6wyNEGYtFRXcOSs"
         );
-        console.log("Email sent successfully");
       } catch (emailError) {
         console.error("Failed to send email:", emailError);
       }
@@ -372,7 +370,6 @@ const SignIn = ({ show, onClose }) => {
 
         const mailchimpData = await mailchimpRes.json();
         if (mailchimpRes.ok) {
-          console.log("User added to Mailchimp Welcome flow:", mailchimpData);
         } else {
           console.error("Mailchimp error:", mailchimpData);
         }
@@ -457,7 +454,6 @@ const SignIn = ({ show, onClose }) => {
     setLoading(true);
     try {
       const result = await signInWithPopup(auth, googleProvider);
-      console.log(result?.user?.email);
       toast.success("Google Sign-In successful!");
       onClose();
       if (result._tokenResponse.isNewUser) {
@@ -498,7 +494,6 @@ const SignIn = ({ show, onClose }) => {
             templateParams,
             "hp6wyNEGYtFRXcOSs"
           );
-          console.log("Email sent successfully.");
         } catch (emailError) {
           console.error("Failed to send email:", emailError);
         }
@@ -520,9 +515,7 @@ const SignIn = ({ show, onClose }) => {
           );
 
           const mailchimpData = await mailchimpRes.json();
-          console.log("mailchimpData", mailchimpData)
           if (mailchimpRes.ok) {
-            console.log("Google user added to Mailchimp Welcome flow:", mailchimpData);
           } else {
             console.error("Mailchimp error:", mailchimpData);
           }

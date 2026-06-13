@@ -105,7 +105,6 @@ const IncidentManagement = (props) => {
                         error: error?.response?.data?.error || error.message,
                     });
                 }
-                console.log(allResponses)
             }
 
             // Set progress to 100% when complete

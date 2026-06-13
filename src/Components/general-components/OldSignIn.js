@@ -29,7 +29,6 @@ const OldSignIn = ({ show, onClose }) => {
     e.preventDefault();
     setError("");
     setLoading(true); // Show loader
-    console.log(isSignUp);
 
     try {
       if (isSignUp) {
@@ -49,7 +48,6 @@ const OldSignIn = ({ show, onClose }) => {
             templateParams,
             "hp6wyNEGYtFRXcOSs"
           );
-          console.log("Email sent successfully");
         } catch (emailError) {
           console.error("Failed to send email:", emailError);
         }
@@ -72,7 +70,6 @@ const OldSignIn = ({ show, onClose }) => {
 
           const mailchimpData = await mailchimpRes.json();
           if (mailchimpRes.ok) {
-            console.log("User added to Mailchimp Welcome flow:", mailchimpData);
           } else {
             console.error("Mailchimp error:", mailchimpData);
           }
@@ -103,7 +100,6 @@ const OldSignIn = ({ show, onClose }) => {
       await sendPasswordResetEmail(auth, email);
       alert("Password reset email sent! Check your inbox.");
     } catch (error) {
-      console.log(error);
       setError("Failed to send reset email. Try again.");
     }
   };
@@ -114,7 +110,6 @@ const OldSignIn = ({ show, onClose }) => {
     setLoading(true);
     try {
       const result = await signInWithPopup(auth, googleProvider);
-      console.log(result?.user?.email);
 
       if (result._tokenResponse.isNewUser) {
         const newEmail = result?.user?.email;
@@ -134,7 +129,6 @@ const OldSignIn = ({ show, onClose }) => {
             templateParams,
             "hp6wyNEGYtFRXcOSs"
           );
-          console.log("Email sent successfully");
         } catch (emailError) {
           console.error("Failed to send email:", emailError);
         }
@@ -156,9 +150,7 @@ const OldSignIn = ({ show, onClose }) => {
           );
 
           const mailchimpData = await mailchimpRes.json();
-          console.log("mailchimpData", mailchimpData)
           if (mailchimpRes.ok) {
-            console.log("Google user added to Mailchimp Welcome flow:", mailchimpData);
           } else {
             console.error("Mailchimp error:", mailchimpData);
           }

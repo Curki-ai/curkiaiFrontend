@@ -4,7 +4,6 @@ import "../../Styles/general-styles/FeedbackModal.css";
 import { toast } from "react-toastify";
 
 const FeedbackModal = (props) => {
-  console.log(props);
   const [feedback, setFeedback] = useState("");
   const [isOpen, setIsOpen] = useState(true);
   const [isFeedbackLoading, setIsFeedbackLoading] = useState(false);

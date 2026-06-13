@@ -84,13 +84,11 @@ const LMSRedesign = ({ user, organizationId }) => {
       setLoading(false);
       return;
     }
-    console.log("[LMS v2][LMSRedesign] loading courses for org", organizationId);
     setLoading(true);
     setError("");
     listCoursesApi(organizationId)
       .then((list) => {
         if (cancelled) return;
-        console.log(`[LMS v2][LMSRedesign] loaded ${list.length} courses`);
         setCourses(list);
       })
       .catch((err) => {
@@ -114,7 +112,6 @@ const LMSRedesign = ({ user, organizationId }) => {
     const unsubscribe = subscribeToCourseChanges(organizationId, {
       onUpserted: (incoming) => {
         if (!incoming?.id) return;
-        console.log("[LMS v2][sync] course upserted", incoming.id);
         setCourses((prev) => {
           const idx = prev.findIndex((c) => c.id === incoming.id);
           if (idx === -1) return [incoming, ...prev];
@@ -133,7 +130,6 @@ const LMSRedesign = ({ user, organizationId }) => {
         });
       },
       onDeleted: (deletedId) => {
-        console.log("[LMS v2][sync] course deleted", deletedId);
         setCourses((prev) => prev.filter((c) => c.id !== deletedId));
         if (editingId === deletedId) {
           setEditingId(null);
@@ -160,7 +156,6 @@ const LMSRedesign = ({ user, organizationId }) => {
       // 412s when two edits straddle an in-flight PUT.
       const liveEtag =
         coursesRef.current.find((c) => c.id === courseId)?._etag || body._etag;
-      console.log("[LMS v2][scheduleSave] PUT", { courseId, etag: liveEtag });
       try {
         const updated = await updateCourseApi({
           organizationId,

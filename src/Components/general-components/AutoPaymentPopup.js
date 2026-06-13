@@ -55,7 +55,6 @@ const AutoPaymentPopup = ({ onClose, userEmail }) => {
 
   const handleProceedTopup = async () => {
     try {
-      console.log("[AutoPaymentPopup] Proceed topup clicked");
       if (accessLoading) {
         toast.info("Checking subscription access…");
         return;
@@ -88,10 +87,8 @@ const AutoPaymentPopup = ({ onClose, userEmail }) => {
         body: JSON.stringify({}),
       });
 
-      console.log("[AutoPaymentPopup] API response status:", response.status);
 
       const data = await response.json().catch(() => ({}));
-      console.log("[AutoPaymentPopup] API response data:", data);
 
       if (!response.ok || data?.ok === false) {
         console.error("[AutoPaymentPopup] Topup request failed:", data);
@@ -103,7 +100,6 @@ const AutoPaymentPopup = ({ onClose, userEmail }) => {
         return;
       }
 
-      console.log("[AutoPaymentPopup] Auto topup completed");
       toast.success("Auto topup successful — your balance has been credited.");
       setPaymentDetails({
         last4: data?.last4 || null,
@@ -125,7 +121,6 @@ const AutoPaymentPopup = ({ onClose, userEmail }) => {
   };
 
   const handleCancel = () => {
-    console.log("[AutoPaymentPopup] User clicked No Thanks");
     onClose();
   };
 

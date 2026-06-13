@@ -15,9 +15,7 @@ const logWithTime = (message, data = "") => {
     const time = new Date().toISOString();
 
     if (data) {
-        console.log(`[${time}] ${message}`, data);
     } else {
-        console.log(`[${time}] ${message}`);
     }
 };
 

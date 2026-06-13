@@ -182,6 +182,10 @@ const VoiceModule = (props) => {
     const [isRequestingChanges, setIsRequestingChanges] = useState(false);
     // template list & actions
     const [templates, setTemplates] = useState([]);
+    // Drives the list's loading / error / retry UI. Without these the list
+    // failed silently (blank forever) when a fetch stalled or errored.
+    const [templatesLoading, setTemplatesLoading] = useState(false);
+    const [templatesError, setTemplatesError] = useState(false);
     const [openMenuId, setOpenMenuId] = useState(null);
 
     // delete flow
@@ -451,7 +455,6 @@ const VoiceModule = (props) => {
     const processVoiceRecordingAndroid = async () => {
         try {
             if (!audioBlob) {
-                console.log("No audio blob");
                 return;
             }
 
@@ -465,7 +468,6 @@ const VoiceModule = (props) => {
             formData.append("staffEmail", staffEmail || "");
             formData.append("staffName", staffName || "");
 
-            console.log("ANDROID request payload ready");
 
             setGenerationStage("generating");
             animateProgress(audioProgress, setAudioProgress, 30, 600);
@@ -475,15 +477,12 @@ const VoiceModule = (props) => {
                 body: formData
             });
 
-            console.log("ANDROID backend response received");
 
             animateProgress(30, setAudioProgress, 70, 800);
 
             const data = await res.json();
-            console.log("ANDROID voice response", data);
             if (data?.generatedDocsSasUrls && Array.isArray(data?.generatedDocsSasUrls)) {
                 setGeneratedDocsSasUrls(prev => [...prev, ...data?.generatedDocsSasUrls]);
-                console.log("SAS URLs collected in Android flow:", data?.generatedDocsSasUrls);
             }
 
             let documentsGenerated = 0;
@@ -1030,7 +1029,6 @@ const VoiceModule = (props) => {
         if (setIsCareVoiceLocked) setIsCareVoiceLocked(true);
         try {
             if (platformType !== "windows" || platformType === "windows" || platformType !== "mac") {
-                console.log("ANDROID detected, using backend voice pipeline");
 
                 setGenerationStage("generating");
 
@@ -1159,29 +1157,68 @@ const VoiceModule = (props) => {
         return merged;
     };
 
+    // Wraps fetch with an abort-based timeout so a stalled backend or a
+    // half-open connection can't leave the request pending for minutes — the
+    // root cause of the "waited 5 mins and the list never came" bug (a bare
+    // fetch() has no timeout and sits until the OS TCP timeout). Retries once
+    // on timeout / network error with a short backoff.
+    const fetchJsonWithTimeout = async (
+        url,
+        { timeoutMs = 15000, retries = 1, ...options } = {}
+    ) => {
+        for (let attempt = 0; ; attempt++) {
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), timeoutMs);
+            try {
+                const res = await fetch(url, { ...options, signal: controller.signal });
+                clearTimeout(timer);
+                return res;
+            } catch (err) {
+                clearTimeout(timer);
+                if (attempt >= retries) throw err;
+                await new Promise((r) => setTimeout(r, 500));
+            }
+        }
+    };
+
     const fetchTemplates = async () => {
         if (!organizationId) return;
+        setTemplatesError(false);
+        setTemplatesLoading(true);
         try {
             // Cache-bust + no-store so a just-saved prompt is never masked by a
             // stale HTTP-cached response (the "needs 2-3 refreshes" bug).
-            const res = await fetch(
+            const res = await fetchJsonWithTimeout(
                 `${API_BASE}/api/voiceModuleTemplate?organizationId=${encodeURIComponent(organizationId)}&_t=${Date.now()}`,
-                { cache: "no-store" }
+                // The list pulls all templates (large prompt/mappings/sampleBlobs
+                // each) from Cosmos. On a local backend hitting a remote Cosmos
+                // over a slow link this can run well past 15s — long enough that
+                // the old 15s abort fired, retried, and surfaced "couldn't load"
+                // even though the backend had actually found the records. Give
+                // the bulk list a generous ceiling; it still can't hang forever.
+                { cache: "no-store", timeoutMs: 60000, retries: 1 }
             );
             const data = await res.json();
-            if (data.success) {
-                // Guard against backend write-lag clobbering a just-saved prompt.
-                const merged = applyPromptOverrides(organizationId, data?.data || []);
-                setTemplates(merged);
-                try {
-                    sessionStorage.setItem(
-                        templatesCacheKey(organizationId),
-                        JSON.stringify(merged)
-                    );
-                } catch (_) { /* quota / private mode — ignore */ }
+            if (!res.ok || !data?.success) {
+                throw new Error(data?.message || `Request failed (${res.status})`);
             }
+            // Guard against backend write-lag clobbering a just-saved prompt.
+            const merged = applyPromptOverrides(organizationId, data?.data || []);
+            setTemplates(merged);
+            try {
+                sessionStorage.setItem(
+                    templatesCacheKey(organizationId),
+                    JSON.stringify(merged)
+                );
+            } catch (_) { /* quota / private mode — ignore */ }
         } catch (err) {
             console.error("[UI] Fetch templates failed", err);
+            // Surface a retryable error instead of failing silently. The render
+            // only shows the banner when there's nothing cached to display, so
+            // a painted list stays put rather than blanking out on a blip.
+            setTemplatesError(true);
+        } finally {
+            setTemplatesLoading(false);
         }
     };
 
@@ -1491,7 +1528,6 @@ const VoiceModule = (props) => {
 
 
     const pollLatest = (id) => {
-        console.log("[UI] pollLatest started for session:", id);
 
         // Abort if no NEW event arrives within this window. The engine can
         // legitimately go silent for 2-3 min during a heavy LLM step on a
@@ -1540,7 +1576,6 @@ const VoiceModule = (props) => {
                 if (done) return;
 
                 const data = await res.json();
-                console.log("[UI] poll response:", data?.type, data);
 
                 if (done) return;
 
@@ -1628,7 +1663,6 @@ const VoiceModule = (props) => {
 
                     // ✅ ONLY mapper.mapper flatten
                     setMapperRows(mapperToRows(data?.mapper));
-                    console.log("data?.llm_cost?.total_usd", data?.llm_cost?.total_usd)
                     // Stop further polling immediately — the backend deletes the
                     // session on final_result, so any in-flight follow-up poll
                     // would otherwise hit "Invalid sessionId".
@@ -1804,7 +1838,6 @@ const VoiceModule = (props) => {
             sampleFiles.forEach((file) => {
                 formData.append("samples", file);
             });
-            console.log("editingTemplateId", editingTemplateId)
             const url = editingTemplateId !== null
                 ? `${API_BASE}/api/voiceModuleTemplate/${editingTemplateId}`
                 : `${API_BASE}/api/voiceModuleTemplate`;
@@ -2116,9 +2149,7 @@ const VoiceModule = (props) => {
             !docs?.length ||
             !userEmail
         ) {
-            console.log("emailSentRef.current", emailSentRef.current)
             // console.log("docs", docs)
-            console.log("sendGeneratedDocsEmail says returned", userEmail)
             return;
         }
 
@@ -2232,7 +2263,6 @@ const VoiceModule = (props) => {
         });
 
         const data = await res.json();
-        console.log("data in processSingleTranscriptWithTemplate", data)
         if (data.success && data.filled_document) {
             const filename = `${tpl.templateName}_${file.name}.docx`;
 
@@ -2523,10 +2553,8 @@ const VoiceModule = (props) => {
 
                     // console.log(`Response received for ${file.name}, status: ${res.status}`);
                     const data = await res.json();
-                    console.log(`Processing response for ${file.name}:`, data?.generatedDocsSasUrls);
                     if (data?.generatedDocsSasUrls) {
                         data?.generatedDocsSasUrls.map(sasUrl => {
-                            console.log("data.generatedDocsSasUrl of media", sasUrl);
                             generatedDocsSasUrls.push(sasUrl);
                         });
                     }
@@ -2679,7 +2707,6 @@ const VoiceModule = (props) => {
                 }
                 else {
                     // For non-audio/video files (PDF, DOC, TXT, etc.)
-                    console.log("Processing non-audio/video file:", file.name);
 
                     // Fan out all templates for this file in parallel.
                     // allSettled keeps a single template's failure from
@@ -2710,7 +2737,6 @@ const VoiceModule = (props) => {
                 completedOperations++;
                 const progressPercent = Math.floor((completedOperations / totalOperations) * 100);
                 setFileProgress(progressPercent);
-                console.log(`Progress: ${completedOperations}/${totalOperations} (${progressPercent}%)`);
                 if (setIsCareVoiceLocked) setIsCareVoiceLocked(false);
                 // Add a small delay between file processing
                 if (completedOperations < totalOperations) {
@@ -2719,17 +2745,13 @@ const VoiceModule = (props) => {
             }
         }
 
-        console.log(`All files processed. Total documents generated: ${docsToSend.length}`);
-        console.log("docsToSend", docsToSend)
         setGeneratedDocsSasUrls(generatedDocsSasUrls);
-        console.log("All SAS URLs collected:", generatedDocsSasUrls);
         if (docsToSend.length > 0) {
             setFileStage("emailing");
             setFileProgress(90);
             // await sendGeneratedDocsEmail(docsToSend);
             toast.success(`Successfully generated ${docsToSend.length} document(s)!`);
         } else {
-            console.log("No documents were generated");
             if (!hasError) {
                 toast.warn("No documents were generated. Please check your audio files and templates.");
             }
@@ -2752,7 +2774,6 @@ const VoiceModule = (props) => {
         // resetStaffUI();
         setCurrentTask("");
     };
-    console.log("generatedDocsSasUrls", generatedDocsSasUrls)
 
 
     const handleDownloadBlob = async ({
@@ -2853,9 +2874,10 @@ const VoiceModule = (props) => {
         setOrgLookupStatus("loading");
         try {
             const firebase_uid = auth.currentUser?.uid || "";
-            const res = await fetch(
+            const res = await fetchJsonWithTimeout(
                 `${API_BASE}/api/care-voice/organizations/by-email?email=${encodeURIComponent(userEmail)}` +
-                (firebase_uid ? `&firebase_uid=${encodeURIComponent(firebase_uid)}` : "")
+                (firebase_uid ? `&firebase_uid=${encodeURIComponent(firebase_uid)}` : ""),
+                { timeoutMs: 15000, retries: 1 }
             );
             const data = await res.json();
             const first = data?.organizations?.[0];
@@ -2875,14 +2897,23 @@ const VoiceModule = (props) => {
                 if (data.justActivated) {
                     setPendingWelcomeToast(true);
                 }
-            } else {
+            } else if (res.ok && data?.ok) {
+                // Genuine empty result — the caller really has no org yet.
                 setOrganizationId(null);
                 setOrganizationName("");
                 setOrgLookupStatus("not_found");
+            } else {
+                // Bad / uninterpretable response. Treat as a transient error
+                // rather than "no org", so a backend blip doesn't wrongly drop
+                // the user onto the register screen (and never load templates).
+                throw new Error(data?.message || `Org lookup failed (${res.status})`);
             }
         } catch (err) {
             console.error("[VoiceModule] org lookup failed", err);
-            setOrgLookupStatus("not_found");
+            // Network error / timeout / bad response → retryable error screen,
+            // NOT "not_found". Previously any blip here showed the register
+            // screen and the template list never even attempted to load.
+            setOrgLookupStatus("error");
         }
     };
 
@@ -2948,7 +2979,6 @@ const VoiceModule = (props) => {
         // 5. Clear Ask AI chat
         if (props?.setMessages) props.setMessages([]);
 
-        console.log("Full reset done");
     };
     // if (!isAllowedUsers && notAllowedDomain) {
     //     return (
@@ -2990,7 +3020,28 @@ const VoiceModule = (props) => {
         );
     }
 
-    console.log("props.careVoice files", props?.careVoiceFiles)
+    // Transient failure resolving the org (network / timeout / bad response).
+    // Offer a retry instead of silently showing the register screen or a
+    // perpetually-blank dashboard.
+    if (orgLookupStatus === "error") {
+        return (
+            <div className="vm-org-error">
+                <div className="vm-org-error-title">
+                    Couldn't load Care Voice
+                </div>
+                <div className="vm-org-error-text">
+                    We couldn't reach the server. Check your connection and try again.
+                </div>
+                <button
+                    className="vm-org-error-retry"
+                    onClick={() => fetchOrganization()}
+                >
+                    Retry
+                </button>
+            </div>
+        );
+    }
+
     const handleDownloadAllDocs = () => {
         const filteredFiles = (props.careVoiceFiles || []).filter((file) => {
             const fileName = file?.name || "";
@@ -3446,6 +3497,30 @@ const VoiceModule = (props) => {
                                 </div>
                             </div>
 
+                        </div>
+                    )}
+
+                    {/* ===== TEMPLATE LIST: loading (nothing cached yet) ===== */}
+                    {stage === "idle" && !activeTemplate && templates.length === 0 && templatesLoading && (
+                        <div className="vm-template-list">
+                            <div className="vm-template-status vm-template-status-loading">
+                                <span className="vm-template-spinner" aria-hidden="true" />
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ===== TEMPLATE LIST: error (nothing cached to show) ===== */}
+                    {stage === "idle" && !activeTemplate && templates.length === 0 && !templatesLoading && templatesError && (
+                        <div className="vm-template-list">
+                            <div className="vm-template-status vm-template-status-error">
+                                <span>Couldn't load your templates.</span>
+                                <button
+                                    className="vm-template-retry-btn"
+                                    onClick={fetchTemplates}
+                                >
+                                    Retry
+                                </button>
+                            </div>
                         </div>
                     )}
 
@@ -3914,7 +3989,6 @@ const VoiceModule = (props) => {
                                 mapperMode={mapperMode}
                                 onChangeConfig={(cfg) => {
                                     // ✅ OPTIONAL: agar tum chaho to cfg.mapper ko rows me sync kar sakte ho later
-                                    console.log("config updated");
                                 }}
                             />
                         </div>
@@ -4366,7 +4440,23 @@ const VoiceModule = (props) => {
                         {/* TEMPLATE LIST */}
                         <div className="template-select-list">
 
-                            {templates.length === 0 ? (
+                            {templates.length === 0 && templatesLoading ? (
+                                <div className="template-empty-center">
+                                    <span className="vm-template-spinner" aria-hidden="true" />
+                                </div>
+                            ) : templates.length === 0 && templatesError ? (
+                                <div className="template-empty-center">
+                                    <div className="template-empty-text">
+                                        Couldn't load templates.
+                                    </div>
+                                    <button
+                                        className="vm-template-retry-btn"
+                                        onClick={fetchTemplates}
+                                    >
+                                        Retry
+                                    </button>
+                                </div>
+                            ) : templates.length === 0 ? (
                                 <div className="template-empty-center">
                                     <img
                                         src={careVoiceStaffTemplateIcon}

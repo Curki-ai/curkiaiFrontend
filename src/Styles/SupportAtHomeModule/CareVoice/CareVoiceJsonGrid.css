@@ -4,13 +4,13 @@
 }
 
 .fmp-root {
-    height: 100vh;
+    height: auto;
     display: flex;
     flex-direction: column;
     font-family: Inter, sans-serif;
     background: #ffffff;
     color: #0f172a;
-    overflow: hidden;
+    overflow: visible;
 }
 
 /* JSONEditor SaaS Theme Override */
@@ -146,14 +146,14 @@
 /* Main */
 .fmp-main {
     flex: 1;
-    overflow: hidden;
+    overflow: visible;
     position: relative;
 }
 
 /* View container scroll */
 .fmp-view-container {
-    height: 100%;
-    overflow-y: auto;
+    height: auto;
+    overflow: visible;
     scroll-behavior: smooth;
 }
 
@@ -257,13 +257,13 @@
 }
 
 .fmp-root {
-    height: 100vh;
+    height: auto;
     display: flex;
     flex-direction: column;
     font-family: Inter, sans-serif;
     background: #ffffff;
     color: #0f172a;
-    overflow: hidden;
+    overflow: visible;
 }
 
 /* JSONEditor SaaS Theme Override */
@@ -399,14 +399,14 @@
 /* Main */
 .fmp-main {
     flex: 1;
-    overflow: hidden;
+    overflow: visible;
     position: relative;
 }
 
 /* View container scroll */
 .fmp-view-container {
-    height: 100%;
-    overflow-y: auto;
+    height: auto;
+    overflow: visible;
     scroll-behavior: smooth;
 }
 
@@ -694,12 +694,12 @@
 
 /* JSON view */
 .fmp-json-view {
-    height: 100%;
+    height: auto;
     background: #ffffff;
 }
 
 .fmp-json-editor {
-    height: 100%;
+    height: 600px;
 }
 
 /* Footer */
@@ -926,12 +926,12 @@
 
 /* JSON view */
 .fmp-json-view {
-    height: 100%;
+    height: auto;
     background: #ffffff;
 }
 
 .fmp-json-editor {
-    height: 100%;
+    height: 600px;
 }
 
 /* Footer */
@@ -1019,4 +1019,25 @@
   background: #ffffff;
   border: 1px solid var(--primary);
   box-shadow: 0 0 0 4px rgba(108, 76, 220, 0.12);
+}
+
+/* ===== Grid (jsoneditor) view: no internal scroll =====
+   The jsoneditor tree was mounted in a fixed 600px box, so it scrolled its own
+   content. Let it grow with its content instead so the whole page scrolls the
+   tree (matching the Source tab — no inner scrollbar to stop the wheel midway).
+   Overriding the container + the library's height/overflow on its inner
+   elements removes the internal scroll port; `!important` beats jsoneditor's
+   own CSS. Scoped under .fmp-json-editor so no other jsoneditor is affected.
+   Placed at end-of-file so it wins over the earlier `.fmp-json-editor: 600px`. */
+.fmp-json-editor {
+  height: auto !important;
+  min-height: 200px;
+}
+
+.fmp-json-editor .jsoneditor,
+.fmp-json-editor .jsoneditor-outer,
+.fmp-json-editor .jsoneditor-tree {
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
 }

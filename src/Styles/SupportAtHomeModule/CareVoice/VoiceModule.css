@@ -5160,3 +5160,96 @@ html.cv-loading-lock body {
 .vm-combine-switch-track.is-on .vm-combine-switch-knob {
   transform: translateX(18px);
 }
+
+/* ===== Template list: loading / error / retry states ===== */
+.vm-template-spinner {
+  width: 56px;
+  height: 56px;
+  border: 5px solid #e5e0fa;
+  border-top-color: #6c4cdc;
+  border-radius: 50%;
+  animation: vm-template-spin 0.7s linear infinite;
+}
+
+@keyframes vm-template-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.vm-template-status {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 40px 20px;
+  text-align: center;
+  font-size: 16px;
+  color: #4b5563;
+}
+
+.vm-template-status-loading {
+  color: #ffffff;
+  font-size: 14px;
+}
+
+.vm-template-status-error span {
+  color: #b91c1c;
+}
+
+.vm-template-retry-btn {
+  border: none;
+  background: #6c4cdc;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 10px 24px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.vm-template-retry-btn:hover {
+  background: #5a3fc0;
+}
+
+/* ===== Org lookup failed (transient) — full-screen retry ===== */
+.vm-org-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  min-height: 60vh;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.vm-org-error-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.vm-org-error-text {
+  font-size: 16px;
+  color: #6b7280;
+  max-width: 420px;
+}
+
+.vm-org-error-retry {
+  border: none;
+  background: #6c4cdc;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  padding: 12px 32px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.vm-org-error-retry:hover {
+  background: #5a3fc0;
+}

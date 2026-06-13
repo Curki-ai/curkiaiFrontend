@@ -201,7 +201,6 @@ const SoftwareConnect = (props) => {
         // console.log("data in refresh token", response.data);
 
         if (response.status === 200) {
-          console.log("Xero token refreshed");
         } else {
           console.warn("⚠️ Failed to refresh Xero token:", response.data.error);
         }

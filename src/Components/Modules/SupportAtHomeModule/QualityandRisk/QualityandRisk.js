@@ -70,7 +70,6 @@ const QualityandRisk = (props) => {
                 formData,
             );
 
-            console.log('reponse', response);
 
             if (response.status === 200 && response.data?.report) {
                 const allReports = response.data.report;

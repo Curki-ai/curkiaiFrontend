@@ -63,7 +63,6 @@ const CareVoiceNoOrgEmptyState = ({ userEmail, onRegistered }) => {
         setSubmitting(false);
         return;
       }
-      console.log("[CareVoiceNoOrgEmptyState] register success:", data);
       setSubmitting(false);
       setShowModal(false);
       setOrgName("");
