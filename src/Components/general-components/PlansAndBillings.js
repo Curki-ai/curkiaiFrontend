@@ -118,9 +118,6 @@ const PlansAndBillings = ({ onClose, email: userEmail, firstName: firstName, set
                 console.error("User email missing");
                 return;
             }
-            console.log("userEmail", userEmail)
-            console.log("planKey", planKey)
-            console.log("billingInterval", billing)
             const payload = {
                 email: userEmail,
                 planKey,

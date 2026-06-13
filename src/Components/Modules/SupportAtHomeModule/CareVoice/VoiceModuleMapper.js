@@ -3,7 +3,6 @@ import "../../../../Styles/SupportAtHomeModule/CareVoice/VoiceModuleMapper.css";
 
 const MapperGrid = ({ rows, setRows, readOnly = false }) => {
   // console.log("readOnly", readOnly)
-  console.log("rows in mapper grid", rows)
   const [openMenuIndex, setOpenMenuIndex] = useState(null);
 
   const updateRow = (index, key, value) => {

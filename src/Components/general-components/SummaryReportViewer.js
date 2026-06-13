@@ -31,7 +31,6 @@ const SummaryReport = ({
     summaryText && typeof summaryText === "string"
       ? JSON.parse(summaryText)
       : summaryText;
-  console.log("parsedResponse",parsedResponse);
   const [isCompletnessAuditOpen, setIsCompletenessAuditOpen] = useState(false);
 
   const compliance_level = parsedResponse?.compliance_level || "";

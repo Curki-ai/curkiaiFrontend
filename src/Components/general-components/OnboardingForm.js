@@ -9,7 +9,6 @@ import { API_BASE } from "../../config/apiBase";
 
 const OnboardingForm = ({ onClose, userEmail, organizationId }) => {
     const MAX_CHARS = 150;
-    console.log("userEmail in OnboardingForm", userEmail)
     const [providerName, setProviderName] = useState('');
     const [rosteringManagers, setRosteringManagers] = useState([{ email: "", phone: "" }]);
     const [shortlistCriteria, setShortlistCriteria] = useState("");
@@ -32,24 +31,19 @@ const OnboardingForm = ({ onClose, userEmail, organizationId }) => {
     useEffect(() => {
         if (!userEmail || !organizationId) return;
 
-        console.log("[UI] Checking existing settings for organizationId:", organizationId);
 
         const fetchExisting = async () => {
             try {
                 const url = `${API_BASE}/api/rosteringSettings/by-org/${encodeURIComponent(organizationId)}`;
-                console.log("[UI] Prefill fetch URL:", url);
 
                 const res = await axios.get(url);
 
-                console.log("[UI] Prefill response:", res.data);
 
                 if (!res.data?.data?.length) {
-                    console.log("[UI] No existing entry found");
                     return;
                 }
 
                 const data = res.data.data[0];
-                console.log("[UI] Existing entry found, prefilling form", data);
 
                 setExistingId(data.id);
                 setIsEdit(true);
@@ -84,7 +78,6 @@ const OnboardingForm = ({ onClose, userEmail, organizationId }) => {
 
 
     const handleSave = async () => {
-        console.log("[UI] Save clicked");
         const parsedRoleElimination = roleEliminationInput
             .split(",")
             .map(r => r.trim())
@@ -104,7 +97,6 @@ const OnboardingForm = ({ onClose, userEmail, organizationId }) => {
             workflowFlags
         };
 
-        console.log("[UI] Payload prepared", payload);
 
         try {
             setLoading(true);
@@ -116,8 +108,6 @@ const OnboardingForm = ({ onClose, userEmail, organizationId }) => {
                 ? `${API_BASE}/api/rosteringSettings/update/${domain}/${existingId}`
                 : `${API_BASE}/api/rosteringSettings`;
 
-            console.log("[UI] Request type:", isUpdate ? "UPDATE" : "CREATE");
-            console.log("[UI] Request URL:", url);
 
             let res;
 
@@ -154,10 +144,7 @@ const OnboardingForm = ({ onClose, userEmail, organizationId }) => {
                 res = await axios.post(url, payload);
             }
 
-            console.log("[UI] API response status:", res.status);
-            console.log("[UI] API response body:", res.data);
 
-            console.log("[UI] Rostering settings saved successfully");
             onClose();
 
         } catch (error) {
@@ -168,7 +155,6 @@ const OnboardingForm = ({ onClose, userEmail, organizationId }) => {
             }
         } finally {
             setLoading(false);
-            console.log("[UI] Save process completed");
         }
     };
 

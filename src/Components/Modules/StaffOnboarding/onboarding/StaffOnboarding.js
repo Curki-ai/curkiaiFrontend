@@ -6,7 +6,6 @@ import { ReactSortable } from "react-sortablejs"; // ✅ new package
 import { FaPencilAlt } from "react-icons/fa";
 import { getAllModulesApi } from "./AdminCourseApis";
 const StaffOnboarding = (props) => {
-  console.log('StaffOnboarding props', props);
   const [expandedSections, setExpandedSections] = useState({});
   const [selectedLecture, setSelectedLecture] = useState("2");
   const [lectureCompletionStatus, setLectureCompletionStatus] = useState({});
@@ -15,7 +14,6 @@ const StaffOnboarding = (props) => {
   const [isEditMode, setIsEditMode] = useState(false);
   const [modules, setModules] = useState([]);
   const AdminEmail = props?.user?.email;
-  console.log("AdminEmail:", AdminEmail);
   const getSectionProgress = (section) => {
     const total = section.items.length;
     const completed = section.items.filter((item) => lectureCompletionStatus[item.id]).length;
@@ -44,7 +42,6 @@ const StaffOnboarding = (props) => {
     const fetchModules = async () => {
       try {
         const rawModules = await getAllModulesApi(AdminEmail);
-        console.log("Fetched modules:", rawModules);
 
         // normalize: convert `lectures` → `lessons`
         const normalizedModules = rawModules.map(m => ({
@@ -52,7 +49,6 @@ const StaffOnboarding = (props) => {
           title: m.title,
           lessons: m.lectures || [],   // ✅ map lectures to lessons,
         }));
-        console.log("Normalized modules:", normalizedModules);
         setModules(normalizedModules);
       } catch (err) {
         console.error("❌ Error fetching modules:", err);
@@ -62,7 +58,6 @@ const StaffOnboarding = (props) => {
 
     fetchModules();
   }, []);
-  console.log("Fetched Modules", modules);
   const [sections, setSections] = useState([]);
   useEffect(() => {
     const fetchDurations = async () => {
@@ -178,7 +173,6 @@ const StaffOnboarding = (props) => {
               const selected = sections
                 .flatMap((s) => s.items)
                 .find((item) => item.id === selectedLecture);
-              console.log("Selected lecture:", selected);
               if (!selected) {
                 return <p>Select a lecture to start</p>;
               }

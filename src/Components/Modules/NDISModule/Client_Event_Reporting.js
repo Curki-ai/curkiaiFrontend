@@ -103,7 +103,6 @@ const Client_Event_Reporting = (props) => {
           ? `${currentYear}-${endMonth}-${endDay}`
           : null,
       };
-      console.log("Saving with date range:", dateRange);
 
       const payload = {
         email: props.user.email,

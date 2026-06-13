@@ -165,7 +165,6 @@ const Qfr = (props) => {
                     formData.append("template", sheetBlob, `${sheetName}.xlsx`);
                     qfrReportFiles.forEach((file) => formData.append("source_files", file, file.name));
                     formData.append("metric_name", metric);
-                    console.log(stdTemplatePath);
 
                     let standardEndpoint = "";
                     if (props.selectedRole === "Quarterly Financial Reporting") {
@@ -258,7 +257,6 @@ const Qfr = (props) => {
 
                 const summariseForm = new FormData();
                 summariseForm.append("file", mergedFile);
-                console.log('SuumariseFor', summariseForm);
                 let standardSummariseEndpoint = '';
                 if (props.selectedRole === "Quarterly Financial Reporting") {
                     standardSummariseEndpoint = "https://aca-curki-aibackend-prod-aue-001.agreeabledune-2a557375.australiaeast.azurecontainerapps.io/support-at-home/qfr/report";
@@ -267,7 +265,6 @@ const Qfr = (props) => {
                     standardSummariseEndpoint,
                     summariseForm
                 );
-                console.log('DeepakAnalyis', summaryResponse);
                 setQfrReport(summaryResponse.data?.analysis || "No summary available.");
 
                 // Visualisation only for Financial Health
@@ -289,7 +286,6 @@ const Qfr = (props) => {
                         standardVisulaiseEndpoint,
                         visualiseForm
                     );
-                    console.log(visualiseResponse);
                     const attachments = visualiseResponse.data?.attachments || [];
 
                     if (attachments.length > 0) {

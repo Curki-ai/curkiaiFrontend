@@ -166,7 +166,6 @@ const NewFinancialHealth = (props) => {
                 });
             });
 
-            console.log(`Found ${filtered.length} matching history items`);
             setFilteredHistoryList(filtered);
             setSearchMode(true);
 
@@ -827,7 +826,6 @@ const NewFinancialHealth = (props) => {
                 }
 
                 const json = await res.json();
-                console.log("json", json)
                 const filteredHistory = userStates.length
                     ? (json.data || []).filter(item =>
                         item.filters?.selectedState?.some(selected =>
@@ -1290,7 +1288,7 @@ const NewFinancialHealth = (props) => {
                     storeForm.append("state", activeTabData.selectedState[0].value);
                 }
                 fetch(`${BASE_URL}/api/financial-v2/files/upload`, { method: "POST", body: storeForm })
-                    .then(() => console.log("[fh] uploaded file stored to file_data (TLC)"))
+                    .then(() => {})
                     .catch(err => console.warn("[fh] file_data store failed:", err));
             }
 
@@ -1332,7 +1330,6 @@ const NewFinancialHealth = (props) => {
 
                 // console.log("Analysis API response:", analysisRes);
                 analysisData = analysisRes.data;
-                console.log("Analysis API response data of type api:", analysisData);
                 const askAiFrames = analysisData?.csv_data
                 updateTab({
                     progressStage: "preparing",
@@ -1379,7 +1376,6 @@ const NewFinancialHealth = (props) => {
                 });
                 analysisData = analysisRes.data;
 
-                console.log("Analysis API response of type upload:", analysisData);
                 updateTab({
                     askAiDataframes: analysisData?.csv_data
                 })
@@ -1452,7 +1448,6 @@ const NewFinancialHealth = (props) => {
                         metricName: plot.filename || `Plot ${index + 1}`,
                     }));
                 }
-                console.log("analysisData", analysisData)
                 const apiPlots = analysisData?.plots || [];
                 // Process CSV data for Excel export
                 // Process CSV data for Excel export
@@ -1526,7 +1521,6 @@ const NewFinancialHealth = (props) => {
                                     }
                                 }
                             } else {
-                                console.log(`${sheetName} is not a string, it's:`, typeof csvString);
                             }
                         });
 
@@ -1546,13 +1540,11 @@ const NewFinancialHealth = (props) => {
 
                             // console.log("Created Excel with sheets:", titlesArray);
                         } else {
-                            console.log("No valid CSV data to create Excel");
                         }
                     } catch (err) {
                         console.error("Error building Excel:", err);
                     }
                 } else {
-                    console.log("No csv_data in response or it's not an object");
                 }
 
                 const tabDateName = formatDateRangeForTab(startDate, endDate);
@@ -1572,7 +1564,6 @@ const NewFinancialHealth = (props) => {
                     stage: "overview",
                     ...(tabDateName ? { name: tabDateName } : {}),
                 });
-                console.log("analysisData?.llm_cost", analysisData?.llm_cost)
                 await incrementCareVoiceAnalysisCount(userEmail, "ai-analysis", analysisData?.llm_cost?.total_usd, "financial-health", analysisData?.llm_cost?.token_usage);
             } else {
                 // 🔹 Old upload flow
@@ -1595,7 +1586,6 @@ const NewFinancialHealth = (props) => {
                             uploadResponseText;
 
                     } catch (err) {
-                        console.log("Upload response is not JSON, using raw string");
                     }
                 }
 
@@ -1618,7 +1608,6 @@ const NewFinancialHealth = (props) => {
                     stage: "overview",
                     ...(tabDateName ? { name: tabDateName } : {}),
                 });
-                console.log("analysisData?.llm_cost in upload type", analysisData?.llm_cost)
                 await incrementCareVoiceAnalysisCount(userEmail, "ai-analysis", analysisData?.llm_cost?.total_usd, "financial-health", analysisData?.llm_cost?.token_usage);
             }
 

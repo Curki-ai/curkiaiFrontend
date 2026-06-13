@@ -88,7 +88,6 @@ const AiRostering = ({
   ];
 
   const handleBroadcastClick = () => {
-    console.log("Broadcasting SMS to workers...");
     setSmsBroadcasted(true);
   };
 

@@ -571,7 +571,6 @@ const SmartRostering = (props) => {
                 { prompt: query, userEmail, organizationId },
                 { headers: { "Content-Type": "application/json" } }
             );
-            console.log("response in prompt based rostering", response)
             const promptCost = response?.data?.filler?.llm_cost?.total_usd || 0;
             const rosteringCost = response?.data?.rostering_llm_cost?.total_usd || 0;
             const promptToken_usage = response?.data?.filler?.llm_cost?.token_usage;

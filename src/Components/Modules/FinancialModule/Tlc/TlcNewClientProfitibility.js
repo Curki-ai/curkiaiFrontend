@@ -113,7 +113,6 @@ const TlcNewClientProfitability = (props) => {
             }
 
             const parsedRanges = result.data;
-            console.log("Parsed search ranges:", parsedRanges);
 
             if (!parsedRanges || parsedRanges.length === 0) {
                 setFilteredHistoryList([]);
@@ -168,7 +167,6 @@ const TlcNewClientProfitability = (props) => {
                 });
             });
 
-            console.log(`Found ${filtered.length} matching history items`);
             setFilteredHistoryList(filtered);
             setSearchMode(true);
 
@@ -491,7 +489,6 @@ const TlcNewClientProfitability = (props) => {
         const blob = await Packer.toBlob(doc);
         saveAs(blob, `Client_Profitability_${formatMonthRange(startDate, endDate)}.docx`);
         try {
-            console.log("Starting excel export request");
 
             const excelResponse = await fetch(
                 `${BASE_URL}/api/export-json-table-excel`,
@@ -512,7 +509,6 @@ const TlcNewClientProfitability = (props) => {
 
             const excelData = await excelResponse.json();
 
-            console.log("Excel API response:", excelData);
 
             if (!excelResponse.ok || !excelData.success) {
                 throw new Error(excelData.message || "Excel export failed");
@@ -529,7 +525,6 @@ const TlcNewClientProfitability = (props) => {
             excelLink.click();
             document.body.removeChild(excelLink);
 
-            console.log("Excel file downloaded successfully");
         } catch (error) {
             console.error("Excel download failed:", error);
         }
@@ -606,7 +601,6 @@ const TlcNewClientProfitability = (props) => {
 
             // ✅ CALL CANCEL API if job exists
             if (tab?.jobId) {
-                console.log("❌ Cancelling job:", tab.jobId);
 
                 await fetch(
                     `${BASE_URL}/api/analyzeClientsProfitability/client-profitability/cancel-job/${tab.jobId}`,
@@ -822,7 +816,6 @@ const TlcNewClientProfitability = (props) => {
             );
 
             const data = await res.json();
-            console.log("data after upload", data)
             if (data?.batchId) {
                 setBatchId(data?.batchId);
             }
@@ -1057,7 +1050,6 @@ const TlcNewClientProfitability = (props) => {
 
                     // STOP IF CANCELLED
                     if (tab?.status === "cancelled") {
-                        console.log("Polling stopped (cancelled)");
                         clearInterval(pollInterval);
                         return;
                     }
@@ -1068,7 +1060,6 @@ const TlcNewClientProfitability = (props) => {
 
                     const statusData = await statusRes.json();
 
-                    console.log("JOB STATUS:", statusData);
 
                     if (statusData.status === "completed") {
                         clearInterval(pollInterval);
@@ -1160,7 +1151,6 @@ const TlcNewClientProfitability = (props) => {
             );
 
             const data = await res.json();
-            console.log("data in client profitibility", data)
             if (data) {
                 await incrementCareVoiceAnalysisCount(userEmail, "report-generation", data?.llm_cost?.total_usd, "client-profitability", data?.llm_cost?.token_usage)
             }
@@ -1689,7 +1679,6 @@ const TlcNewClientProfitability = (props) => {
     useEffect(() => {
         const fetchHistory = async () => {
             const email = userEmail
-            console.log("userEmail in fetch history", email)
             if (!email) return;
 
             try {

@@ -73,7 +73,6 @@ const TlcClientProfitability = (props) => {
             });
 
             const uploadData = await uploadRes.json();
-            console.log("UPLOAD RESPONSE", uploadData);
 
             const ids = uploadData.files?.map(f => f.documentId) || [];
             setDocumentIds(ids);
@@ -87,10 +86,7 @@ const TlcClientProfitability = (props) => {
 
 
     const handleFinalAnalysis = async (finalPayload) => {
-        console.log("props.tlcClientProfitabilityPayload in handleFinal analysis", props?.tlcClientProfitabilityPayload)
-        console.log("finalPayload", finalPayload)
         try {
-            console.log("🔄 Starting final analysis request...");
             const analyzeRes = await fetch(
                 `${BASE_URL}/tlcClientProfitibility/analyze-from-files?userEmail=${userEmail}`,
                 {
@@ -106,7 +102,6 @@ const TlcClientProfitability = (props) => {
             }
 
             const analyzeData = await analyzeRes.json();
-            console.log("✅ FINAL ANALYSIS RESPONSE:", analyzeData);
             setResponseData(analyzeData);
             return analyzeData;
         } catch (error) {
@@ -142,9 +137,7 @@ const TlcClientProfitability = (props) => {
                 const uploadData = await handleUpload();
                 sessionId = uploadData?.sessionId || null;
 
-                console.log("🆔 SESSION FROM UPLOAD:", sessionId);
             } else {
-                console.log("📝 No upload → prepare without sessionId");
             }
 
             // 🚫 Pass undefined if null → so query string omits sessionId
@@ -152,7 +145,6 @@ const TlcClientProfitability = (props) => {
 
             // Prepare analysis
             const prepareData = await handlePrepareAnalysis(safeSessionId);
-            console.log("PREPARE DATA:", prepareData);
 
             if (!prepareData?.ok) {
                 toast.error("Prepare failed");
@@ -183,7 +175,6 @@ const TlcClientProfitability = (props) => {
             const from = `2025-${startMonth}`;
             const to = `2025-${endMonth}`;
 
-            console.log("📊 Preparing analysis with:", { from, to, sessionId });
 
             // BASE URL
             let url = `${BASE_URL}/tlcClientProfitibility/prepare-analysis-data?from=${from}&to=${to}`;
@@ -193,7 +184,6 @@ const TlcClientProfitability = (props) => {
                 url += `&sessionId=${sessionId}`;
             }
 
-            console.log("➡️ FINAL PREPARE URL:", url);
 
             const prepareRes = await fetch(url, { method: "GET" });
 
@@ -226,7 +216,6 @@ const TlcClientProfitability = (props) => {
                 }
             );
             const data = await res.json();
-            console.log("AI PREPARE:", data);
             return data;
         } catch (err) {
             console.error("AI prepare error:", err);
@@ -246,7 +235,6 @@ const TlcClientProfitability = (props) => {
 
 
             const data = await res.json();
-            console.log("AI SUMMARY:", data);
 
             setAiSummary(data.summary_md || data.report_md || "");
         } catch (err) {
@@ -473,7 +461,6 @@ const TlcClientProfitability = (props) => {
     }, [responseData]);
 
 
-    console.log("directFinalTable", directFinalTable)
 
     if (isAllowed === false) {
         return (
@@ -741,7 +728,6 @@ const TlcClientProfitability = (props) => {
                             <button
                                 onClick={async () => {
                                     if (onPrepareAiPayload) {
-                                        console.log("Rebuilding JSON files before Summary...");
                                         // await prepareAiPayload(props.tlcClientProfitabilityPayload);
                                     }
 

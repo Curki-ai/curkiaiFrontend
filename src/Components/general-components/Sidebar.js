@@ -98,7 +98,6 @@ const Sidebar = ({
   // is an optional second card the user has expanded to peek into before
   // committing to one of its modules.
   const [browseAgent, setBrowseAgent] = useState(null);
-  console.log("user", user)
 
   const truncate = (text, maxLength = 25) => {
     if (!text) return "";
@@ -126,7 +125,6 @@ const Sidebar = ({
           `${API_BASE}/api/user/get?userEmail=${user?.email}`,
         );
 
-        console.log("User fetch:", res.data);
 
         setIsAdmin(res.data.isAdmin);
       } catch (error) {
@@ -152,7 +150,6 @@ const Sidebar = ({
         const res = await axios.get(
           `${API_BASE}/api/usage/v2/user/${encodeURIComponent(email)}/summary?range=year`,
         );
-        console.log("Usage summary response:", res);
         const totals = res.data?.totals || {};
         setUsageSummary({
           totalTokensUsed: totals.tokens || 0,

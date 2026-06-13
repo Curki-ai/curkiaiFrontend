@@ -445,7 +445,6 @@ const Plan = ({ title,
                 return;
             }
             const data = await res.json();
-            console.log("Trial started:", data);
             setSubscriptionInfo({
                 subscription_type: "trial",
                 trial_end: data?.trial?.trial_end,

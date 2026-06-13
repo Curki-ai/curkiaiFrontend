@@ -75,7 +75,6 @@ const CareServicesEligibility = (props) => {
                     if (response?.data) {
                         allResponsedatass.push(response?.data);
                     }
-                    console.log('reponse',response);
                     if (response.status === 200) {
                         const result = response.data;
                         setAnalysedCareReportdata(prev => [...(prev || []), result]);
@@ -97,7 +96,6 @@ const CareServicesEligibility = (props) => {
                     }
                 }
             }
-            console.log(allResponsedatass);
             setCareDatatoDownload(allResponsedatass);
             setShowCarePlanDownloadButton(true);
         } catch (error) {
@@ -107,7 +105,6 @@ const CareServicesEligibility = (props) => {
             setIsAnalysingCareReportLoading(false);
         }
     };
-    console.log(careDataToDownload);
 
     const handleDownloadCarePlanData = () => {
         if (!careDataToDownload || careDataToDownload.length === 0) return;

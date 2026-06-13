@@ -88,10 +88,6 @@ const HRAdminView = ({
           (firebase_uid ? `&firebase_uid=${encodeURIComponent(firebase_uid)}` : "")
         );
         const data = await res.json();
-        console.log(
-          `Organizations by-email response (attempt ${attempt}):`,
-          data
-        );
         if (cancelled) return;
         const firstOrgId = data?.organizations?.[0]?.organizationId;
         if (res.ok && firstOrgId) {

@@ -67,7 +67,6 @@ const FilePreviewModal = ({
             editingMode: true
           },
           onReady: () => {
-            console.log("SuperDoc editor ready");
             setLoading(false);
           },
           onError: (error) => {

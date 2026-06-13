@@ -31,8 +31,6 @@ const LessonViewer = ({
   onPrev,
   onNext,
 }) => {
-  console.log("LessonViewer props:", { section, lesson, isCompleted, quizScore });
-  console.log("Rendering LessonViewer for lesson", lesson);
   if (!lesson.published) {
     return (
       <div className="ulrn-locked">

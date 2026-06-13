@@ -248,8 +248,20 @@ export default function PromptBlockEditor({
     rightSlot,
 }) {
     const [tab, setTab] = useState("visual");
+    const sourceRef = useRef(null);
 
     const blocks = useMemo(() => splitPromptIntoBlocks(value || ""), [value]);
+
+    // Size the Source textarea to its content so it grows instead of scrolling
+    // internally — that keeps it a single block the page scrolls (like the
+    // Visual tab) with no inner scrollbar to trap the wheel mid-gesture.
+    useEffect(() => {
+        if (tab !== "source") return;
+        const el = sourceRef.current;
+        if (!el) return;
+        el.style.height = "auto";
+        el.style.height = el.scrollHeight + "px";
+    }, [tab, value]);
 
     const handleSaveBlock = (index, newVal) => {
         if (disabled) return;
@@ -318,10 +330,15 @@ export default function PromptBlockEditor({
             {tab === "source" && (
                 <div className="pbe-source">
                     <textarea
+                        ref={sourceRef}
                         value={value}
                         onChange={(e) => {
                             if (disabled) return;
                             onChange(e.target.value);
+                            // Keep the box sized to its content as the user types
+                            // so it never develops an internal scrollbar.
+                            e.target.style.height = "auto";
+                            e.target.style.height = e.target.scrollHeight + "px";
                         }}
                         onBlur={() => onCommit?.(value)}
                         className="pbe-source-textarea"
