@@ -53,6 +53,7 @@ const SageConnect = ({
   userName,
   replayReady,
   buildReplayData,
+  documents = [], // V2D: all generated docs [{id,label,data}] to push to the extension
 }) => {
   const [code, setCode] = useState(null);
   const [connState, setConnState] = useState("idle"); // idle | waiting | connected | offline
@@ -199,6 +200,85 @@ const SageConnect = ({
   useEffect(() => {
     if (followRef.current) setLogIdx(Math.max(0, logs.length - 1));
   }, [logs.length]);
+
+  // ── AUTO-PUSH generated documents to the extension ────────────────────────
+  // The moment Sage is connected AND documents exist, push the whole list +
+  // the org's workflows so the extension's "Data" tab appears. No button — it
+  // mirrors the dashboard's generated docs. Re-pushes only when the doc set or
+  // workflow set changes (signature guard), so it doesn't spam the broker.
+  const pushedSigRef = useRef("");
+  // RE-SYNC on (re)connect: when the extension connects/reconnects (panel
+  // reopened, extension reloaded, tunnel dropped and came back), force the next
+  // push to re-send the current documents even if the set is unchanged — so the
+  // extension's Data tab always reflects what's generated here, without the user
+  // regenerating. (Clearing the signature makes the push effect below re-fire.)
+  const prevConnRef = useRef(connState);
+  useEffect(() => {
+    if (connState === "connected" && prevConnRef.current !== "connected") {
+      pushedSigRef.current = "";
+    }
+    prevConnRef.current = connState;
+  }, [connState]);
+  useEffect(() => {
+    if (connState !== "connected" || !code) return;
+    if (!Array.isArray(documents) || documents.length === 0) return;
+    const sig =
+      documents.map((d) => d.id).join("|") +
+      "::" +
+      workflows.map((w) => w.id).join("|");
+    if (sig === pushedSigRef.current) return; // already pushed this exact set
+    pushedSigRef.current = sig;
+
+    (async () => {
+      try {
+        // The extension needs each workflow's FULL body to replay it, so fetch
+        // the bodies for the listed workflows and include them.
+        const full = await Promise.all(
+          workflows.map(async (w) => {
+            try {
+              const r = await fetch(
+                `${API_BASE}/workflows/${encodeURIComponent(w.id)}`,
+                { headers: await headers() }
+              );
+              const d = await r.json();
+              const workflow = d?.data?.workflow || null;
+              return workflow
+                ? { id: w.id, name: w.name || workflow?.name || "Workflow", workflow }
+                : null;
+            } catch {
+              return null;
+            }
+          })
+        );
+        const wfList = full.filter(Boolean);
+        await fetch(`${API_BASE}/session/${encodeURIComponent(code)}/trigger`, {
+          method: "POST",
+          headers: await headers(),
+          body: JSON.stringify({
+            mode: "documents",
+            module: MODULE,
+            workflows: wfList,
+            documents,
+          }),
+        });
+        // Visible confirmation in the SAGE LOGS panel.
+        setLogs((prev) =>
+          [
+            ...prev,
+            {
+              level: "info",
+              message: `Sent ${documents.length} document(s) + ${wfList.length} workflow(s) to the Sage extension.`,
+            },
+          ].slice(-LOG_CAP)
+        );
+      } catch (err) {
+        // Non-fatal — the user can still use the dashboard's own Replay button.
+        console.warn("[sage] document push failed:", err?.message);
+        pushedSigRef.current = ""; // allow a retry next change
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [connState, code, documents, workflows]);
 
   // Close the workflow dropdown when clicking outside it.
   useEffect(() => {

@@ -1,0 +1,265 @@
+/**
+ * EXPERIMENTATION: Sage Connect (V2D Panel) Scrollbar UI/UX
+ *
+ * Focus: .sage-body scrollbar overlap issue
+ *
+ * Three approaches to fix the scrollbar overlapping with content:
+ * 1. Bounded Container - Scrollbar takes space, content adjusts
+ * 2. Overlay Scrollbar (RECOMMENDED) - Modern, subtle, no layout shift
+ * 3. Hidden Scrollbar - For keyboard navigation only
+ */
+
+/* ============================================================
+   DEFAULT (Current): Shows the issue clearly
+   ============================================================ */
+.sage-body.approach-default {
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #d8cff1 transparent;
+}
+
+.sage-body.approach-default::-webkit-scrollbar {
+  width: 8px;
+}
+
+.sage-body.approach-default::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sage-body.approach-default::-webkit-scrollbar-thumb {
+  background: #ddd5f2;
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.sage-body.approach-default::-webkit-scrollbar-thumb:hover {
+  background: #c4b8ea;
+  background-clip: padding-box;
+}
+
+/* ============================================================
+   APPROACH 1: Bounded Container with Dedicated Scrollbar
+   ============================================================
+   • Scrollbar on the right edge takes layout space
+   • Content is padded to accommodate scrollbar
+   • Scrollbar always visible and clear
+   • Traditional UX pattern
+
+   Visual:
+   ┌─────────────────────────┐
+   │ Content Content    [████]│ ← Scrollbar takes space
+   │ Content Content    [████]│
+   │ Content Content    [████]│
+   └─────────────────────────┘
+*/
+
+.sage-body.approach-1 {
+  overflow-y: scroll;
+  padding-right: 12px;
+  scrollbar-width: auto;
+  scrollbar-color: rgba(108, 76, 220, 0.3) transparent;
+}
+
+.sage-body.approach-1::-webkit-scrollbar {
+  width: 8px;
+}
+
+.sage-body.approach-1::-webkit-scrollbar-track {
+  background: transparent;
+  margin-right: 2px;
+}
+
+.sage-body.approach-1::-webkit-scrollbar-thumb {
+  background: rgba(108, 76, 220, 0.3);
+  border-radius: 4px;
+  border: 1px solid transparent;
+  background-clip: padding-box;
+}
+
+.sage-body.approach-1::-webkit-scrollbar-thumb:hover {
+  background: rgba(108, 76, 220, 0.5);
+  background-clip: padding-box;
+}
+
+/* ============================================================
+   APPROACH 2: Overlay Scrollbar (RECOMMENDED)
+   ============================================================
+   • Scrollbar appears only on hover/scroll
+   • Semi-transparent overlay on top of content
+   • No layout shift
+   • Modern, minimalist aesthetic
+   • Standard on macOS, iOS, Android
+
+   Visual:
+   ┌─────────────────────────┐
+   │ Content Content      ▓  │ ← Scrollbar overlays
+   │ Content Content         │    (appears on hover)
+   │ Content Content      ▓  │
+   └─────────────────────────┘
+*/
+
+.sage-body.approach-2 {
+  overflow-y: scroll;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(108, 76, 220, 0.2) transparent;
+}
+
+.sage-body.approach-2::-webkit-scrollbar {
+  width: 8px;
+}
+
+.sage-body.approach-2::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sage-body.approach-2::-webkit-scrollbar-thumb {
+  background: rgba(108, 76, 220, 0.15);
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+.sage-body.approach-2::-webkit-scrollbar-thumb:hover {
+  background: rgba(108, 76, 220, 0.3);
+}
+
+.sage-body.approach-2::-webkit-scrollbar-thumb:active {
+  background: rgba(108, 76, 220, 0.5);
+}
+
+/* ============================================================
+   APPROACH 3: Subtle Scrollbar with Smooth Transitions
+   ============================================================
+   • Thin, subtle scrollbar with smooth color transitions
+   • Appears darker on hover to indicate interactivity
+   • Blends better with light backgrounds
+   • Good compromise between visibility and minimalism
+
+   Visual:
+   ┌─────────────────────────┐
+   │ Content Content      ░  │ ← Subtle scrollbar
+   │ Content Content      ░  │    (blends with background)
+   │ Content Content      ░  │
+   └─────────────────────────┘
+*/
+
+.sage-body.approach-3 {
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #e8e4f5 transparent;
+}
+
+.sage-body.approach-3::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sage-body.approach-3::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sage-body.approach-3::-webkit-scrollbar-thumb {
+  background: linear-gradient(
+    180deg,
+    rgba(108, 76, 220, 0.2) 0%,
+    rgba(108, 76, 220, 0.15) 100%
+  );
+  border-radius: 3px;
+}
+
+.sage-body.approach-3::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(
+    180deg,
+    rgba(108, 76, 220, 0.35) 0%,
+    rgba(108, 76, 220, 0.25) 100%
+  );
+}
+
+/* ============================================================
+   Dev Control Panel
+   ============================================================ */
+
+.sage-scroll-experiment-controls {
+  position: absolute;
+  bottom: 18px;
+  left: 18px;
+  right: 18px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px;
+  background: rgba(108, 76, 220, 0.1);
+  border: 1px solid rgba(108, 76, 220, 0.2);
+  border-radius: 8px;
+  z-index: 10;
+}
+
+.sage-scroll-experiment-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(108, 76, 220, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  white-space: nowrap;
+}
+
+.sage-scroll-experiment-btn {
+  padding: 4px 8px;
+  border: 1px solid rgba(108, 76, 220, 0.3);
+  border-radius: 4px;
+  background: transparent;
+  color: rgba(108, 76, 220, 0.7);
+  font-size: 10px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.sage-scroll-experiment-btn:hover {
+  background: rgba(108, 76, 220, 0.1);
+  border-color: rgba(108, 76, 220, 0.5);
+  color: rgba(108, 76, 220, 0.9);
+}
+
+.sage-scroll-experiment-btn.active {
+  background: rgba(108, 76, 220, 0.25);
+  border-color: rgba(108, 76, 220, 0.6);
+  color: #6c4cdc;
+  font-weight: 600;
+}
+
+/* ============================================================
+   Comparison Reference
+   ============================================================
+
+   APPROACH 1 - Bounded Container:
+   ├─ Pros:
+   │  ├─ Always visible scrollbar
+   │  ├─ Clear scroll position
+   │  └─ Traditional, familiar pattern
+   └─ Cons:
+      ├─ Takes up 8px of layout space
+      ├─ Padding adjustment needed
+      └─ Visible even with no scroll
+
+   APPROACH 2 - Overlay Scrollbar (RECOMMENDED):
+   ├─ Pros:
+   │  ├─ Modern, clean aesthetic ✨
+   │  ├─ No layout shift
+   │  ├─ Minimal visual weight
+   │  ├─ Standard on all platforms
+   │  └─ Works great on touch
+   └─ Cons:
+      └─ Slightly less discoverable
+
+   APPROACH 3 - Subtle Scrollbar:
+   ├─ Pros:
+   │  ├─ Visible but subtle
+   │  ├─ Blends with background
+   │  ├─ Good compromise
+   │  └─ Always available for reference
+   └─ Cons:
+      └─ Still takes minimal space
+
+   ============================================================ */
