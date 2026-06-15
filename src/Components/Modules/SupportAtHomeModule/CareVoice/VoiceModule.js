@@ -138,6 +138,31 @@ const VoiceModule = (props) => {
     // replay needs a generated document — this flips true once one exists so the
     // SageConnect modal can enable its Replay button.
     const [sageDocReady, setSageDocReady] = useState(false);
+    // Every generated document, accumulated for the Sage extension's "Data" tab:
+    // {id, label, data:{placeholders, document}}. SageConnect auto-pushes this
+    // list so the user can pick which doc (and workflow) to run per open page.
+    const [sageDocs, setSageDocs] = useState([]);
+    const addSageDoc = (filename, base64, extracted_data, label) => {
+        setSageDocs((prev) => [
+            ...prev,
+            {
+                id: `doc-${Date.now()}-${prev.length + 1}`,
+                label: label || filename || `Document ${prev.length + 1}`,
+                data: {
+                    placeholders: extracted_data || null,
+                    document: filename ? { filename, base64 } : null,
+                },
+            },
+        ]);
+    };
+    // Keep the Sage doc list in lockstep with the VISIBLE generated docs: when a
+    // new generation starts the displayed list clears, so reset sageDocs too —
+    // otherwise a prior run's documents linger and the Data tab shows stale ones
+    // (e.g. "2 documents" after generating only 1). New docs re-accumulate as
+    // addSageDoc fires for this batch.
+    useEffect(() => {
+        if ((props?.careVoiceFiles?.length ?? 0) === 0) setSageDocs([]);
+    }, [props?.careVoiceFiles]);
     // Holds the latest voice→document run's artifacts so a Sage replay can pass
     // the generated document along with the placeholders/values used to fill it.
     const lastSageDocRef = useRef(null);
@@ -252,6 +277,8 @@ const VoiceModule = (props) => {
     const [savingPrompt, setSavingPrompt] = useState(false);
     const [promptSavedToast, setPromptSavedToast] = useState(false);
     const sliderRef = useRef(null);
+    const sliderAnimRef = useRef(null);
+    const sliderTargetRef = useRef(null);
     const dropdownRef = useRef(null);
     const [generatedDocs, setGeneratedDocs] = useState([]);
     const emailSentRef = useRef(false);
@@ -2049,6 +2076,11 @@ const VoiceModule = (props) => {
             return;
         }
 
+        // Start from a clean result list so only this run's documents show —
+        // see submitMultipleTranscripts for why (removed/unselected files must
+        // not leave their previously-filled docs behind).
+        if (setCareVoiceFiles) setCareVoiceFiles([]);
+
         try {
             setIsGeneratingFile(true);
 
@@ -2124,6 +2156,13 @@ const VoiceModule = (props) => {
                     extracted_data: data?.extracted_data || null,
                 };
                 setSageDocReady(true);
+                // Add to the list the Sage extension's Data tab shows.
+                addSageDoc(
+                    filename,
+                    data.filled_document,
+                    data?.extracted_data || null,
+                    selectedTemplate?.name || data?.document_name || filename
+                );
 
                 setGeneratedDocs(docs);
                 // downloadBase64File(data.filled_document, filename);
@@ -2210,10 +2249,26 @@ const VoiceModule = (props) => {
         if (!card) return;
 
         const cardWidth = card.offsetWidth + 12; // card + gap
-        const start = slider.scrollLeft;
         const distance = dir === "left" ? -cardWidth : cardWidth;
         const maxScroll = slider.scrollWidth - slider.clientWidth;
-        const target = Math.max(0, Math.min(maxScroll, start + distance));
+
+        // Accumulate onto the last REQUESTED target (not the live scrollLeft).
+        // While an animation is mid-flight scrollLeft has barely moved, so
+        // basing off it would collapse several fast clicks into ~one card.
+        // Tracking the intended target instead means every click reliably
+        // advances exactly one more card, no matter how fast you click.
+        const base =
+            sliderAnimRef.current != null && sliderTargetRef.current != null
+                ? sliderTargetRef.current
+                : slider.scrollLeft;
+        const target = Math.max(0, Math.min(maxScroll, base + distance));
+        sliderTargetRef.current = target;
+
+        // Cancel the in-flight animation so a single rAF loop eases from the
+        // current position to the freshly accumulated target.
+        if (sliderAnimRef.current) cancelAnimationFrame(sliderAnimRef.current);
+
+        const start = slider.scrollLeft;
         const duration = 520;
         const startTime = performance.now();
         const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
@@ -2222,10 +2277,15 @@ const VoiceModule = (props) => {
             const elapsed = now - startTime;
             const t = Math.min(elapsed / duration, 1);
             slider.scrollLeft = start + (target - start) * easeOutCubic(t);
-            if (t < 1) requestAnimationFrame(step);
+            if (t < 1) {
+                sliderAnimRef.current = requestAnimationFrame(step);
+            } else {
+                sliderAnimRef.current = null;
+                sliderTargetRef.current = null;
+            }
         };
 
-        requestAnimationFrame(step);
+        sliderAnimRef.current = requestAnimationFrame(step);
     };
 
 
@@ -2358,6 +2418,12 @@ const VoiceModule = (props) => {
             selectedTemplate.templates.length === 0 ||
             uploadedTranscriptFiles.length === 0
         ) return;
+
+        // Start each run from a clean slate so the result list shows ONLY the
+        // documents generated for the currently-selected files. Without this,
+        // careVoiceFiles keeps appending across runs, so a doc filled from a
+        // file the user has since removed (unselected) lingers in the result.
+        if (setCareVoiceFiles) setCareVoiceFiles([]);
 
         // Clear any playing audio
         if (audioRef.current) {
@@ -2500,6 +2566,13 @@ const VoiceModule = (props) => {
                     extracted_data: doc.extracted_data || null,
                 };
                 setSageDocReady(true);
+                // Add to the list the Sage extension's Data tab shows + auto-pushes.
+                addSageDoc(
+                    doc.filename,
+                    doc.base64,
+                    doc.extracted_data || null,
+                    doc.filename
+                );
             }
 
             const byteCharacters = atob(doc.base64);
@@ -2630,12 +2703,20 @@ const VoiceModule = (props) => {
                                         r.onerror = reject;
                                         r.readAsDataURL(blob);
                                     });
+                                    const sageFilename =
+                                        doc.filename || `${file.name}_document.docx`;
                                     lastSageDocRef.current = {
-                                        filename: doc.filename || `${file.name}_document.docx`,
+                                        filename: sageFilename,
                                         base64: b64,
                                         extracted_data: doc.extracted_data || null,
                                     };
                                     setSageDocReady(true);
+                                    addSageDoc(
+                                        sageFilename,
+                                        b64,
+                                        doc.extracted_data || null,
+                                        sageFilename
+                                    );
                                 } catch (e) {
                                     /* non-fatal — Sage replay just stays disabled */
                                 }
@@ -4820,6 +4901,7 @@ const VoiceModule = (props) => {
                 userName={sageUserName}
                 replayReady={sageDocReady}
                 buildReplayData={buildSageReplayData}
+                documents={sageDocs}
             />
         </div>
     );
