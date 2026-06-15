@@ -1,0 +1,296 @@
+/**
+ * EXPERIMENTATION CSS: Sidebar Scroll UI/UX Improvements
+ * Three different approaches to handle scrollbar overlapping
+ */
+
+.experiment-wrapper {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  gap: 0;
+}
+
+/* ============================================================
+   Toggle Controls (Dev-Only)
+   ============================================================ */
+
+.experiment-toggle-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: rgba(108, 76, 220, 0.15);
+  border-bottom: 1px solid rgba(108, 76, 220, 0.3);
+  flex-wrap: wrap;
+}
+
+.experiment-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #a99cd8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.experiment-btn {
+  padding: 4px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.experiment-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.4);
+  color: #ffffff;
+}
+
+.experiment-btn.active {
+  background: #6c4cdc;
+  border-color: #6c4cdc;
+  color: #ffffff;
+}
+
+/* ============================================================
+   Experiment Content Container
+   ============================================================ */
+
+.experiment-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  position: relative;
+}
+
+/* Info badges for each approach */
+.approach-1-info,
+.approach-2-info,
+.approach-3-info {
+  padding: 8px 10px;
+  background: rgba(108, 76, 220, 0.08);
+  border-bottom: 1px solid rgba(108, 76, 220, 0.15);
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.8);
+  flex-shrink: 0;
+}
+
+.approach-1-info h4,
+.approach-2-info h4,
+.approach-3-info h4 {
+  margin: 0 0 4px 0;
+  font-size: 12px;
+  color: #a99cd8;
+  font-weight: 600;
+}
+
+.approach-1-info p,
+.approach-2-info p,
+.approach-3-info p {
+  margin: 2px 0;
+  font-size: 10px;
+}
+
+/* ============================================================
+   APPROACH 1: Bounded Container with Dedicated Scrollbar
+   ============================================================
+   - Creates a properly bounded scrollable region
+   - Scrollbar stays within the container boundaries
+   - Clear visual separation from other content
+   - Prevents overlay issues
+*/
+
+.sidebar-scroll-container-v1 {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 8px; /* Account for scrollbar width */
+
+  /* Custom scrollbar styling */
+  scrollbar-width: auto;
+  scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+}
+
+/* Chrome, Safari, Edge */
+.sidebar-scroll-container-v1::-webkit-scrollbar {
+  width: 8px;
+}
+
+.sidebar-scroll-container-v1::-webkit-scrollbar-track {
+  background: transparent;
+  margin-right: 4px;
+}
+
+.sidebar-scroll-container-v1::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 4px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.sidebar-scroll-container-v1::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.4);
+  background-clip: padding-box;
+}
+
+/* ============================================================
+   APPROACH 2: Overlay Scrollbar (Modern, Recommended)
+   ============================================================
+   - Scrollbar appears on hover/scroll only
+   - No layout shift when scrollbar appears
+   - Minimalist, contemporary aesthetic
+   - Works great on all devices including touch
+   - The scrollbar is semi-transparent and sits on top
+*/
+
+.sidebar-scroll-container-v2 {
+  flex: 1;
+  min-height: 0;
+  overflow-y: scroll;
+  overflow-x: hidden;
+
+  /* Firefox */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+
+  /* Hide scrollbar by default, show on hover */
+  position: relative;
+}
+
+/* Chrome, Safari, Edge */
+.sidebar-scroll-container-v2::-webkit-scrollbar {
+  width: 8px;
+}
+
+.sidebar-scroll-container-v2::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-scroll-container-v2::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+}
+
+.sidebar-scroll-container-v2::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.sidebar-scroll-container-v2:hover::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Alternative: More aggressive overlay behavior */
+.sidebar-scroll-container-v2::-webkit-scrollbar-thumb:active {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+/* ============================================================
+   APPROACH 3: Carousel with Pagination
+   ============================================================
+   - Horizontal swipe-based carousel
+   - Touch-friendly navigation
+   - Pagination dots to show position
+   - No scrollbar visible
+   - Better for mobile-first design
+*/
+
+.sidebar-scroll-container-v3 {
+  flex: 1;
+  min-height: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-behavior: smooth;
+  scroll-snap-type: x mandatory;
+
+  /* Hide default scrollbar for carousel */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.sidebar-scroll-container-v3::-webkit-scrollbar {
+  display: none;
+}
+
+/* Make children snap to scroll position */
+.sidebar-scroll-container-v3 > * {
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  flex-shrink: 0;
+  min-width: 100%;
+}
+
+/* Pagination dots */
+.carousel-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 10px;
+  background: rgba(0, 0, 0, 0.2);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+}
+
+.carousel-pagination .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.carousel-pagination .dot:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.carousel-pagination .dot.active {
+  background: rgba(255, 255, 255, 0.8);
+  width: 8px;
+}
+
+/* ============================================================
+   Quick Comparison Reference
+   ============================================================
+
+   APPROACH 1 - Bounded Container:
+   ├─ Pros:
+   │  ├─ Clear visual hierarchy
+   │  ├─ Scrollbar always visible
+   │  ├─ Precise scrollbar position
+   │  └─ Traditional UX pattern
+   └─ Cons:
+      ├─ Takes layout space
+      ├─ Visual weight in design
+      └─ Scrollbar always visible
+
+   APPROACH 2 - Overlay Scrollbar (RECOMMENDED):
+   ├─ Pros:
+   │  ├─ Modern, clean aesthetic
+   │  ├─ No layout shift
+   │  ├─ Subtle appearance
+   │  ├─ Works on all devices
+   │  └─ Industry standard (macOS, iOS, Android)
+   └─ Cons:
+      └─ Slightly less discoverable for non-mouse users
+
+   APPROACH 3 - Carousel with Pagination:
+   ├─ Pros:
+   │  ├─ Touch-friendly swipe
+   │  ├─ No scrollbar needed
+   │  ├─ Mobile-optimized
+   │  └─ Guided navigation
+   └─ Cons:
+      ├─ Horizontal scrolling can be unintuitive
+      ├─ Less content visible at once
+      └─ Requires pagination dots
+
+   ============================================================ */
