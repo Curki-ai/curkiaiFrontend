@@ -266,7 +266,7 @@
 /* ================= SUPPORT SECTION ================= */
 
 .support-container {
-  margin-top: 40px;
+  margin-top: 18px;
   border: 1px solid #E5E7EB;
   border-radius: 16px;
   background: #F9FAFB;
@@ -351,12 +351,9 @@
 .support-table {
   background: #FFFFFF;
   border-radius: 12px;
-  /* Cap the table height so a large ticket list scrolls WITHIN the
-     support card instead of stretching the whole Settings page. The
-     column header below is sticky so it stays visible while rows
-     scroll. */
-  max-height: 320px;
-  overflow-y: auto;
+  /* Let the ticket list flow with the page (single scrollbar) instead of
+     trapping it in a fixed-height box that cuts off the last row. */
+  overflow: hidden;
 }
 
 .support-table-header,
