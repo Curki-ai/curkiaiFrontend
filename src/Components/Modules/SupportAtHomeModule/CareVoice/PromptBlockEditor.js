@@ -121,16 +121,25 @@ const splitPromptIntoBlocks = (text) => {
             .filter(Boolean);
     }
 
+    // A block that is just a single heading line (e.g. "# 3. ...", "## Section:
+    // ...") with no body of its own.
+    const isHeadingOnlyBlock = (b = "") => {
+        const lines = b.split("\n").map((l) => l.trim()).filter(Boolean);
+        return lines.length === 1 && /^#{1,6}\s+/.test(lines[0]);
+    };
+
     const merged = [];
     for (const b of blocks) {
         const prev = merged[merged.length - 1];
         // Merge tiny fragments into the previous block — but never fold a table
         // into its neighbour (or a neighbour into a table); tables stay atomic.
+        // Also never back-merge a lone heading: those are folded FORWARD below.
         if (
             b.length < 25 &&
             merged.length > 0 &&
             !blockIsTable(b) &&
-            !blockIsTable(prev)
+            !blockIsTable(prev) &&
+            !isHeadingOnlyBlock(b)
         ) {
             merged[merged.length - 1] = prev + "\n" + b;
         } else {
@@ -138,7 +147,29 @@ const splitPromptIntoBlocks = (text) => {
         }
     }
 
-    return merged;
+    // Fold standalone heading blocks (a lone H1/H2/H3 line with no body) INTO
+    // the section that follows, so a top-level "# ..." or "## Section: ..." is
+    // not given its own tiny editable card — it lives directly inside the next
+    // main (H3) section instead. Consecutive headings stack onto the same
+    // following section; trailing headings with no section after them are kept
+    // as-is so nothing is lost.
+    const folded = [];
+    let pendingHeadings = [];
+    for (const b of merged) {
+        if (isHeadingOnlyBlock(b)) {
+            pendingHeadings.push(b.trim());
+            continue;
+        }
+        if (pendingHeadings.length) {
+            folded.push([...pendingHeadings, b].join("\n\n"));
+            pendingHeadings = [];
+        } else {
+            folded.push(b);
+        }
+    }
+    if (pendingHeadings.length) folded.push(pendingHeadings.join("\n\n"));
+
+    return folded;
 };
 
 const Block = ({ block, onSave }) => {
@@ -255,12 +286,45 @@ export default function PromptBlockEditor({
     // Size the Source textarea to its content so it grows instead of scrolling
     // internally — that keeps it a single block the page scrolls (like the
     // Visual tab) with no inner scrollbar to trap the wheel mid-gesture.
-    useEffect(() => {
-        if (tab !== "source") return;
+    //
+    // IMPORTANT: setting height:"auto" momentarily collapses this (very tall)
+    // textarea, and reading scrollHeight forces a layout while it's short — that
+    // makes the real scroll container clamp its scrollTop to the new, smaller
+    // max, yanking the view down to the footer on every keystroke. So we capture
+    // the scroll container's position and restore it right after measuring.
+    const resizeSourceTextarea = () => {
         const el = sourceRef.current;
         if (!el) return;
+
+        let scroller = el.parentElement;
+        while (
+            scroller &&
+            scroller !== document.body &&
+            scroller !== document.documentElement
+        ) {
+            const oy = window.getComputedStyle(scroller).overflowY;
+            if ((oy === "auto" || oy === "scroll") && scroller.scrollHeight > scroller.clientHeight) {
+                break;
+            }
+            scroller = scroller.parentElement;
+        }
+        const useWindow =
+            !scroller || scroller === document.body || scroller === document.documentElement;
+        const prevTop = useWindow
+            ? window.scrollY || document.documentElement.scrollTop || 0
+            : scroller.scrollTop;
+
         el.style.height = "auto";
         el.style.height = el.scrollHeight + "px";
+
+        if (useWindow) window.scrollTo(0, prevTop);
+        else scroller.scrollTop = prevTop;
+    };
+
+    useEffect(() => {
+        if (tab !== "source") return;
+        resizeSourceTextarea();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [tab, value]);
 
     const handleSaveBlock = (index, newVal) => {
@@ -336,9 +400,8 @@ export default function PromptBlockEditor({
                             if (disabled) return;
                             onChange(e.target.value);
                             // Keep the box sized to its content as the user types
-                            // so it never develops an internal scrollbar.
-                            e.target.style.height = "auto";
-                            e.target.style.height = e.target.scrollHeight + "px";
+                            // (scroll-preserving so it never yanks the page down).
+                            resizeSourceTextarea();
                         }}
                         onBlur={() => onCommit?.(value)}
                         className="pbe-source-textarea"
