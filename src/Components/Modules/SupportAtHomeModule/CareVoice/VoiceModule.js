@@ -684,7 +684,12 @@ const VoiceModule = (props) => {
         }
 
         // Number of single-card steps from start to end, + the start position.
-        const maxPage = Math.round(maxScroll / stride);
+        // Use ceil (with a small epsilon) instead of round so that ANY real
+        // overflow — e.g. a last card that's only partly cut off at low zoom —
+        // still counts as a scrollable page and lights up the arrows/dots. The
+        // 0.1-card epsilon absorbs subpixel remainders so they don't add a
+        // spurious trailing dot (the bug the old round() was guarding against).
+        const maxPage = Math.max(1, Math.ceil(maxScroll / stride - 0.1));
         const pages = maxPage + 1;
         let active = Math.round(slider.scrollLeft / stride);
 
@@ -2381,7 +2386,9 @@ const VoiceModule = (props) => {
         if (stride <= 0) return;
 
         const maxScroll = slider.scrollWidth - slider.clientWidth;
-        const maxPage = Math.max(0, Math.round(maxScroll / stride));
+        // Must match recomputeSliderDots()'s page math (ceil + epsilon) so the
+        // arrow can actually reach the partially-cut last card the dots promise.
+        const maxPage = maxScroll <= 1 ? 0 : Math.max(1, Math.ceil(maxScroll / stride - 0.1));
 
         const base =
             sliderTargetRef.current != null
@@ -3742,25 +3749,25 @@ const VoiceModule = (props) => {
                                     Available Template
                                 </div>
 
-                                {sliderPages > 1 && (
-                                    <div className="vm-template-header-arrows">
-                                        <button
-                                            className="vm-slider-arrow"
-                                            onClick={() => scrollSlider("left")}
-                                            disabled={sliderActivePage === 0}
-                                        >
-                                            <img src={careVoiceLeft} alt="prev" />
-                                        </button>
+                                {/* Always visible — arrows simply disable themselves
+                                    when there's nothing to scroll, instead of vanishing. */}
+                                <div className="vm-template-header-arrows">
+                                    <button
+                                        className="vm-slider-arrow"
+                                        onClick={() => scrollSlider("left")}
+                                        disabled={sliderActivePage === 0}
+                                    >
+                                        <img src={careVoiceLeft} alt="prev" />
+                                    </button>
 
-                                        <button
-                                            className="vm-slider-arrow"
-                                            onClick={() => scrollSlider("right")}
-                                            disabled={sliderActivePage >= sliderPages - 1}
-                                        >
-                                            <img src={careVoiceRight} alt="next" />
-                                        </button>
-                                    </div>
-                                )}
+                                    <button
+                                        className="vm-slider-arrow"
+                                        onClick={() => scrollSlider("right")}
+                                        disabled={sliderActivePage >= sliderPages - 1}
+                                    >
+                                        <img src={careVoiceRight} alt="next" />
+                                    </button>
+                                </div>
 
                             </div>
 
@@ -3986,17 +3993,17 @@ const VoiceModule = (props) => {
                                     </div>
                                 </div>
                             )}
-                            {sliderPages > 1 && (
-                                <div className="vm-slider-dots">
-                                    {Array.from({ length: sliderPages }).map((_, i) => (
-                                        <span
-                                            key={i}
-                                            className={`vm-slider-dot ${i === sliderActivePage ? "active" : ""
-                                                }`}
-                                        />
-                                    ))}
-                                </div>
-                            )}
+                            {/* Always visible — shows at least one dot even when
+                                all templates fit and there's nothing to page through. */}
+                            <div className="vm-slider-dots">
+                                {Array.from({ length: Math.max(sliderPages, 1) }).map((_, i) => (
+                                    <span
+                                        key={i}
+                                        className={`vm-slider-dot ${i === sliderActivePage ? "active" : ""
+                                            }`}
+                                    />
+                                ))}
+                            </div>
 
                         </div>
                     )}
