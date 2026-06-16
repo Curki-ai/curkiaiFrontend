@@ -19,7 +19,7 @@ import careVoiceEndAndPreview from "../../../../Images/careVoiceEndAndPreview.pn
 import careVoiceStaffTemplateIcon from "../../../../Images/careVoiceStaffTemplateIcon.png"
 import careVoiceLeft from "../../../../Images/careVoiceLeft.png"
 import careVoiceRight from "../../../../Images/careVoiceRight.png"
-import { FiDownload, FiFileText, FiMail, FiUploadCloud } from "react-icons/fi";
+import { FiDownload, FiFileText, FiMail, FiUploadCloud, FiArrowUp } from "react-icons/fi";
 import MapperGrid from "./VoiceModuleMapper";
 import { RiDeleteBin6Line } from "react-icons/ri";
 import FinancialAnalysisReportViewer from "../../FinancialModule/FinancialAnalysisReportViewer";
@@ -248,6 +248,13 @@ const VoiceModule = (props) => {
     const [rawPrompt, setRawPrompt] = useState("");
     const [rawMapper, setRawMapper] = useState(null);
     const [templateIndex, setTemplateIndex] = useState(0);
+    // Slider pagination is derived from REAL scroll geometry (not a hardcoded
+    // "2 cards per view") so the dots stay correct on every screen size / zoom.
+    // On a wide screen (or zoomed out) more cards fit per view → fewer scroll
+    // positions → fewer dots. This is what kills the "extra trailing dot at the
+    // end" bug, where the old N-1 dot count assumed exactly 2 cards visible.
+    const [sliderPages, setSliderPages] = useState(1);
+    const [sliderActivePage, setSliderActivePage] = useState(0);
     const [processingProgress, setProcessingProgress] = useState(0);
     const [currentTask, setCurrentTask] = useState("");
     const progressIntervalRef = useRef(null);
@@ -277,8 +284,18 @@ const VoiceModule = (props) => {
     const [savingPrompt, setSavingPrompt] = useState(false);
     const [promptSavedToast, setPromptSavedToast] = useState(false);
     const sliderRef = useRef(null);
-    const sliderAnimRef = useRef(null);
+    // Holds the in-flight arrow-navigation target PAGE so rapid clicks
+    // accumulate; cleared by recomputeSliderDots once the scroll settles.
     const sliderTargetRef = useRef(null);
+    // "Back to top" floating button for the (often very long) template-details
+    // prompt. voiceRootRef anchors us to the component so we can resolve which
+    // ancestor actually scrolls; scrollTargetRef caches it.
+    const voiceRootRef = useRef(null);
+    const scrollTargetRef = useRef(null);
+    // True while the smooth "return to top" animation is running, so the scroll
+    // listener doesn't keep the button visible (or re-show it) during the climb.
+    const isReturningToTopRef = useRef(false);
+    const [showScrollTop, setShowScrollTop] = useState(false);
     const dropdownRef = useRef(null);
     const [generatedDocs, setGeneratedDocs] = useState([]);
     const emailSentRef = useRef(false);
@@ -632,29 +649,153 @@ const VoiceModule = (props) => {
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
+    // Reads the slider's live geometry and returns the per-card stride
+    // (card width + the REAL flex gap, not a hardcoded guess). Used by both the
+    // dot math and the arrow scroll so they always agree on "one card".
+    const getSliderStride = (slider) => {
+        const card = slider.querySelector(".vm-template-card");
+        if (!card) return 0;
+        const track = slider.querySelector(".vm-template-track");
+        const gap = track
+            ? parseFloat(getComputedStyle(track).columnGap || getComputedStyle(track).gap) || 0
+            : 0;
+        return card.offsetWidth + gap;
+    };
+
+    // Recomputes how many dots to show and which one is active, straight from
+    // the scroll container's measurements. Because it uses (scrollWidth -
+    // clientWidth), it automatically accounts for however many cards actually
+    // fit per view at the current width/zoom — so there's never an extra
+    // trailing dot once you've scrolled to the end.
+    const recomputeSliderDots = () => {
+        const slider = sliderRef.current;
+        if (!slider) return;
+
+        const stride = getSliderStride(slider);
+        const maxScroll = slider.scrollWidth - slider.clientWidth;
+
+        if (stride <= 0 || maxScroll <= 1) {
+            // Everything fits — no scrolling possible, so no dots.
+            sliderTargetRef.current = null;
+            setSliderPages(1);
+            setSliderActivePage(0);
+            setTemplateIndex(0);
+            return;
+        }
+
+        // Number of single-card steps from start to end, + the start position.
+        const maxPage = Math.round(maxScroll / stride);
+        const pages = maxPage + 1;
+        let active = Math.round(slider.scrollLeft / stride);
+
+        // Snap to the last dot once we're at (or within 1px of) the end so a
+        // fractional remainder can't leave a stray inactive dot trailing.
+        if (maxScroll - slider.scrollLeft <= 1) active = maxPage;
+        active = Math.min(Math.max(active, 0), maxPage);
+
+        // Release the rapid-click target once the smooth scroll has landed on
+        // it, so subsequent trackpad scrolls compute their base from the live
+        // position rather than a stale target. The last page lives at maxScroll
+        // (which may be a fraction of a card past the last whole step), so
+        // resolve its target the same way scrollSlider() does.
+        if (sliderTargetRef.current != null) {
+            const tp = sliderTargetRef.current;
+            const targetLeft = tp >= maxPage ? maxScroll : tp * stride;
+            if (Math.abs(slider.scrollLeft - targetLeft) <= 2) {
+                sliderTargetRef.current = null;
+            }
+        }
+
+        setSliderPages(pages);
+        setSliderActivePage(active);
+        setTemplateIndex(active);
+    };
+
     // Re-runs when the slider mounts/unmounts (templates count changes),
     // so the scroll listener is actually attached once the slider element
-    // exists in the DOM.
+    // exists in the DOM. Also recomputes on window resize/zoom so the dots
+    // stay responsive.
     useEffect(() => {
         const slider = sliderRef.current;
         if (!slider) return;
 
-        const handleScroll = () => {
-            const card = slider.querySelector(".vm-template-card");
-            if (!card) return;
-
-            const cardWidth = card.offsetWidth + 12; // card + gap
-            const index = Math.round(slider.scrollLeft / cardWidth);
-
-            setTemplateIndex(index);
-        };
+        const handleScroll = () => recomputeSliderDots();
+        const handleResize = () => recomputeSliderDots();
 
         slider.addEventListener("scroll", handleScroll, { passive: true });
-        // Run once on attach so the active dot reflects current scroll
-        handleScroll();
+        window.addEventListener("resize", handleResize);
+        // Run once on attach so the dots reflect the current geometry. Defer a
+        // frame so layout (card widths) is settled before we measure.
+        const raf = requestAnimationFrame(recomputeSliderDots);
 
-        return () => slider.removeEventListener("scroll", handleScroll);
+        return () => {
+            slider.removeEventListener("scroll", handleScroll);
+            window.removeEventListener("resize", handleResize);
+            cancelAnimationFrame(raf);
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [templates.length, stage, activeTemplate]);
+
+    // Finds the element that actually scrolls. The real scroll container is an
+    // ancestor div in HomePage (height:100vh; overflow-y:auto), NOT the window —
+    // so we walk up from the module root to the nearest scrollable ancestor
+    // (same approach the Financial module uses for its smooth history scroll).
+    const resolveScrollTarget = () => {
+        let el = voiceRootRef.current;
+        while (el) {
+            const oy = window.getComputedStyle(el).overflowY;
+            if ((oy === "auto" || oy === "scroll") && el.scrollHeight > el.clientHeight) {
+                return el;
+            }
+            el = el.parentElement;
+        }
+        return window;
+    };
+
+    // Show the "back to top" button once the user has scrolled the template
+    // details view down past a threshold. Re-resolves the scroll target when
+    // entering/leaving a template (content height changes drastically).
+    useEffect(() => {
+        const target = resolveScrollTarget();
+        scrollTargetRef.current = target;
+
+        const getTop = () =>
+            target === window
+                ? window.scrollY || document.documentElement.scrollTop || 0
+                : target.scrollTop;
+
+        const onScroll = () => {
+            const top = getTop();
+            // While returning to top, stay hidden; release the flag once we've
+            // actually arrived so normal show/hide resumes afterwards.
+            if (isReturningToTopRef.current) {
+                if (top <= 4) isReturningToTopRef.current = false;
+                setShowScrollTop(false);
+                return;
+            }
+            setShowScrollTop(top > 320);
+        };
+        target.addEventListener("scroll", onScroll, { passive: true });
+        onScroll();
+
+        return () => target.removeEventListener("scroll", onScroll);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [activeTemplate]);
+
+    const scrollToTop = () => {
+        // Hide instantly on click so the button vanishes the moment it's pressed.
+        isReturningToTopRef.current = true;
+        setShowScrollTop(false);
+
+        // Native smooth scroll on the real scroll container — identical to the
+        // Financial module's history-click animation the user wants to match.
+        const target = scrollTargetRef.current || resolveScrollTarget();
+        if (target && target !== window) {
+            target.scrollTo({ top: 0, behavior: "smooth" });
+        } else {
+            window.scrollTo({ top: 0, behavior: "smooth" });
+        }
+    };
 
     useEffect(() => {
         if (role === "Admin") {
@@ -2219,73 +2360,44 @@ const VoiceModule = (props) => {
     };
 
 
-    const CARDS_PER_VIEW = 2;
-
-    const canGoPrev = templateIndex > 0;
-    const canGoNext = templateIndex + CARDS_PER_VIEW < templates.length;
-
-    const handlePrev = () => {
-        if (canGoPrev) {
-            setTemplateIndex(prev => prev - CARDS_PER_VIEW);
-        }
-    };
-
-    const handleNext = () => {
-        if (canGoNext) {
-            setTemplateIndex(prev => prev + CARDS_PER_VIEW);
-        }
-    };
-    // const sections = parseVoiceExplanation(analysisText);
-    const currentPage = templateIndex;
-    const totalPages = templates.length > 1 ? templates.length - 1 : templates.length;
-
+    // Slider paging (dot count + active dot) is now derived from real scroll
+    // geometry in recomputeSliderDots() so it stays correct at any width/zoom.
+    // The old hardcoded "2 cards per view" counters lived here and caused the
+    // extra-trailing-dot bug on wider screens.
     const isSingleView =
         templates.length === 1
+    // Arrow navigation. Scrolls to an EXACT card boundary using native smooth
+    // scroll, which cooperates with CSS scroll-snap (the container snaps to the
+    // same boundaries on trackpad), so the rest position, dots and arrows can
+    // never drift out of sync. sliderTargetRef holds the in-flight target page
+    // so rapid clicks accumulate (each click advances exactly one more card
+    // instead of collapsing into one), and recomputeSliderDots clears it once
+    // the scroll settles.
     const scrollSlider = (dir) => {
-        if (!sliderRef.current) return;
-
         const slider = sliderRef.current;
-        const card = slider.querySelector(".vm-template-card");
-        if (!card) return;
+        if (!slider) return;
 
-        const cardWidth = card.offsetWidth + 12; // card + gap
-        const distance = dir === "left" ? -cardWidth : cardWidth;
+        const stride = getSliderStride(slider);
+        if (stride <= 0) return;
+
         const maxScroll = slider.scrollWidth - slider.clientWidth;
+        const maxPage = Math.max(0, Math.round(maxScroll / stride));
 
-        // Accumulate onto the last REQUESTED target (not the live scrollLeft).
-        // While an animation is mid-flight scrollLeft has barely moved, so
-        // basing off it would collapse several fast clicks into ~one card.
-        // Tracking the intended target instead means every click reliably
-        // advances exactly one more card, no matter how fast you click.
         const base =
-            sliderAnimRef.current != null && sliderTargetRef.current != null
+            sliderTargetRef.current != null
                 ? sliderTargetRef.current
-                : slider.scrollLeft;
-        const target = Math.max(0, Math.min(maxScroll, base + distance));
-        sliderTargetRef.current = target;
+                : Math.round(slider.scrollLeft / stride);
 
-        // Cancel the in-flight animation so a single rAF loop eases from the
-        // current position to the freshly accumulated target.
-        if (sliderAnimRef.current) cancelAnimationFrame(sliderAnimRef.current);
+        let page = dir === "left" ? base - 1 : base + 1;
+        page = Math.max(0, Math.min(maxPage, page));
+        sliderTargetRef.current = page;
 
-        const start = slider.scrollLeft;
-        const duration = 520;
-        const startTime = performance.now();
-        const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
-
-        const step = (now) => {
-            const elapsed = now - startTime;
-            const t = Math.min(elapsed / duration, 1);
-            slider.scrollLeft = start + (target - start) * easeOutCubic(t);
-            if (t < 1) {
-                sliderAnimRef.current = requestAnimationFrame(step);
-            } else {
-                sliderAnimRef.current = null;
-                sliderTargetRef.current = null;
-            }
-        };
-
-        sliderAnimRef.current = requestAnimationFrame(step);
+        // The final page lands exactly at maxScroll so the last card is fully
+        // revealed even when maxScroll isn't a whole number of card strides.
+        slider.scrollTo({
+            left: page >= maxPage ? maxScroll : page * stride,
+            behavior: "smooth",
+        });
     };
 
 
@@ -3220,7 +3332,7 @@ const VoiceModule = (props) => {
         }
     };
     return (
-        <div className="voice-container">
+        <div className="voice-container" ref={voiceRootRef}>
             {/* ToastContainer is mounted once globally in HomePage. */}
             {/* ================= TOP ROW ================= */}
             {props.isMobileOrTablet &&
@@ -3356,6 +3468,21 @@ const VoiceModule = (props) => {
                     {role === "Admin" && activeTemplate && (
                         <div className="vm-template-details">
 
+                            {/* Floating "back to top" — long prompts can run for
+                                many screens, so let the user jump up instantly
+                                instead of scrolling the whole way back. */}
+                            {showScrollTop && (
+                                <button
+                                    type="button"
+                                    className="vm-scroll-top-btn"
+                                    onClick={scrollToTop}
+                                    aria-label="Scroll to top"
+                                    title="Back to top"
+                                >
+                                    <FiArrowUp size={22} strokeWidth={2.5} />
+                                </button>
+                            )}
+
                             {/* BACK + SAVE */}
                             <div className="vm-template-details-topbar">
                                 <button
@@ -3404,35 +3531,7 @@ const VoiceModule = (props) => {
                                     <h4>Uploaded Documents</h4>
                                 </div>
                                 <div className="vm-file-list vm-uploaded-docs-list">
-                                    <div
-                                        className="vm-file-item vm-file-item-doc"
-                                        role="button"
-                                        tabIndex={downloadingFileKey ? -1 : 0}
-                                        aria-disabled={!!downloadingFileKey}
-                                        style={{
-                                            cursor: downloadingFileKey ? "not-allowed" : "pointer",
-                                            opacity: downloadingFileKey ? 0.6 : 1,
-                                        }}
-                                        onClick={() =>
-                                            !downloadingFileKey &&
-                                            handleDownloadBlob({
-                                                fileKey: `template-${activeTemplate.id}`,
-                                                templateId: activeTemplate.id,
-                                                originalName: activeTemplate.templateOriginalName,
-                                            })
-                                        }
-                                        onKeyDown={(e) => {
-                                            if (downloadingFileKey) return;
-                                            if (e.key === "Enter" || e.key === " ") {
-                                                e.preventDefault();
-                                                handleDownloadBlob({
-                                                    fileKey: `template-${activeTemplate.id}`,
-                                                    templateId: activeTemplate.id,
-                                                    originalName: activeTemplate.templateOriginalName,
-                                                });
-                                            }
-                                        }}
-                                    >
+                                    <div className="vm-file-item vm-file-item-doc vm-file-item-doc-static">
                                         <div className="vm-file-item-doc-inner">
                                             <img
                                                 src={careVoiceDocIcon}
@@ -3453,6 +3552,32 @@ const VoiceModule = (props) => {
                                                 </div>
                                             </div>
                                         </div>
+
+                                        {/* Download is an explicit button now — clicking the
+                                            card body no longer downloads, so accidental clicks
+                                            are harmless while a real download stays one click. */}
+                                        <button
+                                            type="button"
+                                            className={`vm-file-download-btn ${downloadingFileKey === `template-${activeTemplate.id}` ? "is-downloading" : ""}`}
+                                            disabled={!!downloadingFileKey}
+                                            aria-label="Download Template Structure"
+                                            title="Download"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                if (downloadingFileKey) return;
+                                                handleDownloadBlob({
+                                                    fileKey: `template-${activeTemplate.id}`,
+                                                    templateId: activeTemplate.id,
+                                                    originalName: activeTemplate.templateOriginalName,
+                                                });
+                                            }}
+                                        >
+                                            {downloadingFileKey === `template-${activeTemplate.id}` ? (
+                                                <span className="vm-file-download-spinner" aria-hidden="true" />
+                                            ) : (
+                                                <FiDownload size={18} />
+                                            )}
+                                        </button>
                                     </div>
 
                                     {activeTemplate.sampleBlobs?.map((file, i) => {
@@ -3470,22 +3595,7 @@ const VoiceModule = (props) => {
                                         return (
                                             <div
                                                 key={i}
-                                                className="vm-file-item vm-file-item-doc"
-                                                role="button"
-                                                tabIndex={downloadingFileKey ? -1 : 0}
-                                                aria-disabled={!!downloadingFileKey}
-                                                style={{
-                                                    cursor: downloadingFileKey ? "not-allowed" : "pointer",
-                                                    opacity: isDownloading ? 0.6 : 1,
-                                                }}
-                                                onClick={() => !downloadingFileKey && triggerDownload()}
-                                                onKeyDown={(e) => {
-                                                    if (downloadingFileKey) return;
-                                                    if (e.key === "Enter" || e.key === " ") {
-                                                        e.preventDefault();
-                                                        triggerDownload();
-                                                    }
-                                                }}
+                                                className="vm-file-item vm-file-item-doc vm-file-item-doc-static"
                                             >
                                                 <div className="vm-file-item-doc-inner">
                                                     <img
@@ -3503,6 +3613,25 @@ const VoiceModule = (props) => {
                                                         </div>
                                                     </div>
                                                 </div>
+
+                                                <button
+                                                    type="button"
+                                                    className={`vm-file-download-btn ${isDownloading ? "is-downloading" : ""}`}
+                                                    disabled={!!downloadingFileKey}
+                                                    aria-label={`Download ${file.originalName || "sample document"}`}
+                                                    title="Download"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        if (downloadingFileKey) return;
+                                                        triggerDownload();
+                                                    }}
+                                                >
+                                                    {isDownloading ? (
+                                                        <span className="vm-file-download-spinner" aria-hidden="true" />
+                                                    ) : (
+                                                        <FiDownload size={18} />
+                                                    )}
+                                                </button>
                                             </div>
                                         );
                                     })}
@@ -3613,11 +3742,12 @@ const VoiceModule = (props) => {
                                     Available Template
                                 </div>
 
-                                {templates.length > 2 && (
+                                {sliderPages > 1 && (
                                     <div className="vm-template-header-arrows">
                                         <button
                                             className="vm-slider-arrow"
                                             onClick={() => scrollSlider("left")}
+                                            disabled={sliderActivePage === 0}
                                         >
                                             <img src={careVoiceLeft} alt="prev" />
                                         </button>
@@ -3625,6 +3755,7 @@ const VoiceModule = (props) => {
                                         <button
                                             className="vm-slider-arrow"
                                             onClick={() => scrollSlider("right")}
+                                            disabled={sliderActivePage >= sliderPages - 1}
                                         >
                                             <img src={careVoiceRight} alt="next" />
                                         </button>
@@ -3855,12 +3986,12 @@ const VoiceModule = (props) => {
                                     </div>
                                 </div>
                             )}
-                            {totalPages > 1 && (
+                            {sliderPages > 1 && (
                                 <div className="vm-slider-dots">
-                                    {Array.from({ length: totalPages }).map((_, i) => (
+                                    {Array.from({ length: sliderPages }).map((_, i) => (
                                         <span
                                             key={i}
-                                            className={`vm-slider-dot ${i === currentPage ? "active" : ""
+                                            className={`vm-slider-dot ${i === sliderActivePage ? "active" : ""
                                                 }`}
                                         />
                                     ))}
