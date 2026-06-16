@@ -122,6 +122,10 @@
     width: 100%;
     min-height: 80px;
     resize: none;
+    /* The textarea is auto-sized to its content (scrollHeight) in JS, so it
+       never needs to scroll internally. Hide overflow so no inner scrollbar
+       appears while editing a section — the page scrolls the content instead. */
+    overflow: hidden;
     border: none;
     outline: none;
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;

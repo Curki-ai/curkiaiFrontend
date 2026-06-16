@@ -1520,10 +1520,18 @@ html.cv-loading-lock body {
 
 .vm-template-slider {
   overflow-x: auto;
-  /* No CSS scroll-behavior here: scrollSlider() animates scrollLeft via
-     requestAnimationFrame, and CSS smooth-scroll would intercept each
-     per-frame assignment and fight the JS animation, making the arrows
-     require several clicks before moving. */
+  /* Snap card edges to the slider's leading edge so a card never rests
+     half-cut. We use `proximity` (not `mandatory`) on purpose: mandatory
+     refuses to rest at the true end when maxScroll falls between two card
+     snap points, which clipped the LAST card and left the right arrow stuck
+     enabled. proximity still snaps near boundaries but always allows resting
+     exactly at the end, so the final card is fully visible and the dots/arrows
+     match. scroll-padding-left/right mirror the track insets so a snapped card
+     sits flush with room for its shadow. Arrow nav uses native smooth
+     scrollTo() to exact boundaries, which cooperates with snapping. */
+  scroll-snap-type: x proximity;
+  scroll-padding-left: 6px;
+  scroll-padding-right: 6px;
   scrollbar-width: none;
 }
 
@@ -1537,10 +1545,12 @@ html.cv-loading-lock body {
 }
 
 .vm-template-slide {
-  /* flex: 0 0 49%; */
-  /* EXACTLY 2 cards */
-  /* padding-right: 12px; */
   box-sizing: border-box;
+  /* Each card is a snap target aligned to the slider's leading edge, so the
+     carousel rests with a card fully visible (never half-cut). With proximity
+     snapping the last card stays fully reachable at the end without needing a
+     special end-aligned snap. */
+  scroll-snap-align: start;
 }
 
 /* Slider arrows */
@@ -3700,6 +3710,95 @@ html.cv-loading-lock body {
   box-shadow: 0 0 0 3px rgba(108, 76, 220, 0.18);
 }
 
+/* Static doc card: the body is no longer a download target (only the explicit
+   download button is), so it must NOT look or behave clickable. Reset cursor,
+   the hover lift/border, and make room for the button on the right. */
+.vm-file-item.vm-file-item-doc.vm-file-item-doc-static {
+  cursor: default;
+  gap: 12px;
+}
+
+.vm-file-item.vm-file-item-doc.vm-file-item-doc-static:hover {
+  border-color: #ece8ff;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(108, 76, 220, 0.05);
+  transform: none;
+}
+
+.vm-file-item-doc-static .vm-file-item-doc-inner {
+  flex: 1;
+  width: auto;
+  min-width: 0;
+}
+
+/* The one real download target — compact, clearly interactive icon button. */
+.vm-file-download-btn {
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  border: 1px solid #e3dcff;
+  background: #f4f1fe;
+  color: #6C4CDC;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease,
+    transform 0.12s ease, box-shadow 0.15s ease;
+}
+
+.vm-file-download-btn:hover:not(:disabled):not(.is-downloading) {
+  background: #6C4CDC;
+  border-color: #6C4CDC;
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px rgba(108, 76, 220, 0.28);
+}
+
+.vm-file-download-btn:active:not(:disabled) {
+  transform: translateY(0) scale(0.94);
+}
+
+.vm-file-download-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(108, 76, 220, 0.22);
+}
+
+.vm-file-download-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* While THIS file is downloading the button shows a spinner — keep it at full
+   opacity (overrides the generic :disabled dimming) so the spinner is clearly
+   visible instead of the washed-out look that read as a "blank" icon. */
+.vm-file-download-btn.is-downloading {
+  opacity: 1;
+  cursor: default;
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  /* No transition here: jump straight to a transparent background so a leftover
+     hover-purple can't fade out over the (purple) spinner and hide it. */
+  transition: none;
+}
+
+.vm-file-download-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(108, 76, 220, 0.25);
+  border-top-color: #6C4CDC;
+  border-radius: 50%;
+  animation: vm-file-download-spin 0.7s linear infinite;
+}
+
+@keyframes vm-file-download-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .vm-file-item-doc-inner {
   display: flex;
   align-items: center;
@@ -4292,12 +4391,17 @@ html.cv-loading-lock body {
    clipped by the implicit overflow-y: auto (overflow-x: auto
    forces a clipped y-axis per CSS overflow spec). */
 .vm-template-slider {
-  padding: 12px 4px 16px;
+  /* No horizontal padding on the scroll container itself — the card insets
+     live on the track so they're part of the scrollable content and play
+     nicely with scroll-snap / scroll-padding-left. */
+  padding: 12px 0 16px;
 }
 
-/* Keep right padding so the last card's shadow has room at the end */
+/* Symmetric inset gives every card's shadow room at both ends; the 6px left
+   inset is mirrored by the slider's scroll-padding-left so the first card
+   rests flush at scrollLeft 0. */
 .vm-template-track {
-  padding-right: 4px;
+  padding: 0 6px;
 }
 
 /* ===== RESPONSIVE — panel ===== */
@@ -4398,6 +4502,76 @@ html.cv-loading-lock body {
   box-shadow:
     0 0 0 2px rgba(255, 255, 255, 0.28),
     0 2px 8px rgba(108, 76, 220, 0.45);
+}
+
+/* =================================================================
+   "BACK TO TOP" FLOATING BUTTON
+   Appears once the long template-details prompt is scrolled down; a
+   single click smooth-scrolls back to the top. Fixed to the top-right
+   of the viewport so it never collides with the bottom-right "Ask AI".
+==================================================================*/
+.vm-scroll-top-btn {
+  position: fixed;
+  top: 92px;
+  right: 38px;
+  z-index: 60;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  background: linear-gradient(135deg, #6C4CDC 0%, #8B5CF6 100%);
+  box-shadow:
+    0 8px 22px rgba(108, 76, 220, 0.38),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+  animation: vm-scroll-top-in 0.28s cubic-bezier(0.34, 1.4, 0.6, 1);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
+}
+
+.vm-scroll-top-btn:hover {
+  background: linear-gradient(135deg, #5e3fd4 0%, #7c4ff5 100%);
+  transform: translateY(-2px);
+  box-shadow:
+    0 12px 28px rgba(108, 76, 220, 0.48),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.22);
+}
+
+.vm-scroll-top-btn:active {
+  transform: translateY(0) scale(0.94);
+}
+
+.vm-scroll-top-btn:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 3px rgba(108, 76, 220, 0.30),
+    0 8px 22px rgba(108, 76, 220, 0.38);
+}
+
+@keyframes vm-scroll-top-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (max-width: 768px) {
+  .vm-scroll-top-btn {
+    top: 76px;
+    right: 18px;
+    width: 42px;
+    height: 42px;
+  }
 }
 
 /* =================================================================
