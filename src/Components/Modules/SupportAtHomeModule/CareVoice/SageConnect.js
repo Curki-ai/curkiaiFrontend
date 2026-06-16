@@ -243,7 +243,7 @@ const SageConnect = ({
               const d = await r.json();
               const workflow = d?.data?.workflow || null;
               return workflow
-                ? { id: w.id, name: w.name || workflow?.name || "Workflow", workflow }
+                ? { id: w.id, name: workflow?.name || w.name || "Workflow", workflow }
                 : null;
             } catch {
               return null;
@@ -454,6 +454,10 @@ const SageConnect = ({
       ? "Code expired"
       : "Not connected";
 
+  // Show the nested workflow object's display name (e.g. "Direct Form Filler")
+  // from workflow.name; fall back to the slug only if it's missing.
+  const wfLabel = (w) => (w && (w.workflow?.name || w.name)) || "Workflow";
+
   const selectedWf = workflows.find((w) => w.id === selectedId) || null;
   const replayDisabled = replaying || !code || !selectedId || !replayReady;
   const replayBlocker = !code
@@ -605,7 +609,7 @@ const SageConnect = ({
                     {loadingWf
                       ? "Loading workflows…"
                       : selectedWf
-                      ? selectedWf.name
+                      ? wfLabel(selectedWf)
                       : workflows.length
                       ? "Select a workflow…"
                       : "No saved workflows yet"}
@@ -637,7 +641,7 @@ const SageConnect = ({
                           }}
                         >
                           <div className="sage-wf-info">
-                            <span className="sage-wf-name">{w.name}</span>
+                            <span className="sage-wf-name">{wfLabel(w)}</span>
                             <span className="sage-wf-meta">
                               <span className="sage-wf-by">by {creator}</span>
                               {date ? ` · ${date}` : ""}
@@ -651,7 +655,7 @@ const SageConnect = ({
                               askDelete(w);
                             }}
                             title="Delete this workflow"
-                            aria-label={`Delete workflow ${w.name}`}
+                            aria-label={`Delete workflow ${wfLabel(w)}`}
                           >
                             <FiTrash2 size={15} />
                           </button>
@@ -751,7 +755,7 @@ const SageConnect = ({
             <p className="sage-cd-desc">
               {`Are you sure you want to delete `}
               <strong className="sage-cd-strong">
-                {deleteTarget.name || "this workflow"}
+                {wfLabel(deleteTarget)}
               </strong>
               {`? This action cannot be undone.`}
             </p>

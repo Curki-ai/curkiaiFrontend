@@ -898,7 +898,7 @@ const Sidebar = ({
                     />
                   </div>
 
-                  <div
+                  {/* <div
                     onClick={() => {
                       setShowProfilePanel(false);
                       setActiveItem("");
@@ -910,7 +910,7 @@ const Sidebar = ({
                       text="Team Members"
                       arrow
                     />
-                  </div>
+                  </div> */}
 
 
                   <div
