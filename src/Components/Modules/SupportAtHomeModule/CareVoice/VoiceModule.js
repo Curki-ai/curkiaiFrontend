@@ -4036,7 +4036,7 @@ const VoiceModule = (props) => {
                     )}
                     {showUploadSection && stage !== "processing" && !activeTemplate && (
                         <>
-                            <div className="voice-upload-row voice-upload-row-admin">
+                            <div className="voice-upload-row-admin">
                                 {/* ================= TEMPLATE COLUMN ================= */}
                                 <div className="voice-upload-col">
                                     <TlcUploadBox

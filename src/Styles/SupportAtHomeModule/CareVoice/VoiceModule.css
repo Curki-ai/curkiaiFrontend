@@ -4156,19 +4156,28 @@ html.cv-loading-lock body {
 }
 
 /* ===== UPLOAD SECTION (admin) =====
-   Responsive grid that replaces inline width: 35% */
+   Centered flex-wrap: the three upload boxes sit in a single row when there's
+   room; when there isn't, the third wraps onto a new row and centres itself
+   (between the first two) instead of dropping below the first box. */
 .voice-upload-row-admin {
-  display: grid;
-  grid-template-columns: minmax(260px, 1fr) minmax(260px, 1fr);
+  display: flex;
+  flex-wrap: wrap;
   justify-content: center;
+  align-items: stretch;
   gap: 32px;
   height: auto;
-  max-width: 720px;
+  width: 100%;
+  max-width: 1120px;
   margin: 0 auto;
 }
 
 .voice-upload-row-admin .voice-upload-col {
-  width: 100%;
+  /* grow to share the row evenly, shrink to wrap; ~280px basis means three
+     fit comfortably above ~900px and two-then-one below that. */
+  flex: 1 1 280px;
+  min-width: 260px;
+  max-width: 360px;
+  width: auto;
   align-items: stretch;
 }
 
@@ -4222,9 +4231,14 @@ html.cv-loading-lock body {
 /* ===== RESPONSIVE — admin pass 2 ===== */
 @media (max-width: 768px) {
   .voice-upload-row-admin {
-    grid-template-columns: 1fr;
     gap: 20px;
     max-width: 520px;
+  }
+
+  /* Single column on small screens: each box spans the narrow row, centred. */
+  .voice-upload-row-admin .voice-upload-col {
+    flex: 1 1 100%;
+    max-width: 100%;
   }
 
   .vm-admin-heading {
