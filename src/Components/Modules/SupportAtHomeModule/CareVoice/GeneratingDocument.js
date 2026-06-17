@@ -1,4 +1,4 @@
-import React, { useState, useRef, useLayoutEffect } from "react";
+import React, { useState } from "react";
 import "../../../../Styles/SupportAtHomeModule/CareVoice/GeneratingDocument.css";
 
 /**
@@ -57,20 +57,6 @@ export default function GeneratingDocument({
 }
 
 function Stage({ title, status, badges }) {
-  const titleRef = useRef(null);
-  const clipRef = useRef(null);
-
-  // Measure rendered heading width so the typewriter caret tracks the real
-  // end of the text regardless of font/size.
-  useLayoutEffect(() => {
-    if (titleRef.current && clipRef.current) {
-      // +12px safety so the final glyph (e.g. the "s") never clips against the mask
-      const w = titleRef.current.scrollWidth + 12;
-      clipRef.current.style.setProperty("--tw", w + "px");
-      clipRef.current.style.setProperty("--steps", String(title.length));
-    }
-  }, [title]);
-
   const lines1 = [
     "Speaker A: Let's map the rollout",
     "Speaker B: We can ship by Friday",
@@ -88,12 +74,8 @@ function Stage({ title, status, badges }) {
 
   return (
     <div className="gd-stage">
-      {/* Heading + typewriter caret */}
-      <div className="gd-title-clip" ref={clipRef}>
-        <h1 className="gd-title" ref={titleRef}>
-          {title}
-        </h1>
-      </div>
+      {/* Heading — wraps to fit any container width */}
+      <h1 className="gd-title">{title}</h1>
 
       {/* Two cards with scrolling transcript text */}
       <div className="gd-cards">

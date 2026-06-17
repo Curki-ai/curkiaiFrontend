@@ -20,6 +20,7 @@ import { FiCheck } from "react-icons/fi";
 import incrementCareVoiceAnalysisCount from "../SupportAtHomeModule/careVoiceCostAnalysis";
 
 import { API_BASE } from "../../../config/apiBase";
+import TlcPayrollSyncTickIcon from "../../../Images/TlcPayrollSyncTick.png";
 import FinancialHealthNoOrgEmptyState from "../FinancialModule/FinancialHealth/FinancialHealthNoOrgEmptyState";
 import SmartRosteringAccessManagement from "./SmartRosteringAccessManagement";
 // OnboardingForm (legacy Rostering Settings modal) has been superseded by
@@ -104,6 +105,10 @@ const SmartRostering = (props) => {
     const [currentIndex, setCurrentIndex] = useState(1);
     const [openRosterSetting, setOpenRosterSetting] = useState(false);
     const [rosteringSettings, setRosteringSettings] = useState(null);
+    // "Sync With Your System": when on, VisualCare creds are sourced from the
+    // org doc first, then fall back to the integration_credentials container
+    // (resolved server-side in GET /api/rosteringSettings/by-org).
+    const [syncEnabled, setSyncEnabled] = useState(false);
     const [bulkMode, setBulkMode] = useState(false);
     const [selectedShiftIds, setSelectedShiftIds] = useState([]);
 
@@ -119,7 +124,8 @@ const SmartRostering = (props) => {
         const fetchRosteringSettings = async () => {
             try {
                 const res = await axios.get(
-                    `${API_BASE}/api/rosteringSettings/by-org/${encodeURIComponent(organizationId)}`
+                    `${API_BASE}/api/rosteringSettings/by-org/${encodeURIComponent(organizationId)}`,
+                    { params: { sync: syncEnabled, userEmail } }
                 );
 
                 if (res.data?.data?.length) {
@@ -131,7 +137,7 @@ const SmartRostering = (props) => {
         };
 
         fetchRosteringSettings();
-    }, [userEmail, organizationId]);
+    }, [userEmail, organizationId, syncEnabled]);
     // console.log("rostering settings in smart rostering main page", rosteringSettings)
     const handleScroll = () => {
         const container = document.getElementById("unallocated-scroll-container");
@@ -679,7 +685,20 @@ const SmartRostering = (props) => {
                     </div>
                     <div className="rostering-controls-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '30px' }}>
                         <div className="rostering-date">{formattedDate}</div>
-                        <div className="rostering-controls-buttons" style={{ display: 'flex', gap: '14px' }}>
+                        <div className="rostering-controls-buttons" style={{ display: 'flex', gap: '14px', alignItems: 'center' }}>
+                            <div className="sync-system-wrap">
+                                <span className="sync-system-label">Sync With Your System</span>
+                                <div
+                                    className={`sync-system-toggle ${syncEnabled ? "on" : ""}`}
+                                    onClick={() => setSyncEnabled(!syncEnabled)}
+                                >
+                                    <div className={`sync-system-knob ${syncEnabled ? "on" : ""}`}>
+                                        {syncEnabled && (
+                                            <img src={TlcPayrollSyncTickIcon} alt="tick" className="sync-system-tick" />
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
                             <button className="roster-settings-btn" onClick={() => setScreen(3)}><MdOutlineHistory size={18} color="#707493" /> History </button>
                             <button className="roster-settings-btn" onClick={() => setOpenRosterSetting(true)}><RiSettingsLine size={18} color="#707493" />Rostering Settings</button>
                             {/* {canUseVisualCare && (
