@@ -1,3 +1,54 @@
+/* "Sync With Your System" toggle — mirrors the Financial Health module's switch */
+.sync-system-wrap {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.sync-system-label {
+    font-size: 14px;
+    font-weight: 500;
+    font-family: 'Inter';
+    color: #1f2937;
+}
+
+.sync-system-toggle {
+    width: 40px;
+    height: 22px;
+    border-radius: 20px;
+    background: #E5E7EB;
+    display: flex;
+    align-items: center;
+    padding: 2px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.sync-system-toggle.on {
+    background: #6C4CDC;
+}
+
+.sync-system-knob {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform: translateX(0);
+    transition: all 0.2s ease;
+}
+
+.sync-system-knob.on {
+    transform: translateX(18px);
+}
+
+.sync-system-tick {
+    width: 10px;
+    height: 10px;
+}
+
 .rostering-dashboard {
     /* margin-top: 60px; */
     text-align: center;

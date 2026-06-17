@@ -16,7 +16,6 @@ import "react-toastify/dist/ReactToastify.css";
 import { API_BASE as XERO_URL } from "../../../config/apiBase";
 
 const SoftwareConnect = (props) => {
-
   const softwareList = [
     // { name: "AlayaCare", logo: AlayaCare },
     { name: "VisualCare", logo: VisualCare },

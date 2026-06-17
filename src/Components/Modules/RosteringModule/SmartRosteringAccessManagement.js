@@ -20,6 +20,9 @@ const DEFAULT_SETTINGS = {
   notify_client: false,
   reminder_sms: false,
   require_approval: false,
+  visualcare_user: "",
+  visualcare_key: "",
+  visualcare_secret: "",
 };
 
 // Only "admin" is supported on this surface. Smart Rostering's backend also
@@ -157,7 +160,7 @@ const SmartRosteringAccessManagement = ({ onClose, userEmail, organizationId, on
     (async () => {
       try {
         const res = await fetch(
-          `${ROOT_API_BASE}/api/rosteringSettings/by-org/${encodeURIComponent(organizationId)}`
+          `${ROOT_API_BASE}/api/rosteringSettings/by-org/${encodeURIComponent(organizationId)}?raw=true`
         );
         const data = await res.json();
         if (cancelled) return;
@@ -179,6 +182,12 @@ const SmartRosteringAccessManagement = ({ onClose, userEmail, organizationId, on
           reminder_sms: doc.workflow_flags?.reminder_sms_staff ?? false,
           require_approval:
             doc.workflow_flags?.require_manager_approval ?? false,
+          visualcare_user:
+            doc.integrations?.softwares?.visualcare?.creds?.user || "",
+          visualcare_key:
+            doc.integrations?.softwares?.visualcare?.creds?.key || "",
+          visualcare_secret:
+            doc.integrations?.softwares?.visualcare?.creds?.secret || "",
         });
       } catch (err) {
         if (!cancelled) {
@@ -230,6 +239,11 @@ const SmartRosteringAccessManagement = ({ onClose, userEmail, organizationId, on
             notifyClient: settings.notify_client,
             reminderSms: settings.reminder_sms,
             requireApproval: settings.require_approval,
+          },
+          visualCareCreds: {
+            user: settings.visualcare_user,
+            key: settings.visualcare_key,
+            secret: settings.visualcare_secret,
           },
         }),
       });
@@ -666,6 +680,48 @@ const SmartRosteringAccessManagement = ({ onClose, userEmail, organizationId, on
                     <div className="sr-access-help">
                       Days from today over which unallocated shifts appear.
                     </div>
+                  </div>
+
+                  {/* VisualCare — User */}
+                  <div className="sr-access-field">
+                    <label className="sr-access-label">User</label>
+                    <input
+                      className="sr-access-input"
+                      type="text"
+                      placeholder="VisualCare User ID"
+                      value={settings.visualcare_user}
+                      onChange={(e) =>
+                        updateSettingField("visualcare_user", e.target.value)
+                      }
+                    />
+                  </div>
+
+                  {/* VisualCare — Client ID */}
+                  <div className="sr-access-field">
+                    <label className="sr-access-label">Client ID</label>
+                    <input
+                      className="sr-access-input"
+                      type="text"
+                      placeholder="VisualCare Client ID"
+                      value={settings.visualcare_key}
+                      onChange={(e) =>
+                        updateSettingField("visualcare_key", e.target.value)
+                      }
+                    />
+                  </div>
+
+                  {/* VisualCare — Secret ID */}
+                  <div className="sr-access-field sr-access-field-full">
+                    <label className="sr-access-label">Secret ID</label>
+                    <input
+                      className="sr-access-input"
+                      type="text"
+                      placeholder="VisualCare Secret ID"
+                      value={settings.visualcare_secret}
+                      onChange={(e) =>
+                        updateSettingField("visualcare_secret", e.target.value)
+                      }
+                    />
                   </div>
 
                   {/* Profile Shortlisting Criteria */}

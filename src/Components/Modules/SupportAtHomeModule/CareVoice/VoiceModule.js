@@ -192,6 +192,9 @@ const VoiceModule = (props) => {
         props?.user?.displayName || props?.user?.name || userEmail || "";
     const [templateFile, setTemplateFile] = useState(null);
     const [sampleFiles, setSampleFiles] = useState([]);
+    // Optional real-source example (transcript/document) — makes onboarding generate
+    // source-agnostic extraction specs. Posted as `source_sample` to /onboarding/start.
+    const [sourceFiles, setSourceFiles] = useState([]);
     const [sessionId, setSessionId] = useState(null);
 
     // idle | processing | review | completed
@@ -1673,6 +1676,8 @@ const VoiceModule = (props) => {
         const formData = new FormData();
         formData.append("template", templateFile);
         sampleFiles.forEach((f) => formData.append("example", f));
+        // Optional real-source example (single file) — only sent if the user provided one.
+        if (sourceFiles[0]) formData.append("source_sample", sourceFiles[0]);
 
         try {
             const res = await fetch(`${API_BASE}/api/onboarding/start`, {
@@ -1944,6 +1949,7 @@ const VoiceModule = (props) => {
         setShowUploadSection(true);
         setTemplateFile(null);
         setSampleFiles([]);
+        setSourceFiles([]);
         setEditingTemplateId(null);
         setRawPrompt("");
         setRawMapper(null);
@@ -4056,6 +4062,19 @@ const VoiceModule = (props) => {
                                         files={sampleFiles}
                                         multiple
                                         setFiles={setSampleFiles}
+                                    />
+                                </div>
+
+                                {/* ============ SOURCE EXAMPLE COLUMN (optional) ============ */}
+                                <div className="voice-upload-col">
+                                    <TlcUploadBox
+                                        id="admin-source-upload"
+                                        title="Source Example"
+                                        subtitle=".DOC, .PDF (optional)"
+                                        accept=".doc,.docx,.pdf"
+                                        files={sourceFiles}
+                                        multiple={false}
+                                        setFiles={setSourceFiles}
                                     />
                                 </div>
                             </div>
