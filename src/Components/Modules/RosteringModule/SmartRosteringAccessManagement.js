@@ -65,7 +65,7 @@ const avatarGradient = (key = "") => {
   return `linear-gradient(135deg, ${a} 0%, ${b} 100%)`;
 };
 
-const SmartRosteringAccessManagement = ({ onClose, userEmail, organizationId, onDeleted, onNoOrgDetected }) => {
+const SmartRosteringAccessManagement = ({ onClose, onSaved, userEmail, organizationId, onDeleted, onNoOrgDetected }) => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [users, setUsers] = useState([]);
@@ -250,6 +250,9 @@ const SmartRosteringAccessManagement = ({ onClose, userEmail, organizationId, on
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "Failed to save settings");
       setSettingsSuccess("Settings saved");
+      // Let the parent (SmartRostering) re-pull settings so the saved creds
+      // reflect immediately — hides the Sync toggle, no page reload needed.
+      if (typeof onSaved === "function") onSaved();
     } catch (err) {
       setSettingsError(err.message || "Failed to save settings");
     } finally {

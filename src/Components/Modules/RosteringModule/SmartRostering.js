@@ -105,10 +105,12 @@ const SmartRostering = (props) => {
     const [currentIndex, setCurrentIndex] = useState(1);
     const [openRosterSetting, setOpenRosterSetting] = useState(false);
     const [rosteringSettings, setRosteringSettings] = useState(null);
-    // "Sync With Your System": when on, VisualCare creds are sourced from the
-    // org doc first, then fall back to the integration_credentials container
-    // (resolved server-side in GET /api/rosteringSettings/by-org).
+    // "Sync With Your System": only relevant when the org doc has NO VisualCare
+    // creds. When org creds exist they're used directly and the toggle is
+    // hidden. When they don't, turning sync on pulls creds from the
+    // integration_credentials container (resolved server-side).
     const [syncEnabled, setSyncEnabled] = useState(false);
+    const [fallbackCreds, setFallbackCreds] = useState(null);
     const [bulkMode, setBulkMode] = useState(false);
     const [selectedShiftIds, setSelectedShiftIds] = useState([]);
 
@@ -118,26 +120,30 @@ const SmartRostering = (props) => {
     const [activeTab, setActiveTab] = useState(null);
     const [processingId, setProcessingId] = useState(null);
     // console.log("unallocatedClients", unallocatedClients)
-    useEffect(() => {
+    // Lifted out of the effect so it can be re-run on demand (e.g. right after
+    // the Rostering Settings form saves) to reflect changes without a reload.
+    const fetchRosteringSettings = async () => {
         if (!userEmail || !organizationId) return;
+        try {
+            // raw=true → org doc returned verbatim, including any stored
+            // VisualCare creds. We decide locally whether to use them.
+            const res = await axios.get(
+                `${API_BASE}/api/rosteringSettings/by-org/${encodeURIComponent(organizationId)}`,
+                { params: { raw: true } }
+            );
 
-        const fetchRosteringSettings = async () => {
-            try {
-                const res = await axios.get(
-                    `${API_BASE}/api/rosteringSettings/by-org/${encodeURIComponent(organizationId)}`,
-                    { params: { sync: syncEnabled, userEmail } }
-                );
-
-                if (res.data?.data?.length) {
-                    setRosteringSettings(res.data.data[0]);
-                }
-            } catch (err) {
-                console.error("Failed to fetch rostering settings", err);
+            if (res.data?.data?.length) {
+                setRosteringSettings(res.data.data[0]);
             }
-        };
+        } catch (err) {
+            console.error("Failed to fetch rostering settings", err);
+        }
+    };
 
+    useEffect(() => {
         fetchRosteringSettings();
-    }, [userEmail, organizationId, syncEnabled]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [userEmail, organizationId]);
     // console.log("rostering settings in smart rostering main page", rosteringSettings)
     const handleScroll = () => {
         const container = document.getElementById("unallocated-scroll-container");
@@ -156,9 +162,42 @@ const SmartRostering = (props) => {
     const [startIndex, setStartIndex] = useState(0);
     const visibleCount = 3;
     const [unauthorized, setUnauthorized] = useState(false);
-    const visualCareCreds =
+
+    // Creds stored on the org doc (saved via the Rostering Settings form).
+    const orgCreds =
         rosteringSettings?.integrations?.softwares?.visualcare?.creds || null;
+    const hasOrgCreds = !!(orgCreds?.user && orgCreds?.key && orgCreds?.secret);
+
+    // When org creds exist, use them directly (and the Sync toggle is hidden).
+    // Otherwise, creds only come from integration_credentials when sync is on.
+    const visualCareCreds = hasOrgCreds
+        ? orgCreds
+        : (syncEnabled ? fallbackCreds : null);
     // console.log("visual care creds", visualCareCreds)
+
+    // Pull fallback creds from integration_credentials only when there are no
+    // org creds AND sync is enabled. Server resolves via ?sync=true.
+    useEffect(() => {
+        if (hasOrgCreds || !syncEnabled || !userEmail || !organizationId) {
+            setFallbackCreds(null);
+            return;
+        }
+        const fetchFallbackCreds = async () => {
+            try {
+                const res = await axios.get(
+                    `${API_BASE}/api/rosteringSettings/by-org/${encodeURIComponent(organizationId)}`,
+                    { params: { sync: true, userEmail } }
+                );
+                const creds =
+                    res.data?.data?.[0]?.integrations?.softwares?.visualcare?.creds || null;
+                setFallbackCreds(creds);
+            } catch (err) {
+                console.error("Failed to fetch fallback VisualCare creds", err);
+                setFallbackCreds(null);
+            }
+        };
+        fetchFallbackCreds();
+    }, [hasOrgCreds, syncEnabled, userEmail, organizationId]);
     // console.log("unallocatedClients.length", unallocatedClients.length)
     const formatDateDMY = (dateStr) => {
         if (!dateStr) return "";
@@ -686,19 +725,21 @@ const SmartRostering = (props) => {
                     <div className="rostering-controls-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '30px' }}>
                         <div className="rostering-date">{formattedDate}</div>
                         <div className="rostering-controls-buttons" style={{ display: 'flex', gap: '14px', alignItems: 'center' }}>
-                            <div className="sync-system-wrap">
-                                <span className="sync-system-label">Sync With Your System</span>
-                                <div
-                                    className={`sync-system-toggle ${syncEnabled ? "on" : ""}`}
-                                    onClick={() => setSyncEnabled(!syncEnabled)}
-                                >
-                                    <div className={`sync-system-knob ${syncEnabled ? "on" : ""}`}>
-                                        {syncEnabled && (
-                                            <img src={TlcPayrollSyncTickIcon} alt="tick" className="sync-system-tick" />
-                                        )}
+                            {!hasOrgCreds && (
+                                <div className="sync-system-wrap">
+                                    <span className="sync-system-label">Sync With Your System</span>
+                                    <div
+                                        className={`sync-system-toggle ${syncEnabled ? "on" : ""}`}
+                                        onClick={() => setSyncEnabled(!syncEnabled)}
+                                    >
+                                        <div className={`sync-system-knob ${syncEnabled ? "on" : ""}`}>
+                                            {syncEnabled && (
+                                                <img src={TlcPayrollSyncTickIcon} alt="tick" className="sync-system-tick" />
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
+                            )}
                             <button className="roster-settings-btn" onClick={() => setScreen(3)}><MdOutlineHistory size={18} color="#707493" /> History </button>
                             <button className="roster-settings-btn" onClick={() => setOpenRosterSetting(true)}><RiSettingsLine size={18} color="#707493" />Rostering Settings</button>
                             {/* {canUseVisualCare && (
@@ -1129,6 +1170,7 @@ const SmartRostering = (props) => {
             {openRosterSetting && (
                 <SmartRosteringAccessManagement
                     onClose={() => setOpenRosterSetting(false)}
+                    onSaved={fetchRosteringSettings}
                     userEmail={userEmail}
                     organizationId={organizationId}
                     onDeleted={() => {
