@@ -789,13 +789,12 @@ const HomePage = () => {
         return;
       }
 
-      const email = 'utkarsh@curki.ai'
-
       const response = await fetch(
         `${API_BASE}/getManifestByEmail/${user?.email}`
       );
 
       const result = await response.json();
+      console.log("result",result)
 
       if (!result.success) {
         console.error("Failed to fetch manifest:", result.message);
@@ -809,6 +808,33 @@ const HomePage = () => {
 
     } catch (err) {
       console.error("Error fetching manifest:", err);
+    }
+  };
+
+  // Fallback credential source when the Rostering Settings form has no creds:
+  // pull them from the integration_credentials container (via /getSoftwares).
+  // Docs there store the parts as User / client_id / secret_id — map them to
+  // the {user, key, secret} shape the rostering flow expects.
+  const fetchSoftwareCredsFromIntegrations = async (softwareKey) => {
+    try {
+      if (!user?.email || !softwareKey) return null;
+
+      const response = await axios.get(`${API_BASE}/getSoftwares`, {
+        params: { userEmail: user.email },
+      });
+
+      const integrations = response.data?.integrations || [];
+      const wanted = String(softwareKey).toLowerCase();
+      const doc = integrations.find(
+        (i) => String(i.software || "").toLowerCase() === wanted
+      );
+      if (!doc) return null;
+
+      const creds = { user: doc.User, key: doc.client_id, secret: doc.secret_id };
+      return creds.user && creds.key && creds.secret ? creds : null;
+    } catch (err) {
+      console.error("Error fetching software creds from integrations:", err);
+      return null;
     }
   };
 
@@ -1614,35 +1640,135 @@ const HomePage = () => {
           );
           return; // Stop here
         }
+        // Normalize the manifest into the exact shape the Python QA endpoint
+        // expects (see client_askai.py reference). After the rostering-settings
+        // → organizations migration, software creds and placements live nested
+        // under `integrations`, so we lift them to the top level. We also fill
+        // sensible defaults for any field the org config doesn't carry —
+        // crucially `placements`, which the QA endpoint needs to know which
+        // software/creds to use when fetching data.
+        const src = mainfestData || {};
+
+        // Resolve placements (top-level or nested); fall back to defaults that
+        // route every role to the rostering software.
+        const hasKeys = (o) => o && typeof o === "object" && Object.keys(o).length > 0;
+        const rawPlacements = hasKeys(src.placements)
+          ? src.placements
+          : hasKeys(src.integrations?.placements)
+          ? src.integrations.placements
+          : null;
+        const rosteringSoftware = rawPlacements?.rostering || "visualcare";
+        const placements = rawPlacements || {
+          rostering: rosteringSoftware,
+          timesheet: rosteringSoftware,
+          client_details: rosteringSoftware,
+          staff_workers: rosteringSoftware,
+          favourites: rosteringSoftware,
+        };
+
+        const normalizedManifest = {
+          provider_name: src.provider_name || "",
+          softwares: src.softwares || src.integrations?.softwares || {},
+          placements,
+          inputs: src.inputs || {},
+          shortlisting_criteria:
+            src.shortlisting_criteria ||
+            src.integrations?.shortlisting_criteria ||
+            {},
+          favourites: src.favourites || ["history"],
+          Role_elimination:
+            src.Role_elimination || src.rostering?.role_elimination || [],
+          // Reference manifest uses the singular key `Unallocated_WorkerType`.
+          Unallocated_WorkerType:
+            src.Unallocated_WorkerType ||
+            src.rostering?.Unallocated_WorkerType ||
+            [],
+        };
+
+        // The Rostering Settings form may not hold creds. If they're missing,
+        // fall back to the integration_credentials container.
+        const hasCreds = (c) => !!(c && c.user && c.key && c.secret);
+        let softwareCreds = normalizedManifest.softwares?.[rosteringSoftware]?.creds;
+
+        if (!hasCreds(softwareCreds)) {
+          const fallbackCreds = await fetchSoftwareCredsFromIntegrations(
+            rosteringSoftware
+          );
+          if (hasCreds(fallbackCreds)) {
+            softwareCreds = fallbackCreds;
+            normalizedManifest.softwares = {
+              ...normalizedManifest.softwares,
+              [rosteringSoftware]: {
+                ...(normalizedManifest.softwares?.[rosteringSoftware] || {}),
+                creds: fallbackCreds,
+              },
+            };
+          }
+        }
+
+        if (!hasCreds(softwareCreds)) {
+          setMessages(prev =>
+            prev.map(msg =>
+              msg.temp
+                ? {
+                    sender: "bot",
+                    text: "Your rostering software isn't connected yet. Please connect it in Rostering Settings before using Ask AI.",
+                  }
+                : msg
+            )
+          );
+          return;
+        }
+
         const payload = {
-          manifest: mainfestData,
+          manifest: normalizedManifest,
           question: finalQuery,
         };
 
-        // console.log("🟡 Smart Rostering Payload:", payload);
-        const userEmail = user?.email?.trim()?.toLowerCase();
-        // if (userEmail === "kris@curki.ai") {
-        //   payload.env = "sandbox";
-        // }
+        // kris@curki.ai runs against the sandbox environment.
+        if (user?.email?.trim()?.toLowerCase() === "kris@curki.ai") {
+          payload.env = "sandbox";
+        }
+        console.log("🟡 Smart Rostering Payload:", payload);
 
-        const response = await axios.post(
-          "https://aca-curki-aibackend-prod-aue-001.agreeabledune-2a557375.australiaeast.azurecontainerapps.io/smart-rostering/qa",
-          payload
-        );
+        // Call the Python QA API via our middleware (browsers are blocked from
+        // hitting the Python container directly by CORS).
+        try {
+          const response = await axios.post(
+            `${API_BASE}/smart-rostering/qa`,
+            payload
+          );
 
+          const botReply = response.data?.answer || "No response";
 
-        const botReply = response.data?.answer || "No response";
-
-        setMessages((prev) =>
-          prev.map((msg) => (msg.temp ? { sender: "bot", text: botReply } : msg))
-        );
-        await incrementCareVoiceAnalysisCount(
-          user?.email?.trim().toLowerCase(),
-          "askai",
-          response?.data?.llm_cost?.total_usd,
-          "smart-rostering",
-          response?.data?.llm_cost?.token_usage
-        );
+          setMessages((prev) =>
+            prev.map((msg) => (msg.temp ? { sender: "bot", text: botReply } : msg))
+          );
+          await incrementCareVoiceAnalysisCount(
+            user?.email?.trim().toLowerCase(),
+            "askai",
+            response?.data?.llm_cost?.total_usd,
+            "smart-rostering",
+            response?.data?.llm_cost?.token_usage
+          );
+        } catch (err) {
+          // Surface the middleware's friendly message (e.g. cold-start retry
+          // exhausted) instead of a generic failure.
+          console.error("Smart Rostering QA Error:", err);
+          const serverMsg = err?.response?.data?.error;
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.temp
+                ? {
+                    sender: "bot",
+                    text:
+                      serverMsg ||
+                      "The rostering AI service is taking longer than usual. Please try again in a moment.",
+                  }
+                : msg
+            )
+          );
+        }
         return;
       }
 
