@@ -117,6 +117,27 @@
     font-weight: 700;
 }
 
+/* Secondary, outlined action — distinct from the filled "Add Candidates"
+   button so it reads as a separate, view-only action. */
+.resume-combined-results-btn {
+    border: 2px solid #7c3aed;
+    background: #ffffff;
+    color: #6d28d9;
+    border-radius: 14px;
+    padding: 0 22px;
+    height: 46px;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 14px;
+    transition: background 0.15s ease, color 0.15s ease, transform 0.12s ease;
+}
+
+.resume-combined-results-btn:hover {
+    background: linear-gradient(135deg, #7c3aed, #6d28d9);
+    color: #ffffff;
+    transform: translateY(-1px);
+}
+
 .resume-candidate-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -805,7 +826,8 @@
   }
 
   .resume-add-btn,
-  .resume-ai-btn {
+  .resume-ai-btn,
+  .resume-combined-results-btn {
     flex: 1;
     min-width: 180px;
   }
@@ -864,7 +886,8 @@
 
   .resume-search,
   .resume-add-btn,
-  .resume-ai-btn {
+  .resume-ai-btn,
+  .resume-combined-results-btn {
     width: 100%;
   }
 
