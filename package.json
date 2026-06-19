@@ -12,6 +12,8 @@
     "@testing-library/user-event": "^13.5.0",
     "@tinymce/tinymce-react": "^6.3.0",
     "@tippyjs/react": "^4.2.6",
+    "ag-grid-community": "^32.3.9",
+    "ag-grid-react": "^32.3.9",
     "axios": "^1.8.3",
     "chart.js": "^4.5.0",
     "date-fns": "^2.30.0",

@@ -21,6 +21,7 @@ import incrementCareVoiceAnalysisCount from "../../SupportAtHomeModule/careVoice
 import { API_BASE } from "../../../../config/apiBase";
 import SmartOnboardingAccessManagement from "./SmartOnboardingAccessManagement";
 import VirtualSpaceSwitcher from "./VirtualSpaceSwitcher";
+import CombinedTestResultsModal from "./CombinedTestResultsModal";
 
 const HRAdminView = ({
   handleClick,
@@ -55,6 +56,10 @@ const HRAdminView = ({
   const [activeOrganizationId, setActiveOrganizationId] = useState(null);
   const organizationId = activeOrganizationId;
   const [testResultsById, setTestResultsById] = useState({});
+  // Raw, ungrouped list of every submission for this org — feeds the combined
+  // cross-candidate spreadsheet view (grouped by test inside the modal).
+  const [testResultsList, setTestResultsList] = useState([]);
+  const [showCombinedResults, setShowCombinedResults] = useState(false);
   const [selectedTestResult, setSelectedTestResult] = useState(null);
   const [selectedTestPreview, setSelectedTestPreview] = useState(null);
   const [smartCandidates, setSmartCandidates] = useState([]);
@@ -150,6 +155,8 @@ const HRAdminView = ({
       hasFetchedCandidatesRef.current = false;
       setSmartCandidates([]);
       setTestResultsById({});
+      setTestResultsList([]);
+      setShowCombinedResults(false);
       setSelectedAssessment(null);
       setSelectedTestResult(null);
       setSelectedTestPreview(null);
@@ -182,6 +189,7 @@ const HRAdminView = ({
           if (r.candidateId) map[r.candidateId] = r;
         });
         setTestResultsById(map);
+        setTestResultsList(data.results);
       }
     } catch (error) {
       console.error("fetchTestResults error:", error);
@@ -657,6 +665,13 @@ const HRAdminView = ({
                 </div>
 
                 <div className="resume-header-actions">
+                  <button
+                    type="button"
+                    className="resume-combined-results-btn"
+                    onClick={() => setShowCombinedResults(true)}
+                  >
+                    Test Results
+                  </button>
                   <input
                     type="text"
                     placeholder="Find a candidate..."
@@ -1316,6 +1331,15 @@ const HRAdminView = ({
             </div>
           </div>
         </div>
+      )}
+
+      {showCombinedResults && (
+        <CombinedTestResultsModal
+          results={testResultsList}
+          organizationId={organizationId}
+          userEmail={user?.email}
+          onClose={() => setShowCombinedResults(false)}
+        />
       )}
 
       {openAccessManagement && (
