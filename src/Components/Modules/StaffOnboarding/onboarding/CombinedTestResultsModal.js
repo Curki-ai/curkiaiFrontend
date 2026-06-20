@@ -42,7 +42,8 @@ const CombinedTestResultsModal = ({
 
   const [openingId, setOpeningId] = useState(null);
   const [showConnect, setShowConnect] = useState(false);
-  const [connecting, setConnecting] = useState(false);
+  // null when idle, else the provider being connected ("google" | "microsoft").
+  const [connecting, setConnecting] = useState(null);
   const popupRef = useRef(null);
   const pollRef = useRef(null);
 
@@ -103,13 +104,13 @@ const CombinedTestResultsModal = ({
     const onMessage = (event) => {
       const data = event?.data;
       if (!data || typeof data.ok !== "boolean") return;
-      setConnecting(false);
+      setConnecting(null);
       if (pollRef.current) clearInterval(pollRef.current);
       if (data.ok) {
         setShowConnect(false);
-        toast.success("Google connected — tap the test to open it in Sheets.");
+        toast.success("Connected — tap the test to open it.");
       } else {
-        toast.error(data.message || "Google connection failed.");
+        toast.error(data.message || "Connection failed.");
       }
     };
     window.addEventListener("message", onMessage);
@@ -119,26 +120,31 @@ const CombinedTestResultsModal = ({
     };
   }, []);
 
-  const handleConnect = useCallback(() => {
-    const url =
-      `${API_BASE}/api/test-sheet-oauth/start` +
-      `?organisation_id=${encodeURIComponent(organizationId || "")}` +
-      `&admin_email=${encodeURIComponent(userEmail || "")}`;
-    const w = window.open(url, "curki-google-connect", "width=520,height=660");
-    if (!w) {
-      toast.error("Please allow popups to connect Google.");
-      return;
-    }
-    popupRef.current = w;
-    setConnecting(true);
-    // Stop the spinner if the user closes the popup without finishing.
-    pollRef.current = setInterval(() => {
-      if (w.closed) {
-        clearInterval(pollRef.current);
-        setConnecting(false);
+  const handleConnect = useCallback(
+    (provider) => {
+      const path =
+        provider === "microsoft" ? "test-sheet-msoauth" : "test-sheet-oauth";
+      const url =
+        `${API_BASE}/api/${path}/start` +
+        `?organisation_id=${encodeURIComponent(organizationId || "")}` +
+        `&admin_email=${encodeURIComponent(userEmail || "")}`;
+      const w = window.open(url, "curki-connect", "width=520,height=660");
+      if (!w) {
+        toast.error("Please allow popups to connect.");
+        return;
       }
-    }, 700);
-  }, [organizationId, userEmail]);
+      popupRef.current = w;
+      setConnecting(provider);
+      // Stop the spinner if the user closes the popup without finishing.
+      pollRef.current = setInterval(() => {
+        if (w.closed) {
+          clearInterval(pollRef.current);
+          setConnecting(null);
+        }
+      }, 700);
+    },
+    [organizationId, userEmail]
+  );
 
   return (
     <div className="combined-overlay" onClick={onClose} role="presentation">
@@ -189,32 +195,48 @@ const CombinedTestResultsModal = ({
                   <path d="M3 9h18M3 15h18M9 3v18M15 3v18" />
                 </svg>
               </span>
-              <p className="combined-connect-title">Connect Google once</p>
+              <p className="combined-connect-title">Connect once</p>
               <p className="combined-connect-text">
-                The first time, connect your Google account so results open in
-                your own Google Sheets. You only do this once for your whole
-                team.
+                Connect your Google or Microsoft account so results open in your
+                own spreadsheet. You only do this once for your whole team.
               </p>
-              <button
-                type="button"
-                className="combined-connect-btn"
-                onClick={handleConnect}
-                disabled={connecting}
-              >
-                {connecting ? (
-                  <>
-                    <span className="combined-spinner" aria-hidden="true" />
-                    Waiting for Google…
-                  </>
-                ) : (
-                  "Connect Google"
-                )}
-              </button>
+              <div className="combined-connect-actions">
+                <button
+                  type="button"
+                  className="combined-connect-btn"
+                  onClick={() => handleConnect("google")}
+                  disabled={!!connecting}
+                >
+                  {connecting === "google" ? (
+                    <>
+                      <span className="combined-spinner" aria-hidden="true" />
+                      Waiting…
+                    </>
+                  ) : (
+                    "Connect Google"
+                  )}
+                </button>
+                <button
+                  type="button"
+                  className="combined-connect-btn combined-connect-btn-ms"
+                  onClick={() => handleConnect("microsoft")}
+                  disabled={!!connecting}
+                >
+                  {connecting === "microsoft" ? (
+                    <>
+                      <span className="combined-spinner" aria-hidden="true" />
+                      Waiting…
+                    </>
+                  ) : (
+                    "Connect Microsoft"
+                  )}
+                </button>
+              </div>
               <button
                 type="button"
                 className="combined-connect-back"
                 onClick={() => setShowConnect(false)}
-                disabled={connecting}
+                disabled={!!connecting}
               >
                 Back
               </button>
