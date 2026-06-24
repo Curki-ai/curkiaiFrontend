@@ -19,7 +19,7 @@ const logWithTime = (message, data = "") => {
     }
 };
 
-export const startSpeechRecognition = async (setTextCallback, userEmail, moduleName, getCurrentText) => {
+export const startSpeechRecognition = async (setTextCallback, userEmail, moduleName, getCurrentText, onFinal, options = {}) => {
     try {
         logWithTime("Initializing Azure Speech Configuration");
 
@@ -41,6 +41,22 @@ export const startSpeechRecognition = async (setTextCallback, userEmail, moduleN
             SpeechSDK.PropertyId.SpeechServiceConnection_EndSilenceTimeoutMs,
             "5000"
         );
+
+        // Segmentation silence = how long a pause WITHIN an utterance is allowed
+        // before Azure decides the phrase is finished and fires `recognized`.
+        // Azure's default is ~500ms, so a natural 1-2s thinking pause finalizes
+        // the phrase prematurely — in voice Q&A that submits a half-question and
+        // the rest lands in the next turn. Callers raise this (e.g. 2000ms for
+        // voice Q&A) so brief pauses no longer split a sentence. Clamped by Azure
+        // to its supported range (~5000ms max).
+        const segmentationSilenceMs = Number(options.segmentationSilenceMs) || 0;
+        if (segmentationSilenceMs > 0) {
+            speechConfig.setProperty(
+                "Speech_SegmentationSilenceTimeoutMs",
+                String(segmentationSilenceMs)
+            );
+            logWithTime("Segmentation silence timeout set", segmentationSilenceMs);
+        }
         logWithTime("Creating microphone audio configuration");
 
         const audioConfig = SpeechSDK.AudioConfig.fromDefaultMicrophoneInput();
@@ -101,6 +117,12 @@ export const startSpeechRecognition = async (setTextCallback, userEmail, moduleN
                 phraseBase = committed;       // The finalized phrase joins the base
                 phraseInProgress = false;     // Phrase done — next recognizing will re-snapshot
                 setTextCallback(committed);
+
+                // Voice Q&A mode: hand the finalized utterance to the caller so it can
+                // submit it as a question. Optional — dictation/text callers omit it.
+                if (typeof onFinal === "function") {
+                    try { onFinal(event.result.text); } catch (e) { /* never break STT */ }
+                }
             }
 
             // Diagnostic logging — fully isolated in its own try/catch so a
