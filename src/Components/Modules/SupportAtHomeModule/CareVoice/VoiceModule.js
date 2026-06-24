@@ -817,6 +817,19 @@ const VoiceModule = (props) => {
             setSelectedTemplate(null);
         }
     }, [role]);
+
+    // Report the active Care Voice role up to HomePage so the global "Ask AI"
+    // button can show its hover/auto-show helper popup only for the Staff role
+    // (mirrors the Smart Onboarding "Ask AI" popup behaviour).
+    useEffect(() => {
+        props?.onRoleChange?.(role);
+    }, [role]);
+
+    // Report whether the staff "Generated Documents" screen is showing, so
+    // HomePage only auto-reveals the Ask AI popup once docs are generated.
+    useEffect(() => {
+        props?.onGeneratedDocsScreenChange?.(showGeneratedFilesUI);
+    }, [showGeneratedFilesUI]);
     const animateProgress = (currentValue, setter, target, duration = 800) => {
         let start = currentValue;   // ✅ start from current %
         const diff = target - start;
