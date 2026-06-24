@@ -221,6 +221,19 @@ const HomePage = () => {
   const [resumeFiles, setResumeFiles] = useState([]);
   const [askAiAttachedFiles, setAskAiAttachedFiles] = useState([]);
   const [askAiBtnHover, setAskAiBtnHover] = useState(false);
+  // Care Voice reports its active role ("Admin" | "Staff") up here so the
+  // global "Ask AI" helper popup shows only for Staff (mirrors Smart Onboarding).
+  const [voiceRole, setVoiceRole] = useState("Admin");
+  // Auto-shows the Care Voice "Ask AI" helper popup (no hover needed) for 5s
+  // once the staff member's documents finish generating on the
+  // "Generated Documents" screen.
+  const [askAiAutoShow, setAskAiAutoShow] = useState(false);
+  // Whether Care Voice's staff "Generated Documents" screen is currently shown.
+  const [voiceDocsScreen, setVoiceDocsScreen] = useState(false);
+  const prevGeneratingDocsRef = useRef(false);
+  // Armed when generation completes; fires the popup once the documents are
+  // actually present (decouples the file/flag state-update ordering).
+  const pendingAutoShowRef = useRef(false);
   const askAiFileInputRef = useRef(null);
   const userEmail = user?.email;
   const userDomain = userEmail?.split("@")[1]?.toLowerCase();
@@ -1019,6 +1032,44 @@ const HomePage = () => {
       ]);
     }
   }, [isHRAskAiPage, messages.length]);
+
+  // Care Voice (Staff): once ALL documents finish generating on the
+  // "Generated Documents" screen, surface the "Ask AI" helper popup
+  // automatically (no hover) to nudge the staff member toward asking about
+  // them. We "arm" on the generation-complete transition (so it never fires
+  // just from navigating back to a stale docs screen), then fire once the
+  // documents are actually present (the file/flag state updates can land in
+  // either order across the generation paths).
+  useEffect(() => {
+    const wasGenerating = prevGeneratingDocsRef.current;
+    prevGeneratingDocsRef.current = isCareVoiceGeneratingDocs;
+
+    const onStaffDocsScreen =
+      isCareVoicePage && voiceRole === "Staff" && voiceDocsScreen;
+
+    if (wasGenerating && !isCareVoiceGeneratingDocs && onStaffDocsScreen) {
+      pendingAutoShowRef.current = true;
+    }
+
+    if (
+      pendingAutoShowRef.current &&
+      onStaffDocsScreen &&
+      !isCareVoiceGeneratingDocs &&
+      careVoiceFiles.length > 0 &&
+      !showAIChat
+    ) {
+      pendingAutoShowRef.current = false;
+      setAskAiAutoShow(true);
+    }
+  }, [isCareVoiceGeneratingDocs, isCareVoicePage, voiceRole, voiceDocsScreen, careVoiceFiles, showAIChat]);
+
+  // Auto-hide the Care Voice "Ask AI" helper popup 5s after it auto-opens.
+  // Keyed only on the flag so unrelated re-renders can't cancel the timer.
+  useEffect(() => {
+    if (!askAiAutoShow) return undefined;
+    const timer = setTimeout(() => setAskAiAutoShow(false), 5000);
+    return () => clearTimeout(timer);
+  }, [askAiAutoShow]);
 
   // Auto-scroll Ask AI chat to the bottom whenever messages change (new message
   // arrives, streamed text updates, or temp/loading state flips).
@@ -2481,7 +2532,7 @@ const HomePage = () => {
                               setGeneratedCareVoiceDocsCount={setGeneratedCareVoiceDocsCount} setCareVoiceSessionId={setCareVoiceSessionId}
                               setCareVoiceUserId={setCareVoiceUserId}
                               setCareVoiceStarted={setCareVoiceStarted}
-                              setMessages={setMessages} careVoiceFiles={careVoiceFiles} onReset={resetCareVoiceSession} isCareVoiceGeneratingDocs={isCareVoiceGeneratingDocs} setIsCareVoiceLocked={setIsCareVoiceLocked} />
+                              setMessages={setMessages} careVoiceFiles={careVoiceFiles} onReset={resetCareVoiceSession} isCareVoiceGeneratingDocs={isCareVoiceGeneratingDocs} setIsCareVoiceLocked={setIsCareVoiceLocked} onRoleChange={setVoiceRole} onGeneratedDocsScreenChange={setVoiceDocsScreen} />
                           </Suspense>
                         </div>
                       )}
@@ -2567,6 +2618,52 @@ const HomePage = () => {
                       </div>
                       <div style={{ fontSize: "13px", color: "#555", lineHeight: "18px" }}>
                         If you're unsure or need help, I'm here to assist.
+                      </div>
+                      <div
+                        style={{
+                          position: "absolute",
+                          bottom: "-7px",
+                          right: "30px",
+                          width: "14px",
+                          height: "14px",
+                          backgroundColor: "#FFFFFF",
+                          borderRight: "1px solid rgba(108, 76, 220, 0.15)",
+                          borderBottom: "1px solid rgba(108, 76, 220, 0.15)",
+                          transform: "rotate(45deg)"
+                        }}
+                      />
+                    </div>
+                  )}
+                  {isCareVoicePage && voiceRole === "Staff" && (askAiBtnHover || askAiAutoShow) && !showAIChat && (
+                    <div
+                      style={{
+                        position: "absolute",
+                        bottom: "calc(100% + 14px)",
+                        right: 0,
+                        width: "260px",
+                        padding: "16px 18px",
+                        backgroundColor: "#FFFFFF",
+                        borderRadius: "14px",
+                        boxShadow: "0 8px 24px rgba(108, 76, 220, 0.18)",
+                        border: "1px solid rgba(108, 76, 220, 0.15)",
+                        fontFamily: "Inter",
+                        textAlign: "center",
+                        cursor: "default",
+                        zIndex: 1000
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div style={{ fontSize: "14px", fontWeight: 600, color: "#1F1B2E", marginBottom: "4px" }}>
+                        <span role="img" aria-label="wave" style={{ marginRight: "6px" }}>👋</span>
+                        Hi, I'm Zoe,
+                      </div>
+                      <div style={{ fontSize: "14px", fontWeight: 600, color: "#6C4CDC", marginBottom: "8px" }}>
+                        Your Care Voice assistant.
+                      </div>
+                      <div style={{ fontSize: "13px", color: "#555", lineHeight: "18px" }}>
+                        {askAiAutoShow
+                          ? "Your documents are ready — ask me anything about them."
+                          : "If you're unsure or need help, I'm here to assist."}
                       </div>
                       <div
                         style={{
