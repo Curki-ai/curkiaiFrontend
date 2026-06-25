@@ -30,13 +30,10 @@ export default function CandidateScreeningTest() {
   // field below. Empty for an anonymous candidate clicking the link.
   const [viewerEmail, setViewerEmail] = useState("");
 
-  // OTP access flow — the email the viewer claims, the code they were sent, and
-  // request/verify progress state.
+  // Email the viewer claims — verified against the candidate / HR / CC allowlist
+  // before any test data is shown.
   const [otpEmail, setOtpEmail] = useState("");
-  const [otpCode, setOtpCode] = useState("");
   const [otpBusy, setOtpBusy] = useState(false);
-  // Resend popup state: null (hidden) | "loading" | "success".
-  const [resendStatus, setResendStatus] = useState(null);
 
   const [testData, setTestData] = useState(null);
   const [questions, setQuestions] = useState([]);
@@ -106,19 +103,10 @@ export default function CandidateScreeningTest() {
     return () => unsubscribe();
   }, []);
 
-  // Shared request to email a one-time code to the given address.
-  const requestOtp = (email) =>
-    axios.post(`${BASE_URL}/request-test-otp`, {
-      organisation_id: queryData.organisation_id,
-      candidate_id: queryData.candidate_id,
-      test_id: queryData.test_id,
-      email
-    });
-
-  // Step 1 — request a one-time code. Only allowlisted emails (the invited
-  // candidate, an org HR, or a CC member) are sent a code; anyone else is
-  // denied here, before any test data or code-entry step is shown.
-  const handleRequestOtp = async (e) => {
+  // Verify the viewer's email against the candidate / HR / CC allowlist. On
+  // success the test is returned: HR/CC get a read-only preview, the candidate
+  // goes straight into the quiz. Any other email is denied.
+  const handleVerifyEmail = async (e) => {
     e.preventDefault();
     setFormError("");
 
@@ -130,77 +118,14 @@ export default function CandidateScreeningTest() {
 
     try {
       setOtpBusy(true);
-      const res = await requestOtp(email);
-
-      if (res.data?.ok) {
-        setStage("verifyCode");
-      } else if (res.data?.code === "ACCESS_DENIED") {
-        setFormError(res.data.message || "Access denied");
-        setStage("denied");
-      } else {
-        setFormError(res.data.message || "Could not send code");
-      }
-    } catch (error) {
-      setFormError("Could not send code. Please try again.");
-    } finally {
-      setOtpBusy(false);
-    }
-  };
-
-  // Resend from the code step — shows a loading popup, then a green tick that
-  // auto-dismisses once the new code has been emailed.
-  const handleResendOtp = async () => {
-    const email = otpEmail.trim();
-    if (!email) {
-      setFormError("Email required");
-      return;
-    }
-    setFormError("");
-    setResendStatus("loading");
-
-    try {
-      const res = await requestOtp(email);
-
-      if (res.data?.ok) {
-        setResendStatus("success");
-        setTimeout(() => setResendStatus(null), 1400);
-      } else if (res.data?.code === "ACCESS_DENIED") {
-        setResendStatus(null);
-        setFormError(res.data.message || "Access denied");
-        setStage("denied");
-      } else {
-        setResendStatus(null);
-        setFormError(res.data.message || "Could not resend code");
-      }
-    } catch (error) {
-      setResendStatus(null);
-      setFormError("Could not resend code. Please try again.");
-    }
-  };
-
-  // Step 2 — verify the code. On success the test itself is returned: HR/CC get
-  // a read-only preview, the candidate goes straight into the quiz.
-  const handleVerifyOtp = async (e) => {
-    e.preventDefault();
-    setFormError("");
-
-    if (!otpCode.trim()) {
-      setFormError("Enter the code from your email");
-      return;
-    }
-
-    try {
-      setOtpBusy(true);
-      const res = await axios.post(
-        `${BASE_URL}/verify-test-otp`,
-        {
+      const res = await axios.get(`${BASE_URL}/get-test-view`, {
+        params: {
           organisation_id: queryData.organisation_id,
           candidate_id: queryData.candidate_id,
           test_id: queryData.test_id,
-          email: otpEmail.trim(),
-          code: otpCode
+          user_email: email
         }
-      );
+      });
 
       if (res.data?.ok) {
         setTestData(res.data);
@@ -221,10 +146,10 @@ export default function CandidateScreeningTest() {
         setFormError(res.data.message || "Access denied");
         setStage("denied");
       } else {
-        setFormError(res.data.message || "Invalid code");
+        setFormError(res.data.message || "Unable to load test");
       }
     } catch (error) {
-      setFormError("Verification failed. Please try again.");
+      setFormError("Something went wrong. Please try again.");
     } finally {
       setOtpBusy(false);
     }
@@ -376,44 +301,19 @@ export default function CandidateScreeningTest() {
   }
   return (
     <div className="screening-root">
-      {resendStatus && (
-        <div
-          className="otp-popup-overlay"
-          role="status"
-          aria-live="polite"
-        >
-          <div className="otp-popup">
-            {resendStatus === "loading" ? (
-              <>
-                <span className="otp-popup-spinner" aria-hidden="true" />
-                <p className="otp-popup-text">Resending OTP…</p>
-              </>
-            ) : (
-              <>
-                <span className="otp-popup-tick" aria-hidden="true">
-                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
-                </span>
-                <p className="otp-popup-text">Code sent</p>
-              </>
-            )}
-          </div>
-        </div>
-      )}
-
       {stage === "verifyEmail" && (
         <div className="intro-card">
           <div className="intro-header">
             <h2>Verify your identity</h2>
             <p className="intro-sub">
-              Enter your email to receive a one-time access code.
+              Enter your email to access this test. Only the invited candidate
+              and the hiring team can access it.
             </p>
           </div>
 
           <form
             className="intro-form"
-            onSubmit={handleRequestOtp}
+            onSubmit={handleVerifyEmail}
           >
             <label className="label">
               Email
@@ -441,61 +341,7 @@ export default function CandidateScreeningTest() {
               className="btn primary"
               disabled={otpBusy}
             >
-              {otpBusy ? "Sending…" : "Send code"}
-            </button>
-          </form>
-        </div>
-      )}
-
-      {stage === "verifyCode" && (
-        <div className="intro-card">
-          <div className="intro-header">
-            <h2>Enter your code</h2>
-            <p className="intro-sub">
-              We sent a 6-digit code to {otpEmail}. It expires in 10 minutes.
-            </p>
-          </div>
-
-          <form
-            className="intro-form"
-            onSubmit={handleVerifyOtp}
-          >
-            <label className="label">
-              Access code
-              <input
-                className="input"
-                value={otpCode}
-                onChange={(e) => {
-                  setOtpCode(e.target.value);
-                  setFormError("");
-                }}
-                placeholder="Enter 6-digit code"
-                inputMode="numeric"
-                autoFocus
-              />
-            </label>
-
-            {formError && (
-              <div className="form-error">
-                {formError}
-              </div>
-            )}
-
-            <button
-              type="submit"
-              className="btn primary"
-              disabled={otpBusy}
-            >
-              {otpBusy ? "Verifying…" : "Verify & start"}
-            </button>
-
-            <button
-              type="button"
-              className="btn ghost"
-              onClick={handleResendOtp}
-              disabled={otpBusy || resendStatus === "loading"}
-            >
-              Resend code
+              {otpBusy ? "Verifying…" : "Continue"}
             </button>
           </form>
         </div>
