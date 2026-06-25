@@ -3066,11 +3066,20 @@ const VoiceModule = (props) => {
         while (node && node !== document.documentElement) {
             const overflowY = window.getComputedStyle(node).overflowY;
             if (overflowY === "auto" || overflowY === "scroll" || overflowY === "overlay") {
+                // Reset to the top BEFORE locking. The lock freezes scroll at the
+                // current offset; if the user had scrolled down before pressing
+                // Generate, the animation would otherwise be frozen mid-scroll and
+                // its bottom ("Generating Document…") clipped below the fold.
+                // Scrolling to 0 first guarantees the header, Staff top-bar, and
+                // the full animation are all visible from the top.
+                node.scrollTop = 0;
                 locked.push({ el: node, prev: node.style.overflowY });
                 node.style.overflowY = "hidden";
             }
             node = node.parentElement;
         }
+        // Belt-and-braces: also reset the window/document scroll.
+        window.scrollTo(0, 0);
 
         return () => {
             document.documentElement.classList.remove("cv-loading-lock");
@@ -4353,13 +4362,22 @@ const VoiceModule = (props) => {
                                 <div className={`staff-rec-circle ${recordMode === "idle" ? "is-before-recording" : ""}`}>
                                     {recordMode === "recording" || recordMode === "paused" ? (
                                         <div className="staff-recording-wrapper">
-                                            <LazyLottie
-                                                loader={loadRecordingLottieAnimation}
-                                                loop={recordMode === "recording"}
-                                                autoplay={recordMode === "recording"}
-                                                pause={recordMode === "paused"}
-                                                className="staff-recording-lottie"
-                                            />
+                                            {/* Aurora orb — a glossy brand-purple sphere with morphing
+                                                aurora blobs, a slow rotating glass sheen and a specular
+                                                highlight. Animates while recording, calmer when paused. */}
+                                            <div
+                                                className={`staff-aurora ${recordMode === "recording" ? "is-recording" : "is-paused"}`}
+                                                aria-hidden="true"
+                                            >
+                                                <span className="staff-aurora-blob staff-aurora-blob--1" />
+                                                <span className="staff-aurora-blob staff-aurora-blob--2" />
+                                                <span className="staff-aurora-blob staff-aurora-blob--3" />
+                                                <span className="staff-aurora-blob staff-aurora-blob--4" />
+                                                <span className="staff-aurora-blob staff-aurora-blob--5" />
+                                                <span className="staff-aurora-sheen" />
+                                                <span className="staff-aurora-grain" />
+                                                <span className="staff-aurora-gloss" />
+                                            </div>
 
                                             <span className="staff-recording-timer">
                                                 {formatTime(recordTime)}

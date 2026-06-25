@@ -2818,8 +2818,8 @@ const HomePage = () => {
                         Your Care Voice assistant.
                       </div>
                       <div style={{ fontSize: "13px", color: "#555", lineHeight: "18px" }}>
-                        {askAiAutoShow
-                          ? "Your documents are ready — ask me anything about them."
+                        {(askAiAutoShow || careVoiceFiles.length > 0)
+                          ? "Your documents are generated ask me anything about them."
                           : "If you're unsure or need help, I'm here to assist."}
                       </div>
                       <div
