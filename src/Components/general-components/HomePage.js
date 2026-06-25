@@ -436,9 +436,14 @@ const HomePage = () => {
     voiceSynthRef.current = null;
 
     setVoicePhase("thinking");
-    setMessages((prev) => [...prev, { sender: "user", text: question }]);
+    // Drop any leftover "Thinking..." bubble from an earlier turn this one just
+    // superseded, so an interrupted question can't stay stuck in the processing state.
     const tempId = Date.now();
-    setMessages((prev) => [...prev, { sender: "bot", text: "Thinking...", temp: true, tempId }]);
+    setMessages((prev) => [
+      ...prev.filter((m) => !m.voiceTemp),
+      { sender: "user", text: question },
+      { sender: "bot", text: "Thinking...", temp: true, voiceTemp: true, tempId },
+    ]);
 
     let answer = "Sorry, I couldn't answer that.";
     // Sources are shown in the chat just like text mode — the spoken answer never
@@ -475,10 +480,15 @@ const HomePage = () => {
 
     // A newer question interrupted while we were fetching — drop this stale answer
     // so it never gets spoken on top of the newer turn.
-    if (myTurn !== voiceTurnIdRef.current || !voiceActiveRef.current) return;
+    if (myTurn !== voiceTurnIdRef.current || !voiceActiveRef.current) {
+      // Superseded by a newer question (or voice mode stopped) — drop this turn's
+      // stale "Thinking..." bubble so it never hangs in the processing state.
+      setMessages((prev) => prev.filter((m) => !(m.voiceTemp && m.tempId === tempId)));
+      return;
+    }
 
     setMessages((prev) =>
-      prev.map((m) => (m.temp && m.tempId === tempId ? { sender: "bot", text: answer, sources } : m))
+      prev.map((m) => (m.voiceTemp && m.tempId === tempId ? { sender: "bot", text: answer, sources } : m))
     );
 
     setVoicePhase("speaking");
