@@ -1,0 +1,165 @@
+/* CareVoice voice-mode EDGE GLOW (scoped entirely to CareVoice — only rendered
+   when isCareVoicePage && voice mode is active).
+   Lights up the Ask AI panel's border + corners while voice mode is on. The
+   centre stays fully transparent so the transcript is never covered or blurred.
+   Three layers, all themed by --cv-color and reactive to the live mic amplitude
+   (--cv-level, written from JS each frame):
+     1. cv-edge-aurora — a bright "comet" of light that travels round the border
+     2. cv-edge-glow   — colour pooled at the four corners + a reactive border
+     3. cv-edge-chip   — small status pill (doubles as the stop control)
+   Phase colours: listening (purple) / thinking (amber) / speaking (teal). */
+
+/* Smoothly-animatable angle for the travelling comet. Falls back gracefully to a
+   static highlight on engines without @property support. */
+@property --cv-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+.cv-edge {
+  --cv-level: 0;                 /* live mic amplitude (0..1), written from JS */
+  position: absolute;
+  inset: 0;
+  border-radius: 24px;          /* match .ask-ai-panel */
+  pointer-events: none;         /* clicks pass through to the transcript */
+  z-index: 5;
+}
+
+/* 1) Travelling comet of light around the border (masked to a thin ring). */
+.cv-edge-aurora {
+  position: absolute;
+  inset: -1px;
+  border-radius: 25px;
+  padding: 2.5px;               /* ring thickness */
+  background: conic-gradient(
+    from var(--cv-angle),
+    transparent 0deg,
+    color-mix(in srgb, var(--cv-color, #6C4CDC) 35%, transparent) 28deg,
+    var(--cv-color, #6C4CDC) 64deg,
+    #ffffff 84deg,
+    var(--cv-color, #6C4CDC) 104deg,
+    color-mix(in srgb, var(--cv-color, #6C4CDC) 35%, transparent) 140deg,
+    transparent 180deg,
+    transparent 360deg
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+          mask-composite: exclude;
+  filter: drop-shadow(0 0 calc(3px + var(--cv-level) * 12px) var(--cv-color, #6C4CDC)) saturate(1.3);
+  opacity: calc(0.55 + var(--cv-level) * 0.45);
+  animation: cv-rot 3.2s linear infinite;
+}
+@keyframes cv-rot { to { --cv-angle: 360deg; } }
+
+/* 2) Corner colour pools + reactive border + outer halo. */
+.cv-edge-glow {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  --cv-glow: color-mix(in srgb, var(--cv-color, #6C4CDC) calc(30% + var(--cv-level) * 55%), transparent);
+  background:
+    radial-gradient(230px 210px at 0% 0%,     var(--cv-glow), transparent 70%),
+    radial-gradient(230px 210px at 100% 0%,   var(--cv-glow), transparent 70%),
+    radial-gradient(230px 210px at 0% 100%,   var(--cv-glow), transparent 70%),
+    radial-gradient(230px 210px at 100% 100%, var(--cv-glow), transparent 70%);
+  box-shadow:
+    /* inner wash that swells with the voice */
+    inset 0 0 calc(10px + var(--cv-level) * 52px)
+      color-mix(in srgb, var(--cv-color, #6C4CDC) calc(28% + var(--cv-level) * 50%), transparent),
+    /* crisp reactive border line */
+    inset 0 0 0 2px
+      color-mix(in srgb, var(--cv-color, #6C4CDC) calc(35% + var(--cv-level) * 55%), transparent),
+    /* outer halo that bleeds beyond the panel on peaks */
+    0 0 calc(10px + var(--cv-level) * 60px)
+      color-mix(in srgb, var(--cv-color, #6C4CDC) calc(22% + var(--cv-level) * 55%), transparent);
+  animation: cv-edge-breathe 2.6s ease-in-out infinite;
+}
+@keyframes cv-edge-breathe {
+  0%, 100% { opacity: 0.74; }
+  50%      { opacity: 1; }
+}
+
+/* 3) Status chip — top-left, clear of the header. Indicator only. */
+.cv-edge-chip {
+  position: absolute;
+  top: 16px;
+  left: 24px;
+  pointer-events: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--cv-color, #6C4CDC) 12%, #ffffff);
+  color: var(--cv-color, #6C4CDC);
+  font: 600 13px/1 Inter, sans-serif;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+}
+
+/* 4) Primary stop button — bottom-centre, where the composer normally sits.
+   Big, red, unmistakable, with a gentle attention pulse. */
+.cv-edge-end {
+  position: absolute;
+  left: 50%;
+  bottom: 26px;
+  transform: translateX(-50%);
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 28px;
+  border: none;
+  border-radius: 999px;
+  background: #FF4D4F;
+  color: #fff;
+  font: 600 15px/1 Inter, sans-serif;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(255, 77, 79, 0.4);
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+  animation: cv-end-attention 2.4s ease-in-out infinite;
+}
+.cv-edge-end:hover {
+  background: #e23d3f;
+  box-shadow: 0 12px 32px rgba(255, 77, 79, 0.55);
+}
+.cv-edge-end-icon {
+  width: 13px;
+  height: 13px;
+  background: #fff;
+  border-radius: 3px;
+}
+@keyframes cv-end-attention {
+  0%, 100% { box-shadow: 0 8px 24px rgba(255, 77, 79, 0.4); }
+  50%      { box-shadow: 0 8px 30px rgba(255, 77, 79, 0.62); }
+}
+
+.cv-edge-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--cv-color, #6C4CDC);
+  box-shadow: 0 0 calc(2px + var(--cv-level) * 12px) var(--cv-color, #6C4CDC);
+  animation: cv-dot-pulse 1.2s ease-in-out infinite;
+}
+@keyframes cv-dot-pulse {
+  0%, 100% { opacity: 0.5; }
+  50%      { opacity: 1; }
+}
+
+/* ---- Headset trigger button active pulse (in the input bar) ---- */
+.cv-headset-active { animation: cv-btn-pulse 1.6s ease-in-out infinite; }
+@keyframes cv-btn-pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(255, 77, 79, 0.55); }
+  70%  { box-shadow: 0 0 0 10px rgba(255, 77, 79, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 77, 79, 0); }
+}
+
+/* Respect reduced-motion: keep the colour, drop the motion. */
+@media (prefers-reduced-motion: reduce) {
+  .cv-edge-aurora,
+  .cv-edge-glow,
+  .cv-edge-dot,
+  .cv-headset-active { animation: none; }
+}

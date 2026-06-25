@@ -5,7 +5,7 @@ import "../../Styles/general-styles/UploaderPage.css";
 import { API_BASE } from "../../config/apiBase";
 import BlackExpandIcon from "../../../src/Images/BlackExpandIcon.png";
 import axios from "axios";
-import { FaMicrophone, FaPaperPlane, FaPlus, FaTimes, FaFileAlt, FaStop } from "react-icons/fa";
+import { FaMicrophone, FaPaperPlane, FaPlus, FaTimes, FaFileAlt, FaStop, FaHeadset } from "react-icons/fa";
 import { FaCircleArrowRight } from "react-icons/fa6";
 import Modal from "./Modal";
 import SignIn from "./SignIn";
@@ -50,6 +50,8 @@ import PlansAndBillings from "./PlansAndBillings";
 import chatBotKeyIcon from "../../Images/chatBoyKeyIcon.svg"
 import apiTutorialsIcon from "../../Images/apiTutorialKeyIcon.svg"
 import { startSpeechRecognition, stopSpeechRecognition } from "./AskAiSTT";
+import { speakText, stopSpeaking } from "./AskAiTTS";
+import VoicePulse from "./VoicePulse";
 import { SlLike, SlDislike } from "react-icons/sl";
 import { LuPower, LuSpeech } from "react-icons/lu";
 import { FaThumbsUp, FaThumbsDown } from "react-icons/fa";
@@ -173,6 +175,14 @@ const HomePage = () => {
   const [isSTTActive, setIsSTTActive] = useState(false);
   const [careVoiceSessionId, setCareVoiceSessionId] = useState(null);
   const [careVoiceUserId, setCareVoiceUserId] = useState(null);
+  // Voice Q&A mode (separate from the dictation mic): listen -> grounded spoken answer -> listen.
+  const [isVoiceActive, setIsVoiceActive] = useState(false);
+  // Drives the VoicePulse overlay: "idle" | "listening" | "thinking" | "speaking".
+  const [voicePhase, setVoicePhase] = useState("idle");
+  const voiceActiveRef = useRef(false);        // loop guard (avoids stale-closure)
+  const voiceTurnIdRef = useRef(0);            // bumps per utterance; guards barge-in
+  const voiceRecognizerRef = useRef(null);
+  const voiceSynthRef = useRef(null);
   const [careVoiceStarted, setCareVoiceStarted] = useState(false);
   const [careVoiceFiles, setCareVoiceFiles] = useState([]);
   const [showSourceModal, setShowSourceModal] = useState(false);
@@ -393,6 +403,150 @@ const HomePage = () => {
       window.removeEventListener("beforeunload", handleTabClose);
     };
   }, [careVoiceSessionId, careVoiceUserId]);
+  // ---- Voice Q&A mode (Claude-style pipeline: STT -> grounded answer -> Azure TTS) ----
+  // Continuous-listening conversation loop with barge-in. The mic stays open for
+  // the whole session (including while the assistant is narrating) so the user
+  // can interrupt mid-sentence. Each finalized utterance bumps a turn id; any
+  // narration or in-flight answer from an older turn is stopped/discarded, so two
+  // voices never overlap. Separate from the dictation mic below; typed text path
+  // is untouched.
+  const stopVoiceMode = () => {
+    voiceActiveRef.current = false;
+    voiceTurnIdRef.current++;           // invalidate any in-flight turn
+    setIsVoiceActive(false);
+    setIsListening(false);
+    setVoicePhase("idle");
+    try { if (voiceSynthRef.current) stopSpeaking(voiceSynthRef.current); } catch (_) {}
+    try { if (voiceRecognizerRef.current) stopSpeechRecognition(voiceRecognizerRef.current); } catch (_) {}
+    voiceRecognizerRef.current = null;
+    voiceSynthRef.current = null;
+  };
+
+  // Fires on every Azure `recognized` while voice mode is active — including
+  // while the assistant is speaking, which is what makes barge-in work.
+  const handleVoiceUtterance = async (utterance) => {
+    const question = (utterance || "").trim();
+    if (!question || !voiceActiveRef.current) return;
+
+    // Barge-in: this utterance supersedes everything in flight. Bump the turn id
+    // and cut narration immediately so old + new answers can't talk over each
+    // other.
+    const myTurn = ++voiceTurnIdRef.current;
+    try { if (voiceSynthRef.current) stopSpeaking(voiceSynthRef.current); } catch (_) {}
+    voiceSynthRef.current = null;
+
+    setVoicePhase("thinking");
+    // Drop any leftover "Thinking..." bubble from an earlier turn this one just
+    // superseded, so an interrupted question can't stay stuck in the processing state.
+    const tempId = Date.now();
+    setMessages((prev) => [
+      ...prev.filter((m) => !m.voiceTemp),
+      { sender: "user", text: question },
+      { sender: "bot", text: "Thinking...", temp: true, voiceTemp: true, tempId },
+    ]);
+
+    let answer = "Sorry, I couldn't answer that.";
+    // Sources are shown in the chat just like text mode — the spoken answer never
+    // mentions them (TTS reads `answer` only), but they surface as SOURCE
+    // DOCUMENT cards so the user can see where it came from.
+    let sources = [];
+    try {
+      const res = await fetch(`${API_BASE}/api/careVoiceAskAI/query`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          session_id: careVoiceSessionId,
+          user_id: careVoiceUserId,
+          query: question,
+          style: "voice",          // warm spoken persona on the backend
+        }),
+      });
+      const data = await res.json();
+      answer = data?.data?.answer || "I couldn't find that in the document.";
+      sources = data?.data?.sources || [];
+      // Roll voice Q&A cost into the same per-module bucket as text askai.
+      try {
+        await incrementCareVoiceAnalysisCount(
+          user?.email?.trim().toLowerCase(),
+          "askai",
+          data?.data?.llm_cost?.total_usd,
+          "carevoice",
+          data?.data?.llm_cost?.token_usage
+        );
+      } catch (_) {}
+    } catch (e) {
+      console.error("Voice query error", e);
+    }
+
+    // A newer question interrupted while we were fetching — drop this stale answer
+    // so it never gets spoken on top of the newer turn.
+    if (myTurn !== voiceTurnIdRef.current || !voiceActiveRef.current) {
+      // Superseded by a newer question (or voice mode stopped) — drop this turn's
+      // stale "Thinking..." bubble so it never hangs in the processing state.
+      setMessages((prev) => prev.filter((m) => !(m.voiceTemp && m.tempId === tempId)));
+      return;
+    }
+
+    setMessages((prev) =>
+      prev.map((m) => (m.voiceTemp && m.tempId === tempId ? { sender: "bot", text: answer, sources } : m))
+    );
+
+    setVoicePhase("speaking");
+    const synth = await speakText(answer, {
+      onStart: () => { if (voiceActiveRef.current && myTurn === voiceTurnIdRef.current) setVoicePhase("speaking"); },
+      // Narration finished naturally — return to listening. The mic never stopped,
+      // so there's nothing to restart.
+      onDone:  () => { if (voiceActiveRef.current && myTurn === voiceTurnIdRef.current) setVoicePhase("listening"); },
+      onError: () => { if (voiceActiveRef.current && myTurn === voiceTurnIdRef.current) setVoicePhase("listening"); },
+    });
+
+    // speakText is async (token + SDK spin-up). If a newer question barged in
+    // during that window, this narration is already stale — kill it immediately
+    // instead of letting it play over the newer turn, and don't store its handle.
+    if (myTurn !== voiceTurnIdRef.current || !voiceActiveRef.current) {
+      try { stopSpeaking(synth); } catch (_) {}
+      return;
+    }
+    voiceSynthRef.current = synth;
+  };
+
+  const handleVoiceClick = async () => {
+    if (voiceActiveRef.current) { stopVoiceMode(); return; }
+    if (!careVoiceSessionId || !careVoiceUserId) {
+      toast.warn("Please start a Care Voice session first");
+      return;
+    }
+    voiceActiveRef.current = true;
+    voiceTurnIdRef.current = 0;
+    setIsVoiceActive(true);
+    setVoicePhase("listening");
+    try {
+      // One continuous recognizer for the whole conversation (kept open during
+      // narration so the user can barge in). segmentationSilence lets a natural
+      // 1-2s pause sit inside one question instead of splitting it.
+      voiceRecognizerRef.current = await startSpeechRecognition(
+        () => {},                       // interim text — ignored in voice mode
+        user?.email?.trim(),
+        "carevoice",
+        () => "",                       // fresh base each phrase
+        handleVoiceUtterance,
+        { segmentationSilenceMs: 2000 }
+      );
+    } catch (e) {
+      console.error("Voice mode error", e);
+      stopVoiceMode();
+    }
+  };
+
+  // Closing the Ask AI panel must tear down an active voice session too —
+  // otherwise the recognizer + TTS keep running in the background after the
+  // panel is gone. Covers every close path (X button, etc.). CareVoice-only:
+  // voice mode can't be active anywhere else.
+  useEffect(() => {
+    if (!showAIChat && voiceActiveRef.current) stopVoiceMode();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showAIChat]);
+
   const handleMicClick = async () => {
     try {
 
@@ -430,7 +584,10 @@ const HomePage = () => {
           setIsInputEmpty(!text || !text.trim());
 
         }, user?.email?.trim(), sttModuleName,
-        () => textareaRef.current?.value || "");
+        () => textareaRef.current?.value || "", undefined,
+        // CareVoice-only tweak; every other module keeps Azure's default so this
+        // change can't alter their dictation behaviour. (0 => no override.)
+        { segmentationSilenceMs: isCareVoicePage ? 1200 : 0 });
 
       } else {
 
@@ -2661,8 +2818,8 @@ const HomePage = () => {
                         Your Care Voice assistant.
                       </div>
                       <div style={{ fontSize: "13px", color: "#555", lineHeight: "18px" }}>
-                        {askAiAutoShow
-                          ? "Your documents are ready — ask me anything about them."
+                        {(askAiAutoShow || careVoiceFiles.length > 0)
+                          ? "Your documents are generated ask me anything about them."
                           : "If you're unsure or need help, I'm here to assist."}
                       </div>
                       <div
@@ -2684,6 +2841,9 @@ const HomePage = () => {
 
                 {showAIChat && (
                   <div className="ask-ai-panel" style={{ position: "fixed", bottom: "20px", right: "21px", width: "76%", height: isSoftwareConnectPage ? "86%" : "80%", backgroundColor: "#FFFEFF", borderRadius: "24px", zIndex: 999, display: "flex", flexDirection: "column", justifyContent: "space-between", border: '1.09px solid #6C4CDC', boxShadow: '0px 4.36px 65.42px 0px #FFFFFF03', padding: ' 14px 30px', marginBottom: "8px" }}>
+                    {isCareVoicePage && (
+                      <VoicePulse phase={voicePhase} onStop={stopVoiceMode} />
+                    )}
                     <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", borderTopRightRadius: "24px", borderTopLeftRadius: "24px", }}>
                       <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: "44px" }}>
                         {isHRAskAiPage && (
@@ -3761,7 +3921,7 @@ const HomePage = () => {
                             })}
                           </div>
                         )}
-                        <div style={{ position: "relative", width: "100%", display: "flex" }}>
+                        <div style={{ position: "relative", width: "100%", display: (isCareVoicePage && isVoiceActive) ? "none" : "flex" }}>
                           {isHRAskAiPage && hrMode === "general" ? (
                             <>
                               <input
@@ -3902,6 +4062,28 @@ const HomePage = () => {
                               </div>
                             );
                           })()}
+                          {isCareVoicePage && (
+                            <div
+                              onClick={handleVoiceClick}
+                              className={isVoiceActive ? "cv-headset-active" : undefined}
+                              title={isVoiceActive ? "Stop voice chat" : "Talk to your document"}
+                              style={{
+                                position: "absolute",
+                                right: "108px",
+                                bottom: "17px",
+                                width: "32px",
+                                height: "32px",
+                                backgroundColor: isVoiceActive ? "#FF4D4F" : "#6C4CDC",
+                                borderRadius: "10px",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                cursor: "pointer",
+                              }}
+                            >
+                              <FaHeadset size={16} color="#fff" />
+                            </div>
+                          )}
                           {/* <FaCircleArrowRight onClick={handleSend} size={22} style={{ position: "absolute", right: "14px", top: "50%", transform: "translateY(-50%)", cursor: "pointer", color: "#6C4CDC" }} /> */}
                           {(() => {
                             const isAwaitingResponse = messages.some((m) => m.temp);
