@@ -142,7 +142,7 @@ const VoiceModule = (props) => {
     // {id, label, data:{placeholders, document}}. SageConnect auto-pushes this
     // list so the user can pick which doc (and workflow) to run per open page.
     const [sageDocs, setSageDocs] = useState([]);
-    const addSageDoc = (filename, base64, extracted_data, label) => {
+    const addSageDoc = (filename, base64, extracted_data, label, templateRef) => {
         setSageDocs((prev) => [
             ...prev,
             {
@@ -151,6 +151,10 @@ const VoiceModule = (props) => {
                 data: {
                     placeholders: extracted_data || null,
                     document: filename ? { filename, base64 } : null,
+                    // Optional per-doc template ref (recordings pass this so editing can
+                    // re-render the exact doc). Other flows omit it -> bridge falls back.
+                    templateBlobName: templateRef?.templateBlobName || null,
+                    mapper: templateRef?.mapper || null,
                 },
             },
         ]);
@@ -361,6 +365,39 @@ const VoiceModule = (props) => {
         ]);
 
     }, [generatedDocs]);
+
+    // Surface editable generated-document refs (current values + template) up to HomePage so
+    // the AskAI chat can edit them via /chat. Additive: no-op when the prop isn't provided.
+    useEffect(() => {
+        if (typeof props?.setCareVoiceDocuments !== "function") return;
+        // sageDocs is the DURABLE per-document state that actually carries the extracted field
+        // values (data.placeholders). generatedDocs is transient and doesn't hold the values, so
+        // we read from sageDocs here. Both the upload AND the recordings (v3) pipelines now seed
+        // sageDocs with extracted_data, so editing works from either path.
+        if (!sageDocs?.length) return;
+        const tmplList = Array.isArray(selectedTemplate?.templates) ? selectedTemplate.templates : [];
+        const fallbackBlob = selectedTemplate?.templateBlobName || null;
+        const fallbackMapper = selectedTemplate?.mappings || null;
+        const docs = sageDocs.map((sd, i) => {
+            const ed = (sd?.data?.placeholders) || {};
+            const fname = sd?.data?.document?.filename || sd.label || `doc_${i}`;
+            const t = tmplList[i] || null;
+            // Prefer the doc's OWN template ref (recordings thread this through); fall back to
+            // index-aligned template, then to the single selected template.
+            const blobName = sd?.data?.templateBlobName || t?.templateBlobName || fallbackBlob || null;
+            const mapper = sd?.data?.mapper || t?.mappings || fallbackMapper || null;
+            return {
+                document_id: fname,
+                document_name: fname,
+                extracted_data: ed,
+                // Text representation for indexing the generated (secondary) doc.
+                text: Object.entries(ed).map(([k, v]) => `${k}: ${v}`).join("\n"),
+                templateBlobName: blobName,
+                mapper: mapper,
+            };
+        });
+        props.setCareVoiceDocuments(docs);
+    }, [sageDocs, selectedTemplate]);
     useEffect(() => {
         if (!uploadedTranscriptFiles?.length) return;
 
@@ -588,6 +625,34 @@ const VoiceModule = (props) => {
                         );
                         generatedFiles.push(file);
                         documentsGenerated++;
+
+                        // Seed editable state (Sage doc) so AskAI /chat can edit this recorded
+                        // doc — identical to the upload-file path. Without this, recordings
+                        // produced no careVoiceDocuments and editing wouldn't seed.
+                        try {
+                            const b64 = await new Promise((resolve, reject) => {
+                                const r = new FileReader();
+                                r.onloadend = () => resolve(String(r.result).split(",")[1] || "");
+                                r.onerror = reject;
+                                r.readAsDataURL(blob);
+                            });
+                            const sageFilename = doc.filename || "document.docx";
+                            lastSageDocRef.current = {
+                                filename: sageFilename,
+                                base64: b64,
+                                extracted_data: doc.extracted_data || null,
+                            };
+                            setSageDocReady(true);
+                            addSageDoc(
+                                sageFilename,
+                                b64,
+                                doc.extracted_data || null,
+                                sageFilename,
+                                { templateBlobName: doc.templateBlobName || null, mapper: doc.mapper || null }
+                            );
+                        } catch (e) {
+                            /* non-fatal — editing just won't seed for this doc */
+                        }
 
                         // Update parent state
                         if (setGeneratedCareVoiceDocsCount) setGeneratedCareVoiceDocsCount(documentsGenerated);
@@ -2853,7 +2918,8 @@ const VoiceModule = (props) => {
                                         sageFilename,
                                         b64,
                                         doc.extracted_data || null,
-                                        sageFilename
+                                        sageFilename,
+                                        { templateBlobName: doc.templateBlobName || null, mapper: doc.mapper || null }
                                     );
                                 } catch (e) {
                                     /* non-fatal — Sage replay just stays disabled */

@@ -11,6 +11,29 @@ import { API_BASE } from "../../config/apiBase";
 // en-AU neural voice by default (NDIS / Australian context). Swap via env.
 const DEFAULT_VOICE = process.env.REACT_APP_ASKAI_TTS_VOICE || "en-AU-NatashaNeural";
 
+// Strip markdown so the synthesizer doesn't literally read "asterisk asterisk"
+// for **bold**, "hash" for headings, backticks, etc. The on-screen chat bubble
+// keeps the real markdown; only the SPOKEN copy is cleaned here.
+const stripMarkdownForSpeech = (raw) => {
+  if (!raw) return "";
+  let t = String(raw);
+  t = t.replace(/```[\s\S]*?```/g, " ");          // fenced code blocks
+  t = t.replace(/`([^`]+)`/g, "$1");               // inline code
+  t = t.replace(/!\[[^\]]*\]\([^)]*\)/g, " ");      // images
+  t = t.replace(/\[([^\]]+)\]\([^)]*\)/g, "$1");    // links -> keep the text
+  t = t.replace(/^\s{0,3}#{1,6}\s+/gm, "");         // headings (# ...)
+  t = t.replace(/(\*\*\*|___)(.*?)\1/g, "$2");      // bold+italic
+  t = t.replace(/(\*\*|__)(.*?)\1/g, "$2");         // bold
+  t = t.replace(/(\*|_)(.*?)\1/g, "$2");            // italic
+  t = t.replace(/~~(.*?)~~/g, "$1");                // strikethrough
+  t = t.replace(/^\s{0,3}>\s?/gm, "");              // blockquotes
+  t = t.replace(/^\s*([-*+]|\d+\.)\s+/gm, "");      // list bullets/numbers
+  t = t.replace(/^\s*([-*_]\s*){3,}\s*$/gm, " ");   // horizontal rules
+  t = t.replace(/\|/g, " ");                         // table pipes
+  t = t.replace(/[ \t]{2,}/g, " ");                  // collapse runs of spaces
+  return t.trim();
+};
+
 const logWithTime = (message, data = "") => {
   const time = new Date().toISOString();
   if (data) {
@@ -23,6 +46,10 @@ const logWithTime = (message, data = "") => {
 export const speakText = async (text, { voiceName, onStart, onDone, onError } = {}) => {
   try {
     if (!text || !text.trim()) return null;
+
+    // Speak a markdown-free version (the chat bubble still shows formatting).
+    const spokenText = stripMarkdownForSpeech(text);
+    if (!spokenText) return null;
 
     const SpeechSDK = await import("microsoft-cognitiveservices-speech-sdk");
 
@@ -51,7 +78,7 @@ export const speakText = async (text, { voiceName, onStart, onDone, onError } = 
     onStart?.();
 
     synthesizer.speakTextAsync(
-      text,
+      spokenText,
       (result) => {
         try { synthesizer.close(); } catch (_) {}
         if (result?.reason === SpeechSDK.ResultReason.SynthesizingAudioCompleted) {

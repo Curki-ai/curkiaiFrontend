@@ -51,6 +51,7 @@ import chatBotKeyIcon from "../../Images/chatBoyKeyIcon.svg"
 import apiTutorialsIcon from "../../Images/apiTutorialKeyIcon.svg"
 import { startSpeechRecognition, stopSpeechRecognition } from "./AskAiSTT";
 import { speakText, stopSpeaking } from "./AskAiTTS";
+import { playStart, playListening, playAnswer, playEnd, startThinking, stopThinking } from "./AskAiVoiceSounds";
 import VoicePulse from "./VoicePulse";
 import { SlLike, SlDislike } from "react-icons/sl";
 import { LuPower, LuSpeech } from "react-icons/lu";
@@ -174,6 +175,8 @@ const HomePage = () => {
   const [isListening, setIsListening] = useState(false);
   const [isSTTActive, setIsSTTActive] = useState(false);
   const [careVoiceSessionId, setCareVoiceSessionId] = useState(null);
+  // Editable generated documents surfaced up from VoiceModule (for /chat editing).
+  const [careVoiceDocuments, setCareVoiceDocuments] = useState([]);
   const [careVoiceUserId, setCareVoiceUserId] = useState(null);
   // Voice Q&A mode (separate from the dictation mic): listen -> grounded spoken answer -> listen.
   const [isVoiceActive, setIsVoiceActive] = useState(false);
@@ -416,10 +419,38 @@ const HomePage = () => {
     setIsVoiceActive(false);
     setIsListening(false);
     setVoicePhase("idle");
+    try { stopThinking(); } catch (_) {}
+    try { playEnd(); } catch (_) {}   // gentle goodbye cue
     try { if (voiceSynthRef.current) stopSpeaking(voiceSynthRef.current); } catch (_) {}
     try { if (voiceRecognizerRef.current) stopSpeechRecognition(voiceRecognizerRef.current); } catch (_) {}
     voiceRecognizerRef.current = null;
     voiceSynthRef.current = null;
+  };
+
+  // Replace the displayed generated document(s) IN PLACE with the edited version, so the user
+  // can view the change immediately (the "Generated Documents" grid renders careVoiceFiles, and
+  // each card previews its File). Matching is by filename (document_id == the doc's filename).
+  const applyDocumentUpdates = (updatedDocs) => {
+    if (!updatedDocs?.length) return;
+    const byName = {};
+    for (const ud of updatedDocs) if (ud?.document_id && ud?.base64) byName[ud.document_id] = ud.base64;
+    if (!Object.keys(byName).length) return;
+    setCareVoiceFiles((prev) => {
+      if (!prev?.length) return prev;
+      let changed = false;
+      const next = prev.map((f) => {
+        const b64 = byName[f.name];
+        if (!b64) return f;
+        changed = true;
+        const bin = atob(b64);
+        const bytes = new Uint8Array(bin.length);
+        for (let k = 0; k < bin.length; k++) bytes[k] = bin.charCodeAt(k);
+        return new File([bytes], f.name, {
+          type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        });
+      });
+      return changed ? next : prev;
+    });
   };
 
   // Fires on every Azure `recognized` while voice mode is active — including
@@ -436,6 +467,7 @@ const HomePage = () => {
     voiceSynthRef.current = null;
 
     setVoicePhase("thinking");
+    try { startThinking(); } catch (_) {}   // lo-fi beat while the agent works
     // Drop any leftover "Thinking..." bubble from an earlier turn this one just
     // superseded, so an interrupted question can't stay stuck in the processing state.
     const tempId = Date.now();
@@ -450,20 +482,37 @@ const HomePage = () => {
     // mentions them (TTS reads `answer` only), but they surface as SOURCE
     // DOCUMENT cards so the user can see where it came from.
     let sources = [];
+    let voiceUpdatedDocs = [];
     try {
-      const res = await fetch(`${API_BASE}/api/careVoiceAskAI/query`, {
+      // Agentic chat so VOICE can edit the document too (not just answer). Same /chat the
+      // text path uses; the spoken answer is data.answer.
+      const docRefs = (careVoiceDocuments || []).map((d) => ({
+        document_id: d.document_id,
+        templateBlobName: d.templateBlobName,
+        mapper: d.mapper,
+      }));
+      const chatHistory = (messages || [])
+        .filter((m) => (m.sender === "user" || m.sender === "bot") && m.text && !m.temp && !m.voiceTemp)
+        .slice(-10)
+        .map((m) => ({ role: m.sender === "user" ? "user" : "assistant", content: m.text }));
+      const res = await fetch(`${API_BASE}/api/careVoiceAskAI/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           session_id: careVoiceSessionId,
           user_id: careVoiceUserId,
-          query: question,
-          style: "voice",          // warm spoken persona on the backend
+          message: question,
+          documents: docRefs,
+          history: chatHistory,
         }),
       });
       const data = await res.json();
       answer = data?.data?.answer || "I couldn't find that in the document.";
       sources = data?.data?.sources || [];
+      voiceUpdatedDocs = Object.entries(data?.data?.updated_documents || {}).map(([id, b64]) => {
+        const ref = (careVoiceDocuments || []).find((x) => x.document_id === id);
+        return { document_id: id, base64: b64, filename: ref?.document_name || `${id}` };
+      });
       // Roll voice Q&A cost into the same per-module bucket as text askai.
       try {
         await incrementCareVoiceAnalysisCount(
@@ -490,6 +539,11 @@ const HomePage = () => {
     setMessages((prev) =>
       prev.map((m) => (m.voiceTemp && m.tempId === tempId ? { sender: "bot", text: answer, sources } : m))
     );
+    applyDocumentUpdates(voiceUpdatedDocs);
+
+    // Stop the thinking beat and play a soft "answer ready" cue before narration.
+    try { stopThinking(); } catch (_) {}
+    try { playAnswer(); } catch (_) {}
 
     setVoicePhase("speaking");
     const synth = await speakText(answer, {
@@ -520,12 +574,22 @@ const HomePage = () => {
     voiceTurnIdRef.current = 0;
     setIsVoiceActive(true);
     setVoicePhase("listening");
+    // UX cue: warm swell when voice turns on, then a tiny "your turn" blip.
+    try { playStart(); setTimeout(() => { if (voiceActiveRef.current) playListening(); }, 650); } catch (_) {}
     try {
       // One continuous recognizer for the whole conversation (kept open during
       // narration so the user can barge in). segmentationSilence lets a natural
       // 1-2s pause sit inside one question instead of splitting it.
       voiceRecognizerRef.current = await startSpeechRecognition(
-        () => {},                       // interim text — ignored in voice mode
+        (interimText) => {
+          // Barge-in: the instant STT detects the user speaking, stop any narration in progress
+          // (don't wait for the full phrase). Echo cancellation keeps the TTS from triggering this.
+          if (interimText && voiceSynthRef.current) {
+            try { stopSpeaking(voiceSynthRef.current); } catch (_) {}
+            voiceSynthRef.current = null;
+            setVoicePhase("listening");
+          }
+        },
         user?.email?.trim(),
         "carevoice",
         () => "",                       // fresh base each phrase
@@ -1046,6 +1110,35 @@ const HomePage = () => {
       filteredFiles.forEach((file) => {
         formData.append("documents", file);
       });
+
+      // Make the generated documents editable via /chat: seed their values + names.
+      if (careVoiceDocuments?.length) {
+        console.log(
+          `[CareVoice] Seeding ${careVoiceDocuments.length} editable document(s):`,
+          careVoiceDocuments.map((d) => ({
+            id: d.document_id,
+            name: d.document_name,
+            fields: Object.keys(d.extracted_data || {}).length,
+            hasTemplate: !!d.templateBlobName,
+          }))
+        );
+        formData.append(
+          "generated_documents",
+          JSON.stringify(
+            careVoiceDocuments.map((d) => ({
+              document_id: d.document_id,
+              document_name: d.document_name,
+              text: d.text,
+              extracted_data: d.extracted_data,
+            }))
+          )
+        );
+      } else {
+        console.warn(
+          "[CareVoice] No editable documents to seed — editing won't work this session " +
+          "(careVoiceDocuments is empty at Start time)."
+        );
+      }
 
       const res = await fetch(
         `${API_BASE}/api/careVoiceAskAI/start`,
@@ -1666,8 +1759,19 @@ const HomePage = () => {
         }
 
         try {
+          // Agentic chat: answers from the data (primary) and can EDIT the generated document.
+          const docRefs = (careVoiceDocuments || []).map((d) => ({
+            document_id: d.document_id,
+            templateBlobName: d.templateBlobName,
+            mapper: d.mapper,
+          }));
+          // Last ~10 prior turns so the agent can follow multi-message instructions.
+          const chatHistory = (messages || [])
+            .filter((m) => (m.sender === "user" || m.sender === "bot") && m.text && !m.temp && !m.voiceTemp)
+            .slice(-10)
+            .map((m) => ({ role: m.sender === "user" ? "user" : "assistant", content: m.text }));
           const response = await fetch(
-            `${API_BASE}/api/careVoiceAskAI/query`,
+            `${API_BASE}/api/careVoiceAskAI/chat`,
             {
               method: "POST",
               headers: {
@@ -1676,29 +1780,40 @@ const HomePage = () => {
               body: JSON.stringify({
                 session_id: careVoiceSessionId,
                 user_id: careVoiceUserId,
-                query: finalQuery
+                message: finalQuery,
+                documents: docRefs,
+                history: chatHistory
               })
             }
           );
 
           const data = await response.json();
-          const botReply = data?.data?.answer || "No response";
-          const sources = data?.data?.sources || [];
+          const d = data?.data || {};
+          const botReply = d.answer || "No response";
+          const sources = d.sources || [];
+          const updatedDocs = Object.entries(d.updated_documents || {}).map(([id, b64]) => {
+            const ref = (careVoiceDocuments || []).find((x) => x.document_id === id);
+            return { document_id: id, base64: b64, filename: ref?.document_name || `${id}` };
+          });
 
+          const disambiguation = d.needs_disambiguation || null;
           setMessages(prev =>
             prev.map(msg =>
               msg.temp
-                ? { sender: "bot", text: botReply, sources }
+                ? { sender: "bot", text: botReply, sources, disambiguation }
                 : msg
             )
           );
-          await incrementCareVoiceAnalysisCount(
-            user?.email?.trim().toLowerCase(),
-            "askai",
-            data?.data?.llm_cost?.total_usd,
-            "carevoice",
-            data?.data?.llm_cost?.token_usage
-          );
+          applyDocumentUpdates(updatedDocs);
+          if (d?.llm_cost?.total_usd) {
+            await incrementCareVoiceAnalysisCount(
+              user?.email?.trim().toLowerCase(),
+              "askai",
+              d.llm_cost.total_usd,
+              "carevoice",
+              d.llm_cost.token_usage
+            );
+          }
         } catch (err) {
           console.error("Care Voice AskAI Error:", err);
 
@@ -2686,7 +2801,7 @@ const HomePage = () => {
                           <Suspense fallback={<CenteredLoader />}>
                             <VoiceModule user={user} isMobileOrTablet={isMobileOrTablet} setCareVoiceFiles={setCareVoiceFiles} setIsCareVoiceGeneratingDocs={setIsCareVoiceGeneratingDocs}
                               setTotalCareVoiceDocsToGenerate={setTotalCareVoiceDocsToGenerate}
-                              setGeneratedCareVoiceDocsCount={setGeneratedCareVoiceDocsCount} setCareVoiceSessionId={setCareVoiceSessionId}
+                              setGeneratedCareVoiceDocsCount={setGeneratedCareVoiceDocsCount} setCareVoiceSessionId={setCareVoiceSessionId} setCareVoiceDocuments={setCareVoiceDocuments}
                               setCareVoiceUserId={setCareVoiceUserId}
                               setCareVoiceStarted={setCareVoiceStarted}
                               setMessages={setMessages} careVoiceFiles={careVoiceFiles} onReset={resetCareVoiceSession} isCareVoiceGeneratingDocs={isCareVoiceGeneratingDocs} setIsCareVoiceLocked={setIsCareVoiceLocked} onRoleChange={setVoiceRole} onGeneratedDocsScreenChange={setVoiceDocsScreen} />
@@ -3321,6 +3436,27 @@ const HomePage = () => {
                                             </div>
                                           )} */}
                                       </>
+                                    )}
+                                    {msg.sender === "bot" && msg.disambiguation?.candidates?.length > 0 && (
+                                      <div style={{ marginTop: "12px", display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                                        <div style={{ width: "100%", fontSize: "12px", color: "#666", marginBottom: "2px" }}>
+                                          Select the document to update:
+                                        </div>
+                                        {msg.disambiguation.candidates.map((c, ci) => (
+                                          <button
+                                            key={`disamb-${ci}`}
+                                            onClick={() => handleSend(`Use the "${c.document_name}" document.`)}
+                                            style={{
+                                              display: "inline-flex", alignItems: "center", gap: "6px",
+                                              padding: "8px 14px", background: "#F0EDF6", color: "#4A3B8C",
+                                              border: "1px solid #6C4CDC", borderRadius: "8px",
+                                              cursor: "pointer", fontSize: "13px", fontWeight: 600
+                                            }}
+                                          >
+                                            <FaFileAlt size={12} /> {c.document_name}
+                                          </button>
+                                        ))}
+                                      </div>
                                     )}
                                     {msg.sender === "bot" && msg.sources?.length > 0 && (
                                       <div style={{ marginTop: "12px" }}>
@@ -4064,24 +4200,39 @@ const HomePage = () => {
                           })()}
                           {isCareVoicePage && (
                             <div
-                              onClick={handleVoiceClick}
-                              className={isVoiceActive ? "cv-headset-active" : undefined}
-                              title={isVoiceActive ? "Stop voice chat" : "Talk to your document"}
+                              className="cv-voice-wrap"
                               style={{
                                 position: "absolute",
                                 right: "108px",
                                 bottom: "17px",
                                 width: "32px",
                                 height: "32px",
-                                backgroundColor: isVoiceActive ? "#FF4D4F" : "#6C4CDC",
-                                borderRadius: "10px",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                cursor: "pointer",
                               }}
                             >
-                              <FaHeadset size={16} color="#fff" />
+                              {!isVoiceActive && (
+                                <div className="cv-voice-hint">
+                                  💬 Prefer to talk? Start a voice chat — I’ll ask a few quick
+                                  questions, pull the details straight from your answers, and make
+                                  your document 100% complete &amp; accurate.
+                                </div>
+                              )}
+                              <div
+                                onClick={handleVoiceClick}
+                                className={isVoiceActive ? "cv-headset-active" : "cv-headset-idle"}
+                                title={isVoiceActive ? "Stop voice chat" : "Talk to your document"}
+                                style={{
+                                  width: "32px",
+                                  height: "32px",
+                                  backgroundColor: isVoiceActive ? "#FF4D4F" : "#6C4CDC",
+                                  borderRadius: "10px",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  cursor: "pointer",
+                                }}
+                              >
+                                <FaHeadset size={16} color="#fff" />
+                              </div>
                             </div>
                           )}
                           {/* <FaCircleArrowRight onClick={handleSend} size={22} style={{ position: "absolute", right: "14px", top: "50%", transform: "translateY(-50%)", cursor: "pointer", color: "#6C4CDC" }} /> */}
