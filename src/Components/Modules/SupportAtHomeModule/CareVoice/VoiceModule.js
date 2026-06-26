@@ -60,8 +60,6 @@ import CareVoiceAccessManagement from "./CareVoiceAccessManagement";
 import SageConnect from "./SageConnect";
 import CareVoiceNoOrgEmptyState from "./CareVoiceNoOrgEmptyState";
 import GeneratingDocument from "./GeneratingDocument";
-import { Orb } from "./Orb";
-import "../../../../Styles/SupportAtHomeModule/CareVoice/Orb.css";
 import { API_BASE } from "../../../../config/apiBase";
 
 // `docx` is dynamic-imported inside createTranscriptDoc so the library only
@@ -4480,16 +4478,22 @@ const VoiceModule = (props) => {
                                 <div className={`staff-rec-circle ${recordMode === "idle" ? "is-before-recording" : ""}`}>
                                     {recordMode === "recording" || recordMode === "paused" ? (
                                         <div className="staff-recording-wrapper">
-                                            {/* ElevenLabs voice orb (purple ramp), reacting to the
-                                                live mic level via audioLevelRef. */}
-                                            <div className="cv-orb">
-                                                <Orb
-                                                    colors={["#6c4cdc", "#c9b6fb"]}
-                                                    volumeMode="manual"
-                                                    inputVolumeRef={audioLevelRef}
-                                                    outputVolumeRef={audioLevelRef}
-                                                    className="cv-orb-fill"
-                                                />
+                                            {/* Glossy brand-purple sphere with an inner circle that
+                                                grows with the voice via the --audio-level variable. */}
+                                            <div
+                                                ref={auroraRef}
+                                                className={`staff-aurora ${recordMode === "recording" ? "is-recording" : "is-paused"}`}
+                                                aria-hidden="true"
+                                            >
+                                                <span className="staff-aurora-blob staff-aurora-blob--1" />
+                                                <span className="staff-aurora-blob staff-aurora-blob--2" />
+                                                <span className="staff-aurora-blob staff-aurora-blob--3" />
+                                                <span className="staff-aurora-blob staff-aurora-blob--4" />
+                                                <span className="staff-aurora-blob staff-aurora-blob--5" />
+                                                <span className="staff-aurora-sheen" />
+                                                <span className="staff-aurora-grain" />
+                                                <span className="staff-aurora-gloss" />
+                                                <span className="staff-aurora-core" />
                                             </div>
 
                                             <span className="staff-recording-timer">
