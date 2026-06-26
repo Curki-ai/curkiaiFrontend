@@ -2,9 +2,16 @@ import React, { useEffect, useState } from "react";
 import "../../Styles/general-styles/Settings.css";
 import { IoArrowBackOutline } from "react-icons/io5";
 import { FiEdit2 } from "react-icons/fi";
+import { PiEyeLight, PiEyeSlash } from "react-icons/pi";
 import axios from "axios";
-import { auth } from "../../firebase";
-import { sendPasswordResetEmail, deleteUser } from "firebase/auth";
+import { auth, googleProvider } from "../../firebase";
+import {
+  sendPasswordResetEmail,
+  deleteUser,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
+  reauthenticateWithPopup,
+} from "firebase/auth";
 import supportSettingsDown from "../../Images/supportSettingsDownIcon.svg"
 import supportSettingsRight from "../../Images/supportSettingsUpIcon.svg"
 import supportSettingsUploadIcon from "../../Images/supportSettingsUpload.svg"
@@ -20,6 +27,15 @@ const SettingsPage = ({ user, onBack }) => {
     const [isEditingInputName, setIsEditingInputName] = useState(false);
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [confirmType, setConfirmType] = useState("");
+    const [deletePassword, setDeletePassword] = useState("");
+    const [showDeletePassword, setShowDeletePassword] = useState(false);
+    const [deleteError, setDeleteError] = useState("");
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    // Which sign-in provider this account uses — drives how we re-verify the
+    // user before the (sensitive) account deletion.
+    const deleteProviderId =
+        (user || auth.currentUser)?.providerData?.[0]?.providerId;
     const [isSupportOpen, setIsSupportOpen] = useState(false);
     const [showSupportModal, setShowSupportModal] = useState(false);
     const [tickets, setTickets] = useState([]);
@@ -38,14 +54,40 @@ const SettingsPage = ({ user, onBack }) => {
     };
 
     const handleDeleteAccount = async () => {
+        const currentUser = auth.currentUser;
+
+        if (!currentUser) {
+            toast.error("No user found.");
+            return;
+        }
+
+        const providerId = currentUser.providerData?.[0]?.providerId;
+
+        setDeleteError("");
+        setIsDeleting(true);
         try {
-            const currentUser = auth.currentUser;
-
-            if (!currentUser) {
-                toast.error("No user found.");
-                return;
+            // Re-verify the user right before deleting. Firebase requires a
+            // recent login for sensitive ops; reauthenticating here avoids the
+            // "requires-recent-login" error without making the user sign out.
+            if (providerId === "password") {
+                if (!deletePassword) {
+                    setDeleteError("Please enter your password to confirm.");
+                    setIsDeleting(false);
+                    return;
+                }
+                const credential = EmailAuthProvider.credential(
+                    currentUser.email,
+                    deletePassword
+                );
+                await reauthenticateWithCredential(currentUser, credential);
+            } else if (providerId === "google.com") {
+                await reauthenticateWithPopup(currentUser, googleProvider);
             }
+            // Other providers: attempt the delete directly.
 
+            // Remove the DB record if it exists. The endpoint returns 200 even
+            // when there's no matching row, so we always proceed to delete the
+            // Firebase auth account next.
             await axios.delete(
                 `${API_BASE}/api/user/delete?id=${currentUser.uid}`
             );
@@ -53,17 +95,31 @@ const SettingsPage = ({ user, onBack }) => {
             await deleteUser(currentUser);
 
             toast.success("Account deleted successfully.");
-
-            // window.location.reload();
-
+            setShowConfirmModal(false);
+            setDeletePassword("");
+            window.location.href = "/";
         } catch (error) {
-            console.error(error);
-
-            if (error.code === "auth/requires-recent-login") {
-                toast.warn("Please log in again before deleting your account.");
+            console.error("Delete account failed:", error);
+            const code = error?.code;
+            if (
+                code === "auth/wrong-password" ||
+                code === "auth/invalid-credential"
+            ) {
+                setDeleteError("Incorrect password. Please try again.");
+            } else if (
+                code === "auth/popup-closed-by-user" ||
+                code === "auth/cancelled-popup-request"
+            ) {
+                setDeleteError("Confirmation was cancelled. Please try again.");
+            } else if (code === "auth/too-many-requests") {
+                setDeleteError(
+                    "Too many attempts. Please wait a few minutes and try again."
+                );
             } else {
-                toast.error("Failed to delete account.");
+                setDeleteError("Could not delete your account. Please try again.");
             }
+        } finally {
+            setIsDeleting(false);
         }
     };
     const handleStatusChange = async (ticketId, newStatus) => {
@@ -277,6 +333,9 @@ const SettingsPage = ({ user, onBack }) => {
                     className="delete-account-btn"
                     onClick={() => {
                         setConfirmType("delete");
+                        setDeletePassword("");
+                        setShowDeletePassword(false);
+                        setDeleteError("");
                         setShowConfirmModal(true);
                     }}
                 >
@@ -424,27 +483,73 @@ const SettingsPage = ({ user, onBack }) => {
                                 : "We will send a password reset link to your email."}
                         </div>
 
+                        {confirmType === "delete" && deleteProviderId === "password" && (
+                            <div className="confirm-password-wrap">
+                                <input
+                                    type={showDeletePassword ? "text" : "password"}
+                                    className="confirm-password-input"
+                                    placeholder="Enter your password to confirm"
+                                    value={deletePassword}
+                                    onChange={(e) => setDeletePassword(e.target.value)}
+                                    autoFocus
+                                />
+                                <button
+                                    type="button"
+                                    className="confirm-eye"
+                                    onClick={() => setShowDeletePassword((s) => !s)}
+                                    tabIndex={-1}
+                                    aria-label={showDeletePassword ? "Hide password" : "Show password"}
+                                >
+                                    {showDeletePassword ? (
+                                        <PiEyeSlash size={20} />
+                                    ) : (
+                                        <PiEyeLight size={20} />
+                                    )}
+                                </button>
+                            </div>
+                        )}
+
+                        {confirmType === "delete" && deleteProviderId === "google.com" && (
+                            <div className="confirm-subnote">
+                                You'll be asked to confirm with Google.
+                            </div>
+                        )}
+
+                        {confirmType === "delete" && deleteError && (
+                            <div className="confirm-error">{deleteError}</div>
+                        )}
+
                         <div className="confirm-buttons">
 
                             <button
                                 className="confirm-cancel"
-                                onClick={() => setShowConfirmModal(false)}
+                                disabled={isDeleting}
+                                onClick={() => {
+                                    setShowConfirmModal(false);
+                                    setDeletePassword("");
+                                    setShowDeletePassword(false);
+                                    setDeleteError("");
+                                }}
                             >
                                 No
                             </button>
 
                             <button
                                 className="confirm-confirm"
+                                disabled={isDeleting}
                                 onClick={async () => {
                                     if (confirmType === "delete") {
+                                        // handleDeleteAccount closes the modal itself on success
                                         await handleDeleteAccount();
                                     } else {
                                         await handleResetPassword();
+                                        setShowConfirmModal(false);
                                     }
-                                    setShowConfirmModal(false);
                                 }}
                             >
-                                Yes
+                                {confirmType === "delete" && isDeleting
+                                    ? "Deleting…"
+                                    : "Yes"}
                             </button>
 
                         </div>

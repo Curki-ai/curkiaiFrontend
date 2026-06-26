@@ -252,6 +252,61 @@
   opacity: 0.9;
 }
 
+.confirm-password-wrap {
+  position: relative;
+  margin-bottom: 16px;
+}
+
+.confirm-password-input {
+  width: 100%;
+  padding: 12px 44px 12px 14px;
+  border: 1px solid #E3E1EE;
+  border-radius: 10px;
+  font-size: 14px;
+  font-family: inherit;
+  color: #1F1F40;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.confirm-eye {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #8B8B8B;
+  display: flex;
+  align-items: center;
+  padding: 4px;
+}
+
+.confirm-password-input:focus {
+  border-color: #6C4CDC;
+  box-shadow: 0 0 0 3px rgba(108, 76, 220, 0.12);
+}
+
+.confirm-subnote {
+  font-size: 14px;
+  color: #6B7280;
+  margin-bottom: 16px;
+}
+
+.confirm-error {
+  font-size: 14px;
+  color: #B3261E;
+  font-weight: 500;
+  margin-bottom: 16px;
+}
+
+.confirm-confirm:disabled,
+.confirm-cancel:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
 @keyframes fadeInScale {
   from {
     opacity: 0;
