@@ -3,6 +3,11 @@ import { useTexture } from "@react-three/drei";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 
+// Perlin texture path + eager preload so the orb shows instantly on first record
+// (no Suspense wait on the texture fetch).
+const PERLIN_TEXTURE_URL = `${process.env.PUBLIC_URL || ""}/perlin-noise.png`;
+useTexture.preload(PERLIN_TEXTURE_URL);
+
 /**
  * Orb — the ElevenLabs conversational voice orb (ported from their open-source
  * @elevenlabs/ui registry component to plain JS). A circle mesh rendered with a
@@ -73,9 +78,7 @@ function Scene({
     const targetColor1Ref = useRef(new THREE.Color(colors[0]));
     const targetColor2Ref = useRef(new THREE.Color(colors[1]));
     const animSpeedRef = useRef(0.1);
-    const perlinNoiseTexture = useTexture(
-        `${process.env.PUBLIC_URL || ""}/perlin-noise.png`
-    );
+    const perlinNoiseTexture = useTexture(PERLIN_TEXTURE_URL);
 
     const agentRef = useRef(agentState);
     const modeRef = useRef(volumeMode);
@@ -221,7 +224,7 @@ function Scene({
             uInverted: new THREE.Uniform(isDark ? 1 : 0),
             uInputVolume: new THREE.Uniform(0),
             uOutputVolume: new THREE.Uniform(0),
-            uOpacity: new THREE.Uniform(0),
+            uOpacity: new THREE.Uniform(1),
         };
     }, [perlinNoiseTexture, offsets]);
 
