@@ -156,10 +156,66 @@
   100% { box-shadow: 0 0 0 0 rgba(255, 77, 79, 0); }
 }
 
+/* ---- Idle headset: gentle blink that invites the user to talk ---- */
+.cv-headset-idle { animation: cv-btn-idle-pulse 2.2s ease-in-out infinite; }
+@keyframes cv-btn-idle-pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(108, 76, 220, 0.55); transform: scale(1); }
+  60%  { box-shadow: 0 0 0 9px rgba(108, 76, 220, 0); transform: scale(1.07); }
+  100% { box-shadow: 0 0 0 0 rgba(108, 76, 220, 0); transform: scale(1); }
+}
+
+/* ---- Friendly hint bubble above the headset trigger ---- */
+.cv-voice-wrap { position: absolute; }
+.cv-voice-hint {
+  position: absolute;
+  bottom: 46px;          /* float above the 32px icon */
+  right: -8px;
+  width: 230px;
+  background: linear-gradient(135deg, #6C4CDC, #8A6CFF);
+  color: #fff;
+  font-size: 12px;
+  line-height: 1.45;
+  padding: 9px 12px;
+  border-radius: 12px;
+  box-shadow: 0 10px 24px rgba(108, 76, 220, 0.38);
+  opacity: 0;
+  transform: translateY(6px);
+  pointer-events: none;
+  z-index: 60;
+  /* Intro nudge: fade in shortly after load, hold, then fade out. */
+  animation: cv-hint-intro 9s ease 1.2s 1 forwards;
+}
+.cv-voice-hint::after {   /* little downward pointer */
+  content: "";
+  position: absolute;
+  bottom: -5px;
+  right: 20px;
+  width: 11px;
+  height: 11px;
+  background: #8A6CFF;
+  transform: rotate(45deg);
+  border-radius: 2px;
+}
+/* Hovering the trigger keeps the hint visible anytime. */
+.cv-voice-wrap:hover .cv-voice-hint {
+  opacity: 1 !important;
+  transform: translateY(0) !important;
+  animation: none;
+}
+@keyframes cv-hint-intro {
+  0%   { opacity: 0; transform: translateY(6px); }
+  7%   { opacity: 1; transform: translateY(0); }
+  78%  { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(6px); }
+}
+
 /* Respect reduced-motion: keep the colour, drop the motion. */
 @media (prefers-reduced-motion: reduce) {
   .cv-edge-aurora,
   .cv-edge-glow,
   .cv-edge-dot,
-  .cv-headset-active { animation: none; }
+  .cv-headset-active,
+  .cv-headset-idle { animation: none; }
+  .cv-voice-hint { animation: none; opacity: 0; }
+  .cv-voice-wrap:hover .cv-voice-hint { opacity: 1; transform: translateY(0); }
 }

@@ -60,6 +60,8 @@ import CareVoiceAccessManagement from "./CareVoiceAccessManagement";
 import SageConnect from "./SageConnect";
 import CareVoiceNoOrgEmptyState from "./CareVoiceNoOrgEmptyState";
 import GeneratingDocument from "./GeneratingDocument";
+import { Orb } from "./Orb";
+import "../../../../Styles/SupportAtHomeModule/CareVoice/Orb.css";
 import { API_BASE } from "../../../../config/apiBase";
 
 // `docx` is dynamic-imported inside createTranscriptDoc so the library only
@@ -142,7 +144,7 @@ const VoiceModule = (props) => {
     // {id, label, data:{placeholders, document}}. SageConnect auto-pushes this
     // list so the user can pick which doc (and workflow) to run per open page.
     const [sageDocs, setSageDocs] = useState([]);
-    const addSageDoc = (filename, base64, extracted_data, label) => {
+    const addSageDoc = (filename, base64, extracted_data, label, templateRef) => {
         setSageDocs((prev) => [
             ...prev,
             {
@@ -151,6 +153,10 @@ const VoiceModule = (props) => {
                 data: {
                     placeholders: extracted_data || null,
                     document: filename ? { filename, base64 } : null,
+                    // Optional per-doc template ref (recordings pass this so editing can
+                    // re-render the exact doc). Other flows omit it -> bridge falls back.
+                    templateBlobName: templateRef?.templateBlobName || null,
+                    mapper: templateRef?.mapper || null,
                 },
             },
         ]);
@@ -234,6 +240,14 @@ const VoiceModule = (props) => {
     const audioContextRef = useRef(null);
     const audioChunksRef = useRef([]);
     const audioRef = useRef(null);
+    // Audio-reactive orb: live mic amplitude is pushed into the .staff-aurora
+    // element as the CSS var --audio-level (0..1), driving its warm bloom/glow.
+    const analyserRef = useRef(null);
+    const meterDataRef = useRef(null);
+    const meterRafRef = useRef(null);
+    const meterActiveRef = useRef(false);
+    const audioLevelRef = useRef(0);
+    const auroraRef = useRef(null);
     const [audioURL, setAudioURL] = useState(null);
     const [recordTime, setRecordTime] = useState(0);
     const [isPlaying, setIsPlaying] = useState(false);
@@ -361,6 +375,39 @@ const VoiceModule = (props) => {
         ]);
 
     }, [generatedDocs]);
+
+    // Surface editable generated-document refs (current values + template) up to HomePage so
+    // the AskAI chat can edit them via /chat. Additive: no-op when the prop isn't provided.
+    useEffect(() => {
+        if (typeof props?.setCareVoiceDocuments !== "function") return;
+        // sageDocs is the DURABLE per-document state that actually carries the extracted field
+        // values (data.placeholders). generatedDocs is transient and doesn't hold the values, so
+        // we read from sageDocs here. Both the upload AND the recordings (v3) pipelines now seed
+        // sageDocs with extracted_data, so editing works from either path.
+        if (!sageDocs?.length) return;
+        const tmplList = Array.isArray(selectedTemplate?.templates) ? selectedTemplate.templates : [];
+        const fallbackBlob = selectedTemplate?.templateBlobName || null;
+        const fallbackMapper = selectedTemplate?.mappings || null;
+        const docs = sageDocs.map((sd, i) => {
+            const ed = (sd?.data?.placeholders) || {};
+            const fname = sd?.data?.document?.filename || sd.label || `doc_${i}`;
+            const t = tmplList[i] || null;
+            // Prefer the doc's OWN template ref (recordings thread this through); fall back to
+            // index-aligned template, then to the single selected template.
+            const blobName = sd?.data?.templateBlobName || t?.templateBlobName || fallbackBlob || null;
+            const mapper = sd?.data?.mapper || t?.mappings || fallbackMapper || null;
+            return {
+                document_id: fname,
+                document_name: fname,
+                extracted_data: ed,
+                // Text representation for indexing the generated (secondary) doc.
+                text: Object.entries(ed).map(([k, v]) => `${k}: ${v}`).join("\n"),
+                templateBlobName: blobName,
+                mapper: mapper,
+            };
+        });
+        props.setCareVoiceDocuments(docs);
+    }, [sageDocs, selectedTemplate]);
     useEffect(() => {
         if (!uploadedTranscriptFiles?.length) return;
 
@@ -588,6 +635,34 @@ const VoiceModule = (props) => {
                         );
                         generatedFiles.push(file);
                         documentsGenerated++;
+
+                        // Seed editable state (Sage doc) so AskAI /chat can edit this recorded
+                        // doc — identical to the upload-file path. Without this, recordings
+                        // produced no careVoiceDocuments and editing wouldn't seed.
+                        try {
+                            const b64 = await new Promise((resolve, reject) => {
+                                const r = new FileReader();
+                                r.onloadend = () => resolve(String(r.result).split(",")[1] || "");
+                                r.onerror = reject;
+                                r.readAsDataURL(blob);
+                            });
+                            const sageFilename = doc.filename || "document.docx";
+                            lastSageDocRef.current = {
+                                filename: sageFilename,
+                                base64: b64,
+                                extracted_data: doc.extracted_data || null,
+                            };
+                            setSageDocReady(true);
+                            addSageDoc(
+                                sageFilename,
+                                b64,
+                                doc.extracted_data || null,
+                                sageFilename,
+                                { templateBlobName: doc.templateBlobName || null, mapper: doc.mapper || null }
+                            );
+                        } catch (e) {
+                            /* non-fatal — editing just won't seed for this doc */
+                        }
 
                         // Update parent state
                         if (setGeneratedCareVoiceDocsCount) setGeneratedCareVoiceDocsCount(documentsGenerated);
@@ -972,7 +1047,58 @@ const VoiceModule = (props) => {
         const s = String(total % 60).padStart(2, "0");
         return `${h}:${m}:${s}`;
     };
+    // Push the current amplitude into the orb without re-rendering React every
+    // frame — we write straight to the CSS custom property on the element.
+    const writeAudioLevel = (level) => {
+        audioLevelRef.current = level;
+        if (auroraRef.current) {
+            auroraRef.current.style.setProperty("--audio-level", level.toFixed(3));
+        }
+    };
+
+    // Per-frame loop: read the analyser, normalise the voice to 0..1, ease it
+    // (rise fast, fall slow so it pulses naturally) and feed the orb.
+    const runVoiceMeter = () => {
+        const analyser = analyserRef.current;
+        const dataArray = meterDataRef.current;
+        if (!analyser || !dataArray) return;
+
+        analyser.getByteFrequencyData(dataArray);
+        let sum = 0;
+        for (let i = 0; i < dataArray.length; i++) {
+            sum += dataArray[i];
+        }
+        const avg = sum / dataArray.length; // ~0..70 for normal speech
+
+        const target = Math.min(1, avg / 48);
+        const prev = audioLevelRef.current;
+        const smoothed =
+            target > prev
+                ? prev + (target - prev) * 0.5 // attack
+                : prev + (target - prev) * 0.12; // release
+
+        writeAudioLevel(smoothed);
+        setIsSpeaking(avg > 8);
+
+        if (meterActiveRef.current) {
+            meterRafRef.current = requestAnimationFrame(runVoiceMeter);
+        }
+    };
+
+    const stopVoiceMeter = (calm = true) => {
+        meterActiveRef.current = false;
+        if (meterRafRef.current) {
+            cancelAnimationFrame(meterRafRef.current);
+            meterRafRef.current = null;
+        }
+        if (calm) writeAudioLevel(0); // orb relaxes to rest
+    };
+
     const releaseMicResources = () => {
+        stopVoiceMeter(true);
+        analyserRef.current = null;
+        meterDataRef.current = null;
+
         try {
             mediaStreamRef.current?.getTracks().forEach((t) => t.stop());
         } catch (e) {
@@ -1004,10 +1130,11 @@ const VoiceModule = (props) => {
             setAudioBlob(blob);
             setAudioURL(URL.createObjectURL(blob));
             setIsSpeaking(false);
+            stopVoiceMeter(true);
             releaseMicResources();
         };
 
-        // 🎤 voice detect
+        // 🎤 voice detect + audio-reactive orb
         const audioContext = new window.AudioContext();
         audioContextRef.current = audioContext;
         const analyser = audioContext.createAnalyser();
@@ -1016,36 +1143,26 @@ const VoiceModule = (props) => {
         source.connect(analyser);
         analyser.fftSize = 256;
 
-        const dataArray = new Uint8Array(analyser.frequencyBinCount);
+        analyserRef.current = analyser;
+        meterDataRef.current = new Uint8Array(analyser.frequencyBinCount);
 
-        const checkVoice = () => {
-            analyser.getByteFrequencyData(dataArray);
-
-            let sum = 0;
-            for (let i = 0; i < dataArray.length; i++) {
-                sum += dataArray[i];
-            }
-
-            const volume = sum / dataArray.length;
-
-            setIsSpeaking(volume > 8);
-
-            if (mediaRecorder.state === "recording") {
-                requestAnimationFrame(checkVoice);
-            }
-        };
-
-        checkVoice();
+        meterActiveRef.current = true;
+        runVoiceMeter();
 
         mediaRecorder.start();
         setRecordMode("recording");
     };
     const pauseRecording = () => {
         mediaRecorderRef.current?.pause();
+        stopVoiceMeter(true); // orb eases back to its calm resting state
         setRecordMode("paused");
     };
     const resumeRecording = () => {
         mediaRecorderRef.current?.resume();
+        if (analyserRef.current && !meterActiveRef.current) {
+            meterActiveRef.current = true;
+            runVoiceMeter(); // restart audio reactivity
+        }
         setRecordMode("recording");
     };
     const stopRecording = () => {
@@ -2853,7 +2970,8 @@ const VoiceModule = (props) => {
                                         sageFilename,
                                         b64,
                                         doc.extracted_data || null,
-                                        sageFilename
+                                        sageFilename,
+                                        { templateBlobName: doc.templateBlobName || null, mapper: doc.mapper || null }
                                     );
                                 } catch (e) {
                                     /* non-fatal — Sage replay just stays disabled */
@@ -4362,21 +4480,16 @@ const VoiceModule = (props) => {
                                 <div className={`staff-rec-circle ${recordMode === "idle" ? "is-before-recording" : ""}`}>
                                     {recordMode === "recording" || recordMode === "paused" ? (
                                         <div className="staff-recording-wrapper">
-                                            {/* Aurora orb — a glossy brand-purple sphere with morphing
-                                                aurora blobs, a slow rotating glass sheen and a specular
-                                                highlight. Animates while recording, calmer when paused. */}
-                                            <div
-                                                className={`staff-aurora ${recordMode === "recording" ? "is-recording" : "is-paused"}`}
-                                                aria-hidden="true"
-                                            >
-                                                <span className="staff-aurora-blob staff-aurora-blob--1" />
-                                                <span className="staff-aurora-blob staff-aurora-blob--2" />
-                                                <span className="staff-aurora-blob staff-aurora-blob--3" />
-                                                <span className="staff-aurora-blob staff-aurora-blob--4" />
-                                                <span className="staff-aurora-blob staff-aurora-blob--5" />
-                                                <span className="staff-aurora-sheen" />
-                                                <span className="staff-aurora-grain" />
-                                                <span className="staff-aurora-gloss" />
+                                            {/* ElevenLabs voice orb (purple ramp), reacting to the
+                                                live mic level via audioLevelRef. */}
+                                            <div className="cv-orb">
+                                                <Orb
+                                                    colors={["#6c4cdc", "#c9b6fb"]}
+                                                    volumeMode="manual"
+                                                    inputVolumeRef={audioLevelRef}
+                                                    outputVolumeRef={audioLevelRef}
+                                                    className="cv-orb-fill"
+                                                />
                                             </div>
 
                                             <span className="staff-recording-timer">
