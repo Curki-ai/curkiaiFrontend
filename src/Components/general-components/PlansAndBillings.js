@@ -360,6 +360,7 @@ const PlansAndBillings = ({ onClose, email: userEmail, firstName: firstName, set
                         yearly={9590}
                         yearlyMonthly={799}
                         billing={billing}
+                        effectiveSub={effectiveSub}
                         popular
                         features={[
                             "50M AI credits",
