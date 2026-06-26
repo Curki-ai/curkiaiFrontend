@@ -18,7 +18,7 @@ const useSubscriptionStatus = (
       "allaboutcaring.com.au",
       "youcareds.com",
       "contemporarycoordination.com",
-      "careait.com"
+      // "careait.com"
     ];
 
     const emailDomain = user.email.split("@")[1]?.toLowerCase();

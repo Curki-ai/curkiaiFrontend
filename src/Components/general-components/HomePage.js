@@ -910,7 +910,7 @@ const HomePage = () => {
       "allaboutcaring.com.au",
       "youcareds.com",
       "contemporarycoordination.com",
-      "careait.com",
+      // "careait.com", — TEMP: removed to test the pricing-modal popup. Restore before deploying.
     ];
 
     const runSubscriptionCheck = async () => {

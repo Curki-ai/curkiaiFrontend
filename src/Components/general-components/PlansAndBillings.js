@@ -98,7 +98,34 @@ const PlansAndBillings = ({ onClose, email: userEmail, firstName: firstName, set
     // Prefer payment_plans.plan_details (org-scoped, denormalized per member,
     // updated by the Stripe webhook). Fall back to the legacy subscriptionInfo
     // prop for users not yet covered by the new model.
-    const effectiveSub = access.planDetails || subscriptionInfo || null;
+    //
+    // EXPIRY GUARD: plan_details is a denormalized cache and is NOT invalidated
+    // when a paid plan lapses, so it can keep reading status:"active" with an
+    // elapsed current_period_end long after the subscription ended. Without
+    // this guard the lapsed tier renders as "Your Active Plan" and the user is
+    // offered Upgrade/Downgrade instead of a renewal.
+    //
+    // A paid plan is considered lapsed when EITHER source we can see says so:
+    //   - the live subscriptions row (subscriptionInfo, resolved via the org
+    //     owner — authoritative), or
+    //   - the plan_details snapshot itself
+    // shows status !== "active" OR a current_period_end in the past. We only
+    // flip on an EXPLICIT expired signal (never merely on a null subscriptionInfo)
+    // so a transient getSubscription failure can't wrongly offer a re-purchase.
+    const isPaidLapsed = (s) => {
+        if (!s || s.subscription_type !== "paid") return false;
+        if (s.status && s.status !== "active") return true;
+        if (s.current_period_end && new Date() > new Date(s.current_period_end)) {
+            return true;
+        }
+        return false;
+    };
+    const planLapsed =
+        isPaidLapsed(subscriptionInfo) || isPaidLapsed(access.planDetails);
+
+    const effectiveSub = planLapsed
+        ? null
+        : access.planDetails || subscriptionInfo || null;
     const currentPlan = effectiveSub?.plan_key || "trial";
     const currentBilling = effectiveSub?.billing_interval || "monthly";
 
@@ -464,10 +491,11 @@ const Plan = ({ title,
         thrive: 3,
         command: 4
     };
-    // Trial detection prefers effectiveSub (payment_plans.plan_details) and
-    // falls back to the legacy subscriptionInfo prop. A user with no
-    // effective sub at all is treated as a trial user.
-    const effective = effectiveSub || subscriptionInfo;
+    // Trial detection uses the parent-gated effectiveSub. The parent already
+    // folds in the subscriptionInfo fallback AND nulls it out when the paid
+    // plan has lapsed, so a no-plan / lapsed / trial user is treated as a
+    // trial user here (every tier shows "Choose Plan" -> fresh checkout).
+    const effective = effectiveSub;
     const isTrialUser =
         !effective ||
         effective?.subscription_type === "trial";
