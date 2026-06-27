@@ -101,34 +101,39 @@
 /* actions */
 .settings-actions {
   display: flex;
-  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
   margin-top: 30px;
+}
+
+.delete-account-btn,
+.reset-password-btn,
+.cancel-subscription-btn {
+  min-width: 170px;
+  padding: 10px 20px;
+  border-radius: 20px;
+  text-align: center;
+  font-weight: 500;
+  cursor: pointer;
 }
 
 .delete-account-btn {
   border: 1.6px solid #9E4941;
   color: #9E4941;
-  padding: 10px 20px;
-  border-radius: 20px;
   background: white;
-  cursor: pointer;
 }
 
 .reset-password-btn {
   border: none;
   background: #F0F0F0;
   color: #3C3B42;
-  padding: 10px 20px;
-  border-radius: 20px;
 }
 
 .cancel-subscription-btn {
   border: 1.6px solid #6C4CDC;
   color: #6C4CDC;
-  padding: 10px 20px;
-  border-radius: 20px;
   background: white;
-  cursor: pointer;
+  margin-left: auto;
 }
 
 .cancel-subscription-btn:hover {
