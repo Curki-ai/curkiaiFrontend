@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import "../../Styles/general-styles/PlansAndBillings.css";
 import { IoClose } from "react-icons/io5";
 import pricingTick from "../../Images/pricingmodaltick.png"
@@ -530,6 +531,8 @@ const Plan = ({ title,
     }
     const price = billing === "monthly" ? monthly : yearly;
     const [loading, setLoading] = useState(false);
+    // Gate the (irreversible-feeling) downgrade behind a yes/no confirmation.
+    const [showDowngradeConfirm, setShowDowngradeConfirm] = useState(false);
     const handlePlanChange = async () => {
         try {
             setLoading(true);
@@ -762,7 +765,10 @@ const Plan = ({ title,
 
                                 if (!(await ensurePurchaseAllowed())) return;
 
-                                if (isUpgrade || isDowngrade) {
+                                if (isDowngrade) {
+                                    // Confirm before downgrading — only proceed on "Yes".
+                                    setShowDowngradeConfirm(true);
+                                } else if (isUpgrade) {
                                     handlePlanChange();
                                 } else {
                                     onCheckout({ planKey });
@@ -797,6 +803,53 @@ const Plan = ({ title,
 
             </div>
 
+            {/* Rendered into document.body via a portal so the fixed overlay is
+                anchored to the viewport (centered) and never inherits a
+                transformed/scrolling ancestor — which was causing the dialog to
+                shift/flicker on scroll while it was nested inside the plan card. */}
+            {showDowngradeConfirm &&
+                createPortal(
+                    <div
+                        className="pb-downgrade-overlay"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            if (!loading) setShowDowngradeConfirm(false);
+                        }}
+                    >
+                        <div
+                            className="pb-downgrade-modal"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="pb-downgrade-title">
+                                Downgrade to {title}?
+                            </div>
+                            <div className="pb-downgrade-message">
+                                Are you sure you want to downgrade your plan?
+                            </div>
+
+                            <div className="pb-downgrade-buttons">
+                                <button
+                                    className="pb-downgrade-no"
+                                    disabled={loading}
+                                    onClick={() => setShowDowngradeConfirm(false)}
+                                >
+                                    No
+                                </button>
+                                <button
+                                    className="pb-downgrade-yes"
+                                    disabled={loading}
+                                    onClick={async () => {
+                                        await handlePlanChange();
+                                        setShowDowngradeConfirm(false);
+                                    }}
+                                >
+                                    {loading ? "..." : "Yes"}
+                                </button>
+                            </div>
+                        </div>
+                    </div>,
+                    document.body
+                )}
 
         </div>
     );
