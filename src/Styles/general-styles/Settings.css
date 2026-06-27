@@ -122,6 +122,21 @@
   border-radius: 20px;
 }
 
+.cancel-subscription-btn {
+  border: 1.6px solid #6C4CDC;
+  color: #6C4CDC;
+  padding: 10px 20px;
+  border-radius: 20px;
+  background: white;
+  cursor: pointer;
+}
+
+.cancel-subscription-btn:hover {
+  background: #6C4CDC;
+  color: white;
+  transition: all 0.2s ease;
+}
+
 .delete-account-btn:hover {
   background: #9E4941;
   color: white;
