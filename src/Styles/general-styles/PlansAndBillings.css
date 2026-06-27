@@ -1037,3 +1037,75 @@
         line-height: 16px;
     }
 }
+
+/* Downgrade confirmation dialog */
+.pb-downgrade-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+}
+
+.pb-downgrade-modal {
+    background: #fff;
+    border-radius: 16px;
+    padding: 24px 28px;
+    min-width: 360px;
+    max-width: 90vw;
+    text-align: center;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
+}
+
+.pb-downgrade-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 8px;
+}
+
+.pb-downgrade-message {
+    font-size: 14px;
+    font-weight: 500;
+    color: #707493;
+    margin-bottom: 24px;
+}
+
+.pb-downgrade-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+}
+
+.pb-downgrade-no,
+.pb-downgrade-yes {
+    flex: 1;
+    padding: 10px;
+    border-radius: 20px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.pb-downgrade-no {
+    border: 1px solid #D1D5DB;
+    background: #fff;
+    color: #3C3B42;
+}
+
+.pb-downgrade-yes {
+    border: none;
+    background: #6C4CDC;
+    color: #fff;
+}
+
+.pb-downgrade-yes:hover {
+    opacity: 0.9;
+}
+
+.pb-downgrade-no:disabled,
+.pb-downgrade-yes:disabled {
+    opacity: 0.6;
+    cursor: default;
+}

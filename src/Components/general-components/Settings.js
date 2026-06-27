@@ -31,6 +31,7 @@ const SettingsPage = ({ user, onBack }) => {
     const [showDeletePassword, setShowDeletePassword] = useState(false);
     const [deleteError, setDeleteError] = useState("");
     const [isDeleting, setIsDeleting] = useState(false);
+    const [isCancelling, setIsCancelling] = useState(false);
 
     // Which sign-in provider this account uses — drives how we re-verify the
     // user before the (sensitive) account deletion.
@@ -120,6 +121,36 @@ const SettingsPage = ({ user, onBack }) => {
             }
         } finally {
             setIsDeleting(false);
+        }
+    };
+    const handleCancelSubscription = async () => {
+        setIsCancelling(true);
+        try {
+            // Subscription endpoints authenticate via the Firebase ID token —
+            // the backend reads identity from the token, not the request body.
+            const token = await auth.currentUser?.getIdToken();
+            await axios.post(
+                `${API_BASE}/api/subscription/cancel`,
+                {},
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            toast.success("Subscription cancelled successfully.");
+            setShowConfirmModal(false);
+            // Reload so the app re-fetches subscription state from the now-cleared
+            // DB. Without this the cached subscriptionInfo (loaded at app start)
+            // stays stale and Plans & Billing keeps showing the old plan as
+            // "Your Active Plan" with Upgrade/Downgrade on the other cards.
+            // Short delay lets the success toast render first.
+            setTimeout(() => {
+                window.location.reload();
+            }, 1200);
+        } catch (error) {
+            console.error("Cancel subscription failed:", error);
+            toast.error(
+                error?.response?.data?.message ||
+                "Failed to cancel subscription. Please try again."
+            );
+            setIsCancelling(false);
         }
     };
     const handleStatusChange = async (ticketId, newStatus) => {
@@ -352,6 +383,16 @@ const SettingsPage = ({ user, onBack }) => {
                     Reset Password
                 </button>
 
+                <button
+                    className="cancel-subscription-btn"
+                    onClick={() => {
+                        setConfirmType("cancel");
+                        setShowConfirmModal(true);
+                    }}
+                >
+                    Cancel Subscription
+                </button>
+
             </div>
             {/* ================= NEED HELP SECTION ================= */}
 
@@ -474,13 +515,17 @@ const SettingsPage = ({ user, onBack }) => {
                         <div className="confirm-title">
                             {confirmType === "delete"
                                 ? "Delete Account?"
-                                : "Reset Password?"}
+                                : confirmType === "cancel"
+                                    ? "Cancel Subscription?"
+                                    : "Reset Password?"}
                         </div>
 
                         <div className="confirm-message">
                             {confirmType === "delete"
                                 ? "This action is permanent and cannot be undone."
-                                : "We will send a password reset link to your email."}
+                                : confirmType === "cancel"
+                                    ? "Your subscription will be cancelled and removed. This action cannot be undone."
+                                    : "We will send a password reset link to your email."}
                         </div>
 
                         {confirmType === "delete" && deleteProviderId === "password" && (
@@ -523,7 +568,7 @@ const SettingsPage = ({ user, onBack }) => {
 
                             <button
                                 className="confirm-cancel"
-                                disabled={isDeleting}
+                                disabled={isDeleting || isCancelling}
                                 onClick={() => {
                                     setShowConfirmModal(false);
                                     setDeletePassword("");
@@ -536,11 +581,14 @@ const SettingsPage = ({ user, onBack }) => {
 
                             <button
                                 className="confirm-confirm"
-                                disabled={isDeleting}
+                                disabled={isDeleting || isCancelling}
                                 onClick={async () => {
                                     if (confirmType === "delete") {
                                         // handleDeleteAccount closes the modal itself on success
                                         await handleDeleteAccount();
+                                    } else if (confirmType === "cancel") {
+                                        // handleCancelSubscription closes the modal itself on success
+                                        await handleCancelSubscription();
                                     } else {
                                         await handleResetPassword();
                                         setShowConfirmModal(false);
@@ -549,7 +597,9 @@ const SettingsPage = ({ user, onBack }) => {
                             >
                                 {confirmType === "delete" && isDeleting
                                     ? "Deleting…"
-                                    : "Yes"}
+                                    : confirmType === "cancel" && isCancelling
+                                        ? "Cancelling…"
+                                        : "Yes"}
                             </button>
 
                         </div>
