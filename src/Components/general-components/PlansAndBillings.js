@@ -533,6 +533,8 @@ const Plan = ({ title,
     const [loading, setLoading] = useState(false);
     // Gate the (irreversible-feeling) downgrade behind a yes/no confirmation.
     const [showDowngradeConfirm, setShowDowngradeConfirm] = useState(false);
+    // Confirm upgrades too — they charge a prorated amount immediately.
+    const [showUpgradeConfirm, setShowUpgradeConfirm] = useState(false);
     const handlePlanChange = async () => {
         try {
             setLoading(true);
@@ -769,7 +771,8 @@ const Plan = ({ title,
                                     // Confirm before downgrading — only proceed on "Yes".
                                     setShowDowngradeConfirm(true);
                                 } else if (isUpgrade) {
-                                    handlePlanChange();
+                                    // Confirm before upgrading — a prorated amount is charged.
+                                    setShowUpgradeConfirm(true);
                                 } else {
                                     onCheckout({ planKey });
                                 }
@@ -841,6 +844,55 @@ const Plan = ({ title,
                                     onClick={async () => {
                                         await handlePlanChange();
                                         setShowDowngradeConfirm(false);
+                                    }}
+                                >
+                                    {loading ? "..." : "Yes"}
+                                </button>
+                            </div>
+                        </div>
+                    </div>,
+                    document.body
+                )}
+
+            {/* Upgrade confirmation — mirrors the downgrade dialog (reuses the
+                same modal styles) and warns about the prorated charge. */}
+            {showUpgradeConfirm &&
+                createPortal(
+                    <div
+                        className="pb-downgrade-overlay"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            if (!loading) setShowUpgradeConfirm(false);
+                        }}
+                    >
+                        <div
+                            className="pb-downgrade-modal"
+                            style={{ maxWidth: "420px", width: "90%" }}
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="pb-downgrade-title">
+                                Upgrade to {title}?
+                            </div>
+                            <div className="pb-downgrade-message">
+                                You're about to upgrade to {title}. A prorated
+                                amount will be charged to your saved payment
+                                method.
+                            </div>
+
+                            <div className="pb-downgrade-buttons">
+                                <button
+                                    className="pb-downgrade-no"
+                                    disabled={loading}
+                                    onClick={() => setShowUpgradeConfirm(false)}
+                                >
+                                    No
+                                </button>
+                                <button
+                                    className="pb-downgrade-yes"
+                                    disabled={loading}
+                                    onClick={async () => {
+                                        await handlePlanChange();
+                                        setShowUpgradeConfirm(false);
                                     }}
                                 >
                                     {loading ? "..." : "Yes"}
