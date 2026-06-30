@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Voice Orb — experiments</title>
+<style>
+  :root { --bg-0: #05060a; --bg-1: #0a0c14; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    /* Real CareVoice container background (.carevoice-staff-container) so
+       experiments read against the actual record-card backdrop. */
+    background: linear-gradient(135deg, #ffffff 0%, #fbfaff 100%);
+    font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: #1e1b3a;
+    overflow: hidden;
+  }
+  #stage { position: relative; width: 100vw; height: 100vh; }
+  canvas { display: block; width: 100%; height: 100%; }
+
+  /* side panel */
+  .panel {
+    position: absolute;
+    top: 22px; left: 22px;
+    z-index: 20;
+    background: rgba(255,255,255,0.78);
+    border: 1px solid rgba(108,76,220,0.18);
+    border-radius: 14px;
+    padding: 14px 14px 16px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 24px rgba(108, 76, 220, 0.10);
+    width: 230px;
+  }
+  .panel h1 {
+    font-size: 12px; font-weight: 600; letter-spacing: 1.2px;
+    text-transform: uppercase; color: rgba(30,27,58,0.55);
+    margin-bottom: 10px;
+  }
+  .panel label { font-size: 11px; color: rgba(30,27,58,0.55); display:block; margin-bottom:6px; }
+  select {
+    width: 100%;
+    appearance: none;
+    background: #ffffff;
+    color: #1e1b3a;
+    border: 1px solid rgba(108,76,220,0.28);
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 13px;
+    cursor: pointer;
+    outline: none;
+  }
+  select:hover { border-color: rgba(108,76,220,0.5); }
+  .row { display: flex; gap: 8px; margin-top: 12px; }
+  button {
+    flex: 1;
+    appearance: none;
+    border: 1px solid rgba(108,76,220,0.28);
+    background: rgba(108,76,220,0.06);
+    color: #4a3da3;
+    padding: 9px 10px;
+    border-radius: 10px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background .2s, border-color .2s, transform .1s;
+  }
+  button:hover { background: rgba(108,76,220,0.12); border-color: rgba(108,76,220,0.45); }
+  button:active { transform: scale(0.97); }
+  button.primary { background: linear-gradient(120deg, #6b8cff, #b06bff); border-color: transparent; color:#fff; }
+  .lvl { margin-top: 12px; height: 3px; border-radius: 3px; background: rgba(108,76,220,0.14); overflow: hidden; }
+  .lvl > i { display:block; height:100%; width:0%; background: linear-gradient(90deg,#5be1ff,#b06bff,#ff6bd0); transition: width .05s linear; }
+  .status { margin-top: 10px; font-size: 11px; color: rgba(30,27,58,0.5); line-height: 1.4; }
+
+  /* ===== Version 3: Care Voice recording orb (ported from VoiceModule.css .staff-aurora) ===== */
+  #cvAurora {
+    --audio-level: 0;            /* live mic amplitude 0..1, written from JS */
+    display: none;
+    position: absolute;
+    top: 50%; left: 50%;
+    width: clamp(220px, 34vmin, 380px);
+    height: clamp(220px, 34vmin, 380px);
+    border-radius: 50%;
+    overflow: hidden;
+    isolation: isolate;
+    background: radial-gradient(120% 120% at 32% 24%,
+      #c9b6fb 0%, #9b7ef2 26%, #8b5cf6 44%, #6c4cdc 64%, #5a2fc0 82%, #4a1d96 100%);
+    box-shadow:
+      0 26px 60px -12px rgba(79, 47, 176, 0.50),
+      0 8px 22px rgba(108, 76, 220, 0.30),
+      inset 0 2px 10px rgba(255, 255, 255, 0.35),
+      inset 0 -18px 40px rgba(58, 29, 143, 0.45);
+    will-change: transform, box-shadow;
+    transform: translate(-50%, -50%) translateZ(0);
+    animation: staff-aurora-halo 4.5s ease-in-out infinite;
+  }
+  #cvAurora .staff-aurora-blob {
+    position: absolute; border-radius: 50%; filter: blur(22px); opacity: 0.95; will-change: transform;
+  }
+  #cvAurora .staff-aurora-blob--1 { width:80%; height:80%; left:-14%; top:-12%; mix-blend-mode:screen;
+    background: radial-gradient(circle, #f3edff 0%, rgba(243,237,255,0) 64%);
+    animation: staff-aurora-1 3.4s ease-in-out infinite; }
+  #cvAurora .staff-aurora-blob--2 { width:92%; height:92%; right:-22%; top:28%; opacity:0.82;
+    background: radial-gradient(circle, #3b1d8c 0%, rgba(59,29,140,0) 66%);
+    animation: staff-aurora-2 4.2s ease-in-out infinite; }
+  #cvAurora .staff-aurora-blob--3 { width:74%; height:74%; left:22%; bottom:-18%; mix-blend-mode:screen;
+    background: radial-gradient(circle, #9b6cff 0%, rgba(155,108,255,0) 64%);
+    animation: staff-aurora-3 3.8s ease-in-out infinite; }
+  #cvAurora .staff-aurora-blob--4 { width:64%; height:64%; right:6%; top:-6%; mix-blend-mode:screen; opacity:0.88;
+    background: radial-gradient(circle, #7d8bff 0%, rgba(125,139,255,0) 62%);
+    animation: staff-aurora-4 5s ease-in-out infinite; }
+  #cvAurora .staff-aurora-blob--5 { width:58%; height:58%; left:4%; top:30%; mix-blend-mode:screen; opacity:0.8;
+    background: radial-gradient(circle, #9d5cff 0%, rgba(157,92,255,0) 62%);
+    animation: staff-aurora-5 4.6s ease-in-out infinite; }
+  #cvAurora .staff-aurora-sheen {
+    position: absolute; inset:-25%; pointer-events:none; mix-blend-mode:screen; opacity:0.55; will-change:transform;
+    background: conic-gradient(from 0deg,
+      rgba(255,255,255,0) 0deg, rgba(255,255,255,0) 70deg,
+      rgba(255,255,255,0.35) 120deg, rgba(231,222,255,0.10) 160deg,
+      rgba(255,255,255,0) 230deg, rgba(255,255,255,0) 360deg);
+    animation: staff-aurora-spin 7s linear infinite;
+  }
+  #cvAurora .staff-aurora-grain {
+    position: absolute; inset:0; opacity:0.08; mix-blend-mode:overlay; pointer-events:none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  #cvAurora .staff-aurora-gloss {
+    position: absolute; inset:0; border-radius:50%; pointer-events:none; will-change:opacity;
+    background:
+      radial-gradient(60% 42% at 34% 20%, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0) 60%),
+      radial-gradient(36% 22% at 30% 16%, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0) 70%);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.22), inset 0 1px 1px rgba(255,255,255,0.55);
+    animation: staff-aurora-glint 4.5s ease-in-out infinite;
+  }
+  /* The reactive piece: a soft core that swells toward the rim with the voice. */
+  #cvAurora .staff-aurora-core {
+    position: absolute; top:50%; left:50%; width:46%; height:46%; border-radius:50%;
+    pointer-events:none; mix-blend-mode:screen;
+    background: radial-gradient(circle,
+      rgba(255,255,255,0.95) 0%, rgba(237,233,254,0.70) 42%,
+      rgba(201,182,251,0.25) 68%, rgba(201,182,251,0) 80%);
+    transform: translate(-50%, -50%) scale(calc(0.5 + var(--audio-level) * 1.15));
+    transition: transform 80ms ease-out; will-change: transform;
+  }
+  @keyframes staff-aurora-1 { 0%,100%{transform:translate(0,0) scale(1);} 33%{transform:translate(28%,22%) scale(1.26);} 66%{transform:translate(-14%,32%) scale(0.94);} }
+  @keyframes staff-aurora-2 { 0%,100%{transform:translate(0,0) scale(1);} 40%{transform:translate(-26%,-18%) scale(1.2);} 75%{transform:translate(16%,-30%) scale(0.92);} }
+  @keyframes staff-aurora-3 { 0%,100%{transform:translate(0,0) scale(1);} 50%{transform:translate(-22%,-26%) scale(1.28);} }
+  @keyframes staff-aurora-4 { 0%,100%{transform:translate(0,0) scale(1);} 45%{transform:translate(24%,26%) scale(1.18);} 80%{transform:translate(-18%,14%) scale(0.95);} }
+  @keyframes staff-aurora-5 { 0%,100%{transform:translate(0,0) scale(1);} 38%{transform:translate(30%,-22%) scale(1.24);} 72%{transform:translate(-20%,-10%) scale(0.9);} }
+  @keyframes staff-aurora-spin { to { transform: rotate(360deg); } }
+  @keyframes staff-aurora-glint { 0%,100%{opacity:0.85;} 50%{opacity:1;} }
+  @keyframes staff-aurora-halo {
+    0%,100% { box-shadow: 0 26px 60px -12px rgba(79,47,176,0.50), 0 8px 22px rgba(108,76,220,0.30), inset 0 2px 10px rgba(255,255,255,0.35), inset 0 -18px 40px rgba(58,29,143,0.45); }
+    50%     { box-shadow: 0 30px 72px -10px rgba(108,76,220,0.60), 0 10px 30px rgba(124,92,228,0.40), inset 0 2px 12px rgba(255,255,255,0.45), inset 0 -18px 40px rgba(58,29,143,0.45); }
+  }
+</style>
+</head>
+<body>
+  <div id="stage">
+    <canvas id="orb"></canvas>
+
+    <!-- Version 3: Care Voice recording orb (.staff-aurora ported) -->
+    <div id="cvAurora" class="is-recording" aria-hidden="true">
+      <span class="staff-aurora-blob staff-aurora-blob--1"></span>
+      <span class="staff-aurora-blob staff-aurora-blob--2"></span>
+      <span class="staff-aurora-blob staff-aurora-blob--3"></span>
+      <span class="staff-aurora-blob staff-aurora-blob--4"></span>
+      <span class="staff-aurora-blob staff-aurora-blob--5"></span>
+      <span class="staff-aurora-sheen"></span>
+      <span class="staff-aurora-grain"></span>
+      <span class="staff-aurora-gloss"></span>
+      <span class="staff-aurora-core"></span>
+    </div>
+
+    <div class="panel">
+      <h1>Voice Orb Lab</h1>
+      <label for="ver">Version</label>
+      <select id="ver">
+        <option value="liquid">1 — Liquid orb (glow + ripples)</option>
+        <option value="contained">2 — Contained circle (orbiting pulses)</option>
+        <option value="aurora">3 — Care Voice recording orb</option>
+      </select>
+      <div class="row">
+        <button class="primary" id="startBtn">Start mic</button>
+        <button id="demoBtn">Demo</button>
+      </div>
+      <div class="lvl"><i id="levelbar"></i></div>
+      <div class="status" id="status">Pick a version, then Start mic and speak.</div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  const canvas = document.getElementById('orb');
+  const ctx = canvas.getContext('2d');
+  const levelbar = document.getElementById('levelbar');
+  const statusEl = document.getElementById('status');
+
+  let DPR = 1, W = 0, H = 0, CX = 0, CY = 0, BASE = 0;
+  function resize() {
+    DPR = Math.min(window.devicePixelRatio || 1, 2);
+    W = canvas.clientWidth; H = canvas.clientHeight;
+    canvas.width = Math.round(W * DPR);
+    canvas.height = Math.round(H * DPR);
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    CX = W / 2; CY = H / 2;
+    BASE = Math.min(W, H) * 0.16;
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  /* ================= AUDIO (shared) ================= */
+  // Exposed to every version: S (smoothed bands), freq (spectrum 0..255),
+  // wave (time-domain 0..255), BINS, WAVEN.
+  const BINS = 512, WAVEN = 1024;
+  let analyser = null, audioCtx = null;
+  let freq = new Uint8Array(BINS);   // raw spectrum
+  let wave = new Uint8Array(WAVEN);  // raw oscilloscope
+  let demo = false, demoT = 0;
+
+  async function startMic() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: {
+        echoCancellation: true, noiseSuppression: true, autoGainControl: true }});
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const src = audioCtx.createMediaStreamSource(stream);
+      analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 1024;            // -> 512 bins, 1024 time samples
+      analyser.smoothingTimeConstant = 0.8;
+      freq = new Uint8Array(analyser.frequencyBinCount);
+      wave = new Uint8Array(analyser.fftSize);
+      src.connect(analyser);
+      demo = false;
+      statusEl.textContent = 'Listening — speak to drive the orb.';
+    } catch (e) {
+      statusEl.textContent = 'Mic blocked — running Demo mode.';
+      demo = true;
+    }
+  }
+
+  // Fill freq[] and wave[] — from the mic, or synthesised in demo mode.
+  function fillBuffers() {
+    if (!demo && analyser) {
+      analyser.getByteFrequencyData(freq);
+      analyser.getByteTimeDomainData(wave);
+      return;
+    }
+    demoT += 0.016;
+    const burst = Math.max(0, Math.sin(demoT * 1.3) * 0.5 + 0.5);
+    const flutter = (Math.sin(demoT * 13) * 0.5 + 0.5) * (Math.sin(demoT * 7.3) * 0.5 + 0.5);
+    const env = Math.pow(burst, 1.5) * (0.35 + 0.65 * flutter);
+    // synthetic spectrum: low-frequency tilt + a couple of moving "formants"
+    const n = freq.length;
+    for (let i = 0; i < n; i++) {
+      const f = i / n;
+      const tilt = Math.pow(1 - f, 2.2);
+      const form = Math.exp(-Math.pow((f - 0.08 - 0.04 * Math.sin(demoT)) / 0.04, 2)) * 0.7
+                 + Math.exp(-Math.pow((f - 0.22 - 0.05 * Math.sin(demoT * 1.7)) / 0.05, 2)) * 0.5;
+      const noise = (Math.sin(i * 12.9 + demoT * 7) * 0.5 + 0.5) * 0.25;
+      freq[i] = Math.min(255, (tilt + form) * env * 255 + noise * env * 120);
+    }
+    // synthetic waveform
+    const m = wave.length;
+    for (let i = 0; i < m; i++) {
+      const x = i / m;
+      const s = Math.sin(x * Math.PI * 2 * 3 + demoT * 6) * 0.6
+              + Math.sin(x * Math.PI * 2 * 7 + demoT * 9) * 0.3
+              + Math.sin(x * Math.PI * 2 * 13 + demoT * 4) * 0.2;
+      wave[i] = 128 + s * env * 110;
+    }
+  }
+
+  // shared smoothed envelope, computed from freq[]
+  const S = { vol: 0, bass: 0, mid: 0, treble: 0 };
+  const lerp = (a, b, t) => a + (b - a) * t;
+  function updateAudio() {
+    fillBuffers();
+    const n = freq.length;
+    let sum = 0, bass = 0, mid = 0, treble = 0;
+    const bEnd = Math.floor(n * 0.08), mEnd = Math.floor(n * 0.35);
+    for (let i = 0; i < n; i++) {
+      const a = freq[i] / 255; sum += a;
+      if (i < bEnd) bass += a; else if (i < mEnd) mid += a; else treble += a;
+    }
+    const boost = x => Math.min(1, Math.pow(x * 2.6, 1.1));
+    const a = {
+      vol: boost(sum / n),
+      bass: boost(bass / Math.max(1, bEnd)),
+      mid: boost(mid / Math.max(1, mEnd - bEnd)),
+      treble: boost(treble / Math.max(1, n - mEnd))
+    };
+    const atk = 0.35, rel = 0.06;
+    for (const k of ['vol','bass','mid','treble']) {
+      S[k] = a[k] > S[k] ? lerp(S[k], a[k], atk) : lerp(S[k], a[k], rel);
+    }
+    levelbar.style.width = Math.round(Math.min(1, S.vol) * 100) + '%';
+  }
+
+  /* ================= VERSION 1: Liquid orb ================= */
+  const Liquid = (() => {
+    let pulse = 0, hue = 0, lastOnset = 0;
+    const ripples = [];
+    const POINTS = 72;
+    function blob(radius, wobble, t, seed) {
+      ctx.beginPath();
+      for (let i = 0; i <= POINTS; i++) {
+        const ang = (i / POINTS) * Math.PI * 2;
+        const noise =
+          Math.sin(ang * 3 + t * 1.1 + seed) * 0.6 +
+          Math.sin(ang * 5 - t * 0.7 + seed * 2) * 0.3 +
+          Math.sin(ang * 2 + t * 1.7 + seed * 3) * 0.4;
+        const r = radius * (1 + noise * wobble);
+        const x = CX + Math.cos(ang) * r, y = CY + Math.sin(ang) * r;
+        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+    }
+    function reset() { pulse = 0; hue = 0; ripples.length = 0; }
+    function draw(t) {
+      const now = performance.now();
+      if (S.vol > 0.45 && now - lastOnset > 220) {
+        ripples.push({ r: BASE * 1.1, life: 1 });
+        pulse = Math.min(1.4, pulse + 0.5); lastOnset = now;
+      }
+      pulse = lerp(pulse, S.vol * 0.9, 0.08);
+      hue += 0.05 + S.treble * 0.4;
+      const breathe = Math.sin(t * 0.9) * 0.5 + 0.5;
+      const energy = Math.max(S.vol, breathe * 0.12);
+
+      ctx.globalCompositeOperation = 'lighter';
+      const glowR = BASE * (2.6 + energy * 1.6);
+      const g0 = ctx.createRadialGradient(CX, CY, BASE * 0.2, CX, CY, glowR);
+      g0.addColorStop(0, `hsla(${(hue+200)%360},95%,60%,${0.18+energy*0.28})`);
+      g0.addColorStop(0.5, `hsla(${(hue+280)%360},90%,55%,${0.08+energy*0.15})`);
+      g0.addColorStop(1, 'hsla(0,0%,0%,0)');
+      ctx.fillStyle = g0; ctx.fillRect(0, 0, W, H);
+
+      for (let i = ripples.length - 1; i >= 0; i--) {
+        const rp = ripples[i];
+        rp.r += 4 + S.vol * 6; rp.life -= 0.018;
+        if (rp.life <= 0) { ripples.splice(i, 1); continue; }
+        ctx.beginPath(); ctx.arc(CX, CY, rp.r, 0, Math.PI*2);
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = `hsla(${(hue+240)%360},100%,75%,${rp.life*0.4})`;
+        ctx.stroke();
+      }
+
+      const orbR = BASE * (1 + energy * 0.55);
+      blob(orbR*1.18, 0.10 + S.bass*0.12, t, 0);
+      // gradients peak slightly off-centre (inner radius > 0) so additive
+      // stacking can't converge to a white-hot point in the middle
+      const g1 = ctx.createRadialGradient(CX, CY, orbR*0.25, CX, CY, orbR*1.3);
+      g1.addColorStop(0, `hsla(${(hue+190)%360},85%,55%,0.42)`);
+      g1.addColorStop(0.45, `hsla(${(hue+260)%360},85%,55%,0.42)`);
+      g1.addColorStop(0.8, `hsla(${(hue+320)%360},85%,55%,0.22)`);
+      g1.addColorStop(1, 'hsla(0,0%,0%,0)');
+      ctx.fillStyle = g1; ctx.fill();
+
+      blob(orbR*0.92, 0.08 + S.mid*0.16, -t*1.3, 10);
+      const g2 = ctx.createRadialGradient(CX-orbR*0.2, CY-orbR*0.2, orbR*0.2, CX, CY, orbR);
+      g2.addColorStop(0, `hsla(${(hue+210)%360},85%,58%,0.4)`);
+      g2.addColorStop(0.6, `hsla(${(hue+300)%360},85%,55%,0.32)`);
+      g2.addColorStop(1, 'hsla(0,0%,0%,0)');
+      ctx.fillStyle = g2; ctx.fill();
+
+      // soft core only — no hard-edged dot, low cap, wide falloff
+      const coreR = BASE * (0.45 + pulse * 0.7);
+      const c = ctx.createRadialGradient(CX, CY, 0, CX, CY, coreR);
+      const coreA = Math.min(0.22, 0.08 + pulse * 0.16);
+      c.addColorStop(0, `rgba(235,242,255,${coreA})`);
+      c.addColorStop(0.5, `rgba(220,232,255,${coreA*0.3})`);
+      c.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = c; ctx.beginPath(); ctx.arc(CX, CY, coreR, 0, Math.PI*2); ctx.fill();
+      ctx.globalCompositeOperation = 'source-over';
+    }
+    return { reset, draw };
+  })();
+
+  /* ================= VERSION 2: Contained circle ================= */
+  // A hard-edged circle. Colors inside drift only slightly. White "pulses"
+  // orbit the centre on circular-but-random paths, getting brighter/larger
+  // and faster when you speak.
+  const Contained = (() => {
+    let pulses = [];
+    const N = 6;
+    function reset() {
+      pulses = [];
+      for (let i = 0; i < N; i++) {
+        pulses.push({
+          ang: Math.random() * Math.PI * 2,
+          // random orbit radius as a fraction of the circle radius
+          // (kept off dead-centre so they don't stack into a white hotspot)
+          orbit: 0.32 + Math.random() * 0.42,
+          // random angular direction + base speed
+          dir: Math.random() < 0.5 ? -1 : 1,
+          spd: 0.15 + Math.random() * 0.35,
+          // independent wobble phases so motion looks random, not clockwork
+          ph1: Math.random() * Math.PI * 2,
+          ph2: Math.random() * Math.PI * 2,
+          size: 0.5 + Math.random() * 0.7
+        });
+      }
+    }
+    reset();
+
+    function draw(t) {
+      const R = BASE * 2.0 * (1 + S.vol * 0.04);   // circle barely breathes
+      const energy = S.vol;
+
+      // ---- clip to the circle: everything stays *inside* ----
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(CX, CY, R, 0, Math.PI * 2);
+      ctx.clip();
+
+      // base disc fill (dark, so colors read against it)
+      ctx.fillStyle = '#070a12';
+      ctx.fillRect(CX - R, CY - R, R * 2, R * 2);
+
+      // ---- mostly-static color field: a few slow-drifting color blobs ----
+      ctx.globalCompositeOperation = 'lighter';
+      // Brand palette — purple-dominant (CareVoice #6c4cdc / #8b5cf6 / #c9b6fb),
+      // with a blue (#328dee) and magenta accent; no cyan/green.
+      const palette = [
+        [252, 78, 60],   // brand violet (#6c4cdc)
+        [266, 82, 64],   // violet (#8b5cf6)
+        [292, 70, 62],   // magenta-purple accent
+        [214, 85, 60]    // blue accent (#328dee)
+      ];
+      for (let i = 0; i < palette.length; i++) {
+        const [h, s, l] = palette[i];
+        const a = i / palette.length * Math.PI * 2;
+        // slow, small drift — colors "don't move that much"
+        const dx = Math.cos(a + t * 0.08) * R * 0.32;
+        const dy = Math.sin(a + t * 0.08 + i) * R * 0.32;
+        const gx = CX + dx, gy = CY + dy;
+        const rad = R * (0.85 + 0.06 * Math.sin(t * 0.4 + i));
+        const g = ctx.createRadialGradient(gx, gy, 0, gx, gy, rad);
+        g.addColorStop(0, `hsla(${h},${s}%,${l}%,${0.26 + energy * 0.12})`);
+        g.addColorStop(1, `hsla(${h},${s}%,${l}%,0)`);
+        ctx.fillStyle = g;
+        ctx.fillRect(CX - R, CY - R, R * 2, R * 2);
+      }
+
+      // ---- white pulses orbiting in circular-but-random paths ----
+      for (const p of pulses) {
+        // speech speeds them up; idle keeps a gentle drift
+        p.ang += p.dir * p.spd * (0.004 + energy * 0.05);
+        // radius wobbles with two desynced sines => random-looking orbit
+        const wob = Math.sin(t * 0.9 + p.ph1) * 0.12 + Math.sin(t * 1.7 + p.ph2) * 0.08;
+        const orbit = (p.orbit + wob) * R * (0.7 + energy * 0.3);
+        const x = CX + Math.cos(p.ang) * orbit;
+        const y = CY + Math.sin(p.ang) * orbit;
+
+        const bright = 0.03 + energy * 0.24;        // dim when silent, soft when talking
+        const sz = BASE * (0.25 + energy * 0.6) * p.size;
+        const g = ctx.createRadialGradient(x, y, 0, x, y, sz);
+        g.addColorStop(0, `rgba(255,255,255,${Math.min(0.3, bright)})`);
+        g.addColorStop(0.4, `rgba(235,240,255,${bright * 0.3})`);
+        g.addColorStop(1, 'rgba(255,255,255,0)');
+        ctx.fillStyle = g;
+        ctx.beginPath(); ctx.arc(x, y, sz, 0, Math.PI * 2); ctx.fill();
+      }
+
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.restore(); // remove clip
+
+      // ---- glass rim around the circle ----
+      ctx.beginPath(); ctx.arc(CX, CY, R, 0, Math.PI * 2);
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = `rgba(255,255,255,${0.10 + energy * 0.25})`;
+      ctx.stroke();
+
+      // soft outer glow halo
+      ctx.globalCompositeOperation = 'lighter';
+      const halo = ctx.createRadialGradient(CX, CY, R * 0.8, CX, CY, R * 1.45);
+      halo.addColorStop(0, `hsla(260,90%,60%,${0.05 + energy * 0.18})`);
+      halo.addColorStop(1, 'hsla(260,90%,60%,0)');
+      ctx.fillStyle = halo;
+      ctx.beginPath(); ctx.arc(CX, CY, R * 1.45, 0, Math.PI * 2); ctx.fill();
+      ctx.globalCompositeOperation = 'source-over';
+    }
+    return { reset, draw };
+  })();
+
+  /* ============ VERSION 3: Care Voice recording orb (.staff-aurora) ============ */
+  // Ported from the CareVoice module's recording orb (VoiceModule.css .staff-aurora,
+  // driven from VoiceModule.js runVoiceMeter): a glossy brand-purple sphere with
+  // drifting blobs, and an inner core that grows with the live mic level via the
+  // --audio-level CSS variable (rise fast, fall slow — so it pulses naturally).
+  const CareAurora = (() => {
+    const el = document.getElementById('cvAurora');
+    let level = 0;
+    function reset() { level = 0; el.style.setProperty('--audio-level', '0'); }
+    function draw() {
+      const target = Math.min(1, S.vol);
+      // attack fast / release slow, mirroring the app's runVoiceMeter easing
+      level += (target - level) * (target > level ? 0.5 : 0.12);
+      el.style.setProperty('--audio-level', level.toFixed(3));
+    }
+    return { reset, draw };
+  })();
+
+  /* ================= LOOP & SWITCHING ================= */
+  const versions = { liquid: Liquid, contained: Contained, aurora: CareAurora };
+  let current = versions.liquid;
+
+  // Show the recording orb only for the Care Voice version.
+  const cvAurora = document.getElementById('cvAurora');
+  function applyVisibility(val) {
+    cvAurora.style.display = val === 'aurora' ? 'block' : 'none';
+  }
+
+  let t = 0;
+  function frame() {
+    t += 0.016;
+    updateAudio();
+    ctx.clearRect(0, 0, W, H);
+    current.draw(t);
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+
+  document.getElementById('ver').addEventListener('change', (e) => {
+    current = versions[e.target.value];
+    applyVisibility(e.target.value);
+    if (current.reset) current.reset();
+  });
+  document.getElementById('startBtn').addEventListener('click', () => {
+    if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+    startMic();
+  });
+  document.getElementById('demoBtn').addEventListener('click', () => {
+    demo = true; statusEl.textContent = 'Demo mode — simulated speech envelope.';
+  });
+})();
+</script>
+</body>
+</html>
