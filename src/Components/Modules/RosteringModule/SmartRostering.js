@@ -261,6 +261,14 @@ const SmartRostering = (props) => {
     const canUseVisualCare = !!visualCareCreds;
 
     const uploadDisabled = !!canUseVisualCare;  // true when creds exist
+
+    // Report the sync/credential state up to HomePage so the global "Ask AI"
+    // panel can pick credential-based vs manual rostering. Synced = the org
+    // already carries creds (toggle hidden) OR the user turned sync on.
+    useEffect(() => {
+        props.setRosteringSyncActive?.(hasOrgCreds || syncEnabled);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [hasOrgCreds, syncEnabled]);
     // useEffect(() => {
     //     const fetchVisualCareCreds = async () => {
     //         try {
@@ -412,7 +420,15 @@ const SmartRostering = (props) => {
     };
 
     const removeFile = (index) => {
-        setSelectedFile((prev) => prev.filter((_, i) => i !== index));
+        setSelectedFile((prev) => {
+            const next = prev.filter((_, i) => i !== index);
+            // Keep the global manual Ask-AI file in sync with the first
+            // remaining upload so removing all files clears manual mode.
+            if (props.setManualAskAiFile) {
+                props.setManualAskAiFile(next[0] || null);
+            }
+            return next;
+        });
     };
 
     const handleNext = () => {
