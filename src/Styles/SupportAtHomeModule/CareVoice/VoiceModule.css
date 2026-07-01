@@ -2767,6 +2767,10 @@ html.cv-loading-lock body {
       rgba(108, 76, 220, 0.12) 0%,
       rgba(108, 76, 220, 0.04) 50%,
       transparent 72%);
+  /* Hold the halo steady while recording — no breathing/blinking. */
+  animation: none;
+  opacity: 0.85;
+  transform: none;
 }
 
 /* Recording / paused state on narrow (stacked) viewports — the desktop
