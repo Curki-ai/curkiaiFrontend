@@ -150,6 +150,10 @@ const HomePage = () => {
   const [Suggestions, setSuggestions] = useState([]);
   const [chatbotRules, setChatbotRules] = useState([]);
   const [manualAskAiFile, setManualAskAiFile] = useState(null);
+  // Reported up from SmartRostering: true when "Sync With Your System" is on
+  // (or the org already carries creds). Drives whether the Smart Rostering
+  // "Ask AI" runs credential-based (synced) or manual (file-based).
+  const [rosteringSyncActive, setRosteringSyncActive] = useState(false);
   const [manualResumeZip, setManualResumeZip] = useState(null);
   const [IsSmartRosteringHistory, SetIsSmartRosteringHistory] = useState(false);
   const [IsSmartRosteringDetails, SetIsSmartRosteringDetails] = useState(false);
@@ -1937,7 +1941,25 @@ const HomePage = () => {
         return;
       }
       if (isSmartRosteringPage) {
-        if (manualAskAiFile) {
+        // "Sync With Your System" drives the mode. When sync is OFF (the org
+        // carries no creds and the user hasn't turned sync on), Ask AI runs in
+        // MANUAL rostering mode, which needs an uploaded roster file. When sync
+        // is ON (or the org already carries creds), we run the credential-based
+        // path below.
+        if (!rosteringSyncActive) {
+          if (!manualAskAiFile) {
+            setMessages(prev =>
+              prev.map(msg =>
+                msg.temp
+                  ? {
+                      sender: "bot",
+                      text: "Please upload a roster file, or turn on “Sync With Your System” to use rostering associate.",
+                    }
+                  : msg
+              )
+            );
+            return;
+          }
           const form = new FormData();
           form.append("files", manualAskAiFile);
           form.append("question", finalQuery);
@@ -2035,7 +2057,7 @@ const HomePage = () => {
               msg.temp
                 ? {
                     sender: "bot",
-                    text: "Your rostering software isn't connected yet. Please connect it in Rostering Settings before using Ask AI.",
+                    text: "Your rostering software isn't connected yet. Please connect it in Rostering Settings or software connect module before using Ask AI.",
                   }
                 : msg
             )
@@ -2835,7 +2857,7 @@ const HomePage = () => {
                       {visitedRoles.has("Smart Rostering") && (
                         <div style={{ display: selectedRole === "Smart Rostering" ? "block" : "none" }}>
                           <Suspense fallback={<CenteredLoader />}>
-                            <RosteringDashboard user={user} SetIsSmartRosteringHistory={SetIsSmartRosteringHistory} SetIsSmartRosteringDetails={SetIsSmartRosteringDetails} setManualAskAiFile={setManualAskAiFile} />
+                            <RosteringDashboard user={user} SetIsSmartRosteringHistory={SetIsSmartRosteringHistory} SetIsSmartRosteringDetails={SetIsSmartRosteringDetails} setManualAskAiFile={setManualAskAiFile} setRosteringSyncActive={setRosteringSyncActive} />
                           </Suspense>
                         </div>
                       )}

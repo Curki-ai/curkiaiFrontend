@@ -14,6 +14,17 @@ const DEFAULT_SETTINGS = {
   days: "",
   shortlist_criteria: "",
   overtime_criteria: "",
+  // OT mode: "advanced" (AI/LLM, uses overtime_criteria free text) or
+  // "standard" (rule-based, uses the structured fields below).
+  ot_mode: "advanced",
+  ot_fortnight_max: "",
+  ot_weekly_max: "",
+  ot_shift_day_max: "",
+  ot_second_weekend_exempt: false,
+  ot_night_enabled: false,
+  ot_night_start: "22:00",
+  ot_night_end: "06:00",
+  ot_night_counts_as: "",
   client_sms_template: "",
   staff_sms_template: "",
   role_elimination_input: "",
@@ -23,6 +34,33 @@ const DEFAULT_SETTINGS = {
   visualcare_user: "",
   visualcare_key: "",
   visualcare_secret: "",
+};
+
+// Build the ot_config object for "standard" mode from the flat form fields.
+// Blank numeric fields are omitted so the engine simply skips that rule.
+const assembleOtConfig = (s) => {
+  const num = (v) => {
+    if (v === "" || v == null) return undefined;
+    const n = Number(v);
+    return Number.isNaN(n) ? undefined : n;
+  };
+  const cfg = {};
+  const fm = num(s.ot_fortnight_max);
+  if (fm !== undefined) cfg.fortnight_max_hours = fm;
+  const wm = num(s.ot_weekly_max);
+  if (wm !== undefined) cfg.weekly_max_hours = wm;
+  const sd = num(s.ot_shift_day_max);
+  if (sd !== undefined) cfg.shift_day_max_hours = sd;
+  if (s.ot_second_weekend_exempt) cfg.second_weekend_exempt = true;
+  if (s.ot_night_enabled) {
+    const ca = num(s.ot_night_counts_as);
+    cfg.night_shift = {
+      start: s.ot_night_start || "22:00",
+      end: s.ot_night_end || "06:00",
+      counts_as_minutes: ca !== undefined ? ca : 120,
+    };
+  }
+  return cfg;
 };
 
 // Only "admin" is supported on this surface. Smart Rostering's backend also
@@ -166,6 +204,9 @@ const SmartRosteringAccessManagement = ({ onClose, onSaved, userEmail, organizat
         if (cancelled) return;
         const doc = Array.isArray(data?.data) ? data.data[0] : null;
         if (!doc) return; // Nothing saved yet — keep DEFAULT_SETTINGS.
+        const _sc = doc.shortlisting_criteria || {};
+        const _otc = _sc.ot_config || {};
+        const _night = _otc.night_shift || {};
         setSettings({
           provider_name: doc.provider_name || "",
           days: doc.rostering?.unallocated_shifts_visible_days
@@ -173,6 +214,19 @@ const SmartRosteringAccessManagement = ({ onClose, onSaved, userEmail, organizat
             : "",
           shortlist_criteria: doc.shortlisting_criteria?.profile_matching || "",
           overtime_criteria: doc.shortlisting_criteria?.ot || "",
+          ot_mode: _sc.ot_mode || "advanced",
+          ot_fortnight_max:
+            _otc.fortnight_max_hours != null ? String(_otc.fortnight_max_hours) : "",
+          ot_weekly_max:
+            _otc.weekly_max_hours != null ? String(_otc.weekly_max_hours) : "",
+          ot_shift_day_max:
+            _otc.shift_day_max_hours != null ? String(_otc.shift_day_max_hours) : "",
+          ot_second_weekend_exempt: !!_otc.second_weekend_exempt,
+          ot_night_enabled: !!_otc.night_shift,
+          ot_night_start: _night.start || "22:00",
+          ot_night_end: _night.end || "06:00",
+          ot_night_counts_as:
+            _night.counts_as_minutes != null ? String(_night.counts_as_minutes) : "",
           client_sms_template: doc.sms_templates?.client || "",
           staff_sms_template: doc.sms_templates?.staff || "",
           role_elimination_input: Array.isArray(doc.rostering?.role_elimination)
@@ -232,6 +286,11 @@ const SmartRosteringAccessManagement = ({ onClose, onSaved, userEmail, organizat
           rosteringManagers: [],
           shortlistCriteria: settings.shortlist_criteria,
           overtimeCriteria: settings.overtime_criteria,
+          otMode: settings.ot_mode,
+          otConfig:
+            settings.ot_mode === "standard"
+              ? assembleOtConfig(settings)
+              : undefined,
           clientSmsTemplate: settings.client_sms_template,
           staffSmsTemplate: settings.staff_sms_template,
           roleElimination,
@@ -753,31 +812,204 @@ const SmartRosteringAccessManagement = ({ onClose, onSaved, userEmail, organizat
                     </span>
                   </div>
 
-                  {/* Overtime Elimination Criteria */}
+                  {/* Overtime Check Mode */}
                   <div className="sr-access-field sr-access-field-full">
-                    <label className="sr-access-label">
-                      Overtime Elimination Criteria
-                    </label>
-                    <textarea
-                      className="sr-access-textarea"
-                      maxLength={SETTINGS_CHAR_MAX}
-                      value={settings.overtime_criteria}
+                    <label className="sr-access-label">Overtime Check Mode</label>
+                    <select
+                      className="sr-access-select"
+                      value={settings.ot_mode}
                       onChange={(e) =>
-                        updateSettingField("overtime_criteria", e.target.value)
+                        updateSettingField("ot_mode", e.target.value)
                       }
-                      placeholder="Describe your overtime elimination criteria in less than 150 characters"
-                    />
-                    <span
-                      className={`sr-access-char-count${
-                        SETTINGS_CHAR_MAX - settings.overtime_criteria.length < 20
-                          ? " sr-access-char-count-danger"
-                          : ""
-                      }`}
                     >
-                      {SETTINGS_CHAR_MAX - settings.overtime_criteria.length}{" "}
-                      characters left
-                    </span>
+                      <option value="advanced">
+                        Advanced — AI (interprets free-text rules)
+                      </option>
+                      <option value="standard">
+                        Standard — Rule-based (fast, exact)
+                      </option>
+                    </select>
+                    <div className="sr-access-toggle-help">
+                      Advanced uses AI to read free-text overtime rules. Standard
+                      applies fixed numeric limits instantly.
+                    </div>
                   </div>
+
+                  {settings.ot_mode === "advanced" ? (
+                    /* Overtime Elimination Criteria (free text, used by Advanced) */
+                    <div className="sr-access-field sr-access-field-full">
+                      <label className="sr-access-label">
+                        Overtime Elimination Criteria
+                      </label>
+                      <textarea
+                        className="sr-access-textarea"
+                        maxLength={SETTINGS_CHAR_MAX}
+                        value={settings.overtime_criteria}
+                        onChange={(e) =>
+                          updateSettingField("overtime_criteria", e.target.value)
+                        }
+                        placeholder="Describe your overtime elimination criteria in less than 150 characters"
+                      />
+                      <span
+                        className={`sr-access-char-count${
+                          SETTINGS_CHAR_MAX - settings.overtime_criteria.length < 20
+                            ? " sr-access-char-count-danger"
+                            : ""
+                        }`}
+                      >
+                        {SETTINGS_CHAR_MAX - settings.overtime_criteria.length}{" "}
+                        characters left
+                      </span>
+                    </div>
+                  ) : (
+                    /* Structured OT limits (used by Standard) */
+                    <>
+                      <div className="sr-access-field">
+                        <label className="sr-access-label">
+                          Max Hours / Fortnight
+                        </label>
+                        <input
+                          className="sr-access-input"
+                          type="number"
+                          min="0"
+                          step="0.5"
+                          placeholder="e.g. 76"
+                          value={settings.ot_fortnight_max}
+                          onChange={(e) =>
+                            updateSettingField("ot_fortnight_max", e.target.value)
+                          }
+                        />
+                      </div>
+                      <div className="sr-access-field">
+                        <label className="sr-access-label">Max Hours / Week</label>
+                        <input
+                          className="sr-access-input"
+                          type="number"
+                          min="0"
+                          step="0.5"
+                          placeholder="e.g. 38"
+                          value={settings.ot_weekly_max}
+                          onChange={(e) =>
+                            updateSettingField("ot_weekly_max", e.target.value)
+                          }
+                        />
+                      </div>
+                      <div className="sr-access-field">
+                        <label className="sr-access-label">
+                          Max Hours / Shift Day
+                        </label>
+                        <input
+                          className="sr-access-input"
+                          type="number"
+                          min="0"
+                          step="0.5"
+                          placeholder="e.g. 10"
+                          value={settings.ot_shift_day_max}
+                          onChange={(e) =>
+                            updateSettingField("ot_shift_day_max", e.target.value)
+                          }
+                        />
+                      </div>
+
+                      <div className="sr-access-toggle-row sr-access-field-full">
+                        <div className="sr-access-toggle-label">
+                          Exempt 2nd Weekend
+                          <div className="sr-access-toggle-help">
+                            Ignore hours on the second Saturday &amp; Sunday of the
+                            fortnight (no OT limit).
+                          </div>
+                        </div>
+                        <label className="sr-access-toggle-switch">
+                          <input
+                            type="checkbox"
+                            checked={settings.ot_second_weekend_exempt}
+                            onChange={(e) =>
+                              updateSettingField(
+                                "ot_second_weekend_exempt",
+                                e.target.checked
+                              )
+                            }
+                          />
+                          <span className="sr-access-toggle-slider" />
+                        </label>
+                      </div>
+
+                      <div className="sr-access-toggle-row sr-access-field-full">
+                        <div className="sr-access-toggle-label">
+                          Recount Night Shifts
+                          <div className="sr-access-toggle-help">
+                            Count any shift starting within the night window as a
+                            fixed number of minutes.
+                          </div>
+                        </div>
+                        <label className="sr-access-toggle-switch">
+                          <input
+                            type="checkbox"
+                            checked={settings.ot_night_enabled}
+                            onChange={(e) =>
+                              updateSettingField(
+                                "ot_night_enabled",
+                                e.target.checked
+                              )
+                            }
+                          />
+                          <span className="sr-access-toggle-slider" />
+                        </label>
+                      </div>
+
+                      {settings.ot_night_enabled && (
+                        <>
+                          <div className="sr-access-field">
+                            <label className="sr-access-label">Night Start</label>
+                            <input
+                              className="sr-access-input"
+                              type="time"
+                              value={settings.ot_night_start}
+                              onChange={(e) =>
+                                updateSettingField(
+                                  "ot_night_start",
+                                  e.target.value
+                                )
+                              }
+                            />
+                          </div>
+                          <div className="sr-access-field">
+                            <label className="sr-access-label">Night End</label>
+                            <input
+                              className="sr-access-input"
+                              type="time"
+                              value={settings.ot_night_end}
+                              onChange={(e) =>
+                                updateSettingField(
+                                  "ot_night_end",
+                                  e.target.value
+                                )
+                              }
+                            />
+                          </div>
+                          <div className="sr-access-field">
+                            <label className="sr-access-label">
+                              Counts As (minutes)
+                            </label>
+                            <input
+                              className="sr-access-input"
+                              type="number"
+                              min="0"
+                              step="15"
+                              placeholder="e.g. 120"
+                              value={settings.ot_night_counts_as}
+                              onChange={(e) =>
+                                updateSettingField(
+                                  "ot_night_counts_as",
+                                  e.target.value
+                                )
+                              }
+                            />
+                          </div>
+                        </>
+                      )}
+                    </>
+                  )}
 
                   {/* Client SMS Template */}
                   <div className="sr-access-field sr-access-field-full">
