@@ -9,6 +9,7 @@ import { FaChevronDown, FaChevronUp } from "react-icons/fa";
 import axios from "axios";
 import BroadcastMessage from "./BroadCastMessage";
 import socket from "./WebSocketClient";
+import RosterSageConnect from "./RosterSageConnect";
 
 import { API_BASE } from "../../../config/apiBase";
 
@@ -27,6 +28,13 @@ const RosterHistory = (props) => {
     const messageEndRef = useRef(null);
 
     const scrollRef = useRef(null);
+
+    // Curki Sage — event-driven auto-fill. The drawer owns the connection +
+    // active workflow; we call sageRef.fireReplay(...) the instant a shift turns
+    // green (accepted). Guarded so the same shift never fires twice.
+    const sageRef = useRef(null);
+    const [sageOpen, setSageOpen] = useState(false);
+    const firedShiftsRef = useRef(new Set());
 
     // we keep the same variable names as original *but* fill them dynamically
     const [dummyClients, setDummyClients] = useState([]); // will hold clients in old shape
@@ -211,6 +219,55 @@ const RosterHistory = (props) => {
         }
     };
 
+    // === Curki Sage — shape one accepted shift into the data Sage types into the
+    // external portal, and fire the active workflow (or queue it if Sage isn't
+    // ready). `fireKey` de-dupes so a given shift never triggers twice.
+    const buildShiftReplayData = (record, staff) => {
+        if (!record || !staff) return {};
+        const shiftDate =
+            staff.DateOfService ||
+            record.createdAt?.split("T")[0] ||
+            new Date().toISOString().split("T")[0];
+        return {
+            clientId: record.clientId,
+            clientName: selected?.name || "",
+            shiftDate,
+            time: formatTimeRange(record),
+            startTime: record.startTime || "",
+            minutes: record.minutes || "",
+            carer: staff.name || "",
+            staffId: staff.staffId || "",
+            staffEmail: staff.email || "",
+            staffPhone: staff.phone || "",
+        };
+    };
+
+    const triggerSageForShift = (record, staff) => {
+        if (!record || !staff) return;
+        const fireKey = `${record.id}::${staff.staffId}`;
+        if (firedShiftsRef.current.has(fireKey)) return; // already handled
+        firedShiftsRef.current.add(fireKey);
+        const label = `${staff.name || "Staff"} → ${selected?.name || "client"}`;
+        try {
+            sageRef.current?.fireReplay(buildShiftReplayData(record, staff), label);
+        } catch (err) {
+            console.warn("[sage-roster] fireReplay failed:", err?.message);
+        }
+    };
+
+    // 🟢 THE green signal — the single source of truth. Whenever a shift's status
+    // is "accepted" (both-sides-yes with manager approval on, or staff-yes with
+    // auto-approve), fire Sage for it. Already-green shifts were seeded on load,
+    // so this only fires on NEW transitions to green. De-dupe guarantees once.
+    useEffect(() => {
+        assignmentsData.forEach(a => {
+            if (a.status === "accepted") {
+                triggerSageForShift(a.originalRecord, a.originalStaffObject);
+            }
+        });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [assignmentsData]);
+
 
     // === When a client is selected: fetch their full history and build assignmentsData exactly like old structure
     const fetchClientHistory = async (clientId) => {
@@ -261,6 +318,17 @@ const RosterHistory = (props) => {
                 });
             });
 
+
+            // Seed Sage's de-dupe with shifts that are ALREADY green on load —
+            // these are historical acceptances, not live ones, so they must not
+            // auto-fire. Only shifts that turn green AFTER this point trigger.
+            built.forEach(a => {
+                if (a.status === "accepted") {
+                    firedShiftsRef.current.add(
+                        `${a.originalRecord?.id}::${a.originalStaffObject?.staffId}`
+                    );
+                }
+            });
 
             setAssignmentsData(built);
             // Also set messages empty for now — chat loads when user opens assignment
@@ -1360,6 +1428,17 @@ const RosterHistory = (props) => {
                     </div>
                 )}
             </div>
+
+            {/* Sage drawer — always mounted so its arrow handle stays pinned to
+                the right edge. Owns the connection + active workflow; auto-fills
+                the portal whenever a shift turns green. */}
+            <RosterSageConnect
+                ref={sageRef}
+                open={sageOpen}
+                onOpenChange={setSageOpen}
+                userEmail={userEmail}
+                userName={userEmail}
+            />
         </div>
     );
 };
