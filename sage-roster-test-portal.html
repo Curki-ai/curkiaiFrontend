@@ -275,7 +275,10 @@
 
       <!-- Existing shifts -->
       <div class="card table-wrap">
-        <div class="card-head">Today's Roster</div>
+        <div class="card-head" style="display:flex;align-items:center;justify-content:space-between;">
+          <span>Today's Roster</span>
+          <button type="button" id="clearRoster" class="btn secondary" style="padding:6px 12px;font-size:13px;">Clear</button>
+        </div>
         <table>
           <thead>
             <tr>
@@ -307,13 +310,20 @@
     const toast = document.getElementById("toast");
     const toastBody = document.getElementById("toastBody");
     const rosterBody = document.getElementById("rosterBody");
+    const STORAGE_KEY = "sage-roster-submissions";
 
-    form.addEventListener("submit", (e) => {
-      e.preventDefault();
-      const d = Object.fromEntries(new FormData(form).entries());
-      d.managerApproved = document.getElementById("managerApproved").checked;
-
-      // Add a row to the roster table — visible proof the shift was filled.
+    // Persist submissions so MULTIPLE Sage fills accumulate across the page
+    // reloads each replay triggers — you can SEE every client that was filled.
+    const loadSubmissions = () => {
+      try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
+      catch { return []; }
+    };
+    const saveSubmission = (d) => {
+      const all = loadSubmissions();
+      all.unshift({ ...d, submittedAt: new Date().toLocaleString() });
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
+    };
+    const renderRow = (d) => {
       const status = (d.status || "pending").toLowerCase();
       const tr = document.createElement("tr");
       tr.innerHTML =
@@ -324,7 +334,18 @@
         `<td>${d.minutes ? esc(d.minutes) + " min" : "—"}</td>` +
         `<td><span class="pill ${status}">${cap(status)}</span></td>`;
       rosterBody.prepend(tr);
+    };
 
+    // On load, re-render every saved submission so the list survives the
+    // reload each Sage replay causes (this is how you watch A, B, C stack up).
+    loadSubmissions().forEach(renderRow);
+
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const d = Object.fromEntries(new FormData(form).entries());
+      d.managerApproved = document.getElementById("managerApproved").checked;
+      saveSubmission(d);
+      renderRow(d);
       toastBody.textContent = JSON.stringify(d, null, 2);
       toast.classList.add("show");
       setTimeout(() => toast.classList.remove("show"), 6000);
@@ -332,6 +353,10 @@
     });
 
     document.getElementById("resetBtn").addEventListener("click", () => form.reset());
+    document.getElementById("clearRoster").addEventListener("click", () => {
+      localStorage.removeItem(STORAGE_KEY);
+      location.reload();
+    });
 
     function esc(s) { return String(s ?? "").replace(/[&<>"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;" }[c])); }
     function cap(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
